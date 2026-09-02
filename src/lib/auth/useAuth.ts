@@ -8,10 +8,16 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMe().then((result) => {
-      setUser(result.success ? result.data.user : null);
-      setLoading(false);
-    });
+    fetchMe()
+      .then((result) => {
+        setUser(result.success ? result.data.user : null);
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   return { user, loading, isAuthenticated: !!user };
