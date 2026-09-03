@@ -93,30 +93,25 @@ export default function HomePage() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Welcome to Vynzo, {user.displayName}</h1>
-        <Link href="/settings" className="text-sm text-slate-500 underline">
-          Edit Profile
-        </Link>
-      </div>
-
-      <form onSubmit={handlePost} className="mb-8 space-y-2">
+    <div className="mx-auto max-w-xl px-4 py-6">
+      <form onSubmit={handlePost} className="mb-6 space-y-2 rounded-lg border p-3">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="What's on your mind?"
           maxLength={2000}
-          className="w-full rounded-lg border px-4 py-2"
-          rows={3}
+          className="w-full resize-none border-none px-0 py-1 outline-none"
+          rows={2}
         />
-        <button
-          type="submit"
-          disabled={posting || !content.trim()}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {posting ? 'Posting...' : 'Post'}
-        </button>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={posting || !content.trim()}
+            className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {posting ? 'Posting...' : 'Post'}
+          </button>
+        </div>
       </form>
 
       {feedLoading ? (
@@ -127,10 +122,13 @@ export default function HomePage() {
         <div className="space-y-4">
           {posts.map((post) => (
             <div key={post.id} className="rounded-lg border p-4">
-              <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">
+              <Link href={`/u/${post.author.username}`} className="flex items-center gap-2 font-medium hover:underline">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
+                  {post.author.displayName?.[0]?.toUpperCase() || '?'}
+                </span>
                 {post.author.displayName}
               </Link>
-              <p className="mt-1 whitespace-pre-wrap">{post.content}</p>
+              <p className="mt-2 whitespace-pre-wrap">{post.content}</p>
 
               <div className="mt-3 flex items-center gap-2">
                 <button
