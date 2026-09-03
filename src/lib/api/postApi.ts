@@ -14,3 +14,11 @@ export async function createPost(content: string) {
   });
   return res.json();
 }
+
+export async function toggleLike(postId: string) {
+  const res = await fetch(`${API_URL}/api/posts/${postId}/like`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}

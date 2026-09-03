@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchFeed, createPost } from '@/lib/api/postApi';
+import { fetchFeed, createPost, toggleLike } from '@/lib/api/postApi';
 
 export default function HomePage() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -38,6 +38,17 @@ export default function HomePage() {
     if (result.success) {
       setPosts([result.data.post, ...posts]);
       setContent('');
+    }
+  }
+
+  async function handleLike(postId: string) {
+    const result = await toggleLike(postId);
+    if (result.success) {
+      setPosts(posts.map((p) =>
+        p.id === postId
+          ? { ...p, likedByMe: result.data.liked, likeCount: result.data.likeCount }
+          : p
+      ));
     }
   }
 
@@ -76,6 +87,18 @@ export default function HomePage() {
             <div key={post.id} className="rounded-lg border p-4">
               <p className="font-medium">{post.author.displayName}</p>
               <p className="mt-1 whitespace-pre-wrap">{post.content}</p>
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={() => handleLike(post.id)}
+                  className={`rounded-full px-3 py-1 text-sm ${
+                    post.likedByMe
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {post.likedByMe ? '❤️ Liked' : '🤍 Like'} {post.likeCount > 0 ? `(${post.likeCount})` : ''}
+                </button>
+              </div>
               <p className="mt-2 text-xs text-slate-400">
                 {new Date(post.createdAt).toLocaleString()}
               </p>
