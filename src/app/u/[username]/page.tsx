@@ -45,23 +45,38 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">{profile.displayName}</h1>
-      <p className="text-slate-500">@{profile.username}</p>
-      {profile.bio && <p className="mt-2">{profile.bio}</p>}
-
-      <div className="mt-4 flex gap-4 text-sm text-slate-600">
-        <span><b>{counts.followers}</b> Followers</span>
-        <span><b>{counts.following}</b> Following</span>
+      <div className="flex items-center gap-4">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-2xl font-semibold text-slate-600">
+          {profile.displayName?.[0]?.toUpperCase() || '?'}
+        </div>
+        <div>
+          <h1 className="text-xl font-semibold">{profile.displayName}</h1>
+          <p className="text-slate-500">@{profile.username}</p>
+        </div>
       </div>
 
-      {!isMe && (
+      {profile.bio && <p className="mt-4 text-slate-700">{profile.bio}</p>}
+
+      <div className="mt-4 flex gap-6 border-y py-3 text-sm">
+        <span><b>{counts.followers}</b> <span className="text-slate-500">Followers</span></span>
+        <span><b>{counts.following}</b> <span className="text-slate-500">Following</span></span>
+      </div>
+
+      {isMe ? (
+        <a
+          href="/settings"
+          className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700"
+        >
+          Edit Profile
+        </a>
+      ) : (
         <button
           onClick={handleFollow}
-          className={`mt-4 rounded-lg px-4 py-2 ${
-            isFollowing ? 'bg-slate-200 text-slate-700' : 'bg-slate-900 text-white'
+          className={`mt-4 w-full rounded-lg py-2 font-medium ${
+            isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'
           }`}
         >
-          {isFollowing ? 'Unfollow' : 'Follow'}
+          {isFollowing ? 'Following' : 'Follow'}
         </button>
       )}
     </div>
