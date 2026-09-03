@@ -1,4 +1,5 @@
 import './globals.css';
+import Shell from '@/components/Shell';
 
 export const metadata = {
   title: 'Vynzo',
@@ -8,7 +9,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Shell>{children}</Shell>
+      </body>
     </html>
   );
 }
