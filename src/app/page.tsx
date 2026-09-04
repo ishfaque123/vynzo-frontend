@@ -7,6 +7,18 @@ import Link from 'next/link';
 import { fetchFeed, createPost, toggleLike } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 
+function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
+  const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
+  return (
+    <div
+      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`}
+      style={url ? { backgroundImage: `url(${url})` } : {}}
+    >
+      {!url && (name?.[0]?.toUpperCase() || '?')}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -80,6 +92,8 @@ export default function HomePage() {
         [postId]: [...(prev[postId] || []), result.data.comment],
       }));
       setCommentText('');
+    } else {
+      alert(result.error.message);
     }
   }
 
@@ -95,14 +109,17 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       <form onSubmit={handlePost} className="mb-6 space-y-2 rounded-lg border p-3">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="What's on your mind?"
-          maxLength={2000}
-          className="w-full resize-none border-none px-0 py-1 outline-none"
-          rows={2}
-        />
+        <div className="flex gap-2">
+          <Avatar url={user.profilePictureUrl} name={user.displayName} />
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="What's on your mind?"
+            maxLength={2000}
+            className="w-full resize-none border-none px-0 py-1 outline-none"
+            rows={2}
+          />
+        </div>
         <div className="flex justify-end">
           <button
             type="submit"
@@ -123,9 +140,7 @@ export default function HomePage() {
           {posts.map((post) => (
             <div key={post.id} className="rounded-lg border p-4">
               <Link href={`/u/${post.author.username}`} className="flex items-center gap-2 font-medium hover:underline">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
-                  {post.author.displayName?.[0]?.toUpperCase() || '?'}
-                </span>
+                <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
                 {post.author.displayName}
               </Link>
               <p className="mt-2 whitespace-pre-wrap">{post.content}</p>
@@ -156,9 +171,12 @@ export default function HomePage() {
               {openComments === post.id && (
                 <div className="mt-3 border-t pt-3">
                   {(comments[post.id] || []).map((c) => (
-                    <div key={c.id} className="mb-2 text-sm">
-                      <span className="font-medium">{c.author.displayName}: </span>
-                      <span>{c.content}</span>
+                    <div key={c.id} className="mb-2 flex items-start gap-2 text-sm">
+                      <Avatar url={c.author.profilePictureUrl} name={c.author.displayName} size={6} />
+                      <div>
+                        <span className="font-medium">{c.author.displayName}: </span>
+                        <span>{c.content}</span>
+                      </div>
                     </div>
                   ))}
                   <div className="mt-2 flex gap-2">
