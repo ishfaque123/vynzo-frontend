@@ -45,54 +45,63 @@ export default function ProfilePage() {
   const isMe = currentUser?.username === profile.username;
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="font-semibold text-slate-900">@{profile.username}</span>
-        {isMe && (
-          <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="4" y1="7" x2="20" y2="7" />
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="17" x2="20" y2="17" />
-            </svg>
-          </Link>
+    <div className="mx-auto max-w-xl pb-6">
+      <div
+        className="h-32 bg-slate-200 bg-cover bg-center"
+        style={profile.coverPhotoUrl ? { backgroundImage: `url(${profile.coverPhotoUrl})` } : {}}
+      />
+
+      <div className="px-4">
+        <div className="-mt-10 mb-2 flex items-end justify-between">
+          <div
+            className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 bg-cover bg-center"
+            style={profile.profilePictureUrl ? { backgroundImage: `url(${profile.profilePictureUrl})` } : {}}
+          >
+            {!profile.profilePictureUrl && (
+              <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">
+                {profile.displayName?.[0]?.toUpperCase() || '?'}
+              </span>
+            )}
+          </div>
+          {isMe && (
+            <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+              </svg>
+            </Link>
+          )}
+        </div>
+
+        <h1 className="text-xl font-semibold">{profile.displayName}</h1>
+        <p className="text-slate-500">@{profile.username}</p>
+
+        {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
+
+        <div className="mt-4 flex gap-6 border-y py-3 text-sm">
+          <span><b>{counts.followers}</b> <span className="text-slate-500">Followers</span></span>
+          <span><b>{counts.following}</b> <span className="text-slate-500">Following</span></span>
+        </div>
+
+        {isMe ? (
+          <a
+            href="/settings"
+            className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700"
+          >
+            Edit Profile
+          </a>
+        ) : (
+          <button
+            onClick={handleFollow}
+            className={`mt-4 w-full rounded-lg py-2 font-medium ${
+              isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'
+            }`}
+          >
+            {isFollowing ? 'Following' : 'Follow'}
+          </button>
         )}
       </div>
-
-      <div className="flex items-center gap-4">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-2xl font-semibold text-slate-600">
-          {profile.displayName?.[0]?.toUpperCase() || '?'}
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold">{profile.displayName}</h1>
-          <p className="text-slate-500">@{profile.username}</p>
-        </div>
-      </div>
-
-      {profile.bio && <p className="mt-4 text-slate-700">{profile.bio}</p>}
-
-      <div className="mt-4 flex gap-6 border-y py-3 text-sm">
-        <span><b>{counts.followers}</b> <span className="text-slate-500">Followers</span></span>
-        <span><b>{counts.following}</b> <span className="text-slate-500">Following</span></span>
-      </div>
-
-      {isMe ? (
-        <a
-          href="/settings"
-          className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700"
-        >
-          Edit Profile
-        </a>
-      ) : (
-        <button
-          onClick={handleFollow}
-          className={`mt-4 w-full rounded-lg py-2 font-medium ${
-            isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'
-          }`}
-        >
-          {isFollowing ? 'Following' : 'Follow'}
-        </button>
-      )}
     </div>
   );
 }
