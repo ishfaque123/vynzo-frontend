@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchUserProfile, fetchFollowCounts, toggleFollow } from '@/lib/api/userApi';
 
@@ -44,7 +45,20 @@ export default function ProfilePage() {
   const isMe = currentUser?.username === profile.username;
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
+    <div className="mx-auto max-w-xl px-4 py-6">
+      <div className="mb-4 flex items-center justify-between">
+        <span className="font-semibold">@{profile.username}</span>
+        {isMe && (
+          <Link href="/settings-menu" aria-label="Settings" className="p-2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2">
+              <line x1="4" y1="7" x2="20" y2="7" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="17" x2="20" y2="17" />
+            </svg>
+          </Link>
+        )}
+      </div>
+
       <div className="flex items-center gap-4">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-2xl font-semibold text-slate-600">
           {profile.displayName?.[0]?.toUpperCase() || '?'}
