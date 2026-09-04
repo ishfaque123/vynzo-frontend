@@ -19,6 +19,29 @@ function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: n
   );
 }
 
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+      <path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" />
+    </svg>
+  );
+}
+function CommentIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+    </svg>
+  );
+}
+function ShareIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+      <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" /><line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -148,23 +171,24 @@ export default function HomePage() {
               <div className="mt-3 flex items-center gap-2">
                 <button
                   onClick={() => handleLike(post.id)}
-                  className={`rounded-full px-3 py-1 text-sm ${
+                  className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm ${
                     post.likedByMe ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
-                  {post.likedByMe ? '❤️ Liked' : '🤍 Like'} {post.likeCount > 0 ? `(${post.likeCount})` : ''}
+                  <HeartIcon filled={post.likedByMe} />
+                  {post.likeCount > 0 ? post.likeCount : ''}
                 </button>
                 <button
                   onClick={() => handleToggleComments(post.id)}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600"
+                  className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600"
                 >
-                  💬 Comment
+                  <CommentIcon /> Comment
                 </button>
                 <button
                   onClick={() => handleShare(post.id)}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600"
+                  className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600"
                 >
-                  🔗 Share
+                  <ShareIcon /> Share
                 </button>
               </div>
 
