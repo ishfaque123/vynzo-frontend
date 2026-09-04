@@ -6,6 +6,10 @@ html {
   color-scheme: light;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 input, textarea {
   color: #0f172a;
   background-color: #ffffff;
@@ -13,4 +17,64 @@ input, textarea {
 
 input::placeholder, textarea::placeholder {
   color: #94a3b8;
+}
+
+html.dark body {
+  background-color: #1e2530;
+  color: #e2e8f0;
+}
+
+html.dark .bg-white {
+  background-color: #262e3a;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #1e2530;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #333d4d;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #3d4759;
+}
+
+html.dark .bg-slate-900 {
+  background-color: #e2e8f0;
+  color: #1e2530;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #e2e8f0;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #94a3b8;
+}
+
+html.dark .text-slate-400 {
+  color: #64748b;
+}
+
+html.dark .border,
+html.dark .border-t,
+html.dark .border-b,
+html.dark .border-y {
+  border-color: #3d4759;
+}
+
+html.dark input,
+html.dark textarea {
+  background-color: #333d4d;
+  color: #e2e8f0;
+  border-color: #3d4759;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b;
 }
