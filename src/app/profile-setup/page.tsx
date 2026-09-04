@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitProfileSetup } from '@/lib/api/authApi';
+import { useAuth } from '@/lib/auth/useAuth';
 
 export default function ProfileSetupPage() {
+  const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && user?.profileCompleted) {
+      router.replace('/');
+    }
+  }, [authLoading, user, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,6 +30,10 @@ export default function ProfileSetupPage() {
       return;
     }
     router.push('/');
+  }
+
+  if (authLoading || user?.profileCompleted) {
+    return <p className="p-8 text-center text-slate-500">Loading...</p>;
   }
 
   return (
