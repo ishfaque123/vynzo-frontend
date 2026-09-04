@@ -47,10 +47,10 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       <div className="mb-4 flex items-center justify-between">
-        <span className="font-semibold">@{profile.username}</span>
+        <span className="font-semibold text-slate-900">@{profile.username}</span>
         {isMe && (
-          <Link href="/settings-menu" aria-label="Settings" className="p-2">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2">
+          <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="4" y1="7" x2="20" y2="7" />
               <line x1="4" y1="12" x2="20" y2="12" />
               <line x1="4" y1="17" x2="20" y2="17" />
