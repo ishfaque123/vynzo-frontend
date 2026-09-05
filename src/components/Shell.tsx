@@ -11,6 +11,7 @@ function HomeIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
+
 function SearchIcon({ active }: { active: boolean }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={active ? 'text-slate-900' : 'text-slate-400'}>
@@ -19,6 +20,7 @@ function SearchIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
+
 function ReelsIcon({ active }: { active: boolean }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={active ? 'text-slate-900' : 'text-slate-400'}>
@@ -27,6 +29,7 @@ function ReelsIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
+
 function ChatIcon({ active }: { active: boolean }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={active ? 'text-slate-900' : 'text-slate-400'}>
@@ -34,11 +37,22 @@ function ChatIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
+
 function ProfileIcon({ active }: { active: boolean }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={active ? 'text-slate-900' : 'text-slate-400'}>
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
     </svg>
   );
 }
@@ -57,8 +71,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 border-b bg-white px-4 py-3">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
         <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
+
+        <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+          <MenuIcon />
+        </Link>
       </header>
 
       <main className="flex-1 pb-16">{children}</main>
