@@ -258,7 +258,7 @@ export default function HomePage() {
     if (result.success) {
       setComments((prev) => ({
         ...prev,
-        [postId]: (prev[postId] || []).map((c) => c.id === commentId ? result.data.comment : c),
+        [postId]: (prev[postId] || []).map((c) => c.id === commentId ? result.data : c),
       }));
     } else {
       alert(result.error?.message || "Failed to edit comment.");
