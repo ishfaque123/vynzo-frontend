@@ -15,6 +15,16 @@ export async function addComment(postId: string, content: string) {
   return res.json();
 }
 
+export async function editComment(commentId: string, content: string) {
+  const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  return res.json();
+}
+
 export async function deleteComment(commentId: string) {
   const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
     method: 'DELETE',
