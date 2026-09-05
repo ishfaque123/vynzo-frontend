@@ -45,7 +45,7 @@ export default function LoginPage() {
         data-callback="handleVynzoCredential"
       />
 
-      <h1 className="mb-8 text-3xl font-semibold tracking-tight text-slate-900">Vynzo</h1>
+      <h1 className="mb-8 text-3xl font-semibold tracking-tight text-slate-900">Friendzo</h1>
 
       {loading && <p className="text-slate-500">Signing you in...</p>}
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}

@@ -3,8 +3,8 @@ import Shell from '@/components/Shell';
 import ThemeProvider from '@/components/ThemeProvider';
 
 export const metadata = {
-  title: 'Vynzo',
-  description: 'Vynzo — share your moments',
+  title: 'Friendzo',
+  description: 'Friendzo — share your moments',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

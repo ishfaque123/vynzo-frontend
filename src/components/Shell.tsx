@@ -58,7 +58,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="sticky top-0 z-10 border-b bg-white px-4 py-3">
-        <span className="text-xl font-bold tracking-tight text-slate-900">Vynzo</span>
+        <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
       </header>
 
       <main className="flex-1 pb-16">{children}</main>
