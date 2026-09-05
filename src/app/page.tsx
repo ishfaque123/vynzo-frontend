@@ -9,6 +9,7 @@ import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
 import ReactionButton from '@/components/ReactionButton';
 import PostMenu from '@/components/PostMenu';
+import ShareArrowIcon from '@/components/icons/ShareArrow';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
@@ -22,13 +23,6 @@ function CommentIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
-    </svg>
-  );
-}
-function ShareArrowIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7" /><path d="M16 6l-4-4-4 4" /><path d="M12 2v14" />
     </svg>
   );
 }
@@ -46,6 +40,15 @@ function PlusIcon() {
       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
+}
+function formatCount(n: number) {
+  if (n < 1000) return `${n}`;
+  if (n < 1000000) {
+    const k = n / 1000;
+    return `${k % 1 === 0 ? k : k.toFixed(1)}k`;
+  }
+  const m = n / 1000000;
+  return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
 }
 function timeAgo(dateStr: string) {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -79,8 +82,9 @@ function playSubmitSound() {
 
 function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment, onUpdated, onDeleted }: any) {
   const isOwner = currentUser?.username === post.author.username;
+  const [following, setFollowing] = useState(false);
   return (
-    <div className="border-y py-4">
+    <div className="w-full border-y py-4">
       <div className="flex items-start justify-between">
         {post.originalPost ? (
           <div className="flex items-center gap-1 text-xs text-slate-500">
@@ -92,17 +96,22 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
           <div className="flex items-center gap-2">
             <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
             <div className="leading-tight">
-              <Link href={`/u/${post.author.username}`} className="block font-medium hover:underline">
-                {post.author.displayName}
-                {post.taggedUsers?.length > 0 && (
-                  <span className="font-normal text-slate-500">
-                    {' '}with{' '}
-                    {post.taggedUsers.map((t: any, i: number) => (
-                      <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
-                    ))}
-                  </span>
+              <div className="flex items-center gap-2">
+                <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">
+                  {post.author.displayName}
+                </Link>
+                {!isOwner && !following && (
+                  <button onClick={() => setFollowing(true)} className="text-xs font-semibold text-blue-600">Follow</button>
                 )}
-              </Link>
+              </div>
+              {post.taggedUsers?.length > 0 && (
+                <span className="block text-xs text-slate-500">
+                  with{' '}
+                  {post.taggedUsers.map((t: any, i: number) => (
+                    <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
+                  ))}
+                </span>
+              )}
               <span className="text-xs text-slate-400">{timeAgo(post.createdAt)}</span>
             </div>
           </div>
@@ -112,7 +121,7 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
           isOwner={isOwner}
           content={post.content}
           commentAudience={post.commentAudience}
-          onUpdated={(content, commentAudience) => onUpdated(post.id, content, commentAudience)}
+          onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
           onDeleted={() => onDeleted(post.id)}
         />
       </div>
@@ -135,7 +144,7 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
       )}
 
       <div className="mt-3 flex items-center gap-4">
-        <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction, count) => onReactionChange(post.id, reaction, count)} />
+        <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
         <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 text-slate-600">
           <CommentIcon />
         </button>
