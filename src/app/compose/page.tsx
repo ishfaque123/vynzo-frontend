@@ -43,6 +43,26 @@ function CloseIcon() {
   );
 }
 
+function GlobeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a14 14 0 010 18" />
+      <path d="M12 3a14 14 0 000 18" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 018 0v3" />
+    </svg>
+  );
+}
+
 export default function ComposePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -120,14 +140,19 @@ export default function ComposePage() {
           <Avatar url={user?.profilePictureUrl} name={user?.displayName} />
           <div>
             <p className="font-medium">{user?.displayName}</p>
-            <select
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
-              className="rounded border px-2 py-0.5 text-xs text-slate-600"
-            >
-              <option value="public">🌐 Public</option>
-              <option value="private">🔒 Private</option>
-            </select>
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500">
+                {visibility === 'public' ? <GlobeIcon /> : <LockIcon />}
+              </span>
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
+                className="rounded border px-2 py-0.5 text-xs text-slate-600"
+              >
+              <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
           </div>
         </div>
 

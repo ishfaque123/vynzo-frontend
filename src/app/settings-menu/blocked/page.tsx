@@ -1,2 +1,6 @@
 import ComingSoon from '@/components/ComingSoon';
-export default function Page() { return <ComingSoon title="Blocked Accounts" icon="🚫" />; }
+import { BlockIcon } from '@/components/icons/UiIcons';
+
+export default function Page() {
+  return <ComingSoon title="Blocked Accounts" icon={<BlockIcon size={40} />} />;
+}

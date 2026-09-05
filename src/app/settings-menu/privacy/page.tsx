@@ -1,2 +1,6 @@
 import ComingSoon from '@/components/ComingSoon';
-export default function Page() { return <ComingSoon title="Account Privacy" icon="🔒" />; }
+import { LockIcon } from '@/components/icons/UiIcons';
+
+export default function Page() {
+  return <ComingSoon title="Account Privacy" icon={<LockIcon size={40} />} />;
+}

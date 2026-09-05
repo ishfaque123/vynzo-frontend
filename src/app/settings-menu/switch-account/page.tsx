@@ -1,2 +1,6 @@
 import ComingSoon from '@/components/ComingSoon';
-export default function Page() { return <ComingSoon title="Switch / Add Account" icon="🔁" />; }
+import { SwitchIcon } from '@/components/icons/UiIcons';
+
+export default function Page() {
+  return <ComingSoon title="Switch / Add Account" icon={<SwitchIcon size={40} />} />;
+}
