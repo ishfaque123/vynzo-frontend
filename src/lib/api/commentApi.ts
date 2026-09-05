@@ -14,3 +14,11 @@ export async function addComment(postId: string, content: string) {
   });
   return res.json();
 }
+
+export async function deleteComment(commentId: string) {
+  const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}

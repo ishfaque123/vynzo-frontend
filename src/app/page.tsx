@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchFeed } from '@/lib/api/postApi';
-import { fetchComments, addComment } from '@/lib/api/commentApi';
+import { fetchComments, addComment, deleteComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
 import ReactionButton from '@/components/ReactionButton';
 import PostMenu from '@/components/PostMenu';
@@ -71,7 +71,7 @@ function playSubmitSound() {
   } catch {}
 }
 
-function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment, onUpdated, onDeleted }: any) {
+function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment, onDeleteComment, onUpdated, onDeleted }: any) {
   const isOwner = currentUser?.username === post.author.username;
   const [following, setFollowing] = useState(false);
   return (
@@ -151,7 +151,7 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
           {(comments || []).map((c: any) => (
             <div key={c.id} className="mb-2 flex items-start gap-2 text-sm">
               <Avatar url={c.author.profilePictureUrl} name={c.author.displayName} size={6} />
-              <div><span className="font-medium">{c.author.displayName}: </span><span>{c.content}</span></div>
+              <div><span className="font-medium">{c.author.displayName}: </span><span>{c.content}</span></div>{(currentUser?.username === c.author.username || isOwner) && <button onClick={() => onDeleteComment(post.id, c.id)} className="ml-2 text-xs text-red-600">Delete</button>}
             </div>
           ))}
           <div className="mt-2 flex gap-2">
@@ -201,6 +201,16 @@ export default function HomePage() {
     }
   }
 
+  async function handleDeleteComment(postId: string, commentId: string) {
+    const result = await deleteComment(commentId);
+    if (result.success) {
+      setComments((prev) => ({ ...prev, [postId]: (prev[postId] || []).filter((c) => c.id !== commentId) }));
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentCount: Math.max((p.commentCount ?? 0) - 1, 0) } : p));
+    } else {
+      alert(result.error?.message || "Failed to delete comment.");
+    }
+  }
+
   async function handleAddComment(postId: string) {
     if (!commentText.trim()) return;
     const result = await addComment(postId, commentText);
@@ -243,7 +253,7 @@ export default function HomePage() {
               comments={comments[post.id]}
               commentText={commentText}
               setCommentText={setCommentText}
-              onAddComment={handleAddComment}
+              onAddComment={handleAddComment} onDeleteComment={handleDeleteComment}
               onUpdated={handlePostUpdated}
               onDeleted={handlePostDeleted}
             />
