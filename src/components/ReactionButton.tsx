@@ -71,7 +71,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         className={`flex items-center gap-1 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? <span className="text-lg">{current.emoji}</span> : <ThumbIcon filled={false} />}
-        {likeCount > 0 ? `(${likeCount})` : ''}
+        {likeCount > 0 ? String(likeCount) : ''}
       </button>
     </div>
   );

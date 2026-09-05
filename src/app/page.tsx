@@ -138,9 +138,11 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
         <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 text-slate-600">
           <CommentIcon />
+          {post.commentCount > 0 ? <span className="text-xs">{post.commentCount}</span> : null}
         </button>
         <button onClick={() => onShare(post.id)} className="flex items-center gap-1 text-slate-600">
           <ShareArrowIcon />
+          {post.shareCount > 0 ? <span className="text-xs">{post.shareCount}</span> : null}
         </button>
       </div>
 
