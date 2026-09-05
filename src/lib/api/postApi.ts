@@ -5,6 +5,11 @@ export async function fetchFeed() {
   return res.json();
 }
 
+export async function fetchUserPosts(username: string) {
+  const res = await fetch(`${API_URL}/api/posts/user/${username}`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function createPost(
   content: string,
   image?: File | null,
@@ -25,10 +30,12 @@ export async function createPost(
   return res.json();
 }
 
-export async function toggleLike(postId: string) {
-  const res = await fetch(`${API_URL}/api/posts/${postId}/like`, {
+export async function setReaction(postId: string, type: string) {
+  const res = await fetch(`${API_URL}/api/posts/${postId}/reaction`, {
     method: 'POST',
     credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type }),
   });
   return res.json();
 }
