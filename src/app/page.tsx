@@ -8,29 +8,27 @@ import { fetchFeed } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
 import ReactionButton from '@/components/ReactionButton';
+import PostMenu from '@/components/PostMenu';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
   return (
-    <div
-      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`}
-      style={url ? { backgroundImage: `url(${url})` } : {}}
-    >
+    <div className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`} style={url ? { backgroundImage: `url(${url})` } : {}}>
       {!url && (name?.[0]?.toUpperCase() || '?')}
     </div>
   );
 }
 function CommentIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
     </svg>
   );
 }
 function ShareArrowIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="4" y1="12" x2="18" y2="12" /><polyline points="12 6 18 12 12 18" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7" /><path d="M16 6l-4-4-4 4" /><path d="M12 2v14" />
     </svg>
   );
 }
@@ -64,36 +62,60 @@ function timeAgo(dateStr: string) {
   if (months < 12) return `${months}mo`;
   return `${Math.floor(days / 365)}y`;
 }
+function playSubmitSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.15);
+  } catch {}
+}
 
-function PostCard({ post, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment }: any) {
+function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment, onUpdated, onDeleted }: any) {
+  const isOwner = currentUser?.username === post.author.username;
   return (
-    <div className="rounded-lg border p-4">
-      {post.originalPost && (
-        <div className="mb-2 flex items-center gap-1 text-xs text-slate-500">
-          <RepostIcon />
-          <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
-          <span>reposted</span>
-        </div>
-      )}
-      {!post.originalPost && (
-        <div className="flex items-center gap-2">
-          <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
-          <div className="leading-tight">
-            <Link href={`/u/${post.author.username}`} className="block font-medium hover:underline">
-              {post.author.displayName}
-              {post.taggedUsers?.length > 0 && (
-                <span className="font-normal text-slate-500">
-                  {' '}with{' '}
-                  {post.taggedUsers.map((t: any, i: number) => (
-                    <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
-                  ))}
-                </span>
-              )}
-            </Link>
-            <span className="text-xs text-slate-400">{timeAgo(post.createdAt)}</span>
+    <div className="border-y py-4">
+      <div className="flex items-start justify-between">
+        {post.originalPost ? (
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <RepostIcon />
+            <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
+            <span>reposted</span>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center gap-2">
+            <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
+            <div className="leading-tight">
+              <Link href={`/u/${post.author.username}`} className="block font-medium hover:underline">
+                {post.author.displayName}
+                {post.taggedUsers?.length > 0 && (
+                  <span className="font-normal text-slate-500">
+                    {' '}with{' '}
+                    {post.taggedUsers.map((t: any, i: number) => (
+                      <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
+                    ))}
+                  </span>
+                )}
+              </Link>
+              <span className="text-xs text-slate-400">{timeAgo(post.createdAt)}</span>
+            </div>
+          </div>
+        )}
+        <PostMenu
+          postId={post.id}
+          isOwner={isOwner}
+          content={post.content}
+          commentAudience={post.commentAudience}
+          onUpdated={(content, commentAudience) => onUpdated(post.id, content, commentAudience)}
+          onDeleted={() => onDeleted(post.id)}
+        />
+      </div>
 
       {post.content && <p className="mt-2 whitespace-pre-wrap">{post.content}</p>}
       {post.imageUrl && <img src={post.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
@@ -112,18 +134,13 @@ function PostCard({ post, onReactionChange, onToggleComments, onShare, isOpen, c
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
-        <ReactionButton
-          postId={post.id}
-          myReaction={post.myReaction}
-          likeCount={post.likeCount}
-          onChange={(reaction, count) => onReactionChange(post.id, reaction, count)}
-        />
-        <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
-          <CommentIcon /> Comment
+      <div className="mt-3 flex items-center gap-4">
+        <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction, count) => onReactionChange(post.id, reaction, count)} />
+        <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 text-slate-600">
+          <CommentIcon />
         </button>
-        <button onClick={() => onShare(post.id)} className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
-          <ShareArrowIcon /> Share
+        <button onClick={() => onShare(post.id)} className="flex items-center gap-1 text-slate-600">
+          <ShareArrowIcon />
         </button>
       </div>
 
@@ -166,6 +183,12 @@ export default function HomePage() {
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
     setPosts(posts.map((p) => (p.id === postId ? { ...p, myReaction: reaction, likeCount: count } : p)));
   }
+  function handlePostUpdated(postId: string, content: string, commentAudience: string) {
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
+  }
+  function handlePostDeleted(postId: string) {
+    setPosts(posts.filter((p) => p.id !== postId));
+  }
 
   async function handleToggleComments(postId: string) {
     if (openComments === postId) { setOpenComments(null); return; }
@@ -180,6 +203,7 @@ export default function HomePage() {
     if (!commentText.trim()) return;
     const result = await addComment(postId, commentText);
     if (result.success) {
+      playSubmitSound();
       setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), result.data.comment] }));
       setCommentText('');
     } else {
@@ -203,11 +227,12 @@ export default function HomePage() {
       ) : posts.length === 0 ? (
         <p className="text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
-        <div className="space-y-4">
+        <div>
           {posts.map((post) => (
             <PostCard
               key={post.id}
               post={post}
+              currentUser={user}
               onReactionChange={handleReactionChange}
               onToggleComments={handleToggleComments}
               onShare={setShareModalPost}
@@ -216,6 +241,8 @@ export default function HomePage() {
               commentText={commentText}
               setCommentText={setCommentText}
               onAddComment={handleAddComment}
+              onUpdated={handlePostUpdated}
+              onDeleted={handlePostDeleted}
             />
           ))}
         </div>
