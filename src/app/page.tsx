@@ -4,9 +4,10 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { fetchFeed, toggleLike } from '@/lib/api/postApi';
+import { fetchFeed } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
+import ReactionButton from '@/components/ReactionButton';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
@@ -19,14 +20,6 @@ function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: n
     </div>
   );
 }
-
-function HeartIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-      <path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" />
-    </svg>
-  );
-}
 function CommentIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -37,8 +30,7 @@ function CommentIcon() {
 function ShareArrowIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="4" y1="12" x2="18" y2="12" />
-      <polyline points="12 6 18 12 12 18" />
+      <line x1="4" y1="12" x2="18" y2="12" /><polyline points="12 6 18 12 12 18" />
     </svg>
   );
 }
@@ -57,7 +49,6 @@ function PlusIcon() {
     </svg>
   );
 }
-
 function timeAgo(dateStr: string) {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return 'now';
@@ -74,19 +65,16 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(days / 365)}y`;
 }
 
-function PostCard({ post, onLike, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment }: any) {
+function PostCard({ post, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment }: any) {
   return (
     <div className="rounded-lg border p-4">
       {post.originalPost && (
         <div className="mb-2 flex items-center gap-1 text-xs text-slate-500">
           <RepostIcon />
-          <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">
-            {post.author.displayName}
-          </Link>
+          <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
           <span>reposted</span>
         </div>
       )}
-
       {!post.originalPost && (
         <div className="flex items-center gap-2">
           <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
@@ -97,9 +85,7 @@ function PostCard({ post, onLike, onToggleComments, onShare, isOpen, comments, c
                 <span className="font-normal text-slate-500">
                   {' '}with{' '}
                   {post.taggedUsers.map((t: any, i: number) => (
-                    <span key={t.id} className="font-medium text-slate-700">
-                      {t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}
-                    </span>
+                    <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
                   ))}
                 </span>
               )}
@@ -117,9 +103,7 @@ function PostCard({ post, onLike, onToggleComments, onShare, isOpen, comments, c
           <div className="flex items-center gap-2">
             <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
             <div className="leading-tight">
-              <Link href={`/u/${post.originalPost.author.username}`} className="block font-medium hover:underline">
-                {post.originalPost.author.displayName}
-              </Link>
+              <Link href={`/u/${post.originalPost.author.username}`} className="block font-medium hover:underline">{post.originalPost.author.displayName}</Link>
               <span className="text-xs text-slate-400">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
@@ -129,25 +113,16 @@ function PostCard({ post, onLike, onToggleComments, onShare, isOpen, comments, c
       )}
 
       <div className="mt-3 flex items-center gap-2">
-        <button
-          onClick={() => onLike(post.id)}
-          className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm ${
-            post.likedByMe ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          <HeartIcon filled={post.likedByMe} />
-          {post.likeCount > 0 ? post.likeCount : ''}
-        </button>
-        <button
-          onClick={() => onToggleComments(post.id)}
-          className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600"
-        >
+        <ReactionButton
+          postId={post.id}
+          myReaction={post.myReaction}
+          likeCount={post.likeCount}
+          onChange={(reaction, count) => onReactionChange(post.id, reaction, count)}
+        />
+        <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
           <CommentIcon /> Comment
         </button>
-        <button
-          onClick={() => onShare(post.id)}
-          className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600"
-        >
+        <button onClick={() => onShare(post.id)} className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
           <ShareArrowIcon /> Share
         </button>
       </div>
@@ -157,25 +132,12 @@ function PostCard({ post, onLike, onToggleComments, onShare, isOpen, comments, c
           {(comments || []).map((c: any) => (
             <div key={c.id} className="mb-2 flex items-start gap-2 text-sm">
               <Avatar url={c.author.profilePictureUrl} name={c.author.displayName} size={6} />
-              <div>
-                <span className="font-medium">{c.author.displayName}: </span>
-                <span>{c.content}</span>
-              </div>
+              <div><span className="font-medium">{c.author.displayName}: </span><span>{c.content}</span></div>
             </div>
           ))}
           <div className="mt-2 flex gap-2">
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
-              className="flex-1 rounded-lg border px-3 py-1 text-sm"
-            />
-            <button
-              onClick={() => onAddComment(post.id)}
-              className="rounded-lg bg-slate-900 px-3 py-1 text-sm text-white"
-            >
-              Send
-            </button>
+            <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment..." className="flex-1 rounded-lg border px-3 py-1 text-sm" />
+            <button onClick={() => onAddComment(post.id)} className="rounded-lg bg-slate-900 px-3 py-1 text-sm text-white">Send</button>
           </div>
         </div>
       )}
@@ -193,25 +155,16 @@ export default function HomePage() {
   const [commentText, setCommentText] = useState('');
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) router.push('/login');
-  }, [loading, isAuthenticated, router]);
+  useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchFeed()
-        .then((result) => { if (result.success) setPosts(result.data.posts); })
-        .finally(() => setFeedLoading(false));
+      fetchFeed().then((result) => { if (result.success) setPosts(result.data.posts); }).finally(() => setFeedLoading(false));
     }
   }, [isAuthenticated]);
 
-  async function handleLike(postId: string) {
-    const result = await toggleLike(postId);
-    if (result.success) {
-      setPosts(posts.map((p) =>
-        p.id === postId ? { ...p, likedByMe: result.data.liked, likeCount: result.data.likeCount } : p
-      ));
-    }
+  function handleReactionChange(postId: string, reaction: string | null, count: number) {
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, myReaction: reaction, likeCount: count } : p)));
   }
 
   async function handleToggleComments(postId: string) {
@@ -239,10 +192,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <button
-        onClick={() => router.push('/compose')}
-        className="mb-6 flex w-full items-center gap-3 rounded-lg border p-3 text-left"
-      >
+      <button onClick={() => router.push('/compose')} className="mb-6 flex w-full items-center gap-3 rounded-lg border p-3 text-left">
         <Avatar url={user.profilePictureUrl} name={user.displayName} />
         <span className="flex-1 text-slate-400">What's on your mind?</span>
         <span className="rounded-full bg-slate-100 p-1.5 text-slate-600"><PlusIcon /></span>
@@ -258,7 +208,7 @@ export default function HomePage() {
             <PostCard
               key={post.id}
               post={post}
-              onLike={handleLike}
+              onReactionChange={handleReactionChange}
               onToggleComments={handleToggleComments}
               onShare={setShareModalPost}
               isOpen={openComments === post.id}
@@ -271,9 +221,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {shareModalPost && (
-        <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />
-      )}
+      {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
     </div>
   );
 }
