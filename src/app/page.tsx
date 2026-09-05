@@ -205,6 +205,7 @@ export default function HomePage() {
     if (!commentText.trim()) return;
     const result = await addComment(postId, commentText);
     if (result.success) {
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentCount: (p.commentCount ?? 0) + 1 } : p));
       playSubmitSound();
       setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), result.data.comment] }));
       setCommentText('');
