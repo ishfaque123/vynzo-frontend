@@ -42,6 +42,23 @@ function ShareIcon() {
   );
 }
 
+function timeAgo(dateStr: string) {
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (seconds < 60) return 'now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo`;
+  const years = Math.floor(days / 365);
+  return `${years}y`;
+}
+
 export default function HomePage() {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -131,27 +148,22 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <form onSubmit={handlePost} className="mb-6 space-y-2 rounded-lg border p-3">
-        <div className="flex gap-2">
-          <Avatar url={user.profilePictureUrl} name={user.displayName} />
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="What's on your mind?"
-            maxLength={2000}
-            className="w-full resize-none border-none px-0 py-1 outline-none"
-            rows={2}
-          />
-        </div>
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={posting || !content.trim()}
-            className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {posting ? 'Posting...' : 'Post'}
-          </button>
-        </div>
+      <form onSubmit={handlePost} className="mb-6 flex items-center gap-2 rounded-lg border p-3">
+        <Avatar url={user.profilePictureUrl} name={user.displayName} />
+        <input
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="What's on your mind?"
+          maxLength={2000}
+          className="flex-1 border-none px-0 py-1 outline-none"
+        />
+        <button
+          type="submit"
+          disabled={posting || !content.trim()}
+          className="shrink-0 rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {posting ? 'Posting...' : 'Post'}
+        </button>
       </form>
 
       {feedLoading ? (
@@ -162,10 +174,15 @@ export default function HomePage() {
         <div className="space-y-4">
           {posts.map((post) => (
             <div key={post.id} className="rounded-lg border p-4">
-              <Link href={`/u/${post.author.username}`} className="flex items-center gap-2 font-medium hover:underline">
+              <div className="flex items-center gap-2">
                 <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
-                {post.author.displayName}
-              </Link>
+                <div className="leading-tight">
+                  <Link href={`/u/${post.author.username}`} className="block font-medium hover:underline">
+                    {post.author.displayName}
+                  </Link>
+                  <span className="text-xs text-slate-400">{timeAgo(post.createdAt)}</span>
+                </div>
+              </div>
               <p className="mt-2 whitespace-pre-wrap">{post.content}</p>
 
               <div className="mt-3 flex items-center gap-2">
@@ -219,10 +236,6 @@ export default function HomePage() {
                   </div>
                 </div>
               )}
-
-              <p className="mt-2 text-xs text-slate-400">
-                {new Date(post.createdAt).toLocaleString()}
-              </p>
             </div>
           ))}
         </div>
