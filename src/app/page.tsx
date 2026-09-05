@@ -41,15 +41,6 @@ function PlusIcon() {
     </svg>
   );
 }
-function formatCount(n: number) {
-  if (n < 1000) return `${n}`;
-  if (n < 1000000) {
-    const k = n / 1000;
-    return `${k % 1 === 0 ? k : k.toFixed(1)}k`;
-  }
-  const m = n / 1000000;
-  return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
-}
 function timeAgo(dateStr: string) {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return 'now';
