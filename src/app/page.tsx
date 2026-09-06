@@ -11,6 +11,7 @@ import ReactionButton from '@/components/ReactionButton';
 import PostMenu from '@/components/PostMenu';
 import ShareArrowIcon from '@/components/icons/ShareArrow';
 import CommentItem from '@/components/CommentItem';
+import FollowButton from '@/components/FollowButton';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
@@ -74,7 +75,6 @@ function playSubmitSound() {
 
 function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onUpdated, onDeleted }: any) {
   const isOwner = currentUser?.username === post.author.username;
-  const [following, setFollowing] = useState(false);
   return (
     <div className="w-full border-y py-4">
       <div className="flex items-start justify-between">
@@ -90,7 +90,7 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
             <div className="leading-tight">
               <div className="flex items-center gap-2">
                 <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
-                {!isOwner && !following && (<button onClick={() => setFollowing(true)} className="text-xs font-semibold text-blue-600">Follow</button>)}
+                {!isOwner && <FollowButton userId={post.author.id} status={post.friendStatus} />}
               </div>
               {post.taggedUsers?.length > 0 && (
                 <span className="block text-xs text-slate-500">
