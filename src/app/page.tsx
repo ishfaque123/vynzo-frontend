@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchFeed } from '@/lib/api/postApi';
-import { fetchComments, addComment, deleteComment, editComment } from '@/lib/api/commentApi';
+import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
 import ReactionButton from '@/components/ReactionButton';
 import PostMenu from '@/components/PostMenu';
 import ShareArrowIcon from '@/components/icons/ShareArrow';
+import CommentItem from '@/components/CommentItem';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
@@ -71,11 +72,9 @@ function playSubmitSound() {
   } catch {}
 }
 
-function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, onAddComment, onDeleteComment, onEditComment, onUpdated, onDeleted }: any) {
+function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onUpdated, onDeleted }: any) {
   const isOwner = currentUser?.username === post.author.username;
   const [following, setFollowing] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingCommentText, setEditingCommentText] = useState('');
   return (
     <div className="w-full border-y py-4">
       <div className="flex items-start justify-between">
@@ -90,17 +89,12 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
             <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
             <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">
-                  {post.author.displayName}
-                </Link>
-                {!isOwner && !following && (
-                  <button onClick={() => setFollowing(true)} className="text-xs font-semibold text-blue-600">Follow</button>
-                )}
+                <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
+                {!isOwner && !following && (<button onClick={() => setFollowing(true)} className="text-xs font-semibold text-blue-600">Follow</button>)}
               </div>
               {post.taggedUsers?.length > 0 && (
                 <span className="block text-xs text-slate-500">
-                  with{' '}
-                  {post.taggedUsers.map((t: any, i: number) => (
+                  with {post.taggedUsers.map((t: any, i: number) => (
                     <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
                   ))}
                 </span>
@@ -109,14 +103,9 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
             </div>
           </div>
         )}
-        <PostMenu
-          postId={post.id}
-          isOwner={isOwner}
-          content={post.content}
-          commentAudience={post.commentAudience}
+        <PostMenu postId={post.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience}
           onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
-          onDeleted={() => onDeleted(post.id)}
-        />
+          onDeleted={() => onDeleted(post.id)} />
       </div>
 
       {post.content && <p className="mt-2 whitespace-pre-wrap">{post.content}</p>}
@@ -138,74 +127,20 @@ function PostCard({ post, currentUser, onReactionChange, onToggleComments, onSha
 
       <div className="mt-3 flex items-center gap-4">
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
-        <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 text-slate-600">
-          <CommentIcon />
-          {post.commentCount > 0 ? <span className="text-xs">{post.commentCount}</span> : null}
-        </button>
-        <button onClick={() => onShare(post.id)} className="flex items-center gap-1 text-slate-600">
-          <ShareArrowIcon />
-          {post.shareCount > 0 ? <span className="text-xs">{post.shareCount}</span> : null}
-        </button>
+        <button onClick={() => onToggleComments(post.id)} className="flex items-center gap-1 text-slate-600"><CommentIcon /></button>
+        <button onClick={() => onShare(post.id)} className="flex items-center gap-1 text-slate-600"><ShareArrowIcon /></button>
       </div>
 
       {isOpen && (
         <div className="mt-3 border-t pt-3">
           {(comments || []).map((c: any) => (
-            <div key={c.id} className="mb-2 flex items-start gap-2 text-sm">
-              <Avatar url={c.author.profilePictureUrl} name={c.author.displayName} size={6} />
-              {editingCommentId === c.id ? (
-                <div className="flex flex-1 gap-2">
-                  <input
-                    value={editingCommentText}
-                    onChange={(e) => setEditingCommentText(e.target.value)}
-                    className="flex-1 rounded border px-2 py-1 text-sm"
-                    maxLength={500}
-                  />
-                  <button
-                    onClick={async () => {
-                      const text = editingCommentText.trim();
-                      if (!text) return;
-                      await onEditComment(post.id, c.id, text);
-                      setEditingCommentId(null);
-                      setEditingCommentText('');
-                    }}
-                    className="text-xs text-blue-600"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingCommentId(null);
-                      setEditingCommentText('');
-                    }}
-                    className="text-xs text-slate-500"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div><span className="font-medium">{c.author.displayName}: </span><span>{c.content}</span></div>
-                  {currentUser?.username === c.author.username && (
-                    <button
-                      onClick={() => {
-                        setEditingCommentId(c.id);
-                        setEditingCommentText(c.content);
-                      }}
-                      className="ml-2 text-xs text-blue-600"
-                    >
-                      Edit
-                    </button>
-                  )}
-                  {(currentUser?.username === c.author.username || isOwner) && (
-                    <button onClick={() => onDeleteComment(post.id, c.id)} className="ml-2 text-xs text-red-600">
-                      Delete
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+            <CommentItem key={c.id} comment={c} currentUser={currentUser} postOwnerId={post.author.id}
+              onReplyClick={(id: string, name: string) => setReplyTo({ postId: post.id, commentId: id, name })}
+              onChanged={() => onCommentsChanged(post.id)} />
           ))}
+          {replyTo?.postId === post.id && (
+            <p className="mb-1 text-xs text-slate-500">Replying to <b>{replyTo.name}</b> <button onClick={() => setReplyTo(null)} className="text-red-500">✕</button></p>
+          )}
           <div className="mt-2 flex gap-2">
             <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment..." className="flex-1 rounded-lg border px-3 py-1 text-sm" />
             <button onClick={() => onAddComment(post.id)} className="rounded-lg bg-slate-900 px-3 py-1 text-sm text-white">Send</button>
@@ -224,6 +159,7 @@ export default function HomePage() {
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
+  const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
 
   useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
@@ -244,45 +180,25 @@ export default function HomePage() {
     setPosts(posts.filter((p) => p.id !== postId));
   }
 
+  async function loadComments(postId: string) {
+    const result = await fetchComments(postId);
+    if (result.success) setComments((prev) => ({ ...prev, [postId]: result.data.comments }));
+  }
+
   async function handleToggleComments(postId: string) {
     if (openComments === postId) { setOpenComments(null); return; }
     setOpenComments(postId);
-    if (!comments[postId]) {
-      const result = await fetchComments(postId);
-      if (result.success) setComments((prev) => ({ ...prev, [postId]: result.data.comments }));
-    }
-  }
-
-  async function handleEditComment(postId: string, commentId: string, content: string) {
-    const result = await editComment(commentId, content);
-    if (result.success) {
-      setComments((prev) => ({
-        ...prev,
-        [postId]: (prev[postId] || []).map((c) => c.id === commentId ? result.data : c),
-      }));
-    } else {
-      alert(result.error?.message || "Failed to edit comment.");
-    }
-  }
-
-  async function handleDeleteComment(postId: string, commentId: string) {
-    const result = await deleteComment(commentId);
-    if (result.success) {
-      setComments((prev) => ({ ...prev, [postId]: (prev[postId] || []).filter((c) => c.id !== commentId) }));
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentCount: Math.max((p.commentCount ?? 0) - 1, 0) } : p));
-    } else {
-      alert(result.error?.message || "Failed to delete comment.");
-    }
+    if (!comments[postId]) await loadComments(postId);
   }
 
   async function handleAddComment(postId: string) {
     if (!commentText.trim()) return;
-    const result = await addComment(postId, commentText);
+    const result = await addComment(postId, commentText, replyTo?.postId === postId ? replyTo.commentId : undefined);
     if (result.success) {
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, commentCount: (p.commentCount ?? 0) + 1 } : p));
       playSubmitSound();
-      setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), result.data.comment] }));
+      await loadComments(postId);
       setCommentText('');
+      setReplyTo(null);
     } else {
       alert(result.error.message);
     }
@@ -306,21 +222,13 @@ export default function HomePage() {
       ) : (
         <div>
           {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              currentUser={user}
-              onReactionChange={handleReactionChange}
-              onToggleComments={handleToggleComments}
-              onShare={setShareModalPost}
-              isOpen={openComments === post.id}
-              comments={comments[post.id]}
-              commentText={commentText}
-              setCommentText={setCommentText}
-              onAddComment={handleAddComment} onDeleteComment={handleDeleteComment} onEditComment={handleEditComment}
-              onUpdated={handlePostUpdated}
-              onDeleted={handlePostDeleted}
-            />
+            <PostCard key={post.id} post={post} currentUser={user}
+              onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+              isOpen={openComments === post.id} comments={comments[post.id]}
+              commentText={commentText} setCommentText={setCommentText}
+              replyTo={replyTo} setReplyTo={setReplyTo}
+              onAddComment={handleAddComment} onCommentsChanged={loadComments}
+              onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
           ))}
         </div>
       )}
