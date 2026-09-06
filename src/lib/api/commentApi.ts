@@ -5,12 +5,12 @@ export async function fetchComments(postId: string) {
   return res.json();
 }
 
-export async function addComment(postId: string, content: string) {
+export async function addComment(postId: string, content: string, parentCommentId?: string, taggedUserIds: string[] = []) {
   const res = await fetch(`${API_URL}/api/comments/${postId}`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, parentCommentId, taggedUserIds }),
   });
   return res.json();
 }
@@ -29,6 +29,16 @@ export async function deleteComment(commentId: string) {
   const res = await fetch(`${API_URL}/api/comments/${commentId}`, {
     method: 'DELETE',
     credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function setCommentReaction(commentId: string, type: string) {
+  const res = await fetch(`${API_URL}/api/comments/${commentId}/reaction`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type }),
   });
   return res.json();
 }
