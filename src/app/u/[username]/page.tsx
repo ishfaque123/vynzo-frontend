@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
-import { fetchUserProfile, fetchFollowCounts, toggleFollow } from '@/lib/api/userApi';
+import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
@@ -45,6 +45,9 @@ export default function ProfilePage() {
       if (result.success) {
         setProfile(result.data.user);
         fetchFollowCounts(result.data.user.id).then((c) => { if (c.success) setCounts(c.data); });
+        fetchFollowStatus(result.data.user.id).then((s) => {
+          if (s.success) setIsFollowing(s.data.status === 'following' || s.data.status === 'friends');
+        });
       }
       setLoading(false);
     });

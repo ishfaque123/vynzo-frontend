@@ -27,3 +27,8 @@ export async function toggleFollow(userId: string) {
   });
   return res.json();
 }
+
+export async function fetchFollowStatus(userId: string) {
+  const res = await fetch(`${API_URL}/api/follows/${userId}/status`, { credentials: 'include' });
+  return res.json();
+}
