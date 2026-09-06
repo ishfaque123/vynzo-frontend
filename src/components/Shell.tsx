@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -57,8 +57,18 @@ function MenuIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="6" y1="18" x2="18" y2="6" />
+    </svg>
+  );
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
   const hideChrome = pathname === '/login' || pathname === '/profile-setup';
@@ -68,15 +78,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }
 
   const profileHref = user?.username ? `/u/${user.username}` : '/settings';
+  const isInSettingsMenu = pathname.startsWith('/settings-menu');
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
         <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
 
-        <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
-          <MenuIcon />
-        </Link>
+        {isInSettingsMenu ? (
+          <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
+            <CloseIcon />
+          </button>
+        ) : (
+          <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+            <MenuIcon />
+          </Link>
+        )}
       </header>
 
       <main className="flex-1 pb-16">{children}</main>
