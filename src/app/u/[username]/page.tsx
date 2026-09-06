@@ -6,25 +6,23 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchUserProfile, fetchFollowCounts, toggleFollow } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
+import { fetchComments, addComment } from '@/lib/api/commentApi';
+import ShareModal from '@/components/ShareModal';
+import PostCard from '@/components/PostCard';
 
-function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
-  const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
-  return (
-    <div className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`} style={url ? { backgroundImage: `url(${url})` } : {}}>
-      {!url && (name?.[0]?.toUpperCase() || '?')}
-    </div>
-  );
-}
-function timeAgo(dateStr: string) {
-  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (seconds < 60) return 'now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return `${Math.floor(days / 7)}w`;
+function playSubmitSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.15);
+  } catch {}
 }
 
 export default function ProfilePage() {
@@ -37,6 +35,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [openComments, setOpenComments] = useState<string | null>(null);
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [commentText, setCommentText] = useState('');
+  const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
+  const [shareModalPost, setShareModalPost] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserProfile(username).then((result) => {
@@ -58,6 +61,37 @@ export default function ProfilePage() {
     if (result.success) {
       setIsFollowing(result.data.following);
       setCounts((prev) => ({ ...prev, followers: prev.followers + (result.data.following ? 1 : -1) }));
+    }
+  }
+
+  function handleReactionChange(postId: string, reaction: string | null, count: number) {
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, myReaction: reaction, likeCount: count } : p)));
+  }
+  function handlePostUpdated(postId: string, content: string, commentAudience: string) {
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
+  }
+  function handlePostDeleted(postId: string) {
+    setPosts(posts.filter((p) => p.id !== postId));
+  }
+  async function loadComments(postId: string) {
+    const result = await fetchComments(postId);
+    if (result.success) setComments((prev) => ({ ...prev, [postId]: result.data.comments }));
+  }
+  async function handleToggleComments(postId: string) {
+    if (openComments === postId) { setOpenComments(null); return; }
+    setOpenComments(postId);
+    if (!comments[postId]) await loadComments(postId);
+  }
+  async function handleAddComment(postId: string) {
+    if (!commentText.trim()) return;
+    const result = await addComment(postId, commentText, replyTo?.postId === postId ? replyTo.commentId : undefined);
+    if (result.success) {
+      playSubmitSound();
+      await loadComments(postId);
+      setCommentText('');
+      setReplyTo(null);
+    } else {
+      alert(result.error.message);
     }
   }
 
@@ -100,7 +134,7 @@ export default function ProfilePage() {
           <a href="/settings" className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700">Edit Profile</a>
         ) : (
           <button onClick={handleFollow} className={`mt-4 w-full rounded-lg py-2 font-medium ${isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
-            {isFollowing ? 'Following' : 'Follow'}
+            {isFollowing ? 'Unfollow' : 'Follow'}
           </button>
         )}
       </div>
@@ -111,15 +145,21 @@ export default function ProfilePage() {
         ) : posts.length === 0 ? (
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
-          posts.map((post) => (
-            <div key={post.id} className="border-t px-4 py-4">
-              {post.content && <p className="whitespace-pre-wrap">{post.content}</p>}
-              {post.imageUrl && <img src={post.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
-              <p className="mt-2 text-xs text-slate-400">{timeAgo(post.createdAt)}</p>
-            </div>
-          ))
+          <div className="px-4">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} currentUser={currentUser}
+                onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+                isOpen={openComments === post.id} comments={comments[post.id]}
+                commentText={commentText} setCommentText={setCommentText}
+                replyTo={replyTo} setReplyTo={setReplyTo}
+                onAddComment={handleAddComment} onCommentsChanged={loadComments}
+                onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+            ))}
+          </div>
         )}
       </div>
+
+      {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
     </div>
   );
 }
