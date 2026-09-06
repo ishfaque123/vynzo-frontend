@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { setReaction } from '@/lib/api/postApi';
 
-const REACTIONS: Record<string, { emoji: string; color: string }> = {
+export const REACTIONS: Record<string, { emoji: string; color: string }> = {
   like: { emoji: '👍', color: 'text-blue-600' },
   love: { emoji: '❤️', color: 'text-red-600' },
   haha: { emoji: '😆', color: 'text-yellow-600' },

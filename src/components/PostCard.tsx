@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import ReactionButton from './ReactionButton';
+import ReactionButton, { REACTIONS } from './ReactionButton';
 import PostMenu from './PostMenu';
 import ShareArrowIcon from './icons/ShareArrow';
 import CommentItem from './CommentItem';
@@ -44,6 +44,39 @@ export function timeAgo(dateStr: string) {
   const months = Math.floor(days / 30);
   if (months < 12) return `${months}mo`;
   return `${Math.floor(days / 365)}y`;
+}
+
+function ReactionSummary({ post }: { post: any }) {
+  const topReactions = post.reactionCounts
+    ? Object.entries(post.reactionCounts as Record<string, number>)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([type]) => type)
+    : [];
+
+  const hasAny = (post.likeCount > 0) || (post.commentCount > 0) || (post.shareCount > 0);
+  if (!hasAny) return null;
+
+  return (
+    <div className="mt-3 flex items-center justify-between border-b pb-2 text-xs text-slate-500">
+      <div className="flex items-center">
+        {topReactions.map((type, i) => (
+          <span
+            key={type}
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-white bg-slate-50 text-[11px]"
+            style={{ marginLeft: i === 0 ? 0 : -6, zIndex: topReactions.length - i }}
+          >
+            {REACTIONS[type]?.emoji}
+          </span>
+        ))}
+        {post.likeCount > 0 && <span className="ml-1.5">{post.likeCount}</span>}
+      </div>
+      <div className="flex gap-3">
+        {post.commentCount > 0 && <span>{post.commentCount} comments</span>}
+        {post.shareCount > 0 && <span>{post.shareCount} shares</span>}
+      </div>
+    </div>
+  );
 }
 
 export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onUpdated, onDeleted }: any) {
@@ -97,6 +130,8 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
         </div>
       )}
+
+      <ReactionSummary post={post} />
 
       <div className="mt-3 flex items-center gap-4">
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
