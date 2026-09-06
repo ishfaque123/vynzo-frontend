@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { setCommentReaction, deleteComment, editComment } from '@/lib/api/commentApi';
+import FollowButton from './FollowButton';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 
@@ -20,11 +21,25 @@ function DotsIcon() {
     </svg>
   );
 }
-
 function formatCount(n: number) {
   if (n < 1000) return `${n}`;
   if (n < 1000000) { const k = n / 1000; return `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
   const m = n / 1000000; return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
+}
+function timeAgo(dateStr: string) {
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (seconds < 60) return 'now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo`;
+  return `${Math.floor(days / 365)}y`;
 }
 
 export default function CommentItem({ comment, currentUser, postOwnerId, onReplyClick, onChanged, depth = 0 }: any) {
@@ -40,19 +55,16 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     const result = await setCommentReaction(comment.id, type);
     if (result.success) onChanged();
   }
-
   async function handleDelete() {
     if (!confirm('Delete this comment?')) return;
     const result = await deleteComment(comment.id);
     if (result.success) onChanged();
     setMenuOpen(false);
   }
-
   async function saveEdit() {
     const result = await editComment(comment.id, editText);
     if (result.success) { onChanged(); setEditing(false); }
   }
-
   function copyComment() {
     navigator.clipboard.writeText(comment.content);
     setMenuOpen(false);
@@ -64,7 +76,10 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
         <Link href={`/u/${comment.author.username}`}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
         <div className="flex-1">
           <div className="rounded-2xl bg-slate-100 px-3 py-2">
-            <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold hover:underline">{comment.author.displayName}</Link>
+            <div className="flex items-center gap-2">
+              <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold hover:underline">{comment.author.displayName}</Link>
+              {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} />}
+            </div>
             {editing ? (
               <div className="mt-1 flex gap-1">
                 <input value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 rounded border px-2 py-1 text-sm" />
@@ -87,15 +102,13 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               </button>
               {showPicker && (
                 <div className="absolute bottom-full left-0 mb-1 flex gap-1 rounded-full border bg-white p-1 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
-                  {Object.entries(REACTIONS).map(([key, emoji]) => (
-                    <button key={key} onClick={() => react(key)} className="text-lg hover:scale-125">{emoji}</button>
-                  ))}
+                  {Object.entries(REACTIONS).map(([key, emoji]) => (<button key={key} onClick={() => react(key)} className="text-lg hover:scale-125">{emoji}</button>))}
                 </div>
               )}
             </div>
             <button onClick={() => onReplyClick(comment.id, comment.author.displayName)}>Reply</button>
             {comment.reactionCount > 0 && <span>{formatCount(comment.reactionCount)}</span>}
-            <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+            <span>{timeAgo(comment.createdAt)}</span>
 
             <div className="relative ml-auto">
               <button onClick={() => setMenuOpen(!menuOpen)}><DotsIcon /></button>
