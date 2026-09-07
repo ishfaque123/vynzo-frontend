@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
+import { BellIcon } from '@/components/icons/UiIcons';
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -85,15 +86,31 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
         <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
 
-        {isInSettingsMenu ? (
-          <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
-            <CloseIcon />
-          </button>
-        ) : (
-          <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
-            <MenuIcon />
-          </Link>
-        )}
+        <div className="flex items-center gap-1">
+          {!isInSettingsMenu && (
+            <>
+              <Link href="/search" aria-label="Search" className="p-2">
+                <SearchIcon active={pathname === '/search'} />
+              </Link>
+              <Link href="/messages" aria-label="Messages" className="p-2">
+                <ChatIcon active={pathname === '/messages'} />
+              </Link>
+              <Link href="/notifications" aria-label="Notifications" className="p-2">
+                <BellIcon size={24} className={pathname === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />
+              </Link>
+            </>
+          )}
+
+          {isInSettingsMenu ? (
+            <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
+              <CloseIcon />
+            </button>
+          ) : (
+            <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+              <MenuIcon />
+            </Link>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 pb-16">{children}</main>
@@ -101,7 +118,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-white">
         <div className="mx-auto flex max-w-xl items-center justify-around py-2">
           <Link href="/" className="p-2"><HomeIcon active={pathname === '/'} /></Link>
-          <Link href="/search" className="p-2"><SearchIcon active={pathname === '/search'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={pathname === '/reels'} /></Link>
           <Link href="/messages" className="p-2"><ChatIcon active={pathname === '/messages'} /></Link>
           <Link href={profileHref} className="p-2"><ProfileIcon active={pathname === profileHref} /></Link>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import ReactionButton, { REACTIONS } from './ReactionButton';
 import PostMenu from './PostMenu';
 import FollowButton from './FollowButton';
+import PostContent from './PostContent';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
@@ -120,7 +121,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           onDeleted={() => onDeleted(post.id)} />
       </div>
 
-      {post.content && <p className="mt-2 whitespace-pre-wrap">{post.content}</p>}
+      {post.content && <PostContent text={post.content} className="mt-2 whitespace-pre-wrap" />}
       {post.imageUrl && <img src={post.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
 
       {post.originalPost && (
@@ -132,7 +133,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               <span className="text-xs text-slate-400">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
-          {post.originalPost.content && <p className="mt-2 whitespace-pre-wrap text-sm">{post.originalPost.content}</p>}
+          {post.originalPost.content && <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm" />}
           {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
         </div>
       )}
