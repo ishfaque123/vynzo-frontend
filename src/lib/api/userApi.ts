@@ -32,3 +32,8 @@ export async function fetchFollowStatus(userId: string) {
   const res = await fetch(`${API_URL}/api/follows/${userId}/status`, { credentials: 'include' });
   return res.json();
 }
+
+export async function fetchDashboard() {
+  const res = await fetch(`${API_URL}/api/users/me/dashboard`, { credentials: 'include' });
+  return res.json();
+}
