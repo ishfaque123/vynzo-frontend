@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { loginWithGoogleToken } from '@/lib/api/authApi';
@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -65,5 +65,13 @@ export default function LoginPage() {
 
       <div className="g_id_signin" data-type="standard" data-shape="pill" />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50" />}>
+      <LoginForm />
+    </Suspense>
   );
 }
