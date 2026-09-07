@@ -3,13 +3,13 @@
 import { useState, useRef } from 'react';
 import { setReaction } from '@/lib/api/postApi';
 
-export const REACTIONS: Record<string, { emoji: string; color: string }> = {
-  like: { emoji: '👍', color: 'text-blue-600' },
-  love: { emoji: '❤️', color: 'text-red-600' },
-  haha: { emoji: '😆', color: 'text-yellow-600' },
-  wow: { emoji: '😮', color: 'text-yellow-600' },
-  sad: { emoji: '😢', color: 'text-yellow-600' },
-  angry: { emoji: '😠', color: 'text-orange-600' },
+export const REACTIONS: Record<string, { emoji: string; color: string; label: string }> = {
+  like: { emoji: '👍', color: 'text-blue-600', label: 'Like' },
+  love: { emoji: '❤️', color: 'text-red-600', label: 'Love' },
+  haha: { emoji: '😆', color: 'text-yellow-600', label: 'Haha' },
+  wow: { emoji: '😮', color: 'text-yellow-600', label: 'Wow' },
+  sad: { emoji: '😢', color: 'text-yellow-600', label: 'Sad' },
+  angry: { emoji: '😠', color: 'text-orange-600', label: 'Angry' },
 };
 
 function playTapSound() {
@@ -27,9 +27,9 @@ function playTapSound() {
   } catch {}
 }
 
-function ThumbIcon({ filled }: { filled: boolean }) {
+function ThumbIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M7 22h2a2 2 0 002-2v-8a2 2 0 00-2-2H7v12z" />
       <path d="M9 10l3-7a2 2 0 012 2v5h5a2 2 0 012 2l-1.5 7a2 2 0 01-2 1.5H9" />
     </svg>
@@ -54,7 +54,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   const current = myReaction ? REACTIONS[myReaction] : null;
 
   return (
-    <div className="relative">
+    <div className="relative flex-1">
       {showPicker && (
         <div className="absolute bottom-full left-0 mb-2 flex gap-1 rounded-full border bg-white p-1.5 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
           {Object.entries(REACTIONS).map(([key, r]) => (
@@ -68,9 +68,10 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onTouchEnd={endPress}
         onMouseDown={startPress}
         onMouseUp={endPress}
-        className={`flex items-center ${current ? current.color : 'text-slate-600'}`}
+        className={`flex w-full items-center justify-center gap-2 py-1.5 text-[15px] font-medium ${current ? current.color : 'text-slate-600'}`}
       >
-        {current ? <span className="text-2xl">{current.emoji}</span> : <ThumbIcon filled={false} />}
+        {current ? <span className="text-xl leading-none">{current.emoji}</span> : <ThumbIcon />}
+        {current ? current.label : 'Like'}
       </button>
     </div>
   );
