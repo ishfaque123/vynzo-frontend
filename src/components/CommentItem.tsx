@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { setCommentReaction, deleteComment, editComment } from '@/lib/api/commentApi';
 import FollowButton from './FollowButton';
@@ -47,13 +47,32 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.content);
+  const [localReaction, setLocalReaction] = useState<string | null>(comment.myReaction ?? null);
+  const [localCount, setLocalCount] = useState<number>(comment.reactionCount || 0);
   const isOwner = currentUser?.id === comment.author.id;
   const canDelete = isOwner || currentUser?.id === postOwnerId;
 
+  useEffect(() => {
+    setLocalReaction(comment.myReaction ?? null);
+    setLocalCount(comment.reactionCount || 0);
+  }, [comment.myReaction, comment.reactionCount]);
+
   async function react(type: string) {
     setShowPicker(false);
+    const prevReaction = localReaction;
+    const prevCount = localCount;
+    const removing = prevReaction === type;
+
+    setLocalReaction(removing ? null : type);
+    setLocalCount(prevCount + (removing ? -1 : prevReaction ? 0 : 1));
+
     const result = await setCommentReaction(comment.id, type);
-    if (result.success) onChanged();
+    if (result.success) {
+      onChanged();
+    } else {
+      setLocalReaction(prevReaction);
+      setLocalCount(prevCount);
+    }
   }
   async function handleDelete() {
     if (!confirm('Delete this comment?')) return;
@@ -97,8 +116,8 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
 
           <div className="mt-1 flex items-center gap-3 px-2 text-xs text-slate-500">
             <div className="relative">
-              <button onClick={() => setShowPicker(!showPicker)} className={comment.myReaction ? 'font-semibold text-blue-600' : ''}>
-                {comment.myReaction ? REACTIONS[comment.myReaction] : 'Like'}
+              <button onClick={() => setShowPicker(!showPicker)} className={localReaction ? 'font-semibold text-blue-600' : ''}>
+                {localReaction ? REACTIONS[localReaction] : 'Like'}
               </button>
               {showPicker && (
                 <div className="absolute bottom-full left-0 mb-1 flex gap-1 rounded-full border bg-white p-1 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
@@ -107,7 +126,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               )}
             </div>
             <button onClick={() => onReplyClick(comment.id, comment.author.displayName)}>Reply</button>
-            {comment.reactionCount > 0 && <span>{formatCount(comment.reactionCount)}</span>}
+            {localCount > 0 && <span>{formatCount(localCount)}</span>}
             <span>{timeAgo(comment.createdAt)}</span>
 
             <div className="relative ml-auto">
