@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
-import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 
 function playSubmitSound() {
@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'reels' | 'photos'>('all');
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
@@ -68,18 +69,7 @@ export default function ProfilePage() {
   }
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
-    setPosts(posts.map((p) => {
-      if (p.id !== postId) return p;
-      const newCounts = { ...(p.reactionCounts || {}) };
-      if (p.myReaction) {
-        newCounts[p.myReaction] = Math.max(0, (newCounts[p.myReaction] || 0) - 1);
-        if (newCounts[p.myReaction] === 0) delete newCounts[p.myReaction];
-      }
-      if (reaction) {
-        newCounts[reaction] = (newCounts[reaction] || 0) + 1;
-      }
-      return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
-    }));
+    setPosts(posts.map((p) => (p.id === postId ? { ...p, myReaction: reaction, likeCount: count } : p)));
   }
   function handlePostUpdated(postId: string, content: string, commentAudience: string) {
     setPosts(posts.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
@@ -92,6 +82,7 @@ export default function ProfilePage() {
     if (result.success) setComments((prev) => ({ ...prev, [postId]: result.data.comments }));
   }
   async function handleToggleComments(postId: string) {
+    if (openComments === postId) { setOpenComments(null); return; }
     setOpenComments(postId);
     if (!comments[postId]) await loadComments(postId);
   }
@@ -103,7 +94,6 @@ export default function ProfilePage() {
       await loadComments(postId);
       setCommentText('');
       setReplyTo(null);
-      setPosts(posts.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
     } else {
       alert(result.error.message);
     }
@@ -113,7 +103,7 @@ export default function ProfilePage() {
   if (!profile) return <p className="p-8 text-center text-slate-500">User not found.</p>;
 
   const isMe = currentUser?.username === profile.username;
-  const openPost = posts.find((p) => p.id === openComments);
+  const photoPosts = posts.filter((p) => p.imageUrl);
 
   return (
     <div className="mx-auto max-w-xl pb-6">
@@ -126,11 +116,24 @@ export default function ProfilePage() {
               <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
             )}
           </div>
+          {isMe && (
+            <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" />
+              </svg>
+            </Link>
+          )}
         </div>
 
         <h1 className="text-xl font-semibold">{profile.displayName}</h1>
         <p className="text-slate-500">@{profile.username}</p>
         {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
+        {profile.website && (
+          <a href={profile.website} target="_blank" rel="noopener noreferrer" className="mt-1 block text-sm text-blue-600 hover:underline">{profile.website}</a>
+        )}
+        {(profile.city || profile.province) && (
+          <p className="mt-1 text-sm text-slate-500">{[profile.city, profile.province].filter(Boolean).join(', ')}</p>
+        )}
 
         <div className="mt-4 flex gap-6 border-y py-3 text-sm">
           <span><b>{posts.length}</b> <span className="text-slate-500">Posts</span></span>
@@ -139,16 +142,38 @@ export default function ProfilePage() {
         </div>
 
         {isMe ? (
-          <a href="/settings" className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700">Edit Profile</a>
+          <Link href="/settings-menu" className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700">Dashboard</Link>
         ) : (
           <button onClick={handleFollow} className={`mt-4 w-full rounded-lg py-2 font-medium ${isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
-            {isFollowing ? 'Unfollow' : 'Follow'}
+            {isFollowing ? 'Following' : 'Follow'}
           </button>
         )}
       </div>
 
-      <div className="mt-4">
-        {postsLoading ? (
+      <div className="mt-4 flex border-y">
+        {(['all', 'reels', 'photos'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2.5 text-center text-sm font-medium capitalize ${activeTab === tab ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-500'}`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2">
+        {activeTab === 'reels' ? (
+          <p className="px-4 py-8 text-center text-slate-500">No reels yet.</p>
+        ) : activeTab === 'photos' ? (
+          photoPosts.length === 0 ? (
+            <p className="px-4 py-8 text-center text-slate-500">No photos yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1 px-1">
+              {photoPosts.map((p) => (<img key={p.id} src={p.imageUrl} alt="" className="aspect-square w-full object-cover" />))}
+            </div>
+          )
+        ) : postsLoading ? (
           <p className="px-4 text-slate-500">Loading posts...</p>
         ) : posts.length === 0 ? (
           <p className="px-4 text-slate-500">No posts yet.</p>
@@ -157,6 +182,10 @@ export default function ProfilePage() {
             {posts.map((post) => (
               <PostCard key={post.id} post={post} currentUser={currentUser}
                 onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+                isOpen={openComments === post.id} comments={comments[post.id]}
+                commentText={commentText} setCommentText={setCommentText}
+                replyTo={replyTo} setReplyTo={setReplyTo}
+                onAddComment={handleAddComment} onCommentsChanged={loadComments}
                 onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
             ))}
           </div>
@@ -164,16 +193,6 @@ export default function ProfilePage() {
       </div>
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
-
-      {openPost && (
-        <CommentsModal
-          post={openPost} currentUser={currentUser} comments={comments[openPost.id]}
-          commentText={commentText} setCommentText={setCommentText}
-          replyTo={replyTo} setReplyTo={setReplyTo}
-          onAddComment={handleAddComment} onCommentsChanged={loadComments}
-          onClose={() => setOpenComments(null)}
-        />
-      )}
     </div>
   );
 }
