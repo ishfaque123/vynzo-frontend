@@ -23,6 +23,14 @@ export async function logoutRequest() {
   return res.json();
 }
 
+export async function deleteAccountRequest() {
+  const res = await fetch(`${API_URL}/api/users/me`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
 export async function submitProfileSetup(data: {
   username: string; displayName: string; dateOfBirth: string; bio?: string;
 }) {

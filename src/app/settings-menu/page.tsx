@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { logoutRequest } from '@/lib/api/authApi';
 
 function ChartIcon() {
   return (
@@ -74,6 +77,21 @@ function EditIcon() {
     </svg>
   );
 }
+function PowerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18.36 6.64a9 9 0 11-12.73 0" /><line x1="12" y1="2" x2="12" y2="12" />
+    </svg>
+  );
+}
+function TrashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </svg>
+  );
+}
 
 const menuItems = [
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
@@ -89,10 +107,20 @@ const menuItems = [
 ];
 
 export default function SettingsMenuPage() {
+  const router = useRouter();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    await logoutRequest();
+    router.push('/login');
+  }
+
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       <h1 className="mb-4 text-xl font-semibold">Settings</h1>
-      <div className="divide-y rounded-lg border">
+      <div className="mb-3 divide-y rounded-lg border">
         {menuItems.map((item) => (
           <Link
             key={item.href}
@@ -104,6 +132,32 @@ export default function SettingsMenuPage() {
           </Link>
         ))}
       </div>
+
+      <div className="mb-3 divide-y rounded-lg border">
+        <button onClick={() => setShowLogoutConfirm(true)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
+          <span className="text-red-600"><PowerIcon /></span>
+          <span className="font-medium text-red-600">Logout</span>
+        </button>
+        <Link href="/settings-menu/delete-account" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-red-600"><TrashIcon /></span>
+          <span className="font-medium text-red-600">Delete Account</span>
+        </Link>
+      </div>
+
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="w-full max-w-xs rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-1 font-semibold">Log out?</p>
+            <p className="mb-4 text-sm text-slate-500">You'll need to sign in again to use Friendzo.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 rounded-lg border py-2 text-sm font-medium">Cancel</button>
+              <button onClick={handleLogout} disabled={loggingOut} className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white disabled:opacity-50">
+                {loggingOut ? 'Logging out...' : 'Log out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
