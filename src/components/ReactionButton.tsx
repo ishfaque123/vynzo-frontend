@@ -29,7 +29,7 @@ function playTapSound() {
 
 function ThumbIcon({ filled }: { filled: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
       <path d="M7 22h2a2 2 0 002-2v-8a2 2 0 00-2-2H7v12z" />
       <path d="M9 10l3-7a2 2 0 012 2v5h5a2 2 0 012 2l-1.5 7a2 2 0 01-2 1.5H9" />
     </svg>
@@ -68,10 +68,9 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onTouchEnd={endPress}
         onMouseDown={startPress}
         onMouseUp={endPress}
-        className={`flex items-center gap-1 ${current ? current.color : 'text-slate-600'}`}
+        className={`flex items-center ${current ? current.color : 'text-slate-600'}`}
       >
-        {current ? <span className="text-lg">{current.emoji}</span> : <ThumbIcon filled={false} />}
-        {likeCount > 0 ? String(likeCount) : ''}
+        {current ? <span className="text-2xl">{current.emoji}</span> : <ThumbIcon filled={false} />}
       </button>
     </div>
   );
