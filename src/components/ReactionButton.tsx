@@ -68,10 +68,9 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onTouchEnd={endPress}
         onMouseDown={startPress}
         onMouseUp={endPress}
-        className={`flex w-full items-center justify-center gap-2 py-1.5 text-[15px] font-medium ${current ? current.color : 'text-slate-600'}`}
+        className={`flex w-full items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? <span className="text-xl leading-none">{current.emoji}</span> : <ThumbIcon />}
-        {current ? current.label : 'Like'}
       </button>
     </div>
   );

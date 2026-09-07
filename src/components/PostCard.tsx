@@ -24,9 +24,8 @@ function CommentIcon() {
 function ShareIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
+      <circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" />
+      <line x1="8.3" y1="10.7" x2="15.7" y2="6.3" /><line x1="8.3" y1="13.3" x2="15.7" y2="17.7" />
     </svg>
   );
 }
@@ -143,11 +142,11 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       <div className="mt-1 flex items-center">
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
-        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center gap-2 py-1.5 text-[15px] font-medium text-slate-600">
-          <CommentIcon /> Comment
+        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center py-1.5 text-slate-600">
+          <CommentIcon />
         </button>
-        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center gap-2 py-1.5 text-[15px] font-medium text-slate-600">
-          <ShareIcon /> Share
+        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center py-1.5 text-slate-600">
+          <ShareIcon />
         </button>
       </div>
 
