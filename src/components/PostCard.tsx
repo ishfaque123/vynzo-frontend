@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import ReactionButton, { REACTIONS } from './ReactionButton';
 import PostMenu from './PostMenu';
-import CommentItem from './CommentItem';
 import FollowButton from './FollowButton';
 
 function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
@@ -86,7 +85,7 @@ function ReactionSummary({ post }: { post: any }) {
   );
 }
 
-export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, isOpen, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onUpdated, onDeleted }: any) {
+export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted }: any) {
   const isOwner = currentUser?.username === post.author.username;
   return (
     <div className="w-full border-y py-4">
@@ -149,23 +148,6 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           <ShareIcon />
         </button>
       </div>
-
-      {isOpen && (
-        <div className="mt-3 border-t pt-3">
-          {(comments || []).map((c: any) => (
-            <CommentItem key={c.id} comment={c} currentUser={currentUser} postOwnerId={post.author.id}
-              onReplyClick={(id: string, name: string) => setReplyTo({ postId: post.id, commentId: id, name })}
-              onChanged={() => onCommentsChanged(post.id)} />
-          ))}
-          {replyTo?.postId === post.id && (
-            <p className="mb-1 text-xs text-slate-500">Replying to <b>{replyTo.name}</b> <button onClick={() => setReplyTo(null)} className="text-red-500">✕</button></p>
-          )}
-          <div className="mt-2 flex gap-2">
-            <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment..." className="flex-1 rounded-lg border px-3 py-1 text-sm" />
-            <button onClick={() => onAddComment(post.id)} className="rounded-lg bg-slate-900 px-3 py-1 text-sm text-white">Send</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

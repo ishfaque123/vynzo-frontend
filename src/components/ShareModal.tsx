@@ -67,10 +67,10 @@ export default function ShareModal({ postId, onClose }: { postId: string; onClos
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
         <p className="px-4 py-2 font-semibold">Share</p>
 
-        <div className="mx-4 mb-3 flex items-center gap-2 rounded-lg border p-2">
-          <input readOnly value={url} className="flex-1 truncate border-none text-sm text-slate-600 outline-none" />
-          <button onClick={copyLink} className="flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">
-            <LinkIcon /> {copied ? 'Copied!' : 'Copy'}
+        <div className="mx-4 mb-3 rounded-lg border p-2.5">
+          <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
+          <button onClick={copyLink} className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">
+            <LinkIcon /> {copied ? 'Copied!' : 'Copy link'}
           </button>
         </div>
 

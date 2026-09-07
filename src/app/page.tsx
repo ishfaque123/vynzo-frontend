@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import ShareModal from '@/components/ShareModal';
+import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
@@ -57,7 +58,18 @@ export default function HomePage() {
   }, [isAuthenticated]);
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
-    setPosts(posts.map((p) => (p.id === postId ? { ...p, myReaction: reaction, likeCount: count } : p)));
+    setPosts(posts.map((p) => {
+      if (p.id !== postId) return p;
+      const newCounts = { ...(p.reactionCounts || {}) };
+      if (p.myReaction) {
+        newCounts[p.myReaction] = Math.max(0, (newCounts[p.myReaction] || 0) - 1);
+        if (newCounts[p.myReaction] === 0) delete newCounts[p.myReaction];
+      }
+      if (reaction) {
+        newCounts[reaction] = (newCounts[reaction] || 0) + 1;
+      }
+      return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
+    }));
   }
   function handlePostUpdated(postId: string, content: string, commentAudience: string) {
     setPosts(posts.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
@@ -72,7 +84,6 @@ export default function HomePage() {
   }
 
   async function handleToggleComments(postId: string) {
-    if (openComments === postId) { setOpenComments(null); return; }
     setOpenComments(postId);
     if (!comments[postId]) await loadComments(postId);
   }
@@ -85,6 +96,7 @@ export default function HomePage() {
       await loadComments(postId);
       setCommentText('');
       setReplyTo(null);
+      setPosts(posts.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
     } else {
       alert(result.error.message);
     }
@@ -92,6 +104,8 @@ export default function HomePage() {
 
   if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
   if (!user) return null;
+
+  const openPost = posts.find((p) => p.id === openComments);
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
@@ -110,7 +124,7 @@ export default function HomePage() {
           {posts.map((post) => (
             <PostCard key={post.id} post={post} currentUser={user}
               onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
-              isOpen={openComments === post.id} comments={comments[post.id]}
+              isOpen={false} comments={comments[post.id]}
               commentText={commentText} setCommentText={setCommentText}
               replyTo={replyTo} setReplyTo={setReplyTo}
               onAddComment={handleAddComment} onCommentsChanged={loadComments}
@@ -120,6 +134,16 @@ export default function HomePage() {
       )}
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
+
+      {openPost && (
+        <CommentsModal
+          post={openPost} currentUser={user} comments={comments[openPost.id]}
+          commentText={commentText} setCommentText={setCommentText}
+          replyTo={replyTo} setReplyTo={setReplyTo}
+          onAddComment={handleAddComment} onCommentsChanged={loadComments}
+          onClose={() => setOpenComments(null)}
+        />
+      )}
     </div>
   );
 }
