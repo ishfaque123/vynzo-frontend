@@ -1,5 +1,13 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+export interface SavedAccount {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  profilePictureUrl: string | null;
+  profileCompleted: boolean;
+}
+
 export async function loginWithGoogleToken(idToken: string) {
   const res = await fetch(`${API_URL}/api/auth/google`, {
     method: 'POST',
@@ -11,7 +19,26 @@ export async function loginWithGoogleToken(idToken: string) {
 }
 
 export async function fetchMe() {
-  const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include' });
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function fetchSavedAccounts() {
+  const res = await fetch(`${API_URL}/api/auth/accounts`, {
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function switchSavedAccount(accountId: string) {
+  const res = await fetch(`${API_URL}/api/auth/switch`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accountId }),
+  });
   return res.json();
 }
 
