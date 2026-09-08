@@ -2,178 +2,108 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  fetchSavedAccounts,
-  switchSavedAccount,
-  type SavedAccount,
-} from '@/lib/api/authApi';
+import { fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
+
+interface Account {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  profilePictureUrl: string | null;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function SwitchIcon() {
   return (
-    <svg
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-    >
-      <polyline points="17 1 21 5 17 9" />
-      <path d="M3 11V9a4 4 0 014-4h14" />
-      <polyline points="7 23 3 19 7 15" />
-      <path d="M21 13v2a4 4 0 01-4 4H3" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
+      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
     </svg>
-  );
-}
-
-function AccountAvatar({ account }: { account: SavedAccount }) {
-  if (account.profilePictureUrl) {
-    return (
-      <img
-        src={account.profilePictureUrl}
-        alt=""
-        className="h-12 w-12 rounded-full object-cover"
-      />
-    );
-  }
-
-  const name = account.displayName || account.username || 'U';
-
-  return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-lg font-semibold text-slate-700">
-      {name.charAt(0).toUpperCase()}
-    </div>
   );
 }
 
 export default function SwitchAccountPage() {
   const router = useRouter();
-  const [accounts, setAccounts] = useState<SavedAccount[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [switchingId, setSwitchingId] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [switching, setSwitching] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    fetchSavedAccounts()
-      .then((result) => {
-        if (!mounted) return;
-
-        if (!result.success) {
-          setError(result.error?.message || 'Could not load saved accounts.');
-          return;
-        }
-
-        setAccounts(result.data.accounts || []);
-      })
-      .catch(() => {
-        if (mounted) {
-          setError('Could not load saved accounts.');
-        }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
+    async function load() {
+      const [me, list] = await Promise.all([fetchMe(), getSavedAccounts()]);
+      setActiveId(me?.data?.user?.id ?? null);
+      setAccounts(list?.data?.accounts ?? []);
+      setLoading(false);
+    }
+    load();
   }, []);
 
-  async function handleSwitch(accountId: string) {
-    if (switchingId) return;
-
-    setSwitchingId(accountId);
-    setError('');
-
-    try {
-      const result = await switchSavedAccount(accountId);
-
-      if (!result.success) {
-        setError(result.error?.message || 'Could not switch account.');
-        setSwitchingId(null);
-        return;
-      }
-
+  async function handleSelect(accountId: string) {
+    setSwitching(accountId);
+    const result = await switchAccountRequest(accountId);
+    if (result?.success) {
       router.push('/');
-      router.refresh();
-    } catch {
-      setError('Could not switch account. Please try again.');
-      setSwitchingId(null);
+    } else {
+      setSwitching(null);
     }
   }
 
   function handleAddAccount() {
-    router.push('/login?add=1');
+    window.location.href = `${API_URL}/api/auth/google/start?switch=1`;
   }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-10">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+      <div className="mb-6 text-center">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-600">
           <SwitchIcon />
         </div>
-
-        <h1 className="mb-2 text-lg font-semibold">Switch account</h1>
-
-        <p className="text-sm text-slate-500">
-          Choose a saved account or add another account.
-        </p>
+        <h1 className="text-lg font-semibold">Switch account</h1>
       </div>
 
-      {error && (
-        <p className="mb-4 text-center text-sm text-red-600">
-          {error}
-        </p>
-      )}
-
       {loading ? (
-        <p className="py-8 text-center text-sm text-slate-500">
-          Loading accounts...
-        </p>
+        <p className="text-center text-sm text-slate-500">Loading accounts...</p>
       ) : (
-        <div className="space-y-3">
-          {accounts.map((account) => (
-            <button
-              key={account.id}
-              type="button"
-              onClick={() => handleSwitch(account.id)}
-              disabled={switchingId !== null}
-              className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:bg-slate-50 disabled:opacity-60"
-            >
-              <AccountAvatar account={account} />
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-slate-900">
-                  {account.displayName || account.username || 'Vynzo user'}
-                </p>
-
-                {account.username && (
-                  <p className="truncate text-sm text-slate-500">
-                    @{account.username}
-                  </p>
-                )}
-              </div>
-
-              {switchingId === account.id && (
-                <span className="text-sm text-slate-500">
-                  Switching...
+        <div className="mb-4 divide-y rounded-lg border">
+          {accounts.map((acc) => {
+            const isActive = acc.id === activeId;
+            return (
+              <button
+                key={acc.id}
+                onClick={() => !isActive && handleSelect(acc.id)}
+                disabled={isActive || switching === acc.id}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60"
+              >
+                <span className="h-9 w-9 overflow-hidden rounded-full bg-slate-200">
+                  {acc.profilePictureUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                  )}
                 </span>
-              )}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            onClick={handleAddAccount}
-            disabled={switchingId !== null}
-            className="w-full rounded-xl border border-dashed border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            + Add account
-          </button>
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-slate-800">
+                    {acc.displayName || acc.username || 'Vynzo user'}
+                  </span>
+                  {acc.username && <span className="block text-xs text-slate-500">@{acc.username}</span>}
+                </span>
+                {isActive && <span className="text-xs font-medium text-slate-400">Active</span>}
+                {switching === acc.id && <span className="text-xs text-slate-400">Switching...</span>}
+              </button>
+            );
+          })}
+          {accounts.length === 0 && (
+            <p className="px-4 py-3 text-sm text-slate-500">No saved accounts yet.</p>
+          )}
         </div>
       )}
+
+      <button
+        onClick={handleAddAccount}
+        className="w-full rounded-lg bg-slate-900 py-2.5 font-medium text-white"
+      >
+        + Add another account
+      </button>
     </div>
   );
 }
