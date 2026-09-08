@@ -1,26 +1,22 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { resolveShareLink } from '@/lib/api/shareApi';
+interface SharePageProps {
+  params: Promise<{ code: string }>;
+}
 
-export default function ShareRedirectPage() {
-  const params = useParams();
-  const router = useRouter();
-  const code = params.code as string;
-  const [notFound, setNotFound] = useState(false);
+export default async function ShareRedirectPage({ params }: SharePageProps) {
+  const { code } = await params;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  useEffect(() => {
-    resolveShareLink(code).then((result) => {
-      if (result.success) {
-        if (result.data.type === 'profile') router.replace(`/u/${result.data.username}`);
-        else router.replace(`/post/${result.data.postId}`);
-      } else {
-        setNotFound(true);
-      }
-    });
-  }, [code, router]);
+  const res = await fetch(`${API_URL}/api/share/${code}`, { cache: 'no-store' });
+  const result = await res.json();
 
-  if (notFound) return <p className="p-8 text-center text-slate-500">This link is invalid or has expired.</p>;
-  return <p className="p-8 text-center text-slate-500">Redirecting...</p>;
+  if (!result.success) {
+    return <p className="p-8 text-center text-slate-500">This link is invalid or has expired.</p>;
+  }
+
+  if (result.data.type === 'profile') {
+    redirect(`/u/${result.data.username}`);
+  }
+  redirect(`/post/${result.data.postId}`);
 }
