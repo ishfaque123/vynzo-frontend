@@ -48,7 +48,7 @@ export default function ShareModal({ postId, profileUsername, profileId, onClose
   const [shareCode, setShareCode] = useState<string | null>(null);
 
   useEffect(() => {
-    setOrigin(origin);
+    setOrigin(window.location.origin);
   }, []);
 
   const fallbackUrl = profileUsername
