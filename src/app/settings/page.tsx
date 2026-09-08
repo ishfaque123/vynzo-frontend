@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth/useAuth';
 import { updateProfile } from '@/lib/api/userApi';
 import { useRouter } from 'next/navigation';
+import Toast from '@/components/Toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const COOLDOWN_DAYS = 30;
 
 const PROVINCES: Record<string, string[]> = {
   Sindh: ['Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Nawabshah', 'Khairpur', 'Mirpurkhas'],
@@ -16,6 +18,13 @@ const PROVINCES: Record<string, string[]> = {
   'Gilgit-Baltistan': ['Gilgit', 'Skardu'],
   'Azad Kashmir': ['Muzaffarabad', 'Mirpur'],
 };
+
+function cooldownInfo(lastChanged?: string | null) {
+  if (!lastChanged) return { locked: false, daysLeft: 0 };
+  const daysSince = (Date.now() - new Date(lastChanged).getTime()) / (1000 * 60 * 60 * 24);
+  if (daysSince >= COOLDOWN_DAYS) return { locked: false, daysLeft: 0 };
+  return { locked: true, daysLeft: Math.ceil(COOLDOWN_DAYS - daysSince) };
+}
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -35,8 +44,7 @@ export default function SettingsPage() {
   const [coverUrl, setCoverUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,15 +65,17 @@ export default function SettingsPage() {
     }
   }, [user]);
 
+  const usernameLock = cooldownInfo(user?.usernameChangedAt);
+  const nameLock = cooldownInfo(user?.displayNameChangedAt);
+
   async function handleUpload(file: File, type: 'avatar' | 'cover') {
     setUploading(true);
-    setError('');
     const formData = new FormData();
     formData.append('image', file);
     const res = await fetch(`${API_URL}/api/upload/${type}`, { method: 'POST', credentials: 'include', body: formData });
     const result = await res.json();
     setUploading(false);
-    if (!result.success) { setError(result.error.message); return; }
+    if (!result.success) { setToast({ message: result.error.message, type: 'error' }); return; }
     if (type === 'avatar') setAvatarUrl(result.data.profilePictureUrl);
     else setCoverUrl(result.data.coverPhotoUrl);
   }
@@ -73,12 +83,10 @@ export default function SettingsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setError('');
-    setSuccess(false);
     const result = await updateProfile(form as any);
     setSaving(false);
-    if (!result.success) { setError(result.error.message); return; }
-    setSuccess(true);
+    if (!result.success) { setToast({ message: result.error.message, type: 'error' }); return; }
+    setToast({ message: 'Profile updated successfully.', type: 'success' });
   }
 
   if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
@@ -109,11 +117,27 @@ export default function SettingsPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm text-slate-600">Username</label>
-          <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="w-full rounded-lg border px-4 py-2" />
+          <input
+            value={form.username}
+            disabled={usernameLock.locked}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            className="w-full rounded-lg border px-4 py-2 disabled:bg-slate-100 disabled:text-slate-400"
+          />
+          {usernameLock.locked && (
+            <p className="mt-1 text-xs text-slate-400">You can change this again in {usernameLock.daysLeft} day(s).</p>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm text-slate-600">Full Name</label>
-          <input value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} className="w-full rounded-lg border px-4 py-2" />
+          <input
+            value={form.displayName}
+            disabled={nameLock.locked}
+            onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+            className="w-full rounded-lg border px-4 py-2 disabled:bg-slate-100 disabled:text-slate-400"
+          />
+          {nameLock.locked && (
+            <p className="mt-1 text-xs text-slate-400">You can change this again in {nameLock.daysLeft} day(s).</p>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm text-slate-600">Bio</label>
@@ -153,9 +177,6 @@ export default function SettingsPage() {
           <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border px-4 py-2" />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {success && <p className="text-sm text-green-600">Profile updated!</p>}
-
         <button type="submit" disabled={saving} className="w-full rounded-lg bg-slate-900 py-2 font-medium text-white disabled:opacity-50">
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
@@ -163,6 +184,8 @@ export default function SettingsPage() {
           View my profile
         </button>
       </form>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitProfileSetup } from '@/lib/api/authApi';
 import { useAuth } from '@/lib/auth/useAuth';
+import Toast from '@/components/Toast';
 
 export default function ProfileSetupPage() {
   const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', phone: '' });
-  const [error, setError] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -21,12 +22,11 @@ export default function ProfileSetupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError('');
     const result = await submitProfileSetup(form as any);
     setLoading(false);
 
     if (!result.success) {
-      setError(result.error.message);
+      setToast({ message: result.error.message, type: 'error' });
       return;
     }
     router.push('/');
@@ -89,7 +89,7 @@ export default function ProfileSetupPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-slate-600">Contact number (optional)</label>
+          <label className="mb-1 block text-sm text-slate-600">Contact number</label>
           <input
             type="tel"
             placeholder="e.g. 03xxxxxxxxx"
@@ -100,7 +100,7 @@ export default function ProfileSetupPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-slate-600">Bio (optional)</label>
+          <label className="mb-1 block text-sm text-slate-600">Bio</label>
           <textarea
             placeholder="Tell us about yourself"
             value={form.bio}
@@ -110,8 +110,6 @@ export default function ProfileSetupPage() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
         <button
           type="submit"
           disabled={loading}
@@ -120,6 +118,8 @@ export default function ProfileSetupPage() {
           {loading ? 'Saving...' : 'Complete profile'}
         </button>
       </form>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
