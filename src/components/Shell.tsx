@@ -83,7 +83,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b bg-white px-4 py-3">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
         <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
 
         <div className="flex items-center gap-1">
