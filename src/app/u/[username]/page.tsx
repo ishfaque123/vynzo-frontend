@@ -133,7 +133,7 @@ export default function ProfilePage() {
       <div className="h-32 bg-slate-200 bg-cover bg-center" style={profile.coverPhotoUrl ? { backgroundImage: `url(${profile.coverPhotoUrl})` } : {}} />
 
       <div className="px-4">
-        <div className="-mt-10 mb-2 flex items-end justify-between">
+        <div className="-mt-10 mb-2 flex items-end justify-between relative z-0">
           <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 bg-cover bg-center" style={profile.profilePictureUrl ? { backgroundImage: `url(${profile.profilePictureUrl})` } : {}}>
             {!profile.profilePictureUrl && (
               <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
