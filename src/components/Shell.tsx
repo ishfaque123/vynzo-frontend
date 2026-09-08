@@ -72,7 +72,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
-  const hideChrome = pathname === '/login' || pathname === '/profile-setup' || pathname.startsWith('/s/');
+  const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
+  const hideChrome = pathname === '/login' || pathname === '/profile-setup' || pathname.startsWith('/s/') || isChatThread;
 
   if (hideChrome || !isAuthenticated) {
     return <>{children}</>;
