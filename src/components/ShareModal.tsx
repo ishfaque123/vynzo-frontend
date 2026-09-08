@@ -33,10 +33,18 @@ function RepostIcon() {
   );
 }
 
-export default function ShareModal({ postId, onClose }: { postId: string; onClose: () => void }) {
+interface ShareModalProps {
+  onClose: () => void;
+  postId?: string;
+  profileUsername?: string;
+}
+
+export default function ShareModal({ postId, profileUsername, onClose }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const url = `${window.location.origin}/post/${postId}`;
+  const url = profileUsername
+    ? `${window.location.origin}/u/${profileUsername}`
+    : `${window.location.origin}/post/${postId}`;
 
   function copyLink() {
     navigator.clipboard.writeText(url);
@@ -53,6 +61,7 @@ export default function ShareModal({ postId, onClose }: { postId: string; onClos
   }
 
   async function handleRepost() {
+    if (!postId) return;
     setSharing(true);
     const result = await sharePost(postId, '');
     setSharing(false);
@@ -65,7 +74,7 @@ export default function ShareModal({ postId, onClose }: { postId: string; onClos
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
       <div className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
-        <p className="px-4 py-2 font-semibold">Share</p>
+        <p className="px-4 py-2 font-semibold">{profileUsername ? 'Share profile' : 'Share'}</p>
 
         <div className="mx-4 mb-3 rounded-lg border p-2.5">
           <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
@@ -74,10 +83,12 @@ export default function ShareModal({ postId, onClose }: { postId: string; onClos
           </button>
         </div>
 
-        <button onClick={handleRepost} disabled={sharing} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
-          <span className="text-slate-600"><RepostIcon /></span>
-          <span className="text-slate-800">Repost to your feed</span>
-        </button>
+        {postId && (
+          <button onClick={handleRepost} disabled={sharing} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
+            <span className="text-slate-600"><RepostIcon /></span>
+            <span className="text-slate-800">Repost to your feed</span>
+          </button>
+        )}
         <button onClick={() => shareTo('whatsapp')} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
           <span className="text-slate-600"><WhatsAppIcon /></span>
           <span className="text-slate-800">Share to WhatsApp</span>

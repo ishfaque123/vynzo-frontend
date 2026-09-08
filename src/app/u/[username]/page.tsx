@@ -26,6 +26,15 @@ function playSubmitSound() {
   } catch {}
 }
 
+function ShareIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" />
+      <line x1="8.3" y1="10.7" x2="15.7" y2="6.3" /><line x1="8.3" y1="13.3" x2="15.7" y2="17.7" />
+    </svg>
+  );
+}
+
 export default function ProfilePage() {
   const params = useParams();
   const username = params.username as string;
@@ -42,6 +51,7 @@ export default function ProfilePage() {
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
+  const [shareProfileOpen, setShareProfileOpen] = useState(false);
 
   useEffect(() => {
     fetchUserProfile(username).then((result) => {
@@ -129,6 +139,9 @@ export default function ProfilePage() {
               <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
             )}
           </div>
+          <button onClick={() => setShareProfileOpen(true)} aria-label="Share profile" className="p-2 text-slate-600">
+            <ShareIcon />
+          </button>
         </div>
 
         <h1 className="text-xl font-semibold">{profile.displayName}</h1>
@@ -195,6 +208,7 @@ export default function ProfilePage() {
       </div>
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
+      {shareProfileOpen && <ShareModal profileUsername={profile.username} onClose={() => setShareProfileOpen(false)} />}
 
       {openPost && (
         <CommentsModal
