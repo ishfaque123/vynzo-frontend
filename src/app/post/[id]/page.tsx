@@ -71,7 +71,8 @@ export default function PostDetailPage() {
   }
   async function handleAddComment() {
     if (!commentText.trim()) return;
-    const result = await addComment(post.id, commentText, replyTo?.postId === post.id ? replyTo.commentId : undefined);
+    const parentCommentId = replyTo && replyTo.postId === post.id ? replyTo.commentId : undefined;
+    const result = await addComment(post.id, commentText, parentCommentId);
     if (result.success) {
       playSubmitSound();
       await loadComments();
