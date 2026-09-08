@@ -105,7 +105,7 @@ export default function SettingsPage() {
         <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0], 'cover')} />
       </div>
 
-      <div className="relative z-10 -mt-10 mb-4 flex justify-center">
+      <div className="relative z-0 -mt-10 mb-4 flex justify-center">
         <div onClick={() => avatarInputRef.current?.click()} className="cursor-pointer">
           <Avatar url={avatarUrl} name={form.displayName} />
         </div>
