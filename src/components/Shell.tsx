@@ -72,7 +72,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
-  const hideChrome = pathname === '/login' || pathname === '/profile-setup';
+  const hideChrome = pathname === '/login' || pathname === '/profile-setup' || pathname.startsWith('/s/');
 
   if (hideChrome || !isAuthenticated) {
     return <>{children}</>;

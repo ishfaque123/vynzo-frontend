@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sharePost } from '@/lib/api/postApi';
+import { createShareLink } from '@/lib/api/shareApi';
 
 function LinkIcon() {
   return (
@@ -37,14 +38,27 @@ interface ShareModalProps {
   onClose: () => void;
   postId?: string;
   profileUsername?: string;
+  profileId?: string;
 }
 
-export default function ShareModal({ postId, profileUsername, onClose }: ShareModalProps) {
+export default function ShareModal({ postId, profileUsername, profileId, onClose }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const url = profileUsername
+  const [shareCode, setShareCode] = useState<string | null>(null);
+
+  const fallbackUrl = profileUsername
     ? `${window.location.origin}/u/${profileUsername}`
     : `${window.location.origin}/post/${postId}`;
+  const url = shareCode ? `${window.location.origin}/s/${shareCode}` : fallbackUrl;
+
+  useEffect(() => {
+    const targetType = profileUsername ? 'profile' : 'post';
+    const targetId = profileUsername ? profileId : postId;
+    if (!targetId) return;
+    createShareLink(targetType, targetId).then((result) => {
+      if (result.success) setShareCode(result.data.code);
+    });
+  }, [profileUsername, profileId, postId]);
 
   function copyLink() {
     navigator.clipboard.writeText(url);

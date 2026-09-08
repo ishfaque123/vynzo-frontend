@@ -208,7 +208,7 @@ export default function ProfilePage() {
       </div>
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
-      {shareProfileOpen && <ShareModal profileUsername={profile.username} onClose={() => setShareProfileOpen(false)} />}
+      {shareProfileOpen && <ShareModal profileUsername={profile.username} profileId={profile.id} onClose={() => setShareProfileOpen(false)} />}
 
       {openPost && (
         <CommentsModal
