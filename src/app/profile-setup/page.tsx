@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 
 export default function ProfileSetupPage() {
   const { user, loading: authLoading } = useAuth();
-  const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '' });
+  const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', phone: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function ProfileSetupPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const result = await submitProfileSetup(form);
+    const result = await submitProfileSetup(form as any);
     setLoading(false);
 
     if (!result.success) {
@@ -71,6 +71,31 @@ export default function ProfileSetupPage() {
             onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
             className="w-full rounded-lg border px-4 py-2"
             required
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-slate-600">Gender</label>
+          <select
+            value={form.gender}
+            onChange={(e) => setForm({ ...form, gender: e.target.value })}
+            className="w-full rounded-lg border px-4 py-2"
+          >
+            <option value="">Select</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-slate-600">Contact number (optional)</label>
+          <input
+            type="tel"
+            placeholder="e.g. 03xxxxxxxxx"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            className="w-full rounded-lg border px-4 py-2"
           />
         </div>
 
