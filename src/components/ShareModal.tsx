@@ -44,12 +44,17 @@ interface ShareModalProps {
 export default function ShareModal({ postId, profileUsername, profileId, onClose }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState('');
   const [shareCode, setShareCode] = useState<string | null>(null);
 
+  useEffect(() => {
+    setOrigin(origin);
+  }, []);
+
   const fallbackUrl = profileUsername
-    ? `${window.location.origin}/u/${profileUsername}`
-    : `${window.location.origin}/post/${postId}`;
-  const url = shareCode ? `${window.location.origin}/s/${shareCode}` : fallbackUrl;
+    ? `${origin}/u/${profileUsername}`
+    : `${origin}/post/${postId}`;
+  const url = shareCode ? `${origin}/s/${shareCode}` : fallbackUrl;
 
   useEffect(() => {
     const targetType = profileUsername ? 'profile' : 'post';
