@@ -1,0 +1,47 @@
+export interface Country {
+  code: string;
+  name: string;
+  flag: string;
+}
+
+export const COUNTRIES: Country[] = [
+  { code: 'PK', name: 'Pakistan', flag: '🇵🇰' },
+  { code: 'IN', name: 'India', flag: '🇮🇳' },
+  { code: 'BD', name: 'Bangladesh', flag: '🇧🇩' },
+  { code: 'AF', name: 'Afghanistan', flag: '🇦🇫' },
+  { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪' },
+  { code: 'QA', name: 'Qatar', flag: '🇶🇦' },
+  { code: 'KW', name: 'Kuwait', flag: '🇰🇼' },
+  { code: 'OM', name: 'Oman', flag: '🇴🇲' },
+  { code: 'BH', name: 'Bahrain', flag: '🇧🇭' },
+  { code: 'TR', name: 'Turkey', flag: '🇹🇷' },
+  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'US', name: 'United States', flag: '🇺🇸' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+  { code: 'FR', name: 'France', flag: '🇫🇷' },
+  { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+  { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+  { code: 'NL', name: 'Netherlands', flag: '🇳🇱' },
+  { code: 'CN', name: 'China', flag: '🇨🇳' },
+  { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+  { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
+  { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+  { code: 'ID', name: 'Indonesia', flag: '🇮🇩' },
+  { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
+  { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
+  { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+  { code: 'LK', name: 'Sri Lanka', flag: '🇱🇰' },
+  { code: 'NP', name: 'Nepal', flag: '🇳🇵' },
+  { code: 'IR', name: 'Iran', flag: '🇮🇷' },
+  { code: 'IQ', name: 'Iraq', flag: '🇮🇶' },
+  { code: 'EG', name: 'Egypt', flag: '🇪🇬' },
+  { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
+  { code: 'KE', name: 'Kenya', flag: '🇰🇪' },
+  { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
+  { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+  { code: 'RU', name: 'Russia', flag: '🇷🇺' },
+];

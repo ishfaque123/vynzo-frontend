@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth/useAuth';
 import { updateProfile } from '@/lib/api/userApi';
 import { useRouter } from 'next/navigation';
+import { COUNTRIES } from '@/lib/countries';
 import Toast from '@/components/Toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -38,7 +39,7 @@ export default function SettingsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({
-    username: '', displayName: '', bio: '', gender: '', website: '', phone: '', province: '', city: '',
+    username: '', displayName: '', bio: '', gender: '', website: '', phone: '', province: '', city: '', country: '',
   });
   const [avatarUrl, setAvatarUrl] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
@@ -59,6 +60,7 @@ export default function SettingsPage() {
         phone: user.phone || '',
         province: user.province || '',
         city: user.city || '',
+        country: user.country || '',
       });
       setAvatarUrl(user.profilePictureUrl || '');
       setCoverUrl(user.coverPhotoUrl || '');
@@ -150,6 +152,15 @@ export default function SettingsPage() {
             <option value="male">Male</option>
             <option value="female">Female</option>
             <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm text-slate-600">Country</label>
+          <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full rounded-lg border px-4 py-2">
+            <option value="">Select your country</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.name}>{c.flag} {c.name}</option>
+            ))}
           </select>
         </div>
         <div>
