@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
+import { createConversation } from '@/lib/api/messageApi';
 import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
@@ -35,8 +36,17 @@ function ShareIcon() {
   );
 }
 
+function MessageIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </svg>
+  );
+}
+
 export default function ProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const username = params.username as string;
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
@@ -52,6 +62,7 @@ export default function ProfilePage() {
   const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
   const [shareProfileOpen, setShareProfileOpen] = useState(false);
+  const [messaging, setMessaging] = useState(false);
 
   useEffect(() => {
     fetchUserProfile(username).then((result) => {
@@ -79,8 +90,25 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleMessage() {
+    if (!profile || messaging) return;
+    setMessaging(true);
+    try {
+      const result = await createConversation(profile.id);
+      if (result.success) {
+        router.push(`/messages/${result.data.id}`);
+      } else {
+        alert(result.error?.message || 'Could not start conversation.');
+      }
+    } catch {
+      alert('Could not start conversation. Please try again.');
+    } finally {
+      setMessaging(false);
+    }
+  }
+
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
-    setPosts(posts.map((p) => {
+    setPosts((prev) => prev.map((p) => {
       if (p.id !== postId) return p;
       const newCounts = { ...(p.reactionCounts || {}) };
       if (p.myReaction) {
@@ -94,10 +122,10 @@ export default function ProfilePage() {
     }));
   }
   function handlePostUpdated(postId: string, content: string, commentAudience: string) {
-    setPosts(posts.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
   }
   function handlePostDeleted(postId: string) {
-    setPosts(posts.filter((p) => p.id !== postId));
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
   }
   async function loadComments(postId: string) {
     const result = await fetchComments(postId);
@@ -115,7 +143,7 @@ export default function ProfilePage() {
       await loadComments(postId);
       setCommentText('');
       setReplyTo(null);
-      setPosts(posts.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
+      setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
     } else {
       alert(result.error.message);
     }
@@ -163,9 +191,19 @@ export default function ProfilePage() {
         {isMe ? (
           <Link href="/settings-menu/dashboard" className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700">Dashboard</Link>
         ) : (
-          <button onClick={handleFollow} className={`mt-4 w-full rounded-lg py-2 font-medium ${isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
-            {isFollowing ? 'Following' : 'Follow'}
-          </button>
+          <div className="mt-4 flex gap-2">
+            <button onClick={handleFollow} className={`flex-1 rounded-lg py-2 font-medium ${isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
+              {isFollowing ? 'Following' : 'Follow'}
+            </button>
+            <button
+              onClick={handleMessage}
+              disabled={messaging}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-300 py-2 font-medium text-slate-700 disabled:opacity-60"
+            >
+              <MessageIcon />
+              {messaging ? 'Opening...' : 'Message'}
+            </button>
+          </div>
         )}
       </div>
 
