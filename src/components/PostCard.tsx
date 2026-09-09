@@ -116,7 +116,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             </div>
           </div>
         )}
-        <PostMenu postId={post.id} authorId={post.author.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience}
+        <PostMenu postId={post.id} authorId={post.author.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience} friendStatus={post.friendStatus}
           onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
           onDeleted={() => onDeleted(post.id)} />
       </div>

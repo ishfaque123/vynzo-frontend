@@ -7,9 +7,8 @@ export default function FollowButton({ userId, status: initialStatus }: { userId
   const [status, setStatus] = useState(initialStatus);
   const [loading, setLoading] = useState(false);
 
-  if (status === 'self' || status === 'friends') {
-    return status === 'friends' ? <span className="text-xs font-medium text-slate-500">• Friends</span> : null;
-  }
+  if (status === 'self') return null;
+  if (status === 'friends') return <span className="text-xs font-medium text-slate-500">• Friends</span>;
 
   async function handleClick() {
     setLoading(true);
@@ -26,11 +25,12 @@ export default function FollowButton({ userId, status: initialStatus }: { userId
     }
   }
 
-  if (status === 'following') return null;
+  const label = status === 'following' ? 'Following' : status === 'follow_back' ? 'Follow Back' : 'Follow';
+  const colorClass = status === 'following' ? 'text-slate-500' : 'text-blue-600';
 
   return (
-    <button onClick={handleClick} disabled={loading} className="text-xs font-semibold text-blue-600 disabled:opacity-50">
-      {status === 'follow_back' ? 'Follow Back' : 'Follow'}
+    <button onClick={handleClick} disabled={loading} className={`text-xs font-semibold disabled:opacity-50 ${colorClass}`}>
+      {label}
     </button>
   );
 }
