@@ -53,3 +53,19 @@ export async function deletePost(postId: string) {
   });
   return res.json();
 }
+
+export async function reportPost(postId: string, reason: string = 'other', details?: string) {
+  const res = await fetch(`${API_URL}/api/posts/${postId}/report`, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, details }),
+  });
+  return res.json();
+}
+
+export async function hidePost(postId: string) {
+  const res = await fetch(`${API_URL}/api/posts/${postId}/hide`, {
+    method: 'POST', credentials: 'include',
+  });
+  return res.json();
+}

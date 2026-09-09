@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { updatePost, deletePost } from '@/lib/api/postApi';
+import { updatePost, deletePost, reportPost, hidePost } from '@/lib/api/postApi';
+import { toggleFollow } from '@/lib/api/userApi';
 
 function DotsIcon() {
   return (
@@ -63,6 +64,7 @@ function HideIcon() {
 
 export default function PostMenu({
   postId,
+  authorId,
   isOwner,
   content,
   commentAudience,
@@ -70,6 +72,7 @@ export default function PostMenu({
   onDeleted,
 }: {
   postId: string;
+  authorId: string;
   isOwner: boolean;
   content: string;
   commentAudience: string;
@@ -80,6 +83,7 @@ export default function PostMenu({
   const [editing, setEditing] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [editText, setEditText] = useState(content);
+  const [busy, setBusy] = useState(false);
 
   async function saveEdit() {
     const result = await updatePost(postId, { content: editText });
@@ -108,6 +112,51 @@ export default function PostMenu({
     navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`);
     alert('Link copied!');
     setOpen(false);
+  }
+
+  async function handleUnfollow() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await toggleFollow(authorId);
+    } catch {
+      alert('Could not update follow status. Please try again.');
+    } finally {
+      setBusy(false);
+      setOpen(false);
+    }
+  }
+
+  async function handleReport() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await reportPost(postId);
+      if (result.success) {
+        alert('Post reported. Thanks for letting us know.');
+      } else {
+        alert(result.error?.message || 'Could not report this post.');
+      }
+    } catch {
+      alert('Could not report this post. Please try again.');
+    } finally {
+      setBusy(false);
+      setOpen(false);
+    }
+  }
+
+  async function handleHide() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await hidePost(postId);
+      if (result.success) onDeleted();
+    } catch {
+      alert('Could not hide this post. Please try again.');
+    } finally {
+      setBusy(false);
+      setOpen(false);
+    }
   }
 
   return (
@@ -148,13 +197,13 @@ export default function PostMenu({
               <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
                 <LinkIcon /> Copy link
               </button>
-              <button onClick={() => { alert('Reported.'); setOpen(false); }} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
+              <button disabled={busy} onClick={handleReport} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
                 <FlagIcon /> Report post
               </button>
-              <button onClick={() => { alert('Unfollowed.'); setOpen(false); }} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
+              <button disabled={busy} onClick={handleUnfollow} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
                 <UnfollowIcon /> Unfollow
               </button>
-              <button onClick={() => { onDeleted(); setOpen(false); }} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
+              <button disabled={busy} onClick={handleHide} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
                 <HideIcon /> Hide post
               </button>
             </>
