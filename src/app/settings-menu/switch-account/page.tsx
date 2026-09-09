@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
 
 interface Account {
@@ -23,7 +22,6 @@ function SwitchIcon() {
 }
 
 export default function SwitchAccountPage() {
-  const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +41,10 @@ export default function SwitchAccountPage() {
     setSwitching(accountId);
     const result = await switchAccountRequest(accountId);
     if (result?.success) {
-      router.push('/');
+      // Full reload (not router.push) so Shell's useAuth, the bottom-nav
+      // profile link, and the socket connection all re-initialize with the
+      // new account's session instead of holding onto stale state.
+      window.location.href = '/';
     } else {
       setSwitching(null);
     }
