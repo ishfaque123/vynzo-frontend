@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchMessages, fetchConversations } from '@/lib/api/messageApi';
-import { blockUser } from '@/lib/api/userApi';
+import { blockUser, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 
 function BackIcon() {
@@ -153,6 +153,14 @@ export default function ChatPage() {
     socket.emit('typing:stop', { conversationId });
   }
 
+  async function handleReport() {
+    setMoreOpen(false);
+    const reason = prompt('Reason (spam, harassment, hate_speech, violence, nudity, misinformation, other):', 'other');
+    const result = await reportUser(otherUser.id, reason);
+    if (result.success) alert('Reported. Thank you.');
+    else alert(result.error?.message || 'Could not report this user.');
+  }
+
   async function handleBlock() {
     if (!otherUser) return;
     setMoreOpen(false);
@@ -186,7 +194,7 @@ export default function ChatPage() {
           </button>
           {moreOpen && (
             <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
-              <button onClick={handleBlock} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">Block user</button>
+              <button onClick={handleBlock} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">Block user</button><button onClick={handleReport} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">Report</button>
             </div>
           )}
         </div>
