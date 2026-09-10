@@ -261,28 +261,9 @@ export default function ChatPage() {
           <button onClick={() => router.push('/messages')} aria-label="Back">
             <BackIcon />
           </button>
-          {otherUser?.profilePictureUrl ? (
-            <img
-              src={otherUser.profilePictureUrl}
-              alt={displayName}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
           <div>
             <p className="font-semibold leading-tight">{displayName}</p>
             <p className={`text-xs leading-tight ${otherUser?.isOnline ? 'text-green-600' : 'text-slate-400'}`}>{statusText}</p>
-            {otherUser && (
-              <Link
-                href={`/u/${otherUser.username}`}
-                className="text-xs font-medium leading-tight text-blue-600 hover:underline"
-              >
-                View profile
-              </Link>
-            )}
           </div>
         </div>
         <div className="relative">
@@ -318,6 +299,29 @@ export default function ChatPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
+        {!loading && otherUser && (
+          <div className="flex flex-col items-center gap-2 py-6">
+            {otherUser.profilePictureUrl ? (
+              <img
+                src={otherUser.profilePictureUrl}
+                alt={displayName}
+                className="h-20 w-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-2xl font-semibold text-slate-600">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <p className="text-lg font-semibold text-slate-900">{displayName}</p>
+            <Link
+              href={`/u/${otherUser.username}`}
+              className="rounded-full border px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              View profile
+            </Link>
+          </div>
+        )}
+
         {loading && <p className="text-center text-slate-500">Loading...</p>}
         {!loading && messages.length === 0 && (
           <p className="text-center text-slate-500">Say hi 👋</p>
