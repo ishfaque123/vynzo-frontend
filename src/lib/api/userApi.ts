@@ -54,6 +54,11 @@ export async function unblockUser(userId: string) {
   return res.json();
 }
 
+export async function fetchBlockStatus(userId: string) {
+  const res = await fetch(`${API_URL}/api/blocks/${userId}/status`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function reportUser(userId: string, reason: string, details?: string) {
   const res = await fetch(`${API_URL}/api/users/${userId}/report`, {
     method: 'POST',

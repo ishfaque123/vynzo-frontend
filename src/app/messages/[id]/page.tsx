@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchMessages, fetchConversations } from '@/lib/api/messageApi';
-import { blockUser, reportUser } from '@/lib/api/userApi';
+import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 
 function BackIcon() {
@@ -45,6 +46,10 @@ interface OtherUser {
   isOnline: boolean;
   lastActiveAt?: string | null;
 }
+interface Toast {
+  message: string;
+  type: 'success' | 'error';
+}
 
 function formatLastSeen(dateStr?: string | null) {
   if (!dateStr) return 'Offline';
@@ -70,8 +75,18 @@ export default function ChatPage() {
   const [text, setText] = useState('');
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockActionLoading, setBlockActionLoading] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(message: string, type: 'success' | 'error') {
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    setToast({ message, type });
+    toastTimeout.current = setTimeout(() => setToast(null), 3000);
+  }
 
   useEffect(() => {
     fetchMessages(conversationId).then((result) => {
@@ -82,7 +97,12 @@ export default function ChatPage() {
     fetchConversations().then((result) => {
       if (result.success) {
         const convo = result.data.find((c: any) => c.id === conversationId);
-        if (convo?.otherUser) setOtherUser(convo.otherUser);
+        if (convo?.otherUser) {
+          setOtherUser(convo.otherUser);
+          fetchBlockStatus(convo.otherUser.id).then((res) => {
+            if (res.success) setIsBlocked(!!res.data.blockedByMe);
+          });
+        }
       }
     });
 
@@ -146,7 +166,7 @@ export default function ChatPage() {
       if (res.success && res.data) {
         setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
       } else if (res.error === 'BLOCKED') {
-        alert("You can't send messages to this user.");
+        showToast("You can't send messages to this user.", 'error');
       }
     });
     setText('');
@@ -159,19 +179,36 @@ export default function ChatPage() {
     const reason = prompt('Reason (spam, harassment, hate_speech, violence, nudity, misinformation, other):', 'other');
     if (!reason) return;
     const result = await reportUser(otherUser.id, reason);
-    if (result.success) alert('Reported. Thank you.');
-    else alert(result.error?.message || 'Could not report this user.');
+    if (result.success) showToast('Reported. Thank you.', 'success');
+    else showToast(result.error?.message || 'Could not report this user.', 'error');
   }
 
   async function handleBlock() {
-    if (!otherUser) return;
+    if (!otherUser || blockActionLoading) return;
     setMoreOpen(false);
     if (!confirm(`Block ${otherUser.displayName || otherUser.username}?`)) return;
+    setBlockActionLoading(true);
     const result = await blockUser(otherUser.id);
+    setBlockActionLoading(false);
     if (result.success) {
-      router.push('/messages');
+      setIsBlocked(true);
+      showToast(`You blocked ${otherUser.displayName || otherUser.username}.`, 'success');
     } else {
-      alert('Could not block this user.');
+      showToast(result.error?.message || 'Could not block this user.', 'error');
+    }
+  }
+
+  async function handleUnblock() {
+    if (!otherUser || blockActionLoading) return;
+    setMoreOpen(false);
+    setBlockActionLoading(true);
+    const result = await unblockUser(otherUser.id);
+    setBlockActionLoading(false);
+    if (result.success) {
+      setIsBlocked(false);
+      showToast(`You unblocked ${otherUser.displayName || otherUser.username}.`, 'success');
+    } else {
+      showToast(result.error?.message || 'Could not unblock this user.', 'error');
     }
   }
 
@@ -180,6 +217,16 @@ export default function ChatPage() {
 
   return (
     <div className="mx-auto flex h-[100dvh] max-w-xl flex-col">
+      {toast && (
+        <div
+          className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-medium text-white shadow-lg transition-opacity ${
+            toast.type === 'success' ? 'bg-slate-900' : 'bg-red-600'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2 border-b bg-white px-3 py-3">
         <div className="flex items-center gap-2">
           <button onClick={() => router.push('/messages')} aria-label="Back">
@@ -195,8 +242,28 @@ export default function ChatPage() {
             <MoreIcon />
           </button>
           {moreOpen && (
-            <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
-              <button onClick={handleBlock} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">Block user</button><button onClick={handleReport} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">Report</button>
+            <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
+              {otherUser && (
+                <Link
+                  href={`/u/${otherUser.username}`}
+                  onClick={() => setMoreOpen(false)}
+                  className="block w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  View profile
+                </Link>
+              )}
+              {isBlocked ? (
+                <button onClick={handleUnblock} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                  Unblock user
+                </button>
+              ) : (
+                <button onClick={handleBlock} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">
+                  Block user
+                </button>
+              )}
+              <button onClick={handleReport} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                Report
+              </button>
             </div>
           )}
         </div>
@@ -226,23 +293,35 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex items-center gap-2 border-t bg-white p-3">
-        <input
-          value={text}
-          onChange={(e) => handleTyping(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Message..."
-          className="flex-1 rounded-full border px-4 py-2 text-sm"
-        />
-        <button
-          onClick={sendMessage}
-          disabled={!text.trim()}
-          className="rounded-full bg-slate-900 p-2.5 text-white disabled:opacity-40"
-          aria-label="Send"
-        >
-          <SendIcon />
-        </button>
-      </div>
+      {isBlocked ? (
+        <div className="border-t bg-white p-3">
+          <button
+            onClick={handleUnblock}
+            disabled={blockActionLoading}
+            className="w-full rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+          >
+            Unblock to send messages
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 border-t bg-white p-3">
+          <input
+            value={text}
+            onChange={(e) => handleTyping(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            placeholder="Message..."
+            className="flex-1 rounded-full border px-4 py-2 text-sm"
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!text.trim()}
+            className="rounded-full bg-slate-900 p-2.5 text-white disabled:opacity-40"
+            aria-label="Send"
+          >
+            <SendIcon />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
