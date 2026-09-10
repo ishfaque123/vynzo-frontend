@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPost } from '@/lib/api/postApi';
-import { playPostSuccessSound } from '@/lib/sounds';
+import { playPostSound } from '@/lib/sounds';
 
 export default function ComposePage() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function ComposePage() {
     const result = await createPost({ content: content.trim() });
 
     if (result.success) {
-      playPostSuccessSound();
+      playPostSound();
       setTimeout(() => router.push('/'), 500);
     } else {
       alert(result.error?.message || 'Failed to create post');
