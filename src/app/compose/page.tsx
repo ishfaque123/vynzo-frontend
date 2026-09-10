@@ -15,7 +15,7 @@ export default function ComposePage() {
     if (!content.trim() || submitting) return;
 
     setSubmitting(true);
-    const result = await createPost({ content: content.trim() });
+    const result = await createPost(content.trim());
 
     if (result.success) {
       playPostSound();
