@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
-import { fetchMessages } from '@/lib/api/messageApi';
+import { fetchMessages, fetchConversations } from '@/lib/api/messageApi';
+import { blockUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 
 function BackIcon() {
@@ -13,11 +14,17 @@ function BackIcon() {
     </svg>
   );
 }
-
 function SendIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
       <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+    </svg>
+  );
+}
+function MoreIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
     </svg>
   );
 }
@@ -30,6 +37,26 @@ interface Message {
   createdAt: string;
   sender?: { id: string; username: string; displayName: string; profilePictureUrl?: string };
 }
+interface OtherUser {
+  id: string;
+  username: string;
+  displayName: string;
+  profilePictureUrl?: string;
+  isOnline: boolean;
+  lastActiveAt?: string | null;
+}
+
+function formatLastSeen(dateStr?: string | null) {
+  if (!dateStr) return 'Offline';
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Last seen just now';
+  if (mins < 60) return `Last seen ${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Last seen ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `Last seen ${days}d ago`;
+}
 
 export default function ChatPage() {
   const params = useParams();
@@ -38,9 +65,11 @@ export default function ChatPage() {
   const { user } = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [otherTyping, setOtherTyping] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,6 +77,13 @@ export default function ChatPage() {
     fetchMessages(conversationId).then((result) => {
       if (result.success) setMessages(result.data);
       setLoading(false);
+    });
+
+    fetchConversations().then((result) => {
+      if (result.success) {
+        const convo = result.data.find((c: any) => c.id === conversationId);
+        if (convo?.otherUser) setOtherUser(convo.otherUser);
+      }
     });
 
     const socket = getSocket();
@@ -59,24 +95,32 @@ export default function ChatPage() {
         socket.emit('conversation:read', { conversationId });
       }
     }
-
     function handleTypingStart({ conversationId: cid, userId }: { conversationId: string; userId: string }) {
       if (cid === conversationId && userId !== user?.id) setOtherTyping(true);
     }
-
     function handleTypingStop({ conversationId: cid, userId }: { conversationId: string; userId: string }) {
       if (cid === conversationId && userId !== user?.id) setOtherTyping(false);
+    }
+    function handlePresenceOnline({ userId }: { userId: string }) {
+      setOtherUser((prev) => (prev && prev.id === userId ? { ...prev, isOnline: true } : prev));
+    }
+    function handlePresenceOffline({ userId, lastActiveAt }: { userId: string; lastActiveAt: string }) {
+      setOtherUser((prev) => (prev && prev.id === userId ? { ...prev, isOnline: false, lastActiveAt } : prev));
     }
 
     socket.on('message:new', handleNewMessage);
     socket.on('typing:start', handleTypingStart);
     socket.on('typing:stop', handleTypingStop);
+    socket.on('presence:online', handlePresenceOnline);
+    socket.on('presence:offline', handlePresenceOffline);
     socket.emit('conversation:read', { conversationId });
 
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('typing:start', handleTypingStart);
       socket.off('typing:stop', handleTypingStop);
+      socket.off('presence:online', handlePresenceOnline);
+      socket.off('presence:offline', handlePresenceOffline);
     };
   }, [conversationId, user?.id]);
 
@@ -98,26 +142,54 @@ export default function ChatPage() {
     const content = text.trim();
     if (!content) return;
     const socket = getSocket();
-    socket.emit('message:send', { conversationId, content }, (res: { success: boolean; data?: Message }) => {
+    socket.emit('message:send', { conversationId, content }, (res: { success: boolean; data?: Message; error?: string }) => {
       if (res.success && res.data) {
         setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
+      } else if (res.error === 'BLOCKED') {
+        alert("You can't send messages to this user.");
       }
     });
     setText('');
     socket.emit('typing:stop', { conversationId });
   }
 
-  const otherUser = messages.find((m) => m.senderId !== user?.id)?.sender;
+  async function handleBlock() {
+    if (!otherUser) return;
+    setMoreOpen(false);
+    if (!confirm(`Block ${otherUser.displayName || otherUser.username}?`)) return;
+    const result = await blockUser(otherUser.id);
+    if (result.success) {
+      router.push('/messages');
+    } else {
+      alert('Could not block this user.');
+    }
+  }
+
+  const displayName = otherUser?.displayName || otherUser?.username || 'Chat';
+  const statusText = otherTyping ? 'Typing...' : otherUser?.isOnline ? 'Online' : formatLastSeen(otherUser?.lastActiveAt);
 
   return (
     <div className="mx-auto flex h-[100dvh] max-w-xl flex-col">
-      <div className="flex items-center gap-2 border-b bg-white px-3 py-3">
-        <button onClick={() => router.push('/messages')} aria-label="Back">
-          <BackIcon />
-        </button>
-        <p className="font-semibold">
-          {otherTyping ? 'Typing...' : otherUser?.displayName || otherUser?.username || 'Chat'}
-        </p>
+      <div className="flex items-center justify-between gap-2 border-b bg-white px-3 py-3">
+        <div className="flex items-center gap-2">
+          <button onClick={() => router.push('/messages')} aria-label="Back">
+            <BackIcon />
+          </button>
+          <div>
+            <p className="font-semibold leading-tight">{displayName}</p>
+            <p className={`text-xs leading-tight ${otherUser?.isOnline ? 'text-green-600' : 'text-slate-400'}`}>{statusText}</p>
+          </div>
+        </div>
+        <div className="relative">
+          <button onClick={() => setMoreOpen(!moreOpen)} aria-label="More options" className="p-1 text-slate-600">
+            <MoreIcon />
+          </button>
+          {moreOpen && (
+            <div className="absolute right-0 top-full z-20 mt-1 w-40 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
+              <button onClick={handleBlock} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">Block user</button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">

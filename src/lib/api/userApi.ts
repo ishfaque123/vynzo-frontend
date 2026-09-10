@@ -37,3 +37,19 @@ export async function fetchDashboard() {
   const res = await fetch(`${API_URL}/api/users/me/dashboard`, { credentials: 'include' });
   return res.json();
 }
+
+export async function blockUser(userId: string) {
+  const res = await fetch(`${API_URL}/api/blocks/${userId}`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function unblockUser(userId: string) {
+  const res = await fetch(`${API_URL}/api/blocks/${userId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
