@@ -154,6 +154,7 @@ export default function ChatPage() {
   }
 
   async function handleReport() {
+    if (!otherUser) return;
     setMoreOpen(false);
     const reason = prompt('Reason (spam, harassment, hate_speech, violence, nudity, misinformation, other):', 'other');
     const result = await reportUser(otherUser.id, reason);
