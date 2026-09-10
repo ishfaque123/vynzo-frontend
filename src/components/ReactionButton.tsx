@@ -13,7 +13,7 @@ export const REACTIONS: Record<string, { emoji: string; color: string; label: st
   angry: { emoji: '😠', color: 'text-orange-600', label: 'Angry' },
 };
 
-const HOLD_TO_OPEN_MS = 2000; // 2 seconds — press and hold to open reaction picker
+const HOLD_TO_OPEN_MS = 400; // 400ms — press and hold to open reaction picker
 
 function ThumbIcon() {
   return (
