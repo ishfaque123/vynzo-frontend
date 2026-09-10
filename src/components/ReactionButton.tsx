@@ -62,10 +62,13 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onTouchStart={startPress}
         onTouchEnd={endPress}
         onTouchCancel={endPress}
+        onTouchMove={endPress}
+        onContextMenu={(e) => e.preventDefault()}
         onMouseDown={startPress}
         onMouseUp={endPress}
         onMouseLeave={endPress}
-        className={`flex w-full items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
+        style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
+        className={`flex w-full select-none items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? <span className="text-xl leading-none">{current.emoji}</span> : <ThumbIcon />}
       </button>

@@ -92,7 +92,6 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
 
   return (
     <div className={isReply ? 'relative ml-8 mt-2 pl-4' : 'mb-3'}>
-      {isReply && <span aria-hidden="true" className="absolute bottom-3 left-0 top-0 w-px bg-slate-200" />}
       {isReply && <span aria-hidden="true" className="absolute left-0 top-3 h-px w-4 bg-slate-200" />}
       <div className="flex items-start gap-2">
         <Link href={`/u/${comment.author.username}`}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
