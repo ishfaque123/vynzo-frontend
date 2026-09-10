@@ -29,6 +29,13 @@ function MoreIcon() {
     </svg>
   );
 }
+function CheckIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
 
 interface Message {
   id: string;
@@ -50,6 +57,16 @@ interface Toast {
   message: string;
   type: 'success' | 'error';
 }
+
+const REPORT_REASONS: { value: string; label: string }[] = [
+  { value: 'spam', label: 'Spam' },
+  { value: 'harassment', label: 'Harassment or bullying' },
+  { value: 'hate_speech', label: 'Hate speech' },
+  { value: 'violence', label: 'Violence' },
+  { value: 'nudity', label: 'Nudity or sexual content' },
+  { value: 'misinformation', label: 'Misinformation' },
+  { value: 'other', label: 'Something else' },
+];
 
 function formatLastSeen(dateStr?: string | null) {
   if (!dateStr) return 'Offline';
@@ -78,6 +95,10 @@ export default function ChatPage() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockActionLoading, setBlockActionLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState<string | null>(null);
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,12 +194,20 @@ export default function ChatPage() {
     socket.emit('typing:stop', { conversationId });
   }
 
-  async function handleReport() {
-    if (!otherUser) return;
+  function openReportModal() {
     setMoreOpen(false);
-    const reason = prompt('Reason (spam, harassment, hate_speech, violence, nudity, misinformation, other):', 'other');
-    if (!reason) return;
-    const result = await reportUser(otherUser.id, reason);
+    setReportReason(null);
+    setReportDetails('');
+    setReportModalOpen(true);
+  }
+
+  async function submitReport() {
+    if (!otherUser || !reportReason || reportSubmitting) return;
+    setReportSubmitting(true);
+    const details = reportReason === 'other' ? reportDetails.trim() || undefined : undefined;
+    const result = await reportUser(otherUser.id, reportReason, details);
+    setReportSubmitting(false);
+    setReportModalOpen(false);
     if (result.success) showToast('Reported. Thank you.', 'success');
     else showToast(result.error?.message || 'Could not report this user.', 'error');
   }
@@ -261,7 +290,7 @@ export default function ChatPage() {
                   Block user
                 </button>
               )}
-              <button onClick={handleReport} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+              <button onClick={openReportModal} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                 Report
               </button>
             </div>
@@ -320,6 +349,60 @@ export default function ChatPage() {
           >
             <SendIcon />
           </button>
+        </div>
+      )}
+
+      {reportModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => setReportModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 text-center text-sm font-semibold text-slate-800">
+              Report {otherUser?.displayName || otherUser?.username}
+            </p>
+            <div className="max-h-[45vh] overflow-y-auto">
+              {REPORT_REASONS.map((r) => (
+                <button
+                  key={r.value}
+                  onClick={() => setReportReason(r.value)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm ${
+                    reportReason === r.value ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {r.label}
+                  {reportReason === r.value && <CheckIcon />}
+                </button>
+              ))}
+            </div>
+            {reportReason === 'other' && (
+              <textarea
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+                placeholder="Tell us more (optional)"
+                rows={3}
+                className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+              />
+            )}
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setReportModalOpen(false)}
+                className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitReport}
+                disabled={!reportReason || reportSubmitting}
+                className="flex-1 rounded-full bg-red-600 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
