@@ -42,7 +42,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(days / 365)}y`;
 }
 
-export default function CommentItem({ comment, currentUser, postOwnerId, onReplyClick, onChanged, depth = 0 }: any) {
+export default function CommentItem({ comment, currentUser, postOwnerId, onReplyClick, onChanged, depth = 0, parentAuthor }: any) {
   const [showPicker, setShowPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -51,6 +51,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   const [localCount, setLocalCount] = useState<number>(comment.reactionCount || 0);
   const isOwner = currentUser?.id === comment.author.id;
   const canDelete = isOwner || currentUser?.id === postOwnerId;
+  const isReply = depth > 0;
 
   useEffect(() => {
     setLocalReaction(comment.myReaction ?? null);
@@ -90,10 +91,17 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   }
 
   return (
-    <div className={depth > 0 ? 'ml-8 mt-2' : 'mb-3'}>
+    <div className={isReply ? 'relative ml-8 mt-2 pl-4' : 'mb-3'}>
+      {isReply && <span aria-hidden="true" className="absolute bottom-3 left-0 top-0 w-px bg-slate-200" />}
+      {isReply && <span aria-hidden="true" className="absolute left-0 top-3 h-px w-4 bg-slate-200" />}
       <div className="flex items-start gap-2">
         <Link href={`/u/${comment.author.username}`}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
         <div className="flex-1">
+          {isReply && parentAuthor && (
+            <p className="mb-0.5 px-1 text-[11px] text-slate-400">
+              Replying to <span className="font-medium text-slate-500">@{parentAuthor.username}</span>
+            </p>
+          )}
           <div className="rounded-2xl bg-slate-100 px-3 py-2">
             <div className="flex items-center gap-2">
               <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold hover:underline">{comment.author.displayName}</Link>
@@ -106,6 +114,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               </div>
             ) : (
               <p className="text-sm">
+                {isReply && parentAuthor && (
+                  <Link href={`/u/${parentAuthor.username}`} className="mr-1 font-semibold text-blue-600 hover:underline">@{parentAuthor.username}</Link>
+                )}
                 {comment.content}
                 {comment.taggedUsers?.length > 0 && (
                   <span className="text-slate-500"> with {comment.taggedUsers.map((t: any) => t.displayName).join(', ')}</span>
@@ -143,7 +154,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
           </div>
 
           {comment.replies?.map((reply: any) => (
-            <CommentItem key={reply.id} comment={reply} currentUser={currentUser} postOwnerId={postOwnerId} onReplyClick={onReplyClick} onChanged={onChanged} depth={depth + 1} />
+            <CommentItem key={reply.id} comment={reply} currentUser={currentUser} postOwnerId={postOwnerId} onReplyClick={onReplyClick} onChanged={onChanged} depth={depth + 1} parentAuthor={comment.author} />
           ))}
         </div>
       </div>

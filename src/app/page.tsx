@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
+import { playCommentSound } from '@/lib/sounds';
 import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
@@ -22,20 +23,6 @@ function PlusIcon() {
       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
-}
-function playSubmitSound() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(500, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + 0.15);
-  } catch {}
 }
 
 export default function HomePage() {
@@ -92,7 +79,7 @@ export default function HomePage() {
     if (!commentText.trim()) return;
     const result = await addComment(postId, commentText, replyTo?.postId === postId ? replyTo.commentId : undefined);
     if (result.success) {
-      playSubmitSound();
+      playCommentSound();
       await loadComments(postId);
       setCommentText('');
       setReplyTo(null);
