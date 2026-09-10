@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { setReaction } from '@/lib/api/postApi';
+import { playReactionSound } from '@/lib/sounds';
 
 export const REACTIONS: Record<string, { emoji: string; color: string; label: string }> = {
   like: { emoji: '👍', color: 'text-blue-600', label: 'Like' },
@@ -12,20 +13,7 @@ export const REACTIONS: Record<string, { emoji: string; color: string; label: st
   angry: { emoji: '😠', color: 'text-orange-600', label: 'Angry' },
 };
 
-function playTapSound() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(700, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + 0.1);
-  } catch {}
-}
+const HOLD_TO_OPEN_MS = 2000; // 2 seconds — press and hold to open reaction picker
 
 function ThumbIcon() {
   return (
@@ -39,16 +27,23 @@ function ThumbIcon() {
 export default function ReactionButton({ postId, myReaction, likeCount, onChange }: { postId: string; myReaction: string | null; likeCount: number; onChange: (reaction: string | null, count: number) => void; }) {
   const [showPicker, setShowPicker] = useState(false);
   const pressTimer = useRef<any>(null);
+  const openedByHold = useRef(false);
 
   async function apply(type: string) {
-    playTapSound();
+    playReactionSound();
     setShowPicker(false);
     const result = await setReaction(postId, type);
     if (result.success) onChange(result.data.reaction, result.data.likeCount);
   }
 
-  function handleTap() { apply(myReaction ? myReaction : 'like'); }
-  function startPress() { pressTimer.current = setTimeout(() => setShowPicker(true), 400); }
+  function handleTap() {
+    if (openedByHold.current) { openedByHold.current = false; return; }
+    apply(myReaction ? myReaction : 'like');
+  }
+  function startPress() {
+    openedByHold.current = false;
+    pressTimer.current = setTimeout(() => { setShowPicker(true); openedByHold.current = true; }, HOLD_TO_OPEN_MS);
+  }
   function endPress() { clearTimeout(pressTimer.current); }
 
   const current = myReaction ? REACTIONS[myReaction] : null;
@@ -66,8 +61,10 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onClick={handleTap}
         onTouchStart={startPress}
         onTouchEnd={endPress}
+        onTouchCancel={endPress}
         onMouseDown={startPress}
         onMouseUp={endPress}
+        onMouseLeave={endPress}
         className={`flex w-full items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? <span className="text-xl leading-none">{current.emoji}</span> : <ThumbIcon />}
