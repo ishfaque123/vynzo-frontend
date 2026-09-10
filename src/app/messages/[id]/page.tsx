@@ -261,9 +261,28 @@ export default function ChatPage() {
           <button onClick={() => router.push('/messages')} aria-label="Back">
             <BackIcon />
           </button>
+          {otherUser?.profilePictureUrl ? (
+            <img
+              src={otherUser.profilePictureUrl}
+              alt={displayName}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="font-semibold leading-tight">{displayName}</p>
             <p className={`text-xs leading-tight ${otherUser?.isOnline ? 'text-green-600' : 'text-slate-400'}`}>{statusText}</p>
+            {otherUser && (
+              <Link
+                href={`/u/${otherUser.username}`}
+                className="text-xs font-medium leading-tight text-blue-600 hover:underline"
+              >
+                View profile
+              </Link>
+            )}
           </div>
         </div>
         <div className="relative">
