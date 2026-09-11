@@ -29,6 +29,7 @@ function LoginForm() {
       </a>
 
       <div className="mt-8 flex gap-4 text-xs text-slate-400">
+        <a href="/about" className="hover:underline">About</a>
         <a href="/privacy" className="hover:underline">Privacy Policy</a>
         <a href="/terms" className="hover:underline">Terms of Service</a>
       </div>
