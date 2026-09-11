@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { BellIcon } from '@/components/icons/UiIcons';
+import { fetchUnreadCount } from '@/lib/api/notificationApi';
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -71,6 +73,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    function loadCount() {
+      fetchUnreadCount().then((res) => {
+        if (res.success) setUnreadCount(res.data.count);
+      });
+    }
+    loadCount();
+    const interval = setInterval(loadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (pathname === '/notifications') setUnreadCount(0);
+  }, [pathname]);
 
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
   const hideChrome = pathname === '/login' || pathname === '/profile-setup' || pathname.startsWith('/s/') || isChatThread;
@@ -96,8 +115,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <Link href="/messages" aria-label="Messages" className="p-2">
                 <ChatIcon active={pathname === '/messages'} />
               </Link>
-              <Link href="/notifications" aria-label="Notifications" className="p-2">
+              <Link href="/notifications" aria-label="Notifications" className="relative p-2">
                 <BellIcon size={24} className={pathname === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />
+                {unreadCount > 0 && (
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
             </>
           )}
