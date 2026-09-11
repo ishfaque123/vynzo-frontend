@@ -1,0 +1,47 @@
+npm verbose cli /data/data/com.termux/files/usr/bin/node /data/data/com.termux/files/usr/bin/npm
+npm info using npm@11.19.1
+npm info using node@v26.4.0
+npm verbose title npm install
+npm verbose argv "install" "--loglevel" "verbose"
+npm verbose logfile logs-max:10 dir:/data/data/com.termux/files/home/.npm/_logs/2026-09-11T08_15_11_693Z-
+npm verbose logfile /data/data/com.termux/files/home/.npm/_logs/2026-09-11T08_15_11_693Z-debug-0.log
+npm http fetch GET 200 https://registry.npmjs.org/next 30824ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@opentelemetry%2fapi 2545ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/babel-plugin-react-compiler 4768ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/react 26679ms (cache miss)
+npm verbose stack Error: unable to resolve dependency tree
+npm verbose stack     at #failPeerConflict (/data/data/com.termux/files/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:1549:25)
+npm verbose stack     at #loadPeerSet (/data/data/com.termux/files/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:1515:33)
+npm verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+npm verbose stack     at async #buildDepStep (/data/data/com.termux/files/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:999:15)
+npm verbose stack     at async Arborist.buildIdealTree (/data/data/com.termux/files/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:180:7)
+npm verbose stack     at async Promise.all (index 1)
+npm verbose stack     at async Arborist.reify (/data/data/com.termux/files/usr/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:118:5)
+npm verbose stack     at async Install.exec (/data/data/com.termux/files/usr/lib/node_modules/npm/lib/commands/install.js:158:5)
+npm verbose stack     at async Npm.exec (/data/data/com.termux/files/usr/lib/node_modules/npm/lib/npm.js:193:9)
+npm verbose stack     at async module.exports (/data/data/com.termux/files/usr/lib/node_modules/npm/lib/cli/entry.js:67:5)
+npm error code ERESOLVE
+npm error ERESOLVE unable to resolve dependency tree
+npm error
+npm error While resolving: vynzo-frontend@1.0.0
+npm error Found: react-dom@undefined
+npm error node_modules/react-dom
+npm error   react-dom@"^18.3.1" from the root project
+npm error
+npm error Could not resolve dependency:
+npm error peer react-dom@"^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0" from next@15.5.25
+npm error node_modules/next
+npm error   next@">=15.5.24 <16" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry this command with --force or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /data/data/com.termux/files/home/.npm/_logs/2026-09-11T08_15_11_693Z-eresolve-report.txt
+npm verbose cwd /data/data/com.termux/files/home/frontend
+npm verbose os Linux 5.10.237-android12-9-00014-gf82f7360927e-ab14119954
+npm verbose node v26.4.0
+npm verbose npm  v11.19.1
+npm verbose exit 1
+npm verbose code 1
+npm error A complete log of this run can be found in: /data/data/com.termux/files/home/.npm/_logs/2026-09-11T08_15_11_693Z-debug-0.log

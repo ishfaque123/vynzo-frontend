@@ -42,6 +42,13 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(days / 365)}y`;
 }
 
+// Renders exactly ONE comment bubble (top-level comment OR a flattened reply).
+// depth=0 -> top-level comment, no left indent.
+// depth=1 -> a reply, gets the indent + "@parentAuthor" blue mention inline.
+// This component no longer recurses into comment.replies itself — flattening
+// and the "View N replies" expand/collapse is handled by the parent
+// (CommentsModal), so every reply-to-a-reply renders at the SAME indent
+// level instead of drifting further right with each nested reply.
 export default function CommentItem({ comment, currentUser, postOwnerId, onReplyClick, onChanged, depth = 0, parentAuthor }: any) {
   const [showPicker, setShowPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,11 +103,6 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
       <div className="flex items-start gap-2">
         <Link href={`/u/${comment.author.username}`}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
         <div className="flex-1">
-          {isReply && parentAuthor && (
-            <p className="mb-0.5 px-1 text-[11px] text-slate-400">
-              Replying to <span className="font-medium text-slate-500">@{parentAuthor.username}</span>
-            </p>
-          )}
           <div className="rounded-2xl bg-slate-100 px-3 py-2">
             <div className="flex items-center gap-2">
               <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold hover:underline">{comment.author.displayName}</Link>
@@ -110,6 +112,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               <div className="mt-1 flex gap-1">
                 <input value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 rounded border px-2 py-1 text-sm" />
                 <button onClick={saveEdit} className="text-xs font-semibold text-blue-600">Save</button>
+                <button onClick={() => { setEditText(comment.content); setEditing(false); }} className="text-xs font-semibold text-slate-500">Cancel</button>
               </div>
             ) : (
               <p className="text-sm">
@@ -151,10 +154,6 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               )}
             </div>
           </div>
-
-          {comment.replies?.map((reply: any) => (
-            <CommentItem key={reply.id} comment={reply} currentUser={currentUser} postOwnerId={postOwnerId} onReplyClick={onReplyClick} onChanged={onChanged} depth={depth + 1} parentAuthor={comment.author} />
-          ))}
         </div>
       </div>
     </div>
