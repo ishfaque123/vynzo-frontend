@@ -2,7 +2,6 @@
 import { useEffect, useRef } from 'react';
 
 export default function AdUnit() {
-  const ref = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
 
   useEffect(() => {
@@ -15,14 +14,15 @@ export default function AdUnit() {
   }, []);
 
   return (
-    <ins
-      ref={ref}
-      className="adsbygoogle"
-      style={{ display: 'block' }}
-      data-ad-client="ca-pub-8689135580842158"
-      data-ad-slot="8018318674"
-      data-ad-format="auto"
-      data-full-width-responsive="true"
-    />
+    <div style={{ width: '100%', maxHeight: 280, overflow: 'hidden' }}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', width: '100%', maxHeight: 280 }}
+        data-ad-client="ca-pub-8689135580842158"
+        data-ad-slot="8018318674"
+        data-ad-format="rectangle"
+        data-full-width-responsive="true"
+      />
+    </div>
   );
 }
