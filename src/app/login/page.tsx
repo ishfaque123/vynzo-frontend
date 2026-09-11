@@ -12,7 +12,7 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
-      <h1 className="mb-8 text-3xl font-semibold tracking-tight text-slate-900">Vynzo</h1>
+      <h1 className="mb-8 text-3xl font-semibold tracking-tight text-slate-900">Friendzo</h1>
 
       {hasError && (
         <p className="mb-4 text-sm text-red-600">Login failed. Please try again.</p>
