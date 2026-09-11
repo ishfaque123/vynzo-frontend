@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { fetchNotifications, markAllNotificationsRead } from '@/lib/api/notificationApi';
+import {
+  fetchNotifications,
+  markAllNotificationsRead,
+  deleteNotifications,
+  deleteAllNotifications,
+} from '@/lib/api/notificationApi';
 
 interface Actor {
   id: string;
@@ -66,6 +71,29 @@ function BellEmptyIcon() {
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9" />
       <path d="M10.3 21a1.94 1.94 0 003.4 0" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="6" y1="18" x2="18" y2="6" />
+    </svg>
+  );
+}
+function TrashIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </svg>
+  );
+}
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+      <path d="M5 13l4 4L19 7" />
     </svg>
   );
 }
@@ -139,9 +167,16 @@ function formatTime(dateStr: string) {
   return `${weeks}w ago`;
 }
 
+const LONG_PRESS_MS = 500;
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
 
   useEffect(() => {
     fetchNotifications().then((result) => {
@@ -150,6 +185,77 @@ export default function NotificationsPage() {
       markAllNotificationsRead();
     });
   }, []);
+
+  function startLongPress(id: string) {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setSelectMode(true);
+      setSelectedIds(new Set([id]));
+    }, LONG_PRESS_MS);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleItemClick(n: Notification, e: React.MouseEvent) {
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      e.preventDefault();
+      return;
+    }
+    if (selectMode) {
+      e.preventDefault();
+      toggleSelected(n.id);
+    }
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function handleSelectAll() {
+    if (selectedIds.size === notifications.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(notifications.map((n) => n.id)));
+    }
+  }
+
+  async function handleDeleteSelected() {
+    if (selectedIds.size === 0 || deleting) return;
+    setDeleting(true);
+    const ids = Array.from(selectedIds);
+    const result = await deleteNotifications(ids);
+    setDeleting(false);
+    if (result.success) {
+      setNotifications((prev) => prev.filter((n) => !selectedIds.has(n.id)));
+      exitSelectMode();
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (deleting || notifications.length === 0) return;
+    if (!confirm('Delete all notifications? This cannot be undone.')) return;
+    setDeleting(true);
+    const result = await deleteAllNotifications();
+    setDeleting(false);
+    if (result.success) {
+      setNotifications([]);
+      exitSelectMode();
+    }
+  }
 
   if (loading) {
     return <p className="py-10 text-center text-slate-500">Loading...</p>;
@@ -168,18 +274,53 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-2 py-2">
-      <h1 className="px-2 py-2 text-lg font-semibold">Notifications</h1>
+    <div className="mx-auto max-w-xl px-2 py-2 pb-20">
+      <div className="flex items-center justify-between px-2 py-2">
+        {selectMode ? (
+          <>
+            <button onClick={exitSelectMode} aria-label="Cancel selection" className="p-1 text-slate-600">
+              <CloseIcon />
+            </button>
+            <span className="text-sm font-medium text-slate-700">{selectedIds.size} selected</span>
+            <button onClick={handleSelectAll} className="text-sm font-medium text-blue-600">
+              {selectedIds.size === notifications.length ? 'Unselect all' : 'Select all'}
+            </button>
+          </>
+        ) : (
+          <>
+            <h1 className="text-lg font-semibold">Notifications</h1>
+            <button onClick={handleDeleteAll} className="text-sm font-medium text-red-600">
+              Clear all
+            </button>
+          </>
+        )}
+      </div>
+
       <div className="flex flex-col gap-0.5">
         {notifications.map((n) => {
           const { icon, bg, color } = iconFor(n.type);
           const href = hrefFor(n);
+          const isSelected = selectedIds.has(n.id);
           const content = (
             <div
+              onMouseDown={() => startLongPress(n.id)}
+              onMouseUp={cancelLongPress}
+              onMouseLeave={cancelLongPress}
+              onTouchStart={() => startLongPress(n.id)}
+              onTouchEnd={cancelLongPress}
               className={`flex items-start gap-3 rounded-lg px-3 py-3 ${
-                !n.read ? 'bg-blue-50' : ''
+                isSelected ? 'bg-blue-100' : !n.read ? 'bg-blue-50' : ''
               }`}
             >
+              {selectMode && (
+                <span
+                  className={`mt-1.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                    isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300'
+                  }`}
+                >
+                  {isSelected && <CheckIcon />}
+                </span>
+              )}
               <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}>
                 {icon}
               </div>
@@ -189,15 +330,30 @@ export default function NotificationsPage() {
               </div>
             </div>
           );
-          return href ? (
-            <Link key={n.id} href={href}>
+          return href && !selectMode ? (
+            <Link key={n.id} href={href} onClick={(e) => handleItemClick(n, e)}>
               {content}
             </Link>
           ) : (
-            <div key={n.id}>{content}</div>
+            <div key={n.id} onClick={(e) => handleItemClick(n, e)}>
+              {content}
+            </div>
           );
         })}
       </div>
+
+      {selectMode && (
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white p-3">
+          <button
+            onClick={handleDeleteSelected}
+            disabled={selectedIds.size === 0 || deleting}
+            className="mx-auto flex w-full max-w-xl items-center justify-center gap-2 rounded-full bg-red-600 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+          >
+            <TrashIcon />
+            {deleting ? 'Deleting...' : `Delete (${selectedIds.size})`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

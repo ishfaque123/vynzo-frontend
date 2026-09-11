@@ -17,3 +17,21 @@ export async function markAllNotificationsRead() {
   });
   return res.json();
 }
+
+export async function deleteNotifications(ids: string[]) {
+  const res = await fetch(`${API_URL}/api/notifications`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  return res.json();
+}
+
+export async function deleteAllNotifications() {
+  const res = await fetch(`${API_URL}/api/notifications/all`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
