@@ -1,9 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { logoutRequest } from '@/lib/api/authApi';
+import { logoutRequest, fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+interface Account {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  profilePictureUrl: string | null;
+}
 
 function ChartIcon() {
   return (
@@ -99,7 +108,6 @@ const menuItems = [
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: StarIcon },
   { label: 'Blocked Accounts', href: '/settings-menu/blocked', Icon: BlockIcon },
   { label: 'Comments', href: '/settings-menu/comments', Icon: CommentIcon },
-  { label: 'Switch / Add Account', href: '/settings-menu/switch-account', Icon: SwitchIcon },
   { label: 'Login & Security', href: '/settings-menu/security', Icon: ShieldIcon },
   { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
   { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
@@ -110,6 +118,35 @@ export default function SettingsMenuPage() {
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [switchSheetOpen, setSwitchSheetOpen] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
+
+  async function openSwitchSheet() {
+    setSwitchSheetOpen(true);
+    setAccountsLoading(true);
+    const [me, list] = await Promise.all([fetchMe(), getSavedAccounts()]);
+    setActiveId(me?.data?.user?.id ?? null);
+    setAccounts(list?.data?.accounts ?? []);
+    setAccountsLoading(false);
+  }
+
+  async function handleSelectAccount(accountId: string) {
+    setSwitchingId(accountId);
+    const result = await switchAccountRequest(accountId);
+    if (result?.success) {
+      window.location.href = '/';
+    } else {
+      setSwitchingId(null);
+    }
+  }
+
+  function handleAddAccount() {
+    window.location.href = `${API_URL}/api/auth/google/start?switch=1`;
+  }
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -131,6 +168,13 @@ export default function SettingsMenuPage() {
             <span className="text-slate-800">{item.label}</span>
           </Link>
         ))}
+        <button
+          onClick={openSwitchSheet}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
+        >
+          <span className="text-slate-600"><SwitchIcon /></span>
+          <span className="text-slate-800">Switch / Add Account</span>
+        </button>
       </div>
 
       <div className="mb-3 divide-y rounded-lg border">
@@ -153,6 +197,71 @@ export default function SettingsMenuPage() {
               <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 rounded-lg border py-2 text-sm font-medium">Cancel</button>
               <button onClick={handleLogout} disabled={loggingOut} className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white disabled:opacity-50">
                 {loggingOut ? 'Logging out...' : 'Log out'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {switchSheetOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => setSwitchSheetOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 text-center text-sm font-semibold text-slate-800">Switch account</p>
+
+            {accountsLoading ? (
+              <p className="py-6 text-center text-sm text-slate-500">Loading accounts...</p>
+            ) : (
+              <div className="mb-3 max-h-[45vh] divide-y overflow-y-auto rounded-lg border">
+                {accounts.map((acc) => {
+                  const isActive = acc.id === activeId;
+                  return (
+                    <button
+                      key={acc.id}
+                      onClick={() => !isActive && handleSelectAccount(acc.id)}
+                      disabled={isActive || switchingId === acc.id}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
+                        {acc.profilePictureUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-medium text-slate-800">
+                          {acc.displayName || acc.username || 'Vynzo user'}
+                        </span>
+                        {acc.username && <span className="block text-xs text-slate-500">@{acc.username}</span>}
+                      </span>
+                      {isActive && <span className="text-xs font-medium text-slate-400">Active</span>}
+                      {switchingId === acc.id && <span className="text-xs text-slate-400">Switching...</span>}
+                    </button>
+                  );
+                })}
+                {accounts.length === 0 && (
+                  <p className="px-4 py-3 text-sm text-slate-500">No saved accounts yet.</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSwitchSheetOpen(false)}
+                className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddAccount}
+                className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white"
+              >
+                + Add account
               </button>
             </div>
           </div>
