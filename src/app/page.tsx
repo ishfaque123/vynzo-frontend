@@ -9,6 +9,7 @@ import { playCommentSound } from '@/lib/sounds';
 import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
+import AdUnit from '@/components/AdUnit';
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -108,14 +109,21 @@ export default function HomePage() {
         <p className="text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
         <div>
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} currentUser={user}
-              onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
-              isOpen={false} comments={comments[post.id]}
-              commentText={commentText} setCommentText={setCommentText}
-              replyTo={replyTo} setReplyTo={setReplyTo}
-              onAddComment={handleAddComment} onCommentsChanged={loadComments}
-              onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+          {posts.map((post, index) => (
+            <div key={post.id}>
+              <PostCard post={post} currentUser={user}
+                onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+                isOpen={false} comments={comments[post.id]}
+                commentText={commentText} setCommentText={setCommentText}
+                replyTo={replyTo} setReplyTo={setReplyTo}
+                onAddComment={handleAddComment} onCommentsChanged={loadComments}
+                onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+              {(index + 1) % 5 === 0 && (
+                <div className="my-4">
+                  <AdUnit />
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
