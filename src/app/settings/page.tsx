@@ -10,14 +10,84 @@ import Toast from '@/components/Toast';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const COOLDOWN_DAYS = 30;
 
-const PROVINCES: Record<string, string[]> = {
-  Sindh: ['Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Nawabshah', 'Khairpur', 'Mirpurkhas'],
-  Punjab: ['Lahore', 'Faisalabad', 'Rawalpindi', 'Multan', 'Gujranwala', 'Sialkot', 'Bahawalpur'],
-  'Khyber Pakhtunkhwa': ['Peshawar', 'Abbottabad', 'Mardan', 'Swat', 'Kohat'],
-  Balochistan: ['Quetta', 'Gwadar', 'Turbat', 'Khuzdar'],
-  Islamabad: ['Islamabad'],
-  'Gilgit-Baltistan': ['Gilgit', 'Skardu'],
-  'Azad Kashmir': ['Muzaffarabad', 'Mirpur'],
+const PROVINCES_BY_COUNTRY: Record<string, Record<string, string[]>> = {
+  Pakistan: {
+    Sindh: ['Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Nawabshah', 'Khairpur', 'Mirpurkhas'],
+    Punjab: ['Lahore', 'Faisalabad', 'Rawalpindi', 'Multan', 'Gujranwala', 'Sialkot', 'Bahawalpur'],
+    'Khyber Pakhtunkhwa': ['Peshawar', 'Abbottabad', 'Mardan', 'Swat', 'Kohat'],
+    Balochistan: ['Quetta', 'Gwadar', 'Turbat', 'Khuzdar'],
+    Islamabad: ['Islamabad'],
+    'Gilgit-Baltistan': ['Gilgit', 'Skardu'],
+    'Azad Kashmir': ['Muzaffarabad', 'Mirpur'],
+  },
+  India: {
+    Maharashtra: ['Mumbai', 'Pune', 'Nagpur', 'Nashik'],
+    Delhi: ['New Delhi'],
+    Karnataka: ['Bangalore', 'Mysore', 'Hubli'],
+    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai'],
+    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi'],
+    Punjab: ['Amritsar', 'Ludhiana', 'Jalandhar'],
+    Gujarat: ['Ahmedabad', 'Surat', 'Vadodara'],
+    'West Bengal': ['Kolkata', 'Howrah'],
+    Telangana: ['Hyderabad'],
+    Rajasthan: ['Jaipur', 'Jodhpur', 'Udaipur'],
+  },
+  'United States': {
+    California: ['Los Angeles', 'San Francisco', 'San Diego', 'Sacramento'],
+    'New York': ['New York City', 'Buffalo', 'Albany'],
+    Texas: ['Houston', 'Dallas', 'Austin', 'San Antonio'],
+    Florida: ['Miami', 'Orlando', 'Tampa'],
+    Illinois: ['Chicago', 'Springfield'],
+    Washington: ['Seattle', 'Spokane'],
+    Georgia: ['Atlanta', 'Savannah'],
+    Arizona: ['Phoenix', 'Tucson'],
+    'New Jersey': ['Newark', 'Jersey City'],
+    Virginia: ['Richmond', 'Virginia Beach'],
+  },
+  Iran: {
+    Tehran: ['Tehran', 'Rey'],
+    Isfahan: ['Isfahan', 'Kashan'],
+    Fars: ['Shiraz'],
+    Khorasan: ['Mashhad'],
+    Khuzestan: ['Ahvaz'],
+    Tabriz: ['Tabriz'],
+  },
+  'Saudi Arabia': {
+    Riyadh: ['Riyadh', 'Al Kharj'],
+    Makkah: ['Mecca', 'Jeddah', 'Taif'],
+    Madinah: ['Medina'],
+    'Eastern Province': ['Dammam', 'Khobar', 'Dhahran'],
+    Asir: ['Abha'],
+  },
+  'United Arab Emirates': {
+    Dubai: ['Dubai'],
+    'Abu Dhabi': ['Abu Dhabi', 'Al Ain'],
+    Sharjah: ['Sharjah'],
+    Ajman: ['Ajman'],
+    'Ras Al Khaimah': ['Ras Al Khaimah'],
+    Fujairah: ['Fujairah'],
+    'Umm Al Quwain': ['Umm Al Quwain'],
+  },
+  Afghanistan: {
+    Kabul: ['Kabul'],
+    Herat: ['Herat'],
+    Kandahar: ['Kandahar'],
+    Balkh: ['Mazar-i-Sharif'],
+    Nangarhar: ['Jalalabad'],
+  },
+  'United Kingdom': {
+    England: ['London', 'Manchester', 'Birmingham', 'Liverpool'],
+    Scotland: ['Edinburgh', 'Glasgow', 'Aberdeen'],
+    Wales: ['Cardiff', 'Swansea'],
+    'Northern Ireland': ['Belfast'],
+  },
+  Canada: {
+    Ontario: ['Toronto', 'Ottawa', 'Mississauga'],
+    Quebec: ['Montreal', 'Quebec City'],
+    'British Columbia': ['Vancouver', 'Victoria'],
+    Alberta: ['Calgary', 'Edmonton'],
+    Manitoba: ['Winnipeg'],
+  },
 };
 
 function cooldownInfo(lastChanged?: string | null) {
@@ -156,10 +226,10 @@ export default function SettingsPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm text-slate-600">Country</label>
-          <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full rounded-lg border px-4 py-2">
+          <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value, province: '', city: '' })} className="w-full rounded-lg border px-4 py-2">
             <option value="">Select your country</option>
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.name}>{c.flag} {c.name}</option>
+              <option key={c.code} value={c.name}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -167,7 +237,7 @@ export default function SettingsPage() {
           <label className="mb-1 block text-sm text-slate-600">Province</label>
           <select value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value, city: '' })} className="w-full rounded-lg border px-4 py-2">
             <option value="">Select</option>
-            {Object.keys(PROVINCES).map((p) => (<option key={p} value={p}>{p}</option>))}
+            {Object.keys(PROVINCES_BY_COUNTRY[form.country] || {}).map((p) => (<option key={p} value={p}>{p}</option>))}
           </select>
         </div>
         {form.province && (
@@ -175,7 +245,7 @@ export default function SettingsPage() {
             <label className="mb-1 block text-sm text-slate-600">City</label>
             <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-lg border px-4 py-2">
               <option value="">Select</option>
-              {PROVINCES[form.province]?.map((c) => (<option key={c} value={c}>{c}</option>))}
+              {(PROVINCES_BY_COUNTRY[form.country]?.[form.province] || []).map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
           </div>
         )}
@@ -190,9 +260,6 @@ export default function SettingsPage() {
 
         <button type="submit" disabled={saving} className="w-full rounded-lg bg-slate-900 py-2 font-medium text-white disabled:opacity-50">
           {saving ? 'Saving...' : 'Save Changes'}
-        </button>
-        <button type="button" onClick={() => router.push(`/u/${form.username}`)} className="w-full rounded-lg border py-2 font-medium text-slate-700">
-          View my profile
         </button>
       </form>
 

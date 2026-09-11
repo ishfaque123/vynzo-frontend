@@ -74,7 +74,7 @@ export default function ProfileSetupPage() {
           >
             <option value="">Select your country</option>
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.name}>{c.flag} {c.name}</option>
+              <option key={c.code} value={c.name}>{c.name}</option>
             ))}
           </select>
         </div>
