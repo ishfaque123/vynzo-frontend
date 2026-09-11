@@ -168,6 +168,169 @@ function formatTime(dateStr: string) {
 }
 
 const LONG_PRESS_MS = 500;
+const SWIPE_THRESHOLD = -80; // px dragged left to trigger delete
+const MAX_DRAG = -110; // px, how far the row can visually slide before release
+const UNDO_WINDOW_MS = 4000;
+
+// Blocks the browser's native long-press callout/selection menu without
+// touching normal vertical scrolling.
+const noCalloutStyle: React.CSSProperties = {
+  WebkitTouchCallout: 'none',
+  WebkitUserSelect: 'none',
+  userSelect: 'none',
+  touchAction: 'pan-y',
+};
+
+function NotificationRow({
+  n,
+  href,
+  selectMode,
+  isSelected,
+  onEnterSelectMode,
+  onToggleSelected,
+  onSwipeDelete,
+}: {
+  n: Notification;
+  href: string | null;
+  selectMode: boolean;
+  isSelected: boolean;
+  onEnterSelectMode: (id: string) => void;
+  onToggleSelected: (id: string) => void;
+  onSwipeDelete: (n: Notification) => void;
+}) {
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const axisLocked = useRef<'x' | 'y' | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gestureHandled = useRef(false); // true if long-press or swipe fired, so the click should be ignored
+
+  function clearLongPress() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    if (selectMode) return;
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    axisLocked.current = null;
+    gestureHandled.current = false;
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      gestureHandled.current = true;
+      onEnterSelectMode(n.id);
+    }, LONG_PRESS_MS);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (selectMode) return;
+    const dx = e.touches[0].clientX - startX.current;
+    const dy = e.touches[0].clientY - startY.current;
+    if (axisLocked.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      axisLocked.current = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (axisLocked.current === 'x') {
+      clearLongPress();
+      const clamped = Math.max(MAX_DRAG * 1.3, Math.min(0, dx));
+      setDragX(clamped);
+      setDragging(true);
+    } else if (axisLocked.current === 'y') {
+      clearLongPress();
+    }
+  }
+
+  function handleTouchEnd() {
+    clearLongPress();
+    setDragging(false);
+    if (axisLocked.current === 'x') {
+      if (dragX <= SWIPE_THRESHOLD) {
+        gestureHandled.current = true;
+        setDragX(-500);
+        setTimeout(() => onSwipeDelete(n), 160);
+      } else {
+        setDragX(0);
+      }
+    }
+    axisLocked.current = null;
+  }
+
+  function handleMouseDown() {
+    if (selectMode) return;
+    gestureHandled.current = false;
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      gestureHandled.current = true;
+      onEnterSelectMode(n.id);
+    }, LONG_PRESS_MS);
+  }
+  function handleMouseUpOrLeave() {
+    clearLongPress();
+  }
+
+  function handleClick(e: React.MouseEvent) {
+    if (gestureHandled.current) {
+      gestureHandled.current = false;
+      e.preventDefault();
+      return;
+    }
+    if (selectMode) {
+      e.preventDefault();
+      onToggleSelected(n.id);
+    }
+  }
+
+  const { icon, bg, color } = iconFor(n.type);
+  const content = (
+    <div
+      className={`flex items-start gap-3 rounded-lg bg-white px-3 py-3 ${
+        isSelected ? 'bg-blue-100' : !n.read ? 'bg-blue-50' : ''
+      }`}
+    >
+      {selectMode && (
+        <span
+          className={`mt-1.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+            isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300'
+          }`}
+        >
+          {isSelected && <CheckIcon />}
+        </span>
+      )}
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}>
+        {icon}
+      </div>
+      <div className="flex-1">
+        <p className="text-sm text-slate-800">{messageFor(n)}</p>
+        <p className="mt-0.5 text-xs text-slate-400">{formatTime(n.createdAt)}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative overflow-hidden rounded-lg">
+      <div className="absolute inset-0 flex items-center justify-end rounded-lg bg-red-600 pr-5 text-white">
+        <TrashIcon />
+      </div>
+      <div
+        style={{ transform: `translateX(${dragX}px)`, transition: dragging ? 'none' : 'transform 0.2s ease', ...noCalloutStyle }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {href && !selectMode ? (
+          <Link href={href} onClick={handleClick}>{content}</Link>
+        ) : (
+          <div onClick={handleClick}>{content}</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -175,8 +338,7 @@ export default function NotificationsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFired = useRef(false);
+  const [pendingUndo, setPendingUndo] = useState<{ item: Notification; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   useEffect(() => {
     fetchNotifications().then((result) => {
@@ -186,17 +348,9 @@ export default function NotificationsPage() {
     });
   }, []);
 
-  function startLongPress(id: string) {
-    longPressFired.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressFired.current = true;
-      setSelectMode(true);
-      setSelectedIds(new Set([id]));
-    }, LONG_PRESS_MS);
-  }
-
-  function cancelLongPress() {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  function enterSelectMode(id: string) {
+    setSelectMode(true);
+    setSelectedIds(new Set([id]));
   }
 
   function toggleSelected(id: string) {
@@ -206,18 +360,6 @@ export default function NotificationsPage() {
       else next.add(id);
       return next;
     });
-  }
-
-  function handleItemClick(n: Notification, e: React.MouseEvent) {
-    if (longPressFired.current) {
-      longPressFired.current = false;
-      e.preventDefault();
-      return;
-    }
-    if (selectMode) {
-      e.preventDefault();
-      toggleSelected(n.id);
-    }
   }
 
   function exitSelectMode() {
@@ -257,11 +399,34 @@ export default function NotificationsPage() {
     }
   }
 
+  // Swipe-to-delete: remove instantly from the list, but only call the API
+  // after the undo window closes so "Undo" can put it back for free.
+  function handleSwipeDelete(n: Notification) {
+    if (pendingUndo) {
+      clearTimeout(pendingUndo.timer);
+      deleteNotifications([pendingUndo.item.id]);
+    }
+    setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    const timer = setTimeout(() => {
+      deleteNotifications([n.id]);
+      setPendingUndo((cur) => (cur?.item.id === n.id ? null : cur));
+    }, UNDO_WINDOW_MS);
+    setPendingUndo({ item: n, timer });
+  }
+
+  function handleUndo() {
+    if (!pendingUndo) return;
+    clearTimeout(pendingUndo.timer);
+    const restored = pendingUndo.item;
+    setNotifications((prev) => [restored, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    setPendingUndo(null);
+  }
+
   if (loading) {
     return <p className="py-10 text-center text-slate-500">Loading...</p>;
   }
 
-  if (notifications.length === 0) {
+  if (notifications.length === 0 && !pendingUndo) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
         <div className="text-slate-300">
@@ -297,49 +462,18 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        {notifications.map((n) => {
-          const { icon, bg, color } = iconFor(n.type);
-          const href = hrefFor(n);
-          const isSelected = selectedIds.has(n.id);
-          const content = (
-            <div
-              onMouseDown={() => startLongPress(n.id)}
-              onMouseUp={cancelLongPress}
-              onMouseLeave={cancelLongPress}
-              onTouchStart={() => startLongPress(n.id)}
-              onTouchEnd={cancelLongPress}
-              className={`flex items-start gap-3 rounded-lg px-3 py-3 ${
-                isSelected ? 'bg-blue-100' : !n.read ? 'bg-blue-50' : ''
-              }`}
-            >
-              {selectMode && (
-                <span
-                  className={`mt-1.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-                    isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300'
-                  }`}
-                >
-                  {isSelected && <CheckIcon />}
-                </span>
-              )}
-              <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}>
-                {icon}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-slate-800">{messageFor(n)}</p>
-                <p className="mt-0.5 text-xs text-slate-400">{formatTime(n.createdAt)}</p>
-              </div>
-            </div>
-          );
-          return href && !selectMode ? (
-            <Link key={n.id} href={href} onClick={(e) => handleItemClick(n, e)}>
-              {content}
-            </Link>
-          ) : (
-            <div key={n.id} onClick={(e) => handleItemClick(n, e)}>
-              {content}
-            </div>
-          );
-        })}
+        {notifications.map((n) => (
+          <NotificationRow
+            key={n.id}
+            n={n}
+            href={hrefFor(n)}
+            selectMode={selectMode}
+            isSelected={selectedIds.has(n.id)}
+            onEnterSelectMode={enterSelectMode}
+            onToggleSelected={toggleSelected}
+            onSwipeDelete={handleSwipeDelete}
+          />
+        ))}
       </div>
 
       {selectMode && (
@@ -352,6 +486,15 @@ export default function NotificationsPage() {
             <TrashIcon />
             {deleting ? 'Deleting...' : `Delete (${selectedIds.size})`}
           </button>
+        </div>
+      )}
+
+      {pendingUndo && (
+        <div className="fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
+          <div className="flex max-w-sm items-center gap-3 rounded-full bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+            <span>Notification deleted</span>
+            <button onClick={handleUndo} className="font-semibold text-blue-400">Undo</button>
+          </div>
         </div>
       )}
     </div>
