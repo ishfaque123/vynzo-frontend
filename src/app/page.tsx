@@ -98,7 +98,7 @@ export default function HomePage() {
   }, [offset, hasMore, loadingMore]);
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
-    setPosts(posts.map((p) => {
+    setPosts((prev) => prev.map((p) => {
       if (p.id !== postId) return p;
       const newCounts = { ...(p.reactionCounts || {}) };
       if (p.myReaction) {
@@ -112,10 +112,10 @@ export default function HomePage() {
     }));
   }
   function handlePostUpdated(postId: string, content: string, commentAudience: string) {
-    setPosts(posts.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
   }
   function handlePostDeleted(postId: string) {
-    setPosts(posts.filter((p) => p.id !== postId));
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
   }
 
   // Guarded against out-of-order responses: if two loadComments calls for
