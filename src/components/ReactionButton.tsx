@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { setReaction } from '@/lib/api/postApi';
 import { playReactionSound } from '@/lib/sounds';
 
@@ -29,6 +29,19 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   const pressTimer = useRef<any>(null);
   const openedByHold = useRef(false);
 
+  useEffect(() => {
+    function onOtherOpen(e: any) {
+      if (e.detail !== postId) setShowPicker(false);
+    }
+    window.addEventListener('reaction-picker-open', onOtherOpen);
+    return () => window.removeEventListener('reaction-picker-open', onOtherOpen);
+  }, [postId]);
+
+  function openPicker() {
+    window.dispatchEvent(new CustomEvent('reaction-picker-open', { detail: postId }));
+    setShowPicker(true);
+  }
+
   async function apply(type: string) {
     playReactionSound();
     setShowPicker(false);
@@ -42,7 +55,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   }
   function startPress() {
     openedByHold.current = false;
-    pressTimer.current = setTimeout(() => { setShowPicker(true); openedByHold.current = true; }, HOLD_TO_OPEN_MS);
+    pressTimer.current = setTimeout(() => { openPicker(); openedByHold.current = true; }, HOLD_TO_OPEN_MS);
   }
   function endPress() { clearTimeout(pressTimer.current); }
 

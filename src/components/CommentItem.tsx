@@ -44,6 +44,19 @@ function timeAgo(dateStr: string) {
 
 export default function CommentItem({ comment, currentUser, postOwnerId, onReplyClick, onChanged, depth = 0, parentAuthor }: any) {
   const [showPicker, setShowPicker] = useState(false);
+
+  useEffect(() => {
+    function onOtherOpen(e: any) {
+      if (e.detail !== comment.id) setShowPicker(false);
+    }
+    window.addEventListener('reaction-picker-open', onOtherOpen);
+    return () => window.removeEventListener('reaction-picker-open', onOtherOpen);
+  }, [comment.id]);
+
+  function openPicker() {
+    window.dispatchEvent(new CustomEvent('reaction-picker-open', { detail: comment.id }));
+    setShowPicker(true);
+  }
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.content);
@@ -120,7 +133,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
 
           <div className="mt-1 flex items-center gap-3 px-2 text-xs text-slate-500">
             <div className="relative">
-              <button onClick={() => setShowPicker(!showPicker)} className={localReaction ? 'font-semibold text-blue-600' : ''}>
+              <button onClick={() => (showPicker ? setShowPicker(false) : openPicker())} className={localReaction ? 'font-semibold text-blue-600' : ''}>
                 {localReaction ? REACTIONS[localReaction] : 'Like'}
               </button>
               {showPicker && (
