@@ -59,6 +59,21 @@ export async function fetchBlockStatus(userId: string) {
   return res.json();
 }
 
+export async function fetchBlockedUsers() {
+  const res = await fetch(`${API_URL}/api/blocks`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function hideBlockedEntries(ids: string[]) {
+  const res = await fetch(`${API_URL}/api/blocks/hide`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  return res.json();
+}
+
 export async function reportUser(userId: string, reason: string, details?: string) {
   const res = await fetch(`${API_URL}/api/users/${userId}/report`, {
     method: 'POST',
