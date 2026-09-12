@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { sharePost } from '@/lib/api/postApi';
 import { createShareLink } from '@/lib/api/shareApi';
 
@@ -41,14 +41,28 @@ interface ShareModalProps {
   profileId?: string;
 }
 
+const CLOSE_THRESHOLD_PX = 100;
+
 export default function ShareModal({ postId, profileUsername, profileId, onClose }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState('');
   const [shareCode, setShareCode] = useState<string | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const draggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
+  }, []);
+
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+    };
   }, []);
 
   const fallbackUrl = profileUsername
@@ -89,33 +103,101 @@ export default function ShareModal({ postId, profileUsername, profileId, onClose
     else alert(result.error.message);
   }
 
+  function dragStart(clientY: number) {
+    draggingRef.current = true;
+    startYRef.current = clientY;
+  }
+  function dragMove(clientY: number) {
+    if (!draggingRef.current) return;
+    setDragY(Math.max(0, clientY - startYRef.current));
+  }
+  function dragEnd() {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    setDragY((current) => {
+      if (current > CLOSE_THRESHOLD_PX) onClose();
+      return 0;
+    });
+  }
+
+  function listTouchStart(e: React.TouchEvent) {
+    startYRef.current = e.touches[0].clientY;
+    draggingRef.current = false;
+  }
+  function listTouchMove(e: React.TouchEvent) {
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - startYRef.current;
+    const el = listRef.current;
+    if (!draggingRef.current) {
+      if (delta > 0 && el && el.scrollTop <= 0) {
+        draggingRef.current = true;
+      } else {
+        return;
+      }
+    }
+    e.preventDefault();
+    setDragY(Math.max(0, delta));
+  }
+  function listTouchEnd() {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    setDragY((current) => {
+      if (current > CLOSE_THRESHOLD_PX) onClose();
+      return 0;
+    });
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
-      <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-2xl bg-white p-2 pb-6" onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
-        <p className="px-4 py-2 font-semibold">{profileUsername ? 'Share profile' : 'Share'}</p>
-
-        <div className="mx-4 mb-3 rounded-lg border p-2.5">
-          <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
-          <button onClick={copyLink} className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">
-            <LinkIcon /> {copied ? 'Copied!' : 'Copy link'}
-          </button>
+      <div
+        className="flex max-h-[85vh] w-full max-w-xl flex-col rounded-t-2xl bg-white"
+        style={{ transform: `translateY(${dragY}px)`, transition: dragY === 0 ? 'transform 0.2s ease' : 'none' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex cursor-grab flex-col items-center pt-2 pb-1 active:cursor-grabbing"
+          onTouchStart={(e) => dragStart(e.touches[0].clientY)}
+          onTouchMove={(e) => dragMove(e.touches[0].clientY)}
+          onTouchEnd={dragEnd}
+          onMouseDown={(e) => dragStart(e.clientY)}
+          onMouseMove={(e) => dragMove(e.clientY)}
+          onMouseUp={dragEnd}
+          onMouseLeave={dragEnd}
+        >
+          <span className="h-1 w-10 rounded-full bg-slate-300" />
         </div>
 
-        {postId && (
-          <button onClick={handleRepost} disabled={sharing} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
-            <span className="text-slate-600"><RepostIcon /></span>
-            <span className="text-slate-800">Repost to your feed</span>
+        <div
+          ref={listRef}
+          className="overflow-y-auto overscroll-contain px-2 pb-6"
+          onTouchStart={listTouchStart}
+          onTouchMove={listTouchMove}
+          onTouchEnd={listTouchEnd}
+        >
+          <p className="px-4 py-2 font-semibold">{profileUsername ? 'Share profile' : 'Share'}</p>
+
+          <div className="mx-4 mb-3 rounded-lg border p-2.5">
+            <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
+            <button onClick={copyLink} className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">
+              <LinkIcon /> {copied ? 'Copied!' : 'Copy link'}
+            </button>
+          </div>
+
+          {postId && (
+            <button onClick={handleRepost} disabled={sharing} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-100">
+              <span className="text-slate-600"><RepostIcon /></span>
+              <span className="text-slate-800">Repost to your feed</span>
+            </button>
+          )}
+          <button onClick={() => shareTo('whatsapp')} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-100">
+            <span className="text-slate-600"><WhatsAppIcon /></span>
+            <span className="text-slate-800">Share to WhatsApp</span>
           </button>
-        )}
-        <button onClick={() => shareTo('whatsapp')} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
-          <span className="text-slate-600"><WhatsAppIcon /></span>
-          <span className="text-slate-800">Share to WhatsApp</span>
-        </button>
-        <button onClick={() => shareTo('facebook')} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
-          <span className="text-slate-600"><FacebookIcon /></span>
-          <span className="text-slate-800">Share to Facebook</span>
-        </button>
+          <button onClick={() => shareTo('facebook')} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-100">
+            <span className="text-slate-600"><FacebookIcon /></span>
+            <span className="text-slate-800">Share to Facebook</span>
+          </button>
+        </div>
       </div>
     </div>
   );
