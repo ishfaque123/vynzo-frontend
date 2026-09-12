@@ -113,15 +113,17 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         {post.originalPost ? (
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
-            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900 hover:underline">{post.author.displayName}</Link>
+            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>
             <span>reposted</span>
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
-            <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
+            <Link href={`/u/${post.author.username}`}>
+              <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
+            </Link>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900 hover:underline">{post.author.displayName}</Link>
+                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>
                 {!isOwner && <FollowButton userId={post.author.id} status={post.friendStatus} />}
               </div>
               {post.taggedUsers?.length > 0 && (
@@ -156,9 +158,11 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
       {post.originalPost && (
         <div className="mx-3 mb-2 rounded-lg border p-3">
           <div className="flex items-center gap-2">
-            <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
+            <Link href={`/u/${post.originalPost.author.username}`}>
+              <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
+            </Link>
             <div className="leading-tight">
-              <Link href={`/u/${post.originalPost.author.username}`} className="block text-[15px] font-semibold text-slate-900 hover:underline">{post.originalPost.author.displayName}</Link>
+              <Link href={`/u/${post.originalPost.author.username}`} className="block text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>
               <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
