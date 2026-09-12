@@ -51,7 +51,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   return (
     <div className="relative flex-1">
       {showPicker && (
-        <div className="absolute bottom-full left-0 mb-2 flex gap-1 rounded-full border bg-white p-1.5 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
+        <div className="absolute bottom-full left-0 z-50 mb-2 flex gap-1 rounded-full border bg-white p-1.5 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
           {Object.entries(REACTIONS).map(([key, r]) => (
             <button key={key} onClick={() => apply(key)} className="text-2xl transition-transform hover:scale-125">{r.emoji}</button>
           ))}
