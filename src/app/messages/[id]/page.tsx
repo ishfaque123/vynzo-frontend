@@ -101,12 +101,20 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
     };
   }, []);
 
-  function toggle() {
+  async function toggle() {
     const audio = audioRef.current;
     if (!audio) return;
-    if (playing) audio.pause();
-    else audio.play();
-    setPlaying(!playing);
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+      return;
+    }
+    try {
+      await audio.play();
+      setPlaying(true);
+    } catch {
+      setPlaying(false);
+    }
   }
 
   const displaySeconds = currentTime > 0 ? currentTime : duration || 0;
