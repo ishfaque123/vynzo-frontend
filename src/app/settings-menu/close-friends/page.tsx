@@ -80,7 +80,7 @@ export default function CloseFriendsPage() {
                   user.isCloseFriend ? 'border-green-500 bg-green-50 text-green-500' : 'border-slate-300 text-slate-400'
                 }`}
               >
-                <StarIcon size={18} filled={user.isCloseFriend} />
+                <StarIcon size={18} />
               </button>
             </div>
           ))}
