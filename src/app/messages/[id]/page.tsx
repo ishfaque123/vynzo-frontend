@@ -37,6 +37,24 @@ function CheckIcon() {
   );
 }
 
+// WhatsApp-style ticks: one grey = sent, two grey = delivered, two blue = read.
+function Ticks({ status }: { status: 'sent' | 'delivered' | 'read' }) {
+  const color = status === 'read' ? '#5ec5fd' : 'rgba(255,255,255,0.55)';
+  if (status === 'sent') {
+    return (
+      <svg width="13" height="10" viewBox="0 0 16 11" fill="none" className="flex-shrink-0">
+        <path d="M1 5.5L5 9.5L15 1" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="17" height="10" viewBox="0 0 20 11" fill="none" className="flex-shrink-0">
+      <path d="M1 5.5L5 9.5L15 1" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 5.5L10 9.5L20 1" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 interface Message {
   id: string;
   conversationId: string;
@@ -80,6 +98,21 @@ function formatLastSeen(dateStr?: string | null) {
   return `Last seen ${days}d ago`;
 }
 
+function formatMessageTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function messageStatus(
+  message: Message,
+  otherLastReadAt: Date | null,
+  otherLastDeliveredAt: Date | null
+): 'sent' | 'delivered' | 'read' {
+  const createdAt = new Date(message.createdAt);
+  if (otherLastReadAt && otherLastReadAt >= createdAt) return 'read';
+  if (otherLastDeliveredAt && otherLastDeliveredAt >= createdAt) return 'delivered';
+  return 'sent';
+}
+
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -99,6 +132,8 @@ export default function ChatPage() {
   const [reportReason, setReportReason] = useState<string | null>(null);
   const [reportDetails, setReportDetails] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [otherLastReadAt, setOtherLastReadAt] = useState<Date | null>(null);
+  const [otherLastDeliveredAt, setOtherLastDeliveredAt] = useState<Date | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,7 +146,11 @@ export default function ChatPage() {
 
   useEffect(() => {
     fetchMessages(conversationId).then((result) => {
-      if (result.success) setMessages(result.data);
+      if (result.success) {
+        setMessages(result.data.messages);
+        setOtherLastReadAt(result.data.otherLastReadAt ? new Date(result.data.otherLastReadAt) : null);
+        setOtherLastDeliveredAt(result.data.otherLastDeliveredAt ? new Date(result.data.otherLastDeliveredAt) : null);
+      }
       setLoading(false);
     });
 
@@ -148,12 +187,26 @@ export default function ChatPage() {
     function handlePresenceOffline({ userId, lastActiveAt }: { userId: string; lastActiveAt: string }) {
       setOtherUser((prev) => (prev && prev.id === userId ? { ...prev, isOnline: false, lastActiveAt } : prev));
     }
+    // The other person opened this chat (or the app came online and caught
+    // up) — flip our sent messages' ticks to reflect that.
+    function handleConversationRead({ conversationId: cid, userId }: { conversationId: string; userId: string; readAt: string }) {
+      if (cid !== conversationId || userId === user?.id) return;
+      const now = new Date();
+      setOtherLastReadAt(now);
+      setOtherLastDeliveredAt(now);
+    }
+    function handleConversationDelivered({ conversationId: cid, userId }: { conversationId: string; userId: string; deliveredAt: string }) {
+      if (cid !== conversationId || userId === user?.id) return;
+      setOtherLastDeliveredAt(new Date());
+    }
 
     socket.on('message:new', handleNewMessage);
     socket.on('typing:start', handleTypingStart);
     socket.on('typing:stop', handleTypingStop);
     socket.on('presence:online', handlePresenceOnline);
     socket.on('presence:offline', handlePresenceOffline);
+    socket.on('conversation:read', handleConversationRead);
+    socket.on('conversation:delivered', handleConversationDelivered);
     socket.emit('conversation:read', { conversationId });
 
     return () => {
@@ -162,6 +215,8 @@ export default function ChatPage() {
       socket.off('typing:stop', handleTypingStop);
       socket.off('presence:online', handlePresenceOnline);
       socket.off('presence:offline', handlePresenceOffline);
+      socket.off('conversation:read', handleConversationRead);
+      socket.off('conversation:delivered', handleConversationDelivered);
     };
   }, [conversationId, user?.id]);
 
@@ -183,13 +238,18 @@ export default function ChatPage() {
     const content = text.trim();
     if (!content) return;
     const socket = getSocket();
-    socket.emit('message:send', { conversationId, content }, (res: { success: boolean; data?: Message; error?: string }) => {
-      if (res.success && res.data) {
-        setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
-      } else if (res.error === 'BLOCKED') {
-        showToast("You can't send messages to this user.", 'error');
+    socket.emit(
+      'message:send',
+      { conversationId, content },
+      (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
+        if (res.success && res.data) {
+          setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
+          if (res.delivered) setOtherLastDeliveredAt(new Date());
+        } else if (res.error === 'BLOCKED') {
+          showToast("You can't send messages to this user.", 'error');
+        }
       }
-    });
+    );
     setText('');
     socket.emit('typing:stop', { conversationId });
   }
@@ -329,6 +389,7 @@ export default function ChatPage() {
         <div className="space-y-2">
           {messages.map((m) => {
             const isMine = m.senderId === user?.id;
+            const status = isMine ? messageStatus(m, otherLastReadAt, otherLastDeliveredAt) : null;
             return (
               <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
@@ -336,7 +397,11 @@ export default function ChatPage() {
                     isMine ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'
                   }`}
                 >
-                  {m.content}
+                  <p>{m.content}</p>
+                  <div className={`mt-1 flex items-center justify-end gap-1 ${isMine ? 'text-white/60' : 'text-slate-400'}`}>
+                    <span className="text-[10px]">{formatMessageTime(m.createdAt)}</span>
+                    {isMine && status && <Ticks status={status} />}
+                  </div>
                 </div>
               </div>
             );
