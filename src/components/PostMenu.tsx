@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { updatePost, deletePost, reportPost, hidePost } from '@/lib/api/postApi';
 import { toggleFollow } from '@/lib/api/userApi';
 import { createShareLink } from '@/lib/api/shareApi';
@@ -63,6 +63,11 @@ function NotInterestedIcon() {
   );
 }
 
+// Only one post's 3-dot menu should ever be open at a time on the page.
+// Whichever menu is currently open registers its own close function here;
+// opening a different one closes the previous one first.
+let closeActiveMenu: (() => void) | null = null;
+
 export default function PostMenu({
   postId,
   authorId,
@@ -83,13 +88,71 @@ export default function PostMenu({
   onDeleted: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const [editing, setEditing] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [editText, setEditText] = useState(content);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isFollowingAuthor = friendStatus === 'following' || friendStatus === 'friends';
+
+  function closeMenu() {
+    setOpen(false);
+    setAudienceOpen(false);
+  }
+
+  // Positioned with fixed (viewport) coordinates computed from the actual
+  // button location, so a short post card's overflow-hidden can never
+  // clip or misplace the dropdown — it always renders relative to the
+  // screen, not to the card.
+  function openMenu() {
+    if (closeActiveMenu) closeActiveMenu();
+    const btn = buttonRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 224;
+      const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpward = spaceBelow < 280 && rect.top > 280;
+      setMenuStyle(
+        openUpward
+          ? { position: 'fixed', left, bottom: window.innerHeight - rect.top + 4, zIndex: 60 }
+          : { position: 'fixed', left, top: rect.bottom + 4, zIndex: 60 }
+      );
+    }
+    setOpen(true);
+    closeActiveMenu = closeMenu;
+  }
+
+  function toggleMenu() {
+    if (open) closeMenu();
+    else openMenu();
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target) || buttonRef.current?.contains(target)) return;
+      closeMenu();
+    }
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (closeActiveMenu === closeMenu) closeActiveMenu = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function saveEdit() {
     const result = await updatePost(postId, { content: editText });
@@ -109,13 +172,12 @@ export default function PostMenu({
     const result = await updatePost(postId, { commentAudience: value });
     if (result.success) {
       onUpdated(result.data.post.content, result.data.post.commentAudience);
-      setAudienceOpen(false);
-      setOpen(false);
+      closeMenu();
     }
   }
 
   async function copyLink() {
-    setOpen(false);
+    closeMenu();
     const result = await createShareLink('post', postId);
     const link = result.success ? `${window.location.origin}/s/${result.data.code}` : `${window.location.origin}/post/${postId}`;
     navigator.clipboard.writeText(link);
@@ -136,7 +198,7 @@ export default function PostMenu({
       setToast({ message: 'Could not update follow status. Please try again.', type: 'error' });
     } finally {
       setBusy(false);
-      setOpen(false);
+      closeMenu();
     }
   }
 
@@ -154,7 +216,7 @@ export default function PostMenu({
       setToast({ message: 'Could not report this post. Please try again.', type: 'error' });
     } finally {
       setBusy(false);
-      setOpen(false);
+      closeMenu();
     }
   }
 
@@ -169,21 +231,21 @@ export default function PostMenu({
       setToast({ message: 'Could not hide this post. Please try again.', type: 'error' });
     } finally {
       setBusy(false);
-      setOpen(false);
+      closeMenu();
     }
   }
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="rounded-full p-1 text-slate-500 hover:bg-slate-100">
+      <button ref={buttonRef} onClick={toggleMenu} className="rounded-full p-1 text-slate-500 hover:bg-slate-100">
         <DotsIcon />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setOpen(false)}>
+        <div ref={menuRef} style={menuStyle} className="w-56 rounded-lg border bg-white py-1 shadow-lg">
           {isOwner ? (
             <>
-              <button onClick={() => { setEditing(true); setOpen(false); }} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
+              <button onClick={() => { setEditing(true); closeMenu(); }} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
                 <EditIcon /> Edit
               </button>
               <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
