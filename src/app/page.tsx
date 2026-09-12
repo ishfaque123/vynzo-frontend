@@ -163,10 +163,13 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <div className="mb-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <button onClick={() => router.push('/compose')} className="flex flex-1 items-center gap-3 text-left">
-          <Avatar url={user.profilePictureUrl} name={user.displayName} />
-          <span className="flex-1 text-slate-400">What's on your mind?</span>
+      <div className="mb-3 flex w-full items-center gap-2">
+        <Avatar url={user.profilePictureUrl} name={user.displayName} />
+        <button
+          onClick={() => router.push('/compose')}
+          className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-left text-slate-400 shadow-sm"
+        >
+          What's on your mind?
         </button>
         <input
           ref={galleryInputRef}
@@ -185,7 +188,7 @@ export default function HomePage() {
         <button
           onClick={() => galleryInputRef.current?.click()}
           aria-label="Add a photo"
-          className="rounded-full bg-slate-100 p-1.5 text-slate-600"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
         >
           <PlusIcon />
         </button>
