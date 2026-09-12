@@ -1,15 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import CommentItem from './CommentItem';
-
-function CloseIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
-    </svg>
-  );
-}
 
 // Flattens an arbitrarily deep reply tree into a single-level chronological
 // list, tracking each reply's REAL immediate parent (for the blue
@@ -29,24 +21,52 @@ function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
   return flat;
 }
 
+const CLOSE_THRESHOLD_PX = 100;
+
 export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }: any) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [dragY, setDragY] = useState(0);
+  const draggingRef = useRef(false);
+  const startYRef = useRef(0);
 
-  function toggleExpand(id: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
+  function dragStart(clientY: number) {
+    draggingRef.current = true;
+    startYRef.current = clientY;
+  }
+  function dragMove(clientY: number) {
+    if (!draggingRef.current) return;
+    setDragY(Math.max(0, clientY - startYRef.current));
+  }
+  function dragEnd() {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    setDragY((current) => {
+      if (current > CLOSE_THRESHOLD_PX) onClose();
+      return 0;
     });
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
-      <div className="flex h-[85vh] w-full max-w-xl flex-col rounded-t-2xl bg-white" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="w-6" />
+      <div
+        className="flex h-[85vh] w-full max-w-xl flex-col rounded-t-2xl bg-white"
+        style={{ transform: `translateY(${dragY}px)`, transition: dragY === 0 ? 'transform 0.2s ease' : 'none' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex cursor-grab flex-col items-center pt-2 pb-1 active:cursor-grabbing"
+          onTouchStart={(e) => dragStart(e.touches[0].clientY)}
+          onTouchMove={(e) => dragMove(e.touches[0].clientY)}
+          onTouchEnd={dragEnd}
+          onMouseDown={(e) => dragStart(e.clientY)}
+          onMouseMove={(e) => dragMove(e.clientY)}
+          onMouseUp={dragEnd}
+          onMouseLeave={dragEnd}
+        >
+          <span className="h-1 w-10 rounded-full bg-slate-300" />
+        </div>
+        <div className="flex items-center justify-center border-b px-4 py-2">
           <p className="font-semibold">Comments</p>
-          <button onClick={onClose} aria-label="Close" className="text-slate-500"><CloseIcon /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -100,4 +120,12 @@ export default function CommentsModal({ post, currentUser, comments, commentText
       </div>
     </div>
   );
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 }

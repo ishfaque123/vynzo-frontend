@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 
 function LockIcon() {
@@ -56,7 +57,6 @@ function TrashIcon() {
 
 const items = [
   { label: 'Edit Profile', href: '/settings', Icon: EditIcon },
-  { label: 'Account Privacy', href: '/settings-menu/privacy', Icon: LockIcon },
   { label: 'Blocked Accounts', href: '/settings-menu/blocked', Icon: BlockIcon },
   { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
   { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
@@ -64,10 +64,19 @@ const items = [
 ];
 
 export default function SecurityPage() {
+  const [privacySheetOpen, setPrivacySheetOpen] = useState(false);
+
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       <h1 className="mb-4 text-xl font-semibold">Login &amp; Security</h1>
       <div className="mb-3 divide-y rounded-lg border">
+        <button
+          onClick={() => setPrivacySheetOpen(true)}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
+        >
+          <span className="text-slate-600"><LockIcon /></span>
+          <span className="text-slate-800">Account Privacy</span>
+        </button>
         {items.map((item) => (
           <Link
             key={item.href}
@@ -88,6 +97,29 @@ export default function SecurityPage() {
           <span className="font-medium text-red-600">Delete Account</span>
         </Link>
       </div>
+
+      {privacySheetOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => setPrivacySheetOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 text-center text-sm font-semibold text-slate-800">Account Privacy</p>
+            <div className="mb-4 rounded-lg border px-4 py-6 text-center text-sm text-slate-500">
+              This feature is coming soon.
+            </div>
+            <button
+              onClick={() => setPrivacySheetOpen(false)}
+              className="w-full rounded-full border py-2.5 text-sm font-medium text-slate-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
