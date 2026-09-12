@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { updatePost, deletePost, reportPost, hidePost } from '@/lib/api/postApi';
 import { toggleFollow } from '@/lib/api/userApi';
 import { createShareLink } from '@/lib/api/shareApi';
@@ -63,10 +63,7 @@ function NotInterestedIcon() {
   );
 }
 
-// Only one post's 3-dot menu should ever be open at a time on the page.
-// Whichever menu is currently open registers its own close function here;
-// opening a different one closes the previous one first.
-let closeActiveMenu: (() => void) | null = null;
+const CLOSE_THRESHOLD_PX = 100;
 
 export default function PostMenu({
   postId,
@@ -88,71 +85,39 @@ export default function PostMenu({
   onDeleted: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const [dragY, setDragY] = useState(0);
   const [editing, setEditing] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [editText, setEditText] = useState(content);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
+  const startYRef = useRef(0);
 
   const isFollowingAuthor = friendStatus === 'following' || friendStatus === 'friends';
 
   function closeMenu() {
     setOpen(false);
     setAudienceOpen(false);
+    setDragY(0);
   }
 
-  // Positioned with fixed (viewport) coordinates computed from the actual
-  // button location, so a short post card's overflow-hidden can never
-  // clip or misplace the dropdown — it always renders relative to the
-  // screen, not to the card.
-  function openMenu() {
-    if (closeActiveMenu) closeActiveMenu();
-    const btn = buttonRef.current;
-    if (btn) {
-      const rect = btn.getBoundingClientRect();
-      const menuWidth = 224;
-      const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const openUpward = spaceBelow < 280 && rect.top > 280;
-      setMenuStyle(
-        openUpward
-          ? { position: 'fixed', left, bottom: window.innerHeight - rect.top + 4, zIndex: 60 }
-          : { position: 'fixed', left, top: rect.bottom + 4, zIndex: 60 }
-      );
-    }
-    setOpen(true);
-    closeActiveMenu = closeMenu;
+  function dragStart(clientY: number) {
+    draggingRef.current = true;
+    startYRef.current = clientY;
   }
-
-  function toggleMenu() {
-    if (open) closeMenu();
-    else openMenu();
+  function dragMove(clientY: number) {
+    if (!draggingRef.current) return;
+    setDragY(Math.max(0, clientY - startYRef.current));
   }
-
-  useEffect(() => {
-    if (!open) return;
-    function handleOutside(e: MouseEvent | TouchEvent) {
-      const target = e.target as Node;
-      if (menuRef.current?.contains(target) || buttonRef.current?.contains(target)) return;
-      closeMenu();
-    }
-    document.addEventListener('mousedown', handleOutside);
-    document.addEventListener('touchstart', handleOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleOutside);
-      document.removeEventListener('touchstart', handleOutside);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    return () => {
-      if (closeActiveMenu === closeMenu) closeActiveMenu = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  function dragEnd() {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    setDragY((current) => {
+      if (current > CLOSE_THRESHOLD_PX) closeMenu();
+      return 0;
+    });
+  }
 
   async function saveEdit() {
     const result = await updatePost(postId, { content: editText });
@@ -237,58 +202,83 @@ export default function PostMenu({
 
   return (
     <div className="relative">
-      <button ref={buttonRef} onClick={toggleMenu} className="rounded-full p-1 text-slate-500 hover:bg-slate-100">
+      <button onClick={() => setOpen(true)} className="rounded-full p-1 text-slate-500 hover:bg-slate-100">
         <DotsIcon />
       </button>
 
       {open && (
-        <div ref={menuRef} style={menuStyle} className="w-56 rounded-lg border bg-white py-1 shadow-lg">
-          {isOwner ? (
-            <>
-              <button onClick={() => { setEditing(true); closeMenu(); }} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
-                <EditIcon /> Edit
-              </button>
-              <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
-                <LinkIcon /> Copy link
-              </button>
-              <button onClick={() => setAudienceOpen(!audienceOpen)} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
-                <CommentSettingIcon /> Who can comment
-              </button>
-              {audienceOpen && (
-                <div className="ml-8 border-l pl-2">
-                  {['everyone', 'followers', 'only_me'].map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => setAudience(v)}
-                      className={`block w-full px-2 py-1.5 text-left text-xs ${commentAudience === v ? 'font-semibold text-slate-900' : 'text-slate-500'}`}
-                    >
-                      {v === 'everyone' ? 'Everyone' : v === 'followers' ? 'Followers' : 'Only me'}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <button onClick={handleDelete} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">
-                <TrashIcon /> Delete
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50">
-                <LinkIcon /> Copy link
-              </button>
-              <button disabled={busy} onClick={handleReport} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
-                <FlagIcon /> Report post
-              </button>
-              {isFollowingAuthor && (
-                <button disabled={busy} onClick={handleUnfollow} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
-                  <UnfollowIcon /> Unfollow
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={closeMenu}
+        >
+          <div
+            className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6"
+            style={{
+              transform: `translateY(${dragY}px)`,
+              transition: dragY === 0 ? 'transform 0.2s ease' : 'none',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex cursor-grab flex-col items-center pt-2 pb-2 active:cursor-grabbing"
+              onTouchStart={(e) => dragStart(e.touches[0].clientY)}
+              onTouchMove={(e) => dragMove(e.touches[0].clientY)}
+              onTouchEnd={dragEnd}
+              onMouseDown={(e) => dragStart(e.clientY)}
+              onMouseMove={(e) => dragMove(e.clientY)}
+              onMouseUp={dragEnd}
+              onMouseLeave={dragEnd}
+            >
+              <span className="h-1 w-10 rounded-full bg-slate-300" />
+            </div>
+
+            {isOwner ? (
+              <>
+                <button onClick={() => { setEditing(true); closeMenu(); }} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                  <EditIcon /> Edit
                 </button>
-              )}
-              <button disabled={busy} onClick={handleHide} className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
-                <NotInterestedIcon /> Not interested
-              </button>
-            </>
-          )}
+                <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                  <LinkIcon /> Copy link
+                </button>
+                <button onClick={() => setAudienceOpen(!audienceOpen)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                  <CommentSettingIcon /> Who can comment
+                </button>
+                {audienceOpen && (
+                  <div className="ml-8 border-l pl-2">
+                    {['everyone', 'followers', 'only_me'].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setAudience(v)}
+                        className={`block w-full px-2 py-2 text-left text-xs ${commentAudience === v ? 'font-semibold text-slate-900' : 'text-slate-500'}`}
+                      >
+                        {v === 'everyone' ? 'Everyone' : v === 'followers' ? 'Followers' : 'Only me'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button onClick={handleDelete} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-600 hover:bg-slate-50">
+                  <TrashIcon /> Delete
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                  <LinkIcon /> Copy link
+                </button>
+                <button disabled={busy} onClick={handleReport} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
+                  <FlagIcon /> Report post
+                </button>
+                {isFollowingAuthor && (
+                  <button disabled={busy} onClick={handleUnfollow} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
+                    <UnfollowIcon /> Unfollow
+                  </button>
+                )}
+                <button disabled={busy} onClick={handleHide} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
+                  <NotInterestedIcon /> Not interested
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
