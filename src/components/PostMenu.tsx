@@ -218,6 +218,9 @@ export default function PostMenu({
               transition: dragY === 0 ? 'transform 0.2s ease' : 'none',
             }}
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => dragStart(e.touches[0].clientY)}
+            onTouchMove={(e) => dragMove(e.touches[0].clientY)}
+            onTouchEnd={dragEnd}
           >
             <div
               className="flex cursor-grab flex-col items-center pt-2 pb-2 active:cursor-grabbing"
