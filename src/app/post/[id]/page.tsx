@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
@@ -35,6 +35,7 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const commentsSeqRef = useRef(0);
 
   useEffect(() => {
     fetch(`${API_URL}/api/posts/${params.id}`, { credentials: 'include' })
@@ -61,8 +62,13 @@ export default function PostDetailPage() {
     setPost(null);
   }
 
+  // Guarded against out-of-order responses — see the matching note in the
+  // home feed. Only the most recently issued request's response is kept.
   async function loadComments() {
+    const seq = commentsSeqRef.current + 1;
+    commentsSeqRef.current = seq;
     const result = await fetchComments(post.id);
+    if (commentsSeqRef.current !== seq) return;
     if (result.success) setComments(result.data.comments);
   }
   async function handleToggleComments() {
@@ -78,7 +84,11 @@ export default function PostDetailPage() {
       await loadComments();
       setCommentText('');
       setReplyTo(null);
-      setPost((p: any) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
+      // Only top-level comments count toward the number shown on a post;
+      // replies do not increment it.
+      if (!parentCommentId) {
+        setPost((p: any) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
+      }
     } else {
       alert(result.error.message);
     }

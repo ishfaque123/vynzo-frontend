@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/useAuth';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
@@ -32,20 +32,27 @@ export default function HomePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
+  const commentsSeqRef = useRef<Record<string, number>>({});
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchFeed()
+      fetchFeed(0)
         .then((result) => {
           if (result.success) {
             setPosts(result.data.posts);
+            setHasMore(!!result.data.hasMore);
+            setOffset(result.data.posts.length);
             setFeedError(false);
           } else {
             setFeedError(true);
@@ -55,6 +62,36 @@ export default function HomePage() {
         .finally(() => setFeedLoading(false));
     }
   }, [isAuthenticated]);
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const result = await fetchFeed(offset);
+    setLoadingMore(false);
+    if (result.success) {
+      setPosts((prev) => {
+        const existingIds = new Set(prev.map((p) => p.id));
+        const fresh = result.data.posts.filter((p: any) => !existingIds.has(p.id));
+        return [...prev, ...fresh];
+      });
+      setHasMore(!!result.data.hasMore);
+      setOffset((o) => o + result.data.posts.length);
+    }
+  }
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '400px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offset, hasMore, loadingMore]);
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
     setPosts(posts.map((p) => {
@@ -77,8 +114,15 @@ export default function HomePage() {
     setPosts(posts.filter((p) => p.id !== postId));
   }
 
+  // Guarded against out-of-order responses: if two loadComments calls for
+  // the same post are in flight, only the reply to the most recently
+  // issued request is applied — an older, slower response can no longer
+  // clobber newer state.
   async function loadComments(postId: string) {
+    const seq = (commentsSeqRef.current[postId] || 0) + 1;
+    commentsSeqRef.current[postId] = seq;
     const result = await fetchComments(postId);
+    if (commentsSeqRef.current[postId] !== seq) return;
     if (result.success) setComments((prev) => ({ ...prev, [postId]: result.data.comments }));
   }
 
@@ -89,13 +133,18 @@ export default function HomePage() {
 
   async function handleAddComment(postId: string) {
     if (!commentText.trim()) return;
-    const result = await addComment(postId, commentText, replyTo?.postId === postId ? replyTo.commentId : undefined);
+    const parentCommentId = replyTo?.postId === postId ? replyTo.commentId : undefined;
+    const result = await addComment(postId, commentText, parentCommentId);
     if (result.success) {
       playCommentSound();
       await loadComments(postId);
       setCommentText('');
       setReplyTo(null);
-      setPosts(posts.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
+      // Only top-level comments count toward the number shown on a post;
+      // replies do not increment it.
+      if (!parentCommentId) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
+      }
     } else {
       alert(result.error.message);
     }
@@ -121,24 +170,30 @@ export default function HomePage() {
       ) : posts.length === 0 ? (
         <p className="text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {posts.map((post, index) => (
-            <div key={post.id}>
-              <PostCard post={post} currentUser={user}
-                onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
-                isOpen={false} comments={comments[post.id]}
-                commentText={commentText} setCommentText={setCommentText}
-                replyTo={replyTo} setReplyTo={setReplyTo}
-                onAddComment={handleAddComment} onCommentsChanged={loadComments}
-                onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
-              {(index + 1) % 5 === 0 && (
-                <div className="my-4">
-                  <AdUnit />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3">
+            {posts.map((post, index) => (
+              <div key={post.id}>
+                <PostCard post={post} currentUser={user}
+                  onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+                  isOpen={false} comments={comments[post.id]}
+                  commentText={commentText} setCommentText={setCommentText}
+                  replyTo={replyTo} setReplyTo={setReplyTo}
+                  onAddComment={handleAddComment} onCommentsChanged={loadComments}
+                  onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+                {(index + 1) % 5 === 0 && (
+                  <div className="my-4">
+                    <AdUnit />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div ref={sentinelRef} className="py-6 text-center text-sm text-slate-400">
+            {loadingMore ? 'Loading more...' : hasMore ? '' : "You're all caught up"}
+          </div>
+        </>
       )}
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}

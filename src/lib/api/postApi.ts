@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function fetchFeed() {
-  const res = await fetch(`${API_URL}/api/posts`, { credentials: 'include' });
+export async function fetchFeed(offset = 0) {
+  const res = await fetch(`${API_URL}/api/posts?offset=${offset}`, { credentials: 'include' });
   return res.json();
 }
 
