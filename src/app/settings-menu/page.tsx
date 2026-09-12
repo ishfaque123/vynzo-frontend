@@ -104,14 +104,8 @@ function TrashIcon() {
 
 const menuItems = [
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
-  { label: 'Account Privacy', href: '/settings-menu/privacy', Icon: LockIcon },
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: StarIcon },
-  { label: 'Blocked Accounts', href: '/settings-menu/blocked', Icon: BlockIcon },
-  { label: 'Comments', href: '/settings-menu/comments', Icon: CommentIcon },
   { label: 'Login & Security', href: '/settings-menu/security', Icon: ShieldIcon },
-  { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
-  { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
-  { label: 'Edit Profile', href: '/settings', Icon: EditIcon },
 ];
 
 export default function SettingsMenuPage() {
@@ -182,10 +176,6 @@ export default function SettingsMenuPage() {
           <span className="text-red-600"><PowerIcon /></span>
           <span className="font-medium text-red-600">Logout</span>
         </button>
-        <Link href="/settings-menu/delete-account" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-          <span className="text-red-600"><TrashIcon /></span>
-          <span className="font-medium text-red-600">Delete Account</span>
-        </Link>
       </div>
 
       {showLogoutConfirm && (
