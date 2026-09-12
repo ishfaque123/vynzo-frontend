@@ -116,14 +116,14 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
       <audio ref={audioRef} src={url} preload="metadata" className="hidden" />
       <button
         onClick={toggle}
-        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isMine ? 'bg-white/20 text-white' : 'bg-slate-300 text-slate-700'}`}
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${isMine ? 'bg-green-700/20 text-green-900' : 'bg-slate-300 text-slate-700'}`}
         aria-label={playing ? 'Pause' : 'Play'}
       >
         {playing ? <PauseIcon /> : <PlayIcon />}
       </button>
       <div className="flex-1">
-        <div className={`h-1 w-full overflow-hidden rounded-full ${isMine ? 'bg-white/25' : 'bg-slate-300'}`}>
-          <div className={`h-full rounded-full ${isMine ? 'bg-white' : 'bg-slate-600'}`} style={{ width: `${progress * 100}%` }} />
+        <div className={`h-1 w-full overflow-hidden rounded-full ${isMine ? 'bg-green-700/20' : 'bg-slate-300'}`}>
+        <div className={`h-full rounded-full ${isMine ? 'bg-green-700' : 'bg-slate-600'}`} style={{ width: `${progress * 100}%` }} />
         </div>
       </div>
       <span className="flex-shrink-0 text-[10px]">{formatDuration(displaySeconds)}</span>
@@ -133,7 +133,7 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
 
 // WhatsApp-style ticks: one grey = sent, two grey = delivered, two blue = read.
 function Ticks({ status }: { status: 'sent' | 'delivered' | 'read' }) {
-  const color = status === 'read' ? '#5ec5fd' : 'rgba(255,255,255,0.55)';
+  const color = status === 'read' ? '#4fc3f7' : '#8b9a8f';
   if (status === 'sent') {
     return (
       <svg width="13" height="10" viewBox="0 0 16 11" fill="none" className="flex-shrink-0">
@@ -596,7 +596,7 @@ export default function ChatPage() {
               <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl text-sm ${
-                    isMine ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-800'
+                    isMine ? 'bg-[#dcf8c6] text-slate-900' : 'bg-slate-100 text-slate-800'
                   } ${isImage ? 'p-1.5' : 'px-3 py-2'}`}
                 >
                   {isImage && (
@@ -606,7 +606,7 @@ export default function ChatPage() {
                     <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
                   )}
                   {m.content && <p className={isImage ? 'px-1.5 pt-1' : ''}>{m.content}</p>}
-                  <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-white/60' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
+                  <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
                     <span className="text-[10px]">{formatMessageTime(m.createdAt)}</span>
                     {isMine && status && <Ticks status={status} />}
                   </div>
