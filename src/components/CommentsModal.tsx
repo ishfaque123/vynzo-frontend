@@ -31,12 +31,9 @@ export default function CommentsModal({ post, currentUser, comments, commentText
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevHtmlOverflow;
     };
   }, []);
 
@@ -80,7 +77,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           <p className="font-semibold">Comments</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
           {(comments || []).length === 0 ? (
             <p className="pt-6 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p>
           ) : (
