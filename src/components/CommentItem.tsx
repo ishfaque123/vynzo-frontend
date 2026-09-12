@@ -42,13 +42,6 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(days / 365)}y`;
 }
 
-// Renders exactly ONE comment bubble (top-level comment OR a flattened reply).
-// depth=0 -> top-level comment, no left indent.
-// depth=1 -> a reply, gets the indent + "@parentAuthor" blue mention inline.
-// This component no longer recurses into comment.replies itself — flattening
-// and the "View N replies" expand/collapse is handled by the parent
-// (CommentsModal), so every reply-to-a-reply renders at the SAME indent
-// level instead of drifting further right with each nested reply.
 export default function CommentItem({ comment, currentUser, postOwnerId, onReplyClick, onChanged, depth = 0, parentAuthor }: any) {
   const [showPicker, setShowPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,6 +68,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     setLocalCount(prevCount + (removing ? -1 : prevReaction ? 0 : 1));
 
     const result = await setCommentReaction(comment.id, type);
+    if (!result.success) {
       setLocalReaction(prevReaction);
       setLocalCount(prevCount);
     }
