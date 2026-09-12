@@ -103,7 +103,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
     if (hiding) return;
     setHiding(true);
     const result = await hidePost(post.id);
-    if (result.success) onDeleted();
+    if (result.success) onDeleted(post.id);
     else setHiding(false);
   }
 
