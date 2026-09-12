@@ -79,6 +79,13 @@ function ThemeIcon() {
     </svg>
   );
 }
+function ClockIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 15" />
+    </svg>
+  );
+}
 function EditIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -104,6 +111,7 @@ function TrashIcon() {
 
 const menuItems = [
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
+  { label: 'Your Activity', href: '/settings-menu/activity', Icon: ClockIcon },
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: StarIcon },
   { label: 'Login & Security', href: '/settings-menu/security', Icon: ShieldIcon },
 ];

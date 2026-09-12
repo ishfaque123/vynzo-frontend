@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { BellIcon } from '@/components/icons/UiIcons';
 import { fetchUnreadCount } from '@/lib/api/notificationApi';
+import UsageTracker from '@/components/UsageTracker';
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -95,7 +96,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const hideChrome = pathname === '/login' || pathname === '/profile-setup' || pathname.startsWith('/s/') || isChatThread;
 
   if (hideChrome || !isAuthenticated) {
-    return <>{children}</>;
+    return <>{isAuthenticated && <UsageTracker />}{children}</>;
   }
 
   const profileHref = user?.username ? `/u/${user.username}` : '/settings';
@@ -103,6 +104,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
+      <UsageTracker />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
         <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
 
