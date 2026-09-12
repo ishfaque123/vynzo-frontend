@@ -596,8 +596,8 @@ export default function ChatPage() {
               <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl text-[15px] leading-snug ${
-                    isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
-                  } ${isImage ? 'p-1.5' : 'px-3 py-2'}`}
+                    isImage || isVoice ? '' : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
+                  } ${isImage ? 'p-1.5' : isVoice ? 'px-1 py-1' : 'px-3 py-2'}`}
                 >
                   {isImage && (
                     <img src={m.mediaUrl!} alt="" className="max-h-72 w-full rounded-xl object-cover" />
