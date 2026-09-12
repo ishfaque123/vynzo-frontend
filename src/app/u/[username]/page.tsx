@@ -64,7 +64,7 @@ export default function ProfilePage() {
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<string>('none');
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -88,9 +88,7 @@ export default function ProfilePage() {
         setBlockedByMe(!!result.data.user.blockedByMe);
         setBlockedByOther(!!result.data.user.blockedByOther);
         fetchFollowCounts(result.data.user.id).then((c) => { if (c.success) setCounts(c.data); });
-        fetchFollowStatus(result.data.user.id).then((s) => {
-          if (s.success) setIsFollowing(s.data.status === 'following' || s.data.status === 'friends');
-        });
+        setFriendStatus(result.data.user.friendStatus || 'none');
       }
       setLoading(false);
     });
@@ -104,7 +102,11 @@ export default function ProfilePage() {
     if (!profile) return;
     const result = await toggleFollow(profile.id);
     if (result.success) {
-      setIsFollowing(result.data.following);
+      if (result.data.following) {
+        setFriendStatus((prev) => (prev === 'follow_back' ? 'friends' : 'following'));
+      } else {
+        setFriendStatus('none');
+      }
       setCounts((prev) => ({ ...prev, followers: prev.followers + (result.data.following ? 1 : -1) }));
     }
   }
@@ -142,7 +144,7 @@ export default function ProfilePage() {
         const result = await blockUser(profile.id);
         if (result.success) {
           setBlockedByMe(true);
-          setIsFollowing(false);
+          setFriendStatus('none');
         }
       }
     } catch {
@@ -262,9 +264,13 @@ export default function ProfilePage() {
           <button onClick={handleBlockToggle} disabled={blockBusy} className="mt-4 w-full rounded-lg border py-2 font-medium text-slate-700 disabled:opacity-50">
             Unblock
           </button>
+        ) : friendStatus === 'friends' ? (
+          <button onClick={handleFollow} className="mt-4 w-full rounded-lg bg-slate-100 py-2 font-medium text-slate-700">
+            • Friends
+          </button>
         ) : (
-          <button onClick={handleFollow} className={`mt-4 w-full rounded-lg py-2 font-medium ${isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
-            {isFollowing ? 'Following' : 'Follow'}
+          <button onClick={handleFollow} className={`mt-4 w-full rounded-lg py-2 font-medium ${friendStatus === 'following' ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
+            {friendStatus === 'following' ? 'Following' : friendStatus === 'follow_back' ? 'Follow Back' : 'Follow'}
           </button>
         )}
       </div>
