@@ -10,6 +10,7 @@ import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
+import { setPendingComposeImage } from '@/lib/pendingComposeImage';
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -42,6 +43,7 @@ export default function HomePage() {
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
   const commentsSeqRef = useRef<Record<string, number>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
 
@@ -161,11 +163,33 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <button onClick={() => router.push('/compose')} className="mb-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm">
-        <Avatar url={user.profilePictureUrl} name={user.displayName} />
-        <span className="flex-1 text-slate-400">What's on your mind?</span>
-        <span className="rounded-full bg-slate-100 p-1.5 text-slate-600"><PlusIcon /></span>
-      </button>
+      <div className="mb-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <button onClick={() => router.push('/compose')} className="flex flex-1 items-center gap-3 text-left">
+          <Avatar url={user.profilePictureUrl} name={user.displayName} />
+          <span className="flex-1 text-slate-400">What's on your mind?</span>
+        </button>
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setPendingComposeImage(file);
+              router.push('/compose');
+            }
+            e.target.value = '';
+          }}
+        />
+        <button
+          onClick={() => galleryInputRef.current?.click()}
+          aria-label="Add a photo"
+          className="rounded-full bg-slate-100 p-1.5 text-slate-600"
+        >
+          <PlusIcon />
+        </button>
+      </div>
 
       {feedLoading ? (
         <p className="text-slate-500">Loading feed...</p>
