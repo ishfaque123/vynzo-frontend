@@ -9,8 +9,8 @@ import CommentItem from './CommentItem';
 // is what stops "reply to a reply to a reply..." from drifting further and
 // further to the right — everything renders at the same indent, Facebook
 // style, with the @mention showing who it was actually aimed at.
-function flattenReplies(replies, parentAuthor) {
-  const flat = [];
+function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
+  const flat: any[] = [];
   for (const r of replies || []) {
     flat.push({ ...r, parentAuthor });
     if (r.replies?.length) {
@@ -23,14 +23,14 @@ function flattenReplies(replies, parentAuthor) {
 
 const CLOSE_THRESHOLD_PX = 100;
 
-export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }) {
-  const [expandedIds, setExpandedIds] = useState(new Set());
+export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }: any) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [dragY, setDragY] = useState(0);
-  const [vh, setVh] = useState(null);
+  const [vh, setVh] = useState<number | null>(null);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
-  const listRef = useRef(null);
-  const inputRef = useRef(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
@@ -58,17 +58,17 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     return () => clearTimeout(t);
   }, []);
 
-  function startReply(id, name) {
+  function startReply(id: string, name: string) {
     setReplyTo({ postId: post.id, commentId: id, name });
     setCommentText(`@${name} `);
     inputRef.current?.focus();
   }
 
-  function dragStart(clientY) {
+  function dragStart(clientY: number) {
     draggingRef.current = true;
     startYRef.current = clientY;
   }
-  function dragMove(clientY) {
+  function dragMove(clientY: number) {
     if (!draggingRef.current) return;
     setDragY(Math.max(0, clientY - startYRef.current));
   }
@@ -81,11 +81,11 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     });
   }
 
-  function listTouchStart(e) {
+  function listTouchStart(e: React.TouchEvent) {
     startYRef.current = e.touches[0].clientY;
     draggingRef.current = false;
   }
-  function listTouchMove(e) {
+  function listTouchMove(e: React.TouchEvent) {
     const currentY = e.touches[0].clientY;
     const delta = currentY - startYRef.current;
     const el = listRef.current;
@@ -148,7 +148,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           {(comments || []).length === 0 ? (
             <p className="pt-6 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p>
           ) : (
-            (comments || []).map((c) => {
+            (comments || []).map((c: any) => {
               const flatReplies = flattenReplies(c.replies, c.author);
               const isExpanded = expandedIds.has(c.id);
               return (
@@ -165,7 +165,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                         </button>
                       ) : (
                         <>
-                          {flatReplies.map((r) => (
+                          {flatReplies.map((r: any) => (
                             <CommentItem key={r.id} comment={r} currentUser={currentUser} postOwnerId={post.author.id}
                               onReplyClick={startReply}
                               onChanged={() => onCommentsChanged(post.id)} depth={1} parentAuthor={r.parentAuthor} />
@@ -199,7 +199,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     </div>
   );
 
-  function toggleExpand(id) {
+  function toggleExpand(id: string) {
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
