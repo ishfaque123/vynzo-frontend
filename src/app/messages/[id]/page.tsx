@@ -157,6 +157,7 @@ interface Message {
   mediaUrl?: string | null;
   mediaType?: 'image' | 'voice' | null;
   voiceDuration?: number | null;
+  isDeleted?: boolean;
   createdAt: string;
   sender?: { id: string; username: string; displayName: string; profilePictureUrl?: string };
 }
@@ -234,6 +235,8 @@ export default function ChatPage() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [deleteMenuFor, setDeleteMenuFor] = useState<Message | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -305,7 +308,12 @@ export default function ChatPage() {
       setOtherLastDeliveredAt(new Date());
     }
 
+    function handleMessageDeleted({ messageId }: { messageId: string }) {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, isDeleted: true, content: '', mediaUrl: null, mediaType: null } : m)));
+    }
+
     socket.on('message:new', handleNewMessage);
+    socket.on('message:deleted', handleMessageDeleted);
     socket.on('typing:start', handleTypingStart);
     socket.on('typing:stop', handleTypingStop);
     socket.on('presence:online', handlePresenceOnline);
@@ -316,6 +324,7 @@ export default function ChatPage() {
 
     return () => {
       socket.off('message:new', handleNewMessage);
+      socket.off('message:deleted', handleMessageDeleted);
       socket.off('typing:start', handleTypingStart);
       socket.off('typing:stop', handleTypingStop);
       socket.off('presence:online', handlePresenceOnline);
@@ -452,6 +461,33 @@ export default function ChatPage() {
   function handleMicClick() {
     if (recording) stopRecording();
     else startRecording();
+  }
+
+  function startLongPress(m: Message) {
+    if (m.isDeleted) return;
+    longPressTimer.current = setTimeout(() => setDeleteMenuFor(m), 450);
+  }
+  function cancelLongPress() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+  function handleDeleteForMe() {
+    if (!deleteMenuFor) return;
+    const id = deleteMenuFor.id;
+    setDeleteMenuFor(null);
+    const socket = getSocket();
+    socket.emit('message:delete', { messageId: id, mode: 'me' }, (res: { success: boolean; error?: string }) => {
+      if (res.success) setMessages((prev) => prev.filter((m) => m.id !== id));
+      else showToast('Could not delete message.', 'error');
+    });
+  }
+  function handleDeleteForEveryone() {
+    if (!deleteMenuFor) return;
+    const id = deleteMenuFor.id;
+    setDeleteMenuFor(null);
+    const socket = getSocket();
+    socket.emit('message:delete', { messageId: id, mode: 'everyone' }, (res: { success: boolean; error?: string }) => {
+      if (!res.success) showToast('Could not delete message.', 'error');
+    });
   }
 
   function openReportModal() {
@@ -595,21 +631,32 @@ export default function ChatPage() {
             return (
               <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
+                  onTouchStart={() => startLongPress(m)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setDeleteMenuFor(m); }}
                   className={`max-w-[75%] rounded-2xl text-[15px] leading-snug ${
+                    m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
                     isImage || isVoice ? '' : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
-                  } ${isImage ? 'p-1.5' : isVoice ? 'px-1 py-1' : 'px-3 py-2'}`}
+                  } ${m.isDeleted ? 'px-3 py-2' : isImage ? 'p-1.5' : isVoice ? 'px-1 py-1' : 'px-3 py-2'}`}
                 >
-                  {isImage && (
-                    <img src={m.mediaUrl!} alt="" className="max-h-72 w-full rounded-xl object-cover" />
+                  {m.isDeleted ? (
+                    <p>This message was deleted</p>
+                  ) : (
+                    <>
+                      {isImage && (
+                        <img src={m.mediaUrl!} alt="" className="max-h-72 w-full rounded-xl object-cover" />
+                      )}
+                      {isVoice && (
+                        <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
+                      )}
+                      {m.content && <p className={isImage ? 'px-1.5 pt-1' : ''}>{m.content}</p>}
+                      <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
+                        <span className="text-[11px]">{formatMessageTime(m.createdAt)}</span>
+                        {isMine && status && <Ticks status={status} />}
+                      </div>
+                    </>
                   )}
-                  {isVoice && (
-                    <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
-                  )}
-                  {m.content && <p className={isImage ? 'px-1.5 pt-1' : ''}>{m.content}</p>}
-                  <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
-                    <span className="text-[11px]">{formatMessageTime(m.createdAt)}</span>
-                    {isMine && status && <Ticks status={status} />}
-                  </div>
                 </div>
               </div>
             );
@@ -733,6 +780,42 @@ export default function ChatPage() {
                 Submit
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {deleteMenuFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => setDeleteMenuFor(null)}
+        >
+          <div
+            className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center pt-2 pb-1">
+              <span className="h-1 w-10 rounded-full bg-slate-300" />
+            </div>
+            <button
+              onClick={handleDeleteForMe}
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-slate-800 hover:bg-slate-50"
+            >
+              Delete for me
+            </button>
+            {deleteMenuFor.senderId === user?.id && (
+              <button
+                onClick={handleDeleteForEveryone}
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-red-600 hover:bg-slate-50"
+              >
+                Delete for everyone
+              </button>
+            )}
+            <button
+              onClick={() => setDeleteMenuFor(null)}
+              className="mt-1 flex w-full items-center justify-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium text-slate-700"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
