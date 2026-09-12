@@ -21,3 +21,14 @@ export async function fetchMessages(conversationId: string, cursor?: string) {
   const res = await fetch(url.toString(), { credentials: 'include' });
   return res.json();
 }
+
+export async function uploadChatMedia(file: File | Blob, filename: string) {
+  const formData = new FormData();
+  formData.append('file', file, filename);
+  const res = await fetch(`${API_URL}/api/upload/chat`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  return res.json();
+}
