@@ -135,7 +135,7 @@ export default function ComposePage() {
       )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="mb-3 flex items-center gap-3">
+        <div className="mb-1 flex items-center gap-3">
           <Avatar url={user?.profilePictureUrl} name={user?.displayName} />
           <p className="font-semibold text-slate-900">{user?.displayName || user?.username}</p>
         </div>
