@@ -45,22 +45,26 @@ export default function HomePage() {
 
   useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
 
+  function loadFeed() {
+    setFeedLoading(true);
+    fetchFeed(0)
+      .then((result) => {
+        if (result.success) {
+          setPosts(result.data.posts);
+          setHasMore(!!result.data.hasMore);
+          setOffset(result.data.posts.length);
+          setFeedError(false);
+        } else {
+          setFeedError(true);
+        }
+      })
+      .catch(() => setFeedError(true))
+      .finally(() => setFeedLoading(false));
+  }
+
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchFeed(0)
-        .then((result) => {
-          if (result.success) {
-            setPosts(result.data.posts);
-            setHasMore(!!result.data.hasMore);
-            setOffset(result.data.posts.length);
-            setFeedError(false);
-          } else {
-            setFeedError(true);
-          }
-        })
-        .catch(() => setFeedError(true))
-        .finally(() => setFeedLoading(false));
-    }
+    if (isAuthenticated) loadFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   async function loadMore() {
@@ -166,7 +170,15 @@ export default function HomePage() {
       {feedLoading ? (
         <p className="text-slate-500">Loading feed...</p>
       ) : feedError ? (
-        <p className="text-center text-sm text-red-500">Failed to load posts. Please try again.</p>
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <p className="text-sm text-red-500">Failed to load posts. Please try again.</p>
+          <button
+            onClick={loadFeed}
+            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white"
+          >
+            Retry
+          </button>
+        </div>
       ) : posts.length === 0 ? (
         <p className="text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
