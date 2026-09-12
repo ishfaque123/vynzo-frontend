@@ -305,15 +305,15 @@ export default function ChatPage() {
     }
     // The other person opened this chat (or the app came online and caught
     // up) — flip our sent messages' ticks to reflect that.
-    function handleConversationRead({ conversationId: cid, userId }: { conversationId: string; userId: string; readAt: string }) {
+    function handleConversationRead({ conversationId: cid, userId, readAt }: { conversationId: string; userId: string; readAt: string }) {
       if (cid !== conversationId || userId === user?.id) return;
-      const now = new Date();
-      setOtherLastReadAt(now);
-      setOtherLastDeliveredAt(now);
+      const at = new Date(readAt);
+      setOtherLastReadAt(at);
+      setOtherLastDeliveredAt(at);
     }
-    function handleConversationDelivered({ conversationId: cid, userId }: { conversationId: string; userId: string; deliveredAt: string }) {
+    function handleConversationDelivered({ conversationId: cid, userId, deliveredAt }: { conversationId: string; userId: string; deliveredAt: string }) {
       if (cid !== conversationId || userId === user?.id) return;
-      setOtherLastDeliveredAt(new Date());
+      setOtherLastDeliveredAt(new Date(deliveredAt));
     }
 
     function handleMessageDeleted({ messageId }: { messageId: string }) {
