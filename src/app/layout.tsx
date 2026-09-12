@@ -1,4 +1,5 @@
 import './globals.css';
+import type { Viewport } from 'next';
 import Script from 'next/script';
 import Shell from '@/components/Shell';
 import ThemeProvider from '@/components/ThemeProvider';
@@ -6,6 +7,13 @@ import ThemeProvider from '@/components/ThemeProvider';
 export const metadata = {
   title: 'Friendzo',
   description: 'Friendzo — share your moments',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

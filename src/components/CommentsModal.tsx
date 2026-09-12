@@ -3,12 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import CommentItem from './CommentItem';
 
-// Flattens an arbitrarily deep reply tree into a single-level chronological
-// list, tracking each reply's REAL immediate parent (for the blue
-// "@username" mention) separately from its display depth (always 1). This
-// is what stops "reply to a reply to a reply..." from drifting further and
-// further to the right — everything renders at the same indent, Facebook
-// style, with the @mention showing who it was actually aimed at.
 function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
   const flat: any[] = [];
   for (const r of replies || []) {
@@ -26,7 +20,7 @@ const CLOSE_THRESHOLD_PX = 100;
 export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }: any) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [dragY, setDragY] = useState(0);
-  const [vh, setVh] = useState<number | null>(null);
+  const [viewport, setViewport] = useState<{ top: number; height: number } | null>(null);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -41,15 +35,16 @@ export default function CommentsModal({ post, currentUser, comments, commentText
   }, []);
 
   useEffect(() => {
-    function updateVh() {
-      if (window.visualViewport) setVh(window.visualViewport.height);
+    function updateViewport() {
+      const vv = window.visualViewport;
+      if (vv) setViewport({ top: vv.offsetTop, height: vv.height });
     }
-    updateVh();
-    window.visualViewport?.addEventListener('resize', updateVh);
-    window.visualViewport?.addEventListener('scroll', updateVh);
+    updateViewport();
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
     return () => {
-      window.visualViewport?.removeEventListener('resize', updateVh);
-      window.visualViewport?.removeEventListener('scroll', updateVh);
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('scroll', updateViewport);
     };
   }, []);
 
@@ -109,14 +104,19 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     });
   }
 
-  const modalHeight = vh ? Math.round(vh * 0.9) : undefined;
+  const wrapperStyle: React.CSSProperties = viewport
+    ? { position: 'fixed', top: viewport.top, left: 0, right: 0, height: viewport.height }
+    : { position: 'fixed', inset: 0 };
+
+  const modalHeight = viewport ? Math.round(viewport.height * 0.9) : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+    <div className="z-50 flex items-end justify-center bg-black/40" style={wrapperStyle} onClick={onClose}>
       <div
         className="flex w-full max-w-xl flex-col rounded-t-2xl bg-white"
         style={{
           height: modalHeight ? `${modalHeight}px` : '85vh',
+          maxHeight: '100%',
           transform: `translateY(${dragY}px)`,
           transition: dragY === 0 ? 'transform 0.2s ease' : 'none',
         }}
@@ -183,7 +183,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           )}
         </div>
 
-        <div className="border-t px-4 py-3">
+        <div className="border-t px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <div className="flex gap-2">
             <input
               ref={inputRef}
