@@ -31,6 +31,7 @@ export default function HomePage() {
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState(false);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
@@ -41,7 +42,17 @@ export default function HomePage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchFeed().then((result) => { if (result.success) setPosts(result.data.posts); }).finally(() => setFeedLoading(false));
+      fetchFeed()
+        .then((result) => {
+          if (result.success) {
+            setPosts(result.data.posts);
+            setFeedError(false);
+          } else {
+            setFeedError(true);
+          }
+        })
+        .catch(() => setFeedError(true))
+        .finally(() => setFeedLoading(false));
     }
   }, [isAuthenticated]);
 
@@ -105,6 +116,8 @@ export default function HomePage() {
 
       {feedLoading ? (
         <p className="text-slate-500">Loading feed...</p>
+      ) : feedError ? (
+        <p className="text-center text-sm text-red-500">Failed to load posts. Please try again.</p>
       ) : posts.length === 0 ? (
         <p className="text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
