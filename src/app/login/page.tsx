@@ -17,9 +17,8 @@ function GoogleIcon() {
 function FriendzoLogo() {
   return (
     <div className="flex flex-col items-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 shadow-sm">
-        <span className="text-2xl font-bold text-white">F</span>
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="Friendzo" className="h-20 w-20 object-contain" />
       <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">Friendzo</h1>
       <p className="mt-1 text-sm text-slate-500">Share your moments with friends</p>
     </div>

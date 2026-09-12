@@ -106,7 +106,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-slate-50">
       <UsageTracker />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
-        <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
+        <Link href="/" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Friendzo" className="h-7 w-7 object-contain" />
+          <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
+        </Link>
 
         <div className="flex items-center gap-1">
           {!isInSettingsMenu && (
