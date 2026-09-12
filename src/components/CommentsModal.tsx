@@ -9,8 +9,8 @@ import CommentItem from './CommentItem';
 // is what stops "reply to a reply to a reply..." from drifting further and
 // further to the right — everything renders at the same indent, Facebook
 // style, with the @mention showing who it was actually aimed at.
-function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
-  const flat: any[] = [];
+function flattenReplies(replies, parentAuthor) {
+  const flat = [];
   for (const r of replies || []) {
     flat.push({ ...r, parentAuthor });
     if (r.replies?.length) {
@@ -23,12 +23,14 @@ function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
 
 const CLOSE_THRESHOLD_PX = 100;
 
-export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }: any) {
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }) {
+  const [expandedIds, setExpandedIds] = useState(new Set());
   const [dragY, setDragY] = useState(0);
+  const [vh, setVh] = useState(null);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
-  const listRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
@@ -38,12 +40,35 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     };
   }, []);
 
-  // Handle-bar drag: works from anywhere on the handle, regardless of list scroll position.
-  function dragStart(clientY: number) {
+  useEffect(() => {
+    function updateVh() {
+      if (window.visualViewport) setVh(window.visualViewport.height);
+    }
+    updateVh();
+    window.visualViewport?.addEventListener('resize', updateVh);
+    window.visualViewport?.addEventListener('scroll', updateVh);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateVh);
+      window.visualViewport?.removeEventListener('scroll', updateVh);
+    };
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  function startReply(id, name) {
+    setReplyTo({ postId: post.id, commentId: id, name });
+    setCommentText(`@${name} `);
+    inputRef.current?.focus();
+  }
+
+  function dragStart(clientY) {
     draggingRef.current = true;
     startYRef.current = clientY;
   }
-  function dragMove(clientY: number) {
+  function dragMove(clientY) {
     if (!draggingRef.current) return;
     setDragY(Math.max(0, clientY - startYRef.current));
   }
@@ -56,14 +81,11 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     });
   }
 
-  // List drag: only takes over once the list is already scrolled to the very
-  // top AND the finger keeps moving down from there — like Instagram/Facebook.
-  // Until that happens, normal scrolling is left completely alone.
-  function listTouchStart(e: React.TouchEvent) {
+  function listTouchStart(e) {
     startYRef.current = e.touches[0].clientY;
     draggingRef.current = false;
   }
-  function listTouchMove(e: React.TouchEvent) {
+  function listTouchMove(e) {
     const currentY = e.touches[0].clientY;
     const delta = currentY - startYRef.current;
     const el = listRef.current;
@@ -87,11 +109,17 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     });
   }
 
+  const modalHeight = vh ? Math.round(vh * 0.9) : undefined;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
       <div
-        className="flex h-[85vh] w-full max-w-xl flex-col rounded-t-2xl bg-white"
-        style={{ transform: `translateY(${dragY}px)`, transition: dragY === 0 ? 'transform 0.2s ease' : 'none' }}
+        className="flex w-full max-w-xl flex-col rounded-t-2xl bg-white"
+        style={{
+          height: modalHeight ? `${modalHeight}px` : '85vh',
+          transform: `translateY(${dragY}px)`,
+          transition: dragY === 0 ? 'transform 0.2s ease' : 'none',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -120,13 +148,13 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           {(comments || []).length === 0 ? (
             <p className="pt-6 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p>
           ) : (
-            (comments || []).map((c: any) => {
+            (comments || []).map((c) => {
               const flatReplies = flattenReplies(c.replies, c.author);
               const isExpanded = expandedIds.has(c.id);
               return (
                 <div key={c.id} className="mb-3">
                   <CommentItem comment={c} currentUser={currentUser} postOwnerId={post.author.id}
-                    onReplyClick={(id: string, name: string) => setReplyTo({ postId: post.id, commentId: id, name })}
+                    onReplyClick={startReply}
                     onChanged={() => onCommentsChanged(post.id)} depth={0} />
 
                   {flatReplies.length > 0 && (
@@ -137,9 +165,9 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                         </button>
                       ) : (
                         <>
-                          {flatReplies.map((r: any) => (
+                          {flatReplies.map((r) => (
                             <CommentItem key={r.id} comment={r} currentUser={currentUser} postOwnerId={post.author.id}
-                              onReplyClick={(id: string, name: string) => setReplyTo({ postId: post.id, commentId: id, name })}
+                              onReplyClick={startReply}
                               onChanged={() => onCommentsChanged(post.id)} depth={1} parentAuthor={r.parentAuthor} />
                           ))}
                           <button onClick={() => toggleExpand(c.id)} className="mt-1 text-xs font-semibold text-slate-500 hover:underline">
@@ -156,11 +184,14 @@ export default function CommentsModal({ post, currentUser, comments, commentText
         </div>
 
         <div className="border-t px-4 py-3">
-          {replyTo?.postId === post.id && (
-            <p className="mb-2 text-xs text-slate-500">Replying to <b>{replyTo.name}</b> <button onClick={() => setReplyTo(null)} className="text-red-500">✕</button></p>
-          )}
           <div className="flex gap-2">
-            <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment..." className="flex-1 rounded-lg border px-3 py-2 text-sm" />
+            <input
+              ref={inputRef}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Write a comment..."
+              className="flex-1 rounded-lg border px-3 py-2 text-sm"
+            />
             <button onClick={() => onAddComment(post.id)} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">Send</button>
           </div>
         </div>
@@ -168,7 +199,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     </div>
   );
 
-  function toggleExpand(id: string) {
+  function toggleExpand(id) {
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
