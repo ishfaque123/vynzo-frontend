@@ -28,6 +28,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
   const [dragY, setDragY] = useState(0);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
@@ -37,6 +38,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     };
   }, []);
 
+  // Handle-bar drag: works from anywhere on the handle, regardless of list scroll position.
   function dragStart(clientY: number) {
     draggingRef.current = true;
     startYRef.current = clientY;
@@ -46,6 +48,37 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     setDragY(Math.max(0, clientY - startYRef.current));
   }
   function dragEnd() {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    setDragY((current) => {
+      if (current > CLOSE_THRESHOLD_PX) onClose();
+      return 0;
+    });
+  }
+
+  // List drag: only takes over once the list is already scrolled to the very
+  // top AND the finger keeps moving down from there — like Instagram/Facebook.
+  // Until that happens, normal scrolling is left completely alone.
+  function listTouchStart(e: React.TouchEvent) {
+    startYRef.current = e.touches[0].clientY;
+    draggingRef.current = false;
+  }
+  function listTouchMove(e: React.TouchEvent) {
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - startYRef.current;
+    const el = listRef.current;
+
+    if (!draggingRef.current) {
+      if (delta > 0 && el && el.scrollTop <= 0) {
+        draggingRef.current = true;
+      } else {
+        return;
+      }
+    }
+    e.preventDefault();
+    setDragY(Math.max(0, delta));
+  }
+  function listTouchEnd() {
     if (!draggingRef.current) return;
     draggingRef.current = false;
     setDragY((current) => {
@@ -77,7 +110,13 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           <p className="font-semibold">Comments</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+        <div
+          ref={listRef}
+          className="flex-1 overflow-y-auto overscroll-contain px-4 py-3"
+          onTouchStart={listTouchStart}
+          onTouchMove={listTouchMove}
+          onTouchEnd={listTouchEnd}
+        >
           {(comments || []).length === 0 ? (
             <p className="pt-6 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p>
           ) : (
