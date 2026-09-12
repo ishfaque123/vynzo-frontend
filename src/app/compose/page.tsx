@@ -148,7 +148,7 @@ export default function ComposePage() {
           maxLength={MAX_LENGTH}
           autoFocus
           disabled={submitting}
-          className="w-full resize-none border-none bg-transparent p-0 text-lg outline-none placeholder:text-slate-400"
+          className="w-full resize-none border-none !bg-transparent p-0 text-lg outline-none placeholder:text-slate-400"
         />
 
         {imagePreview && (
