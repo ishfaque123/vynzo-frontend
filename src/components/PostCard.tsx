@@ -142,10 +142,10 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       <div className="flex items-center border-t border-slate-100 px-2 py-1">
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
-        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 hover:bg-slate-50">
+        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 active:bg-slate-100">
           <CommentIcon />
         </button>
-        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 hover:bg-slate-50">
+        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 active:bg-slate-100">
           <ShareIcon />
         </button>
       </div>

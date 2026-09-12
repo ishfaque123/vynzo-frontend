@@ -91,7 +91,7 @@ export default function ShareModal({ postId, profileUsername, profileId, onClose
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-2xl bg-white p-2 pb-6" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
         <p className="px-4 py-2 font-semibold">{profileUsername ? 'Share profile' : 'Share'}</p>
 
