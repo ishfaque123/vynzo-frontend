@@ -135,7 +135,7 @@ export default function ComposePage() {
       )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="mb-1 flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Avatar url={user?.profilePictureUrl} name={user?.displayName} />
           <p className="font-semibold text-slate-900">{user?.displayName || user?.username}</p>
         </div>
@@ -144,7 +144,7 @@ export default function ComposePage() {
           value={content}
           onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
           placeholder="What's on your mind?"
-          rows={6}
+          rows={2}
           maxLength={MAX_LENGTH}
           autoFocus
           disabled={submitting}
