@@ -75,9 +75,6 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     setLocalCount(prevCount + (removing ? -1 : prevReaction ? 0 : 1));
 
     const result = await setCommentReaction(comment.id, type);
-    if (result.success) {
-      onChanged();
-    } else {
       setLocalReaction(prevReaction);
       setLocalCount(prevCount);
     }
