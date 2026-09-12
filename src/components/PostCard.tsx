@@ -6,8 +6,8 @@ import PostMenu from './PostMenu';
 import FollowButton from './FollowButton';
 import PostContent from './PostContent';
 
-function Avatar({ url, name, size = 8 }: { url?: string; name?: string; size?: number }) {
-  const sizeClass = size === 8 ? 'h-8 w-8 text-xs' : 'h-6 w-6 text-[10px]';
+function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: number }) {
+  const sizeClass = size === 10 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]';
   return (
     <div className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`} style={url ? { backgroundImage: `url(${url})` } : {}}>
       {!url && (name?.[0]?.toUpperCase() || '?')}
@@ -65,7 +65,7 @@ function ReactionSummary({ post }: { post: any }) {
   if (!hasAny) return null;
 
   return (
-    <div className="mt-3 flex items-center justify-between border-b pb-2 text-xs text-slate-500">
+    <div className="mt-1 flex items-center justify-between px-3 pb-2 text-xs text-slate-500">
       <div className="flex items-center">
         {topReactions.map((type, i) => (
           <span
@@ -89,20 +89,20 @@ function ReactionSummary({ post }: { post: any }) {
 export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted }: any) {
   const isOwner = currentUser?.username === post.author.username;
   return (
-    <div className="w-full border-y py-4">
-      <div className="flex items-start justify-between">
+    <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-start justify-between p-3 pb-2">
         {post.originalPost ? (
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
-            <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
+            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900 hover:underline">{post.author.displayName}</Link>
             <span>reposted</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
             <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="font-medium hover:underline">{post.author.displayName}</Link>
+                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900 hover:underline">{post.author.displayName}</Link>
                 {!isOwner && <FollowButton userId={post.author.id} status={post.friendStatus} />}
               </div>
               {post.taggedUsers?.length > 0 && (
@@ -112,7 +112,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
                   ))}
                 </span>
               )}
-              <span className="text-xs text-slate-400">{timeAgo(post.createdAt)}</span>
+              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}</span>
             </div>
           </div>
         )}
@@ -121,31 +121,31 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           onDeleted={() => onDeleted(post.id)} />
       </div>
 
-      {post.content && <PostContent text={post.content} className="mt-2 whitespace-pre-wrap" />}
-      {post.imageUrl && <img src={post.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
+      {post.content && <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />}
+      {post.imageUrl && <img src={post.imageUrl} alt="" className="w-full" />}
 
       {post.originalPost && (
-        <div className="mt-2 rounded-lg border p-3">
+        <div className="mx-3 mb-2 rounded-lg border p-3">
           <div className="flex items-center gap-2">
             <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
             <div className="leading-tight">
-              <Link href={`/u/${post.originalPost.author.username}`} className="block font-medium hover:underline">{post.originalPost.author.displayName}</Link>
-              <span className="text-xs text-slate-400">{timeAgo(post.originalPost.createdAt)}</span>
+              <Link href={`/u/${post.originalPost.author.username}`} className="block text-[15px] font-semibold text-slate-900 hover:underline">{post.originalPost.author.displayName}</Link>
+              <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
-          {post.originalPost.content && <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm" />}
+          {post.originalPost.content && <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />}
           {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
         </div>
       )}
 
       <ReactionSummary post={post} />
 
-      <div className="mt-1 flex items-center">
+      <div className="flex items-center border-t border-slate-100 px-2 py-1">
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
-        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center py-1.5 text-slate-600">
+        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 hover:bg-slate-50">
           <CommentIcon />
         </button>
-        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center py-1.5 text-slate-600">
+        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 hover:bg-slate-50">
           <ShareIcon />
         </button>
       </div>

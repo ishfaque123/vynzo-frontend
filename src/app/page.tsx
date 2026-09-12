@@ -97,7 +97,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <button onClick={() => router.push('/compose')} className="mb-6 flex w-full items-center gap-3 rounded-lg border p-3 text-left">
+      <button onClick={() => router.push('/compose')} className="mb-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm">
         <Avatar url={user.profilePictureUrl} name={user.displayName} />
         <span className="flex-1 text-slate-400">What's on your mind?</span>
         <span className="rounded-full bg-slate-100 p-1.5 text-slate-600"><PlusIcon /></span>
@@ -108,7 +108,7 @@ export default function HomePage() {
       ) : posts.length === 0 ? (
         <p className="text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
-        <div>
+        <div className="flex flex-col gap-3">
           {posts.map((post, index) => (
             <div key={post.id}>
               <PostCard post={post} currentUser={user}

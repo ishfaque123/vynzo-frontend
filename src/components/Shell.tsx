@@ -103,7 +103,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isInSettingsMenu = pathname.startsWith('/settings-menu');
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-[#f0f2f5]">
       <UsageTracker />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
         <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
