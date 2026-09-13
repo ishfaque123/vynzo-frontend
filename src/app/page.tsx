@@ -134,6 +134,8 @@ export default function HomePage() {
 
   async function handleToggleComments(postId: string) {
     setOpenComments(postId);
+    setCommentText('');
+    setReplyTo(null);
     if (!comments[postId]) await loadComments(postId);
   }
 
