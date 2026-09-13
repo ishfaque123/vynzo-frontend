@@ -18,5 +18,9 @@ export default async function ShareRedirectPage({ params }: SharePageProps) {
   if (result.data.type === 'profile') {
     redirect(`/u/${result.data.username}`);
   }
+  if (result.data.type === 'reel') {
+    // No single-reel deep-link page yet — lands them in the reels feed.
+    redirect('/reels');
+  }
   redirect(`/post/${result.data.postId}`);
 }
