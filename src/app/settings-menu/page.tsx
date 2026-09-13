@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logoutRequest, fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
 import { updateProfile } from '@/lib/api/userApi';
@@ -126,10 +126,24 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  const lastToggleRef = useRef(0);
+  function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    const now = Date.now();
+    // Ignore a second tap landing within 300ms of the first — guards
+    // against duplicate touch+click synthetic events some mobile
+    // browsers fire for a single tap, which could otherwise toggle
+    // the switch twice and leave it stuck in the wrong direction.
+    if (now - lastToggleRef.current < 300) return;
+    lastToggleRef.current = now;
+    onChange(!checked);
+  }
   return (
     <button
       type="button"
-      onClick={() => onChange(!checked)}
+      role="switch"
+      aria-checked={checked}
+      onClick={handleClick}
       className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-slate-900' : 'bg-slate-300'}`}
     >
       <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -209,11 +223,11 @@ export default function SettingsMenuPage() {
     updateProfile({ tagPermission: v as 'everyone' | 'followers' | 'none' });
   }
   function handleShowOnlineStatus(v: boolean) {
-    setShowOnlineStatus(v);
+    setShowOnlineStatus(() => v);
     updateProfile({ showOnlineStatus: v });
   }
   function handleIsPrivate(v: boolean) {
-    setIsPrivate(v);
+    setIsPrivate(() => v);
     updateProfile({ isPrivate: v });
   }
 
