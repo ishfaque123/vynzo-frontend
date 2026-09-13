@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { viewStatus, fetchStatusViewers, deleteStatus } from '@/lib/api/statusApi';
+import { viewStatus, fetchStatusViewers, deleteStatus, toggleStatusLike } from '@/lib/api/statusApi';
 
 const ITEM_DURATION_MS = 5000;
 
@@ -23,6 +23,13 @@ function EyeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill={filled ? '#f43f5e' : 'none'} stroke={filled ? '#f43f5e' : 'currentColor'} strokeWidth="2">
+      <path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" />
     </svg>
   );
 }
@@ -55,6 +62,7 @@ export default function StatusViewer({
   const [paused, setPaused] = useState(false);
   const [viewersOpen, setViewersOpen] = useState(false);
   const [viewers, setViewers] = useState<any[]>([]);
+  const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({});
   const viewedRef = useRef<Set<string>>(new Set());
   const frameRef = useRef<number>(0);
   const startRef = useRef<number>(0);
@@ -63,6 +71,16 @@ export default function StatusViewer({
   const group = groups[groupIndex];
   const item = group?.items?.[itemIndex];
   const isMine = group?.userId === currentUserId;
+  const isLiked = item ? likedOverrides[item.id] ?? !!item.liked : false;
+
+  async function handleLike() {
+    if (!item || isMine) return;
+    setLikedOverrides((prev) => ({ ...prev, [item.id]: !isLiked }));
+    const result = await toggleStatusLike(item.id);
+    if (result.success) {
+      setLikedOverrides((prev) => ({ ...prev, [item.id]: result.data.liked }));
+    }
+  }
 
   function goNextItem() {
     if (!group) return;
@@ -205,6 +223,17 @@ export default function StatusViewer({
           )}
         </div>
 
+        {/* Like (other people's status only) */}
+        {!isMine && (
+          <button
+            onClick={handleLike}
+            className="absolute bottom-6 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/30"
+            aria-label={isLiked ? 'Unlike' : 'Like'}
+          >
+            <HeartIcon filled={isLiked} />
+          </button>
+        )}
+
         {/* Viewers (own status only) */}
         {isMine && (
           <button
@@ -241,7 +270,8 @@ export default function StatusViewer({
                         className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200 bg-cover bg-center"
                         style={v.profilePictureUrl ? { backgroundImage: `url(${v.profilePictureUrl})` } : {}}
                       />
-                      <span className="text-sm text-slate-800">{v.displayName || v.username}</span>
+                      <span className="flex-1 text-sm text-slate-800">{v.displayName || v.username}</span>
+                      {v.liked && <HeartIcon filled />}
                     </div>
                   ))}
                 </div>

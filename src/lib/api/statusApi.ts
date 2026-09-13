@@ -28,3 +28,8 @@ export async function deleteStatus(statusId: string) {
   const res = await fetch(`${API_URL}/api/statuses/${statusId}`, { method: 'DELETE', credentials: 'include' });
   return res.json();
 }
+
+export async function toggleStatusLike(statusId: string) {
+  const res = await fetch(`${API_URL}/api/statuses/${statusId}/like`, { method: 'POST', credentials: 'include' });
+  return res.json();
+}
