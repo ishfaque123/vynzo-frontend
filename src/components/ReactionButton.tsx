@@ -81,14 +81,9 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onMouseUp={endPress}
         onMouseLeave={endPress}
         style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
-        className={`flex w-full select-none items-center justify-center gap-1.5 py-1.5 text-[15px] font-semibold ${current ? current.color : 'text-slate-600'}`}
+        className={`flex w-full select-none items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
       >
-        {current ? (
-          <span className="flex h-5 w-5 items-center justify-center text-[18px] leading-none">{current.emoji}</span>
-        ) : (
-          <ThumbIcon />
-        )}
-        <span>{current ? current.label : 'Like'}</span>
+        {current ? <span className="text-[20px] leading-none">{current.emoji}</span> : <ThumbIcon />}
       </button>
     </div>
   );
