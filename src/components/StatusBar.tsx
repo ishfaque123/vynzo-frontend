@@ -38,6 +38,7 @@ export default function StatusBar({ user }: { user: any }) {
   const [textComposerOpen, setTextComposerOpen] = useState(false);
   const [textValue, setTextValue] = useState('');
   const [bgColor, setBgColor] = useState(BG_COLORS[0]);
+  const [visibility, setVisibility] = useState<'everyone' | 'close_friends'>('everyone');
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +70,7 @@ export default function StatusBar({ user }: { user: any }) {
     setPickerOpen(false);
     setPosting(true);
     setUploadProgress(0);
-    const result = await createStatusWithProgress({ media: file }, setUploadProgress);
+    const result = await createStatusWithProgress({ media: file, visibility }, setUploadProgress);
     setPosting(false);
     setUploadProgress(null);
     if (result.success) {
@@ -82,7 +83,7 @@ export default function StatusBar({ user }: { user: any }) {
   async function handlePostText() {
     if (!textValue.trim() || posting) return;
     setPosting(true);
-    const result = await createStatus({ textContent: textValue.trim(), bgColor });
+    const result = await createStatus({ textContent: textValue.trim(), bgColor, visibility });
     setPosting(false);
     if (result.success) {
       setTextComposerOpen(false);
@@ -157,6 +158,20 @@ export default function StatusBar({ user }: { user: any }) {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setPickerOpen(false)}>
           <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <p className="mb-3 text-center text-sm font-semibold text-slate-800">Add to your status</p>
+            <div className="mb-3 flex rounded-lg border p-1 text-sm">
+              <button
+                onClick={() => setVisibility('everyone')}
+                className={`flex-1 rounded-md py-1.5 font-medium ${visibility === 'everyone' ? 'bg-slate-900 text-white' : 'text-slate-600'}`}
+              >
+                Everyone
+              </button>
+              <button
+                onClick={() => setVisibility('close_friends')}
+                className={`flex-1 rounded-md py-1.5 font-medium ${visibility === 'close_friends' ? 'bg-green-600 text-white' : 'text-slate-600'}`}
+              >
+                Close Friends
+              </button>
+            </div>
             <div className="space-y-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
