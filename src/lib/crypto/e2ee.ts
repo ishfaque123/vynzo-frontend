@@ -72,7 +72,7 @@ export async function deriveSharedKey(privateKey: CryptoKey, otherPublicKeyJson:
 export async function encryptText(sharedKey: CryptoKey, plaintext: string): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = new TextEncoder().encode(plaintext);
-  const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, sharedKey, data);
+  const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource }, sharedKey, data as BufferSource);
   return `${bytesToBase64(iv)}:${bytesToBase64(new Uint8Array(cipherBuf))}`;
 }
 
@@ -86,7 +86,7 @@ export async function tryDecryptText(sharedKey: CryptoKey | null, payload: strin
   try {
     const iv = base64ToBytes(parts[0]);
     const data = base64ToBytes(parts[1]);
-    const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, sharedKey, data);
+    const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as BufferSource }, sharedKey, data as BufferSource);
     return new TextDecoder().decode(plainBuf);
   } catch {
     return payload;
