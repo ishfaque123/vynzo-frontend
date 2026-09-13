@@ -160,6 +160,7 @@ export default function StatusViewer({
   const [viewersOpen, setViewersOpen] = useState(false);
   const [viewers, setViewers] = useState<any[]>([]);
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({});
+  const [viewCountOverrides, setViewCountOverrides] = useState<Record<string, number>>({});
   const viewedRef = useRef<Set<string>>(new Set());
   const frameRef = useRef<number>(0);
   const startRef = useRef<number>(0);
@@ -170,6 +171,7 @@ export default function StatusViewer({
   const isMine = group?.userId === currentUserId;
   const isLiked = item ? likedOverrides[item.id] ?? !!item.liked : false;
   const isVideo = item?.mediaType === 'video';
+  const viewCount = item ? viewCountOverrides[item.id] ?? item.viewCount ?? 0 : 0;
 
   async function handleLike() {
     if (!item || isMine) return;
@@ -256,7 +258,10 @@ export default function StatusViewer({
     pause();
     setViewersOpen(true);
     const result = await fetchStatusViewers(item.id);
-    if (result.success) setViewers(result.data.viewers);
+    if (result.success) {
+      setViewers(result.data.viewers);
+      setViewCountOverrides((prev) => ({ ...prev, [item.id]: result.data.viewers.length }));
+    }
   }
 
   async function handleDelete() {
@@ -352,13 +357,15 @@ export default function StatusViewer({
         )}
 
         {isMine && (
-          <button
-            onClick={openViewers}
-            className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-center gap-1.5 text-white/90"
-          >
-            <EyeIcon />
-            <span className="text-sm font-medium leading-none">{item.viewCount ?? 0}</span>
-          </button>
+          <div className="absolute bottom-5 left-0 right-0 z-10 flex justify-center">
+            <button
+              onClick={openViewers}
+              className="flex items-center gap-2 rounded-full bg-black/30 px-4 py-2.5 text-white/90"
+            >
+              <span className="scale-125"><EyeIcon /></span>
+              <span className="text-sm font-semibold leading-none">{viewCount}</span>
+            </button>
+          </div>
         )}
 
         {viewersOpen && (
