@@ -221,10 +221,14 @@ export default function StatusBar({ user }: { user: any }) {
       )}
 
       {uploadProgress !== null && (
-        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/70">
-          <div className="h-16 w-16 rounded-full border-4 border-white/20 border-t-white" style={{ animation: 'spin 1s linear infinite' }} />
-          <p className="mt-4 text-lg font-semibold text-white">{uploadProgress}%</p>
-          <p className="mt-1 text-sm text-white/70">Posting your status...</p>
+        <div className="fixed left-1/2 top-3 z-[70] w-[90%] max-w-xs -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 shadow-lg">
+          <div className="flex items-center justify-between text-xs text-white">
+            <span>Posting your status...</span>
+            <span className="font-semibold">{uploadProgress}%</span>
+          </div>
+          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/20">
+            <div className="h-full rounded-full bg-white transition-all" style={{ width: `${uploadProgress}%` }} />
+          </div>
         </div>
       )}
 
