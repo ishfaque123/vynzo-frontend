@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { fetchMessages, fetchConversations, uploadChatMedia } from '@/lib/api/messageApi';
 import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
+import { getOrCreateIdentity, deriveSharedKey, encryptText, tryDecryptText } from '@/lib/crypto/e2ee';
 
 function BackIcon() {
   return (
@@ -176,6 +177,7 @@ interface OtherUser {
   profilePictureUrl?: string;
   isOnline: boolean;
   lastActiveAt?: string | null;
+  publicKey?: string | null;
 }
 interface Toast {
   message: string;
@@ -244,6 +246,9 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [deleteMenuFor, setDeleteMenuFor] = useState<Message | null>(null);
+  const [decrypted, setDecrypted] = useState<Record<string, string>>({});
+  const [keyReady, setKeyReady] = useState(false);
+  const sharedKeyRef = useRef<CryptoKey | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -278,6 +283,17 @@ export default function ChatPage() {
           fetchBlockStatus(convo.otherUser.id).then((res) => {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
+          getOrCreateIdentity()
+            .then(({ privateKey }) =>
+              convo.otherUser.publicKey ? deriveSharedKey(privateKey, convo.otherUser.publicKey) : null
+            )
+            .then((key) => {
+              sharedKeyRef.current = key;
+            })
+            .catch(() => {})
+            .finally(() => setKeyReady(true));
+        } else {
+          setKeyReady(true);
         }
       }
     });
@@ -346,6 +362,23 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (!keyReady) return;
+    const pending = messages.filter((m) => m.content && !(m.id in decrypted));
+    if (!pending.length) return;
+    let cancelled = false;
+    (async () => {
+      const updates: Record<string, string> = {};
+      for (const m of pending) {
+        updates[m.id] = await tryDecryptText(sharedKeyRef.current, m.content);
+      }
+      if (!cancelled) setDecrypted((prev) => ({ ...prev, ...updates }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, keyReady]);
+
   // Stop any in-progress recording (mic + timer) if this page unmounts
   // mid-recording, e.g. the user navigates away with the back button.
   useEffect(() => {
@@ -370,13 +403,14 @@ export default function ChatPage() {
     }, 1500);
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     const content = text.trim();
     if (!content) return;
     const socket = getSocket();
+    const payload = sharedKeyRef.current ? await encryptText(sharedKeyRef.current, content) : content;
     socket.emit(
       'message:send',
-      { conversationId, content },
+      { conversationId, content: payload },
       (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
         if (res.success && res.data) {
           setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
@@ -658,7 +692,7 @@ export default function ChatPage() {
                       {isVoice && (
                         <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
                       )}
-                      {m.content && <p className={isImage ? 'px-1.5 pt-1' : ''}>{m.content}</p>}
+                      {m.content && <p className={isImage ? 'px-1.5 pt-1' : ''}>{decrypted[m.id] ?? '\u00b7\u00b7\u00b7'}</p>}
                       <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
                         <span className="text-[11px]">{formatMessageTime(m.createdAt)}</span>
                         {isMine && status && <Ticks status={status} />}
