@@ -48,9 +48,9 @@ function UnmuteIcon() {
   );
 }
 
-// Videos try to autoplay WITH sound (since opening a status is itself a
-// user tap). If the browser blocks that, we fall back to muted and let
-// the person tap the speaker to turn sound on.
+// Videos try to autoplay WITH sound (opening a status is itself a user
+// tap, so browsers usually allow it). If the browser blocks that, we fall
+// back to muted and let the person tap the speaker to turn sound on.
 function VideoStatusPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -160,7 +160,6 @@ export default function StatusViewer({
     }
   }
 
-  // Progress timer for the current item — pauses on long-press.
   useEffect(() => {
     setProgress(0);
     elapsedRef.current = 0;
@@ -191,7 +190,6 @@ export default function StatusViewer({
     setPaused(false);
   }
 
-  // Mark each item viewed once, the moment it's shown.
   useEffect(() => {
     if (!item || isMine || viewedRef.current.has(item.id)) return;
     viewedRef.current.add(item.id);
@@ -220,7 +218,6 @@ export default function StatusViewer({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black">
       <div className="relative flex h-full w-full max-w-xl flex-col">
-        {/* Progress bars */}
         <div className="absolute left-0 right-0 top-0 z-10 flex gap-1 p-2">
           {group.items.map((it: any, i: number) => (
             <div key={it.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
@@ -232,7 +229,6 @@ export default function StatusViewer({
           ))}
         </div>
 
-        {/* Header */}
         <div className="absolute left-0 right-0 top-4 z-10 flex items-center justify-between px-3 pt-2">
           <div className="flex items-center gap-2">
             <span
@@ -254,7 +250,6 @@ export default function StatusViewer({
           </div>
         </div>
 
-        {/* Content */}
         <div
           className="flex flex-1 items-center justify-center"
           style={{ backgroundColor: item.mediaType === 'text' ? item.bgColor || '#1e293b' : '#000' }}
@@ -280,7 +275,6 @@ export default function StatusViewer({
           )}
         </div>
 
-        {/* Like (other people's status only) */}
         {!isMine && (
           <button
             onClick={handleLike}
@@ -291,7 +285,6 @@ export default function StatusViewer({
           </button>
         )}
 
-        {/* Viewers (own status only) */}
         {isMine && (
           <button
             onClick={openViewers}

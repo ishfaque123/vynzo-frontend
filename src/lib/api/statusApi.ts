@@ -63,3 +63,33 @@ export function createStatusWithProgress(
     xhr.send(formData);
   });
 }
+
+// Uses XMLHttpRequest instead of fetch so we can report upload progress
+// (fetch has no reliable cross-browser upload-progress event).
+export function createStatusWithProgress(
+  data: { media?: File | null; textContent?: string; bgColor?: string },
+  onProgress: (pct: number) => void
+): Promise<any> {
+  return new Promise((resolve) => {
+    const formData = new FormData();
+    if (data.media) formData.append('media', data.media);
+    if (data.textContent) formData.append('textContent', data.textContent);
+    if (data.bgColor) formData.append('bgColor', data.bgColor);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/api/statuses`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      try {
+        resolve(JSON.parse(xhr.responseText));
+      } catch {
+        resolve({ success: false, error: { message: 'Upload failed.' } });
+      }
+    };
+    xhr.onerror = () => resolve({ success: false, error: { message: 'Upload failed.' } });
+    xhr.send(formData);
+  });
+}
