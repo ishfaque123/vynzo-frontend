@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchConversations } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
+import { getOrCreateIdentity, deriveSharedKey, tryDecryptText } from '@/lib/crypto/e2ee';
 
 function PlusIcon() {
   return (
@@ -16,7 +17,7 @@ function PlusIcon() {
 
 interface ConversationItem {
   id: string;
-  otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean } | null;
+  otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean; publicKey?: string | null } | null;
   lastMessage: { content: string; senderId: string; createdAt: string } | null;
   unread: boolean;
   updatedAt: string;
@@ -25,6 +26,7 @@ interface ConversationItem {
 export default function MessagesPage() {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchConversations().then((result) => {
@@ -48,6 +50,26 @@ export default function MessagesPage() {
       socket.off('presence:offline', refresh);
     };
   }, []);
+
+  useEffect(() => {
+    const pending = conversations.filter(
+      (c) => c.lastMessage?.content && c.otherUser?.publicKey && !(c.id in previews)
+    );
+    if (!pending.length) return;
+    let cancelled = false;
+    (async () => {
+      const { privateKey } = await getOrCreateIdentity();
+      const updates: Record<string, string> = {};
+      for (const c of pending) {
+        const key = await deriveSharedKey(privateKey, c.otherUser!.publicKey!);
+        updates[c.id] = await tryDecryptText(key, c.lastMessage!.content);
+      }
+      if (!cancelled) setPreviews((prev) => ({ ...prev, ...updates }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversations]);
 
   return (
     <div className="mx-auto max-w-xl">
@@ -88,7 +110,9 @@ export default function MessagesPage() {
                 {c.otherUser?.displayName || c.otherUser?.username}
               </p>
               <p className={`truncate text-sm ${c.unread ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
-                {c.lastMessage?.content || 'Say hi 👋'}
+                {c.lastMessage?.content
+                  ? previews[c.id] ?? (c.otherUser?.publicKey ? '\u00b7\u00b7\u00b7' : c.lastMessage.content)
+                  : 'Say hi 👋'}
               </p>
             </div>
             {c.unread && <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-blue-500" />}
