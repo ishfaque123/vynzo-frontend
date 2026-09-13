@@ -5,7 +5,15 @@ export async function fetchUserProfile(username: string) {
   return res.json();
 }
 
-export async function updateProfile(data: { username?: string; displayName?: string; bio?: string }) {
+export async function updateProfile(data: {
+  username?: string;
+  displayName?: string;
+  bio?: string;
+  messagePermission?: 'everyone' | 'followers' | 'none';
+  tagPermission?: 'everyone' | 'followers' | 'none';
+  showOnlineStatus?: boolean;
+  isPrivate?: boolean;
+}) {
   const res = await fetch(`${API_URL}/api/users/me`, {
     method: 'PATCH',
     credentials: 'include',

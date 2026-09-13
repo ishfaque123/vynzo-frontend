@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logoutRequest, fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
+import { updateProfile } from '@/lib/api/userApi';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -124,6 +125,41 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-slate-900' : 'bg-slate-300'}`}
+    >
+      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
+    </button>
+  );
+}
+
+function PermissionSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const options = [
+    { value: 'everyone', label: 'Everyone' },
+    { value: 'followers', label: 'Followers' },
+    { value: 'none', label: 'No one' },
+  ];
+  return (
+    <div className="flex gap-1.5">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => onChange(o.value)}
+          className={`flex-1 rounded-full border py-1.5 text-xs font-medium ${
+            value === o.value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 text-slate-600'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const menuItems = [
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
   { label: 'Your Activity', href: '/settings-menu/activity', Icon: ClockIcon },
@@ -135,7 +171,6 @@ const securityItems = [
   { label: 'Blocked Accounts', href: '/settings-menu/blocked', Icon: BlockIcon },
   { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
   { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
-  { label: 'Comments', href: '/settings-menu/comments', Icon: CommentIcon },
 ];
 
 export default function SettingsMenuPage() {
@@ -145,6 +180,42 @@ export default function SettingsMenuPage() {
 
   const [securityOpen, setSecurityOpen] = useState(false);
   const [privacySheetOpen, setPrivacySheetOpen] = useState(false);
+  const [privacyLoading, setPrivacyLoading] = useState(false);
+  const [messagePermission, setMessagePermission] = useState('everyone');
+  const [tagPermission, setTagPermission] = useState('everyone');
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(false);
+
+  async function openPrivacySheet() {
+    setPrivacySheetOpen(true);
+    setPrivacyLoading(true);
+    const me = await fetchMe();
+    const u = me?.data?.user;
+    if (u) {
+      setMessagePermission(u.messagePermission || 'everyone');
+      setTagPermission(u.tagPermission || 'everyone');
+      setShowOnlineStatus(u.showOnlineStatus !== false);
+      setIsPrivate(!!u.isPrivate);
+    }
+    setPrivacyLoading(false);
+  }
+
+  function handleMessagePermission(v: string) {
+    setMessagePermission(v);
+    updateProfile({ messagePermission: v as 'everyone' | 'followers' | 'none' });
+  }
+  function handleTagPermission(v: string) {
+    setTagPermission(v);
+    updateProfile({ tagPermission: v as 'everyone' | 'followers' | 'none' });
+  }
+  function handleShowOnlineStatus(v: boolean) {
+    setShowOnlineStatus(v);
+    updateProfile({ showOnlineStatus: v });
+  }
+  function handleIsPrivate(v: boolean) {
+    setIsPrivate(v);
+    updateProfile({ isPrivate: v });
+  }
 
   const [switchSheetOpen, setSwitchSheetOpen] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -209,7 +280,7 @@ export default function SettingsMenuPage() {
           {securityOpen && (
             <div className="divide-y bg-slate-50">
               <button
-                onClick={() => setPrivacySheetOpen(true)}
+                onClick={openPrivacySheet}
                 className="flex w-full items-center gap-3 py-2.5 pl-11 pr-4 text-left hover:bg-slate-100"
               >
                 <span className="text-slate-500"><LockIcon /></span>
@@ -273,13 +344,52 @@ export default function SettingsMenuPage() {
           onClick={() => setPrivacySheetOpen(false)}
         >
           <div
-            className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6"
+            className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-4 pb-6"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="mb-3 text-center text-sm font-semibold text-slate-800">Account Privacy</p>
-            <div className="mb-4 rounded-lg border px-4 py-6 text-center text-sm text-slate-500">
-              This feature is coming soon.
-            </div>
+
+            {privacyLoading ? (
+              <p className="py-6 text-center text-sm text-slate-500">Loading...</p>
+            ) : (
+              <div className="mb-4 space-y-3">
+                <div className="rounded-lg border p-3">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-800">Private account</span>
+                    <ToggleSwitch checked={isPrivate} onChange={handleIsPrivate} />
+                  </div>
+                  <p className="text-xs text-slate-500">Only people who follow you can see your posts.</p>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-800">Show online status</span>
+                    <ToggleSwitch checked={showOnlineStatus} onChange={handleShowOnlineStatus} />
+                  </div>
+                  <p className="text-xs text-slate-500">Let others see when you're active or your last seen time.</p>
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="mb-2 text-sm font-medium text-slate-800">Who can message you</p>
+                  <PermissionSelect value={messagePermission} onChange={handleMessagePermission} />
+                </div>
+
+                <div className="rounded-lg border p-3">
+                  <p className="mb-2 text-sm font-medium text-slate-800">Who can tag you</p>
+                  <PermissionSelect value={tagPermission} onChange={handleTagPermission} />
+                </div>
+
+                <Link
+                  href="/settings-menu/comments"
+                  onClick={() => setPrivacySheetOpen(false)}
+                  className="flex items-center gap-3 rounded-lg border px-3 py-3 hover:bg-slate-50"
+                >
+                  <span className="text-slate-500"><CommentIcon /></span>
+                  <span className="text-sm text-slate-700">Comments</span>
+                </Link>
+              </div>
+            )}
+
             <button
               onClick={() => setPrivacySheetOpen(false)}
               className="w-full rounded-full border py-2.5 text-sm font-medium text-slate-700"
