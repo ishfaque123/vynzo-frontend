@@ -657,10 +657,7 @@ export default function ChatPage() {
             >
               View profile
             </Link>
-            <p className="mt-2 flex max-w-[280px] items-center gap-1.5 text-center text-xs text-slate-400">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
-                <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
+            <p className="mt-2 max-w-[280px] text-center text-xs text-slate-400">
               Messages and calls are secured with end-to-end encryption. Only people in this chat can read, listen to, or share them.
             </p>
           </div>
