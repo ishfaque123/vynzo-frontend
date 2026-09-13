@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth/useAuth';
 
 function GoogleIcon() {
   return (
@@ -27,10 +28,20 @@ function FriendzoLogo() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
   const isSwitching = searchParams.get('switch') === '1';
   const hasError = searchParams.get('error') === 'google_auth_failed';
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const loginUrl = `${API_URL}/api/auth/google/start${isSwitching ? '?switch=1' : ''}`;
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && !isSwitching) router.push('/');
+  }, [loading, isAuthenticated, isSwitching, router]);
+
+  if (loading || (isAuthenticated && !isSwitching)) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50" />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6">
