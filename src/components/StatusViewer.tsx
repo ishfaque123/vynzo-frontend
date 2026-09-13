@@ -326,10 +326,10 @@ export default function StatusViewer({
         {isMine && (
           <button
             onClick={openViewers}
-            className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-center gap-1.5 text-sm text-white/80"
+            className="absolute bottom-6 left-0 right-0 z-10 flex items-center justify-center gap-1.5 text-white/90"
           >
             <EyeIcon />
-            Viewers
+            <span className="text-sm font-medium leading-none">{item.viewCount ?? 0}</span>
           </button>
         )}
 
