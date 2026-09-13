@@ -166,8 +166,6 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <StatusBar user={user} />
-
       <div className="mb-3 flex w-full items-center gap-2">
         <Avatar url={user.profilePictureUrl} name={user.displayName} />
         <button
@@ -198,6 +196,8 @@ export default function HomePage() {
           <PlusIcon />
         </button>
       </div>
+
+      <StatusBar user={user} />
 
       {feedLoading ? (
         <p className="text-slate-500">Loading feed...</p>

@@ -33,6 +33,63 @@ function HeartIcon({ filled }: { filled: boolean }) {
     </svg>
   );
 }
+function MuteIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
+  );
+}
+function UnmuteIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.5 8.5a5 5 0 010 7" /><path d="M18.5 5.5a9 9 0 010 13" />
+    </svg>
+  );
+}
+
+// Videos try to autoplay WITH sound (since opening a status is itself a
+// user tap). If the browser blocks that, we fall back to muted and let
+// the person tap the speaker to turn sound on.
+function VideoStatusPlayer({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = false;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        video.muted = true;
+        setIsMuted(true);
+        video.play().catch(() => {});
+      });
+    }
+  }, [src]);
+
+  function toggleMute(e: React.MouseEvent) {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  }
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      <video ref={videoRef} src={src} playsInline className="max-h-full max-w-full object-contain" />
+      <button
+        onClick={toggleMute}
+        className="absolute bottom-24 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
+        aria-label={isMuted ? 'Unmute' : 'Mute'}
+      >
+        {isMuted ? <MuteIcon /> : <UnmuteIcon />}
+      </button>
+    </div>
+  );
+}
 
 function timeAgo(dateStr: string) {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -217,7 +274,7 @@ export default function StatusViewer({
               {item.textContent}
             </p>
           ) : item.mediaType === 'video' ? (
-            <video src={item.mediaUrl} autoPlay muted playsInline className="max-h-full max-w-full object-contain" />
+            <VideoStatusPlayer key={item.id} src={item.mediaUrl} />
           ) : (
             <img src={item.mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
           )}

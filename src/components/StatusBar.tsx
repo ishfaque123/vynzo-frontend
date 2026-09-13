@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { fetchStatusFeed, createStatus } from '@/lib/api/statusApi';
+import { fetchStatusFeed, createStatus, createStatusWithProgress } from '@/lib/api/statusApi';
 import StatusViewer from './StatusViewer';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
@@ -39,6 +39,7 @@ export default function StatusBar({ user }: { user: any }) {
   const [textValue, setTextValue] = useState('');
   const [bgColor, setBgColor] = useState(BG_COLORS[0]);
   const [posting, setPosting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
@@ -67,8 +68,10 @@ export default function StatusBar({ user }: { user: any }) {
   async function handlePickPhoto(file: File) {
     setPickerOpen(false);
     setPosting(true);
-    const result = await createStatus({ media: file });
+    setUploadProgress(0);
+    const result = await createStatusWithProgress({ media: file }, setUploadProgress);
     setPosting(false);
+    setUploadProgress(null);
     if (result.success) {
       load();
     } else {
@@ -214,6 +217,14 @@ export default function StatusBar({ user }: { user: any }) {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {uploadProgress !== null && (
+        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/70">
+          <div className="h-16 w-16 rounded-full border-4 border-white/20 border-t-white" style={{ animation: 'spin 1s linear infinite' }} />
+          <p className="mt-4 text-lg font-semibold text-white">{uploadProgress}%</p>
+          <p className="mt-1 text-sm text-white/70">Posting your status...</p>
         </div>
       )}
 
