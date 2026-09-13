@@ -47,3 +47,13 @@ export async function submitProfileSetup(data: {
   });
   return res.json();
 }
+
+export async function savePublicKeyRequest(publicKey: string) {
+  const res = await fetch(`${API_URL}/api/auth/public-key`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ publicKey }),
+  });
+  return res.json();
+}
