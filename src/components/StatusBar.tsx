@@ -149,8 +149,23 @@ export default function StatusBar({ user }: { user: any }) {
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handlePickPhoto(file);
           e.target.value = '';
+          if (!file) return;
+          if (file.type.startsWith('video/')) {
+            const probe = document.createElement('video');
+            probe.preload = 'metadata';
+            probe.onloadedmetadata = () => {
+              URL.revokeObjectURL(probe.src);
+              if (probe.duration > 60) {
+                alert('Status videos must be 60 seconds or shorter.');
+                return;
+              }
+              handlePickPhoto(file);
+            };
+            probe.src = URL.createObjectURL(file);
+          } else {
+            handlePickPhoto(file);
+          }
         }}
       />
 
