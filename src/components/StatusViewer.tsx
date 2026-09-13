@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { viewStatus, fetchStatusViewers, deleteStatus, toggleStatusLike } from '@/lib/api/statusApi';
 
-const ITEM_DURATION_MS = 5000;
+const ITEM_DURATION_MS = 5000; // photo / text statuses only
 
 function CloseIcon() {
   return (
@@ -48,10 +48,24 @@ function UnmuteIcon() {
   );
 }
 
-// Videos try to autoplay WITH sound (opening a status is itself a user
-// tap, so browsers usually allow it). If the browser blocks that, we fall
-// back to muted and let the person tap the speaker to turn sound on.
-function VideoStatusPlayer({ src }: { src: string }) {
+// A video status is timed by the ACTUAL video — its own length and its own
+// playback position drive the progress bar and the move to the next item
+// (via the browser's native 'timeupdate'/'ended' events), instead of the
+// fixed 5-second timer used for photo/text statuses. That fixed timer was
+// what cut every video off at 5 seconds no matter how long it really was.
+// Long-pressing to "pause" also now actually pauses the video itself, not
+// just the progress bar.
+function VideoStatusPlayer({
+  src,
+  paused,
+  onProgress,
+  onEnded,
+}: {
+  src: string;
+  paused: boolean;
+  onProgress: (pct: number) => void;
+  onEnded: () => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
 
@@ -69,6 +83,19 @@ function VideoStatusPlayer({ src }: { src: string }) {
     }
   }, [src]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (paused) video.pause();
+    else video.play().catch(() => {});
+  }, [paused]);
+
+  function handleTimeUpdate() {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    onProgress(video.currentTime / video.duration);
+  }
+
   function toggleMute(e: React.MouseEvent) {
     e.stopPropagation();
     const video = videoRef.current;
@@ -79,7 +106,14 @@ function VideoStatusPlayer({ src }: { src: string }) {
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
-      <video ref={videoRef} src={src} playsInline className="max-h-full max-w-full object-contain" />
+      <video
+        ref={videoRef}
+        src={src}
+        playsInline
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={onEnded}
+        className="max-h-full max-w-full object-contain"
+      />
       <button
         onClick={toggleMute}
         className="absolute bottom-24 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white"
@@ -129,6 +163,7 @@ export default function StatusViewer({
   const item = group?.items?.[itemIndex];
   const isMine = group?.userId === currentUserId;
   const isLiked = item ? likedOverrides[item.id] ?? !!item.liked : false;
+  const isVideo = item?.mediaType === 'video';
 
   async function handleLike() {
     if (!item || isMine) return;
@@ -160,9 +195,12 @@ export default function StatusViewer({
     }
   }
 
+  // Progress timer for photo/text items only — video items drive their own
+  // progress from the <video> element's playback (see VideoStatusPlayer).
   useEffect(() => {
     setProgress(0);
     elapsedRef.current = 0;
+    if (isVideo) return;
     if (paused) return;
     startRef.current = performance.now();
 
@@ -179,7 +217,7 @@ export default function StatusViewer({
     frameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupIndex, itemIndex, paused]);
+  }, [groupIndex, itemIndex, paused, isVideo]);
 
   function pause() {
     cancelAnimationFrame(frameRef.current);
@@ -269,7 +307,7 @@ export default function StatusViewer({
               {item.textContent}
             </p>
           ) : item.mediaType === 'video' ? (
-            <VideoStatusPlayer key={item.id} src={item.mediaUrl} />
+            <VideoStatusPlayer key={item.id} src={item.mediaUrl} paused={paused} onProgress={setProgress} onEnded={goNextItem} />
           ) : (
             <img src={item.mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
           )}
