@@ -11,6 +11,7 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
+import StatusBar from '@/components/StatusBar';
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -165,6 +166,8 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
+      <StatusBar user={user} />
+
       <div className="mb-3 flex w-full items-center gap-2">
         <Avatar url={user.profilePictureUrl} name={user.displayName} />
         <button
