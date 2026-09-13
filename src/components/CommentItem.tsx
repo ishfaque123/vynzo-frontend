@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { setCommentReaction, deleteComment, editComment } from '@/lib/api/commentApi';
+import { setCommentReaction, deleteComment, editComment, reportComment } from '@/lib/api/commentApi';
 import FollowButton from './FollowButton';
+import Toast from './Toast';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 
@@ -62,6 +63,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   const [editText, setEditText] = useState(comment.content);
   const [localReaction, setLocalReaction] = useState<string | null>(comment.myReaction ?? null);
   const [localCount, setLocalCount] = useState<number>(comment.reactionCount || 0);
+  const [reporting, setReporting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const reactSeqRef = useRef(0);
   const isOwner = currentUser?.id === comment.author.id;
   const canDelete = isOwner || currentUser?.id === postOwnerId;
   const isReply = depth > 0;
@@ -71,6 +75,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     setLocalCount(comment.reactionCount || 0);
   }, [comment.myReaction, comment.reactionCount]);
 
+  // Guarded against out-of-order responses: if the user taps a second
+  // reaction before the first request resolves, only the most recently
+  // issued request is allowed to update state.
   async function react(type: string) {
     setShowPicker(false);
     const prevReaction = localReaction;
@@ -80,7 +87,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     setLocalReaction(removing ? null : type);
     setLocalCount(prevCount + (removing ? -1 : prevReaction ? 0 : 1));
 
+    const seq = ++reactSeqRef.current;
     const result = await setCommentReaction(comment.id, type);
+    if (seq !== reactSeqRef.current) return;
     if (!result.success) {
       setLocalReaction(prevReaction);
       setLocalCount(prevCount);
@@ -99,6 +108,23 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   function copyComment() {
     navigator.clipboard.writeText(comment.content);
     setMenuOpen(false);
+  }
+  async function handleReport() {
+    if (reporting) return;
+    setMenuOpen(false);
+    setReporting(true);
+    try {
+      const result = await reportComment(comment.id);
+      if (result.success) {
+        setToast({ message: 'Comment reported. Thanks for letting us know.', type: 'success' });
+      } else {
+        setToast({ message: result.error?.message || 'Could not report this comment.', type: 'error' });
+      }
+    } catch {
+      setToast({ message: 'Could not report this comment. Please try again.', type: 'error' });
+    } finally {
+      setReporting(false);
+    }
   }
 
   return (
@@ -153,13 +179,14 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
                   {isOwner && <button onClick={() => { setEditing(true); setMenuOpen(false); }} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Edit</button>}
                   {canDelete && <button onClick={handleDelete} className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-slate-50">Delete</button>}
                   <button onClick={copyComment} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Copy</button>
-                  <button onClick={() => { alert('Reported.'); setMenuOpen(false); }} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Report</button>
+                  <button disabled={reporting} onClick={handleReport} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50 disabled:opacity-50">Report</button>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

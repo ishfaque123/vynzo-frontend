@@ -42,3 +42,13 @@ export async function setCommentReaction(commentId: string, type: string) {
   });
   return res.json();
 }
+
+export async function reportComment(commentId: string, reason: string = 'other', details?: string) {
+  const res = await fetch(`${API_URL}/api/comments/${commentId}/report`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, details }),
+  });
+  return res.json();
+}
