@@ -114,7 +114,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
             <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>
-            <span>reposted</span>
+            <span>reposted · {timeAgo(post.createdAt)}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
