@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { viewStatus, fetchStatusViewers, deleteStatus, toggleStatusLike } from '@/lib/api/statusApi';
+import { createConversation } from '@/lib/api/messageApi';
+import { setPendingMessageText } from '@/lib/pendingMessageText';
 
 const ITEM_DURATION_MS = 5000; // photo / text statuses only
 
@@ -151,6 +154,9 @@ export default function StatusViewer({
   const [itemIndex, setItemIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+  const router = useRouter();
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const [viewersOpen, setViewersOpen] = useState(false);
   const [viewers, setViewers] = useState<any[]>([]);
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({});
@@ -234,6 +240,17 @@ export default function StatusViewer({
     viewStatus(item.id);
   }, [item, isMine]);
 
+  async function handleSendReply() {
+    if (!replyText.trim() || sendingReply || !group) return;
+    setSendingReply(true);
+    const result = await createConversation(group.userId);
+    setSendingReply(false);
+    if (result.success) {
+      setPendingMessageText(replyText.trim());
+      router.push(`/messages/${result.data.id}`);
+    }
+  }
+
   async function openViewers() {
     if (!item) return;
     pause();
@@ -314,13 +331,24 @@ export default function StatusViewer({
         </div>
 
         {!isMine && (
-          <button
-            onClick={handleLike}
-            className="absolute bottom-6 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/30"
-            aria-label={isLiked ? 'Unlike' : 'Like'}
-          >
-            <HeartIcon filled={isLiked} />
-          </button>
+          <div className="absolute bottom-6 left-3 right-3 z-10 flex items-center gap-2">
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onFocus={pause}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
+              placeholder={`Reply to ${group.user?.displayName || 'status'}...`}
+              className="flex-1 rounded-full border border-white/40 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/60 outline-none"
+            />
+            <button
+              onClick={handleSendReply}
+              disabled={sendingReply || !replyText.trim()}
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-black/30 disabled:opacity-40"
+              aria-label="Send reply"
+            >
+              <HeartIcon filled={isLiked} />
+            </button>
+          </div>
         )}
 
         {isMine && (

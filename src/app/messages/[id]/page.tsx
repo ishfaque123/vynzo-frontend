@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { fetchMessages, fetchConversations, uploadChatMedia } from '@/lib/api/messageApi';
 import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
+import { takePendingMessageText } from '@/lib/pendingMessageText';
 import { getOrCreateIdentity, deriveSharedKey, encryptText, tryDecryptText } from '@/lib/crypto/e2ee';
 
 function BackIcon() {
@@ -264,6 +265,11 @@ export default function ChatPage() {
     setToast({ message, type });
     toastTimeout.current = setTimeout(() => setToast(null), 3000);
   }
+
+  useEffect(() => {
+    const pending = takePendingMessageText();
+    if (pending) setText(pending);
+  }, []);
 
   useEffect(() => {
     fetchMessages(conversationId).then((result) => {
