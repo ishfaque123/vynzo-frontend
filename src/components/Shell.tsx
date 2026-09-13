@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -75,6 +75,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    function onScroll() {
+      const currentY = window.scrollY;
+      setHeaderHidden(currentY > lastScrollY.current && currentY > 60);
+      lastScrollY.current = currentY;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -105,7 +117,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <UsageTracker />
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
+      <header className={`sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Friendzo" className="h-7 w-7 object-contain" />
