@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import {
   fetchReelsConfig,
@@ -56,6 +57,13 @@ function PlusIcon() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+function BackIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+      <path d="M15 18l-6-6 6-6" />
     </svg>
   );
 }
@@ -156,6 +164,7 @@ function ReelItem({ reel, active, onLikeChange, onDeleted }: { reel: Reel; activ
 
 export default function ReelsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [config, setConfig] = useState<{ enabled: boolean; maxDurationSec: number; dailyLimit: number } | null>(null);
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -317,6 +326,14 @@ export default function ReelsPage() {
           <div ref={sentinelRef} className="h-1 w-full" />
         </div>
       )}
+
+      <button
+        onClick={() => router.back()}
+        aria-label="Back"
+        className="absolute left-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/20 backdrop-blur"
+      >
+        <BackIcon />
+      </button>
 
       <button
         onClick={openUpload}
