@@ -38,9 +38,27 @@ function RadioGroup({ value, onChange, options }: { value: string; onChange: (v:
   );
 }
 
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-green-500' : 'bg-slate-300'}`}
+    >
+      <span
+        className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform"
+        style={{ transform: checked ? 'translateX(22px)' : 'translateX(2px)' }}
+      />
+    </button>
+  );
+}
+
 export default function AccountPrivacyPage() {
   const { user } = useAuth();
   const [phone, setPhone] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [messagePermission, setMessagePermission] = useState('everyone');
   const [tagPermission, setTagPermission] = useState('everyone');
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
@@ -49,6 +67,7 @@ export default function AccountPrivacyPage() {
   useEffect(() => {
     if (!user) return;
     setPhone(user.phone || '');
+    setIsPrivate(user.isPrivate === true);
     setMessagePermission(user.messagePermission || 'everyone');
     setTagPermission(user.tagPermission || 'everyone');
     setShowOnlineStatus(user.showOnlineStatus !== false);
@@ -66,6 +85,16 @@ export default function AccountPrivacyPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-4 pb-20">
       <h1 className="mb-4 text-lg font-semibold">Account Privacy</h1>
+
+      <Row label="Private Account">
+        <label className="flex items-center justify-between text-sm text-slate-700">
+          Only approved followers can see your posts
+          <ToggleSwitch
+            checked={isPrivate}
+            onChange={(v) => { setIsPrivate(v); saveField({ isPrivate: v }); }}
+          />
+        </label>
+      </Row>
 
       <Row label="WhatsApp Number">
         <div className="flex gap-2">
@@ -111,10 +140,9 @@ export default function AccountPrivacyPage() {
       <Row label="Online status">
         <label className="flex items-center justify-between text-sm text-slate-700">
           Show when I'm active / last seen
-          <input
-            type="checkbox"
+          <ToggleSwitch
             checked={showOnlineStatus}
-            onChange={(e) => { setShowOnlineStatus(e.target.checked); saveField({ showOnlineStatus: e.target.checked }); }}
+            onChange={(v) => { setShowOnlineStatus(v); saveField({ showOnlineStatus: v }); }}
           />
         </label>
       </Row>
