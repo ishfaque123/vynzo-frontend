@@ -69,7 +69,11 @@ export default function StatusBar({ user }: { user: any }) {
     setPosting(true);
     const result = await createStatus({ media: file });
     setPosting(false);
-    if (result.success) load();
+    if (result.success) {
+      load();
+    } else {
+      alert(result.error?.message || 'Could not post your status. Please try again.');
+    }
   }
 
   async function handlePostText() {
@@ -81,6 +85,8 @@ export default function StatusBar({ user }: { user: any }) {
       setTextComposerOpen(false);
       setTextValue('');
       load();
+    } else {
+      alert(result.error?.message || 'Could not post your status. Please try again.');
     }
   }
 
