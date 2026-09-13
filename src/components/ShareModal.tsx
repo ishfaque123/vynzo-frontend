@@ -37,13 +37,14 @@ function RepostIcon() {
 interface ShareModalProps {
   onClose: () => void;
   postId?: string;
+  reelId?: string;
   profileUsername?: string;
   profileId?: string;
 }
 
 const CLOSE_THRESHOLD_PX = 100;
 
-export default function ShareModal({ postId, profileUsername, profileId, onClose }: ShareModalProps) {
+export default function ShareModal({ postId, reelId, profileUsername, profileId, onClose }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState('');
@@ -67,17 +68,19 @@ export default function ShareModal({ postId, profileUsername, profileId, onClose
 
   const fallbackUrl = profileUsername
     ? `${origin}/u/${profileUsername}`
+    : reelId
+    ? `${origin}/s/reel-${reelId}`
     : `${origin}/post/${postId}`;
   const url = shareCode ? `${origin}/s/${shareCode}` : fallbackUrl;
 
   useEffect(() => {
-    const targetType = profileUsername ? 'profile' : 'post';
-    const targetId = profileUsername ? profileId : postId;
+    const targetType = profileUsername ? 'profile' : reelId ? 'reel' : 'post';
+    const targetId = profileUsername ? profileId : reelId || postId;
     if (!targetId) return;
     createShareLink(targetType, targetId).then((result) => {
       if (result.success) setShareCode(result.data.code);
     });
-  }, [profileUsername, profileId, postId]);
+  }, [profileUsername, profileId, reelId, postId]);
 
   function copyLink() {
     navigator.clipboard.writeText(url);
