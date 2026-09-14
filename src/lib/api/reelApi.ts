@@ -64,3 +64,23 @@ export function createReelWithProgress(
     xhr.send(formData);
   });
 }
+
+export async function fetchReelComments(reelId: string) {
+  const res = await fetch(`${API_URL}/api/reels/${reelId}/comments`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function addReelComment(reelId: string, content: string) {
+  const res = await fetch(`${API_URL}/api/reels/${reelId}/comments`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  return res.json();
+}
+
+export async function deleteReelComment(commentId: string) {
+  const res = await fetch(`${API_URL}/api/reels/comments/${commentId}`, { method: 'DELETE', credentials: 'include' });
+  return res.json();
+}
