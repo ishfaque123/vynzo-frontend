@@ -1,4 +1,4 @@
-export const metadata = { title: 'Terms of Service - Friendzo' };
+export const metadata = { title: 'Terms of Service - Frianzo' };
 
 export default function TermsPage() {
   return (
@@ -6,10 +6,10 @@ export default function TermsPage() {
       <h1 className="mb-4 text-2xl font-bold">Terms of Service</h1>
       <p className="mb-4 text-sm text-slate-500">Last updated: {new Date().toLocaleDateString()}</p>
 
-      <p className="mb-4">By using Friendzo, you agree to these Terms of Service. Please read them carefully.</p>
+      <p className="mb-4">By using Frianzo, you agree to these Terms of Service. Please read them carefully.</p>
 
       <h2 className="mt-6 mb-2 text-lg font-semibold">Using Our Service</h2>
-      <p className="mb-4">You must be at least 13 years old to use Friendzo. You are responsible for the content you post and your conduct on the platform.</p>
+      <p className="mb-4">You must be at least 13 years old to use Frianzo. You are responsible for the content you post and your conduct on the platform.</p>
 
       <h2 className="mt-6 mb-2 text-lg font-semibold">Prohibited Content</h2>
       <p className="mb-4">You may not post content that is illegal, harassing, hateful, sexually explicit, or violates the rights of others. We may remove content or suspend accounts that violate these rules.</p>

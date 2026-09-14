@@ -1,4 +1,4 @@
-export const metadata = { title: 'Privacy Policy - Friendzo' };
+export const metadata = { title: 'Privacy Policy - Frianzo' };
 
 export default function PrivacyPage() {
   return (
@@ -6,7 +6,7 @@ export default function PrivacyPage() {
       <h1 className="mb-4 text-2xl font-bold">Privacy Policy</h1>
       <p className="mb-4 text-sm text-slate-500">Last updated: {new Date().toLocaleDateString()}</p>
 
-      <p className="mb-4">Friendzo ("we", "our", "us") operates the frianzo.online website and app. This Privacy Policy explains how we collect, use, and protect your information when you use our service.</p>
+      <p className="mb-4">Frianzo ("we", "our", "us") operates the frianzo.online website and app. This Privacy Policy explains how we collect, use, and protect your information when you use our service.</p>
 
       <h2 className="mt-6 mb-2 text-lg font-semibold">Information We Collect</h2>
       <p className="mb-4">When you sign in with Google, we collect your basic profile information (name, profile picture) to create your account. We also store content you create, such as posts, comments, and messages.</p>

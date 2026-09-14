@@ -15,12 +15,12 @@ function GoogleIcon() {
   );
 }
 
-function FriendzoLogo() {
+function FrianzoLogo() {
   return (
     <div className="flex flex-col items-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.png" alt="Friendzo" className="h-20 w-20 object-contain" />
-      <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">Friendzo</h1>
+      <img src="/logo.png" alt="Frianzo" className="h-20 w-20 object-contain" />
+      <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">Frianzo</h1>
       <p className="mt-1 text-sm text-slate-500">Share your moments with friends</p>
     </div>
   );
@@ -46,7 +46,7 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6">
       <div className="w-full max-w-sm">
-        <FriendzoLogo />
+        <FrianzoLogo />
 
         {hasError && (
           <p className="mt-6 rounded-lg bg-red-50 px-4 py-2.5 text-center text-sm text-red-600">
@@ -68,7 +68,7 @@ function LoginForm() {
         </a>
 
         <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-          By continuing, you agree to Friendzo&apos;s{' '}
+          By continuing, you agree to Frianzo&apos;s{' '}
           <a href="/terms" className="font-medium text-slate-500 hover:underline">
             Terms of Service
           </a>{' '}

@@ -1,11 +1,11 @@
-export const metadata = { title: 'About - Friendzo' };
+export const metadata = { title: 'About - Frianzo' };
 
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 text-slate-700">
-      <h1 className="mb-4 text-2xl font-bold">About Friendzo</h1>
+      <h1 className="mb-4 text-2xl font-bold">About Frianzo</h1>
 
-      <p className="mb-4">Friendzo is a social platform where people connect, share moments, and stay in touch with friends. Users can post updates and photos, follow people they're interested in, react and comment on posts, and message each other in real time.</p>
+      <p className="mb-4">Frianzo is a social platform where people connect, share moments, and stay in touch with friends. Users can post updates and photos, follow people they're interested in, react and comment on posts, and message each other in real time.</p>
 
       <h2 className="mt-6 mb-2 text-lg font-semibold">What You Can Do</h2>
       <ul className="mb-4 list-disc pl-5 space-y-1">

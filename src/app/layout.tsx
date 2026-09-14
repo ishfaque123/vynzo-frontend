@@ -5,8 +5,8 @@ import Shell from '@/components/Shell';
 import ThemeProvider from '@/components/ThemeProvider';
 
 export const metadata = {
-  title: 'Friendzo',
-  description: 'Friendzo — share your moments',
+  title: 'Frianzo',
+  description: 'Frianzo — share your moments',
 };
 
 export const viewport: Viewport = {
