@@ -77,7 +77,7 @@ function CloseIcon() {
 
 function ReelItem({ reel, active, onLikeChange, onDeleted }: { reel: Reel; active: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onDeleted: (id: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [liking, setLiking] = useState(false);
 
   useEffect(() => {
@@ -85,7 +85,18 @@ function ReelItem({ reel, active, onLikeChange, onDeleted }: { reel: Reel; activ
     if (!video) return;
     if (active) {
       video.currentTime = 0;
-      video.play().catch(() => {});
+      video.muted = false;
+      setIsMuted(false);
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          // Browser blocked unmuted autoplay — fall back to muted so the
+          // reel still plays, matching what the status-video player does.
+          video.muted = true;
+          setIsMuted(true);
+          video.play().catch(() => {});
+        });
+      }
     } else {
       video.pause();
     }
