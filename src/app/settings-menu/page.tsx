@@ -144,7 +144,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
       role="switch"
       aria-checked={checked}
       onClick={handleClick}
-      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-slate-900' : 'bg-slate-300'}`}
+      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-green-500' : 'bg-slate-300'}`}
     >
       <span className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
