@@ -91,3 +91,25 @@ export async function reportUser(userId: string, reason: string, details?: strin
   });
   return res.json();
 }
+
+export async function updateAvatar(file: File) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`${API_URL}/api/users/me/avatar`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  return res.json();
+}
+
+export async function updateCover(file: File) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`${API_URL}/api/users/me/cover`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  return res.json();
+}
