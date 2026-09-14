@@ -212,7 +212,7 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
   }
 
   return (
-    <div className="relative flex h-full w-full flex-shrink-0 snap-start items-center justify-center bg-black" style={{ scrollSnapStop: 'always' }}>
+    <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
       <video
         ref={videoRef}
         src={reel.videoUrl}
@@ -458,7 +458,7 @@ export default function ReelsPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-0 bg-black">
+    <div className="fixed inset-0 z-0 h-[100dvh] bg-black">
       {loading ? (
         <div className="flex h-full items-center justify-center text-white">Loading...</div>
       ) : reels.length === 0 ? (
@@ -466,9 +466,9 @@ export default function ReelsPage() {
           <p>No reels yet. Be the first to post one!</p>
         </div>
       ) : (
-        <div ref={containerRef} className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
+        <div ref={containerRef} className="h-[100dvh] w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain">
           {reels.map((reel, i) => (
-            <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-full w-full snap-start">
+            <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-[100dvh] w-full snap-start" style={{ scrollSnapStop: 'always' }}>
               <ReelItem reel={reel} active={i === activeIndex} forcePause={false} onLikeChange={handleLikeChange} onFavoriteChange={handleFavoriteChange} onDeleted={handleDeleted}
                 onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))} />
             </div>
