@@ -28,6 +28,7 @@ interface Reel {
   liked: boolean;
   isMine: boolean;
   friendStatus?: string;
+  commentCount?: number;
   author: { id: string; username: string; displayName: string; profilePictureUrl?: string };
 }
 
