@@ -58,7 +58,7 @@ function MuteIcon() {
 function UnmuteIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.5 8.5a5 5 0 010 7" /><path d="M18.5 5.5a9 9 0 010 13" />
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.5 8.5a5 5 0 010 7" /><path d="M18.5 5.5a9 9 0 010 13" />
     </svg>
   );
 }
@@ -106,8 +106,9 @@ function CloseIcon() {
   );
 }
 
-function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, onDeleted, onFollowed }: { reel: Reel; active: boolean; forcePause: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void }) {
+function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, onDeleted, onFollowed, onCommentCountChange }: { reel: Reel; active: boolean; forcePause: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void; onCommentCountChange: (id: string, delta: number) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastTapRef = useRef(0);
   const [isMuted, setIsMuted] = useState(false);
   const [liking, setLiking] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -117,6 +118,7 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+  const [doubleTapAnimating, setDoubleTapAnimating] = useState(false);
   const { user: currentUser } = useAuth();
 
   async function openComments() {
@@ -131,11 +133,17 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
     if (!content) return;
     setCommentText('');
     const result = await addReelComment(reel.id, content);
-    if (result.success) setComments((prev) => [...prev, result.data.comment]);
+    if (result.success) {
+      setComments((prev) => [...prev, result.data.comment]);
+      onCommentCountChange(reel.id, 1);
+    }
   }
   async function handleDeleteComment(commentId: string) {
     const result = await deleteReelComment(commentId);
-    if (result.success) setComments((prev) => prev.filter((c) => c.id !== commentId));
+    if (result.success) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      onCommentCountChange(reel.id, -1);
+    }
   }
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
 
@@ -157,8 +165,6 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
     const playPromise = video.play();
     if (playPromise && typeof playPromise.catch === 'function') {
       playPromise.catch(() => {
-        // Browser blocked unmuted autoplay — fall back to muted so the
-        // reel still plays, matching what the status-video player does.
         video.muted = true;
         setIsMuted(true);
         video.play().catch(() => {});
@@ -166,8 +172,6 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
     }
   }, [active]);
 
-  // Pauses (without resetting position/mute) while the "new reel" composer
-  // is open over it, and resumes from the same spot once it closes.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -184,6 +188,31 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
     if (!video) return;
     video.muted = !video.muted;
     setIsMuted(video.muted);
+  }
+
+  function handleVideoTap(e: React.MouseEvent<HTMLVideoElement>) {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      lastTapRef.current = 0;
+      e.preventDefault();
+      e.stopPropagation();
+      if (!reel.liked) {
+        void handleLike();
+      }
+      setDoubleTapAnimating(true);
+      window.setTimeout(() => setDoubleTapAnimating(false), 500);
+      return;
+    }
+
+    lastTapRef.current = now;
+    window.setTimeout(() => {
+      if (lastTapRef.current !== now) return;
+      lastTapRef.current = 0;
+      const video = videoRef.current;
+      if (!video) return;
+      if (video.paused) video.play().catch(() => {});
+      else video.pause();
+    }, 300);
   }
 
   async function handleLike() {
@@ -222,13 +251,14 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
         className="h-full w-full select-none object-contain"
         style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
         onContextMenu={(e) => e.preventDefault()}
-        onClick={() => {
-          const video = videoRef.current;
-          if (!video) return;
-          if (video.paused) video.play().catch(() => {});
-          else video.pause();
-        }}
+        onClick={handleVideoTap}
       />
+
+      {doubleTapAnimating && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <HeartIcon filled />
+        </div>
+      )}
 
       <button onClick={toggleMute} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/40">
         {isMuted ? <MuteIcon /> : <UnmuteIcon />}
@@ -418,6 +448,9 @@ export default function ReelsPage() {
   function handleDeleted(id: string) {
     setReels((prev) => prev.filter((r) => r.id !== id));
   }
+  function updateCommentCount(id: string, delta: number) {
+    setReels((prev) => prev.map((r) => (r.id === id ? { ...r, commentCount: Math.max(0, (r.commentCount ?? 0) + delta) } : r)));
+  }
 
   async function openUpload() {
     const status = await fetchMyReelStatus();
@@ -469,8 +502,16 @@ export default function ReelsPage() {
         <div ref={containerRef} className="h-[100dvh] w-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain">
           {reels.map((reel, i) => (
             <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-[100dvh] w-full snap-start" style={{ scrollSnapStop: 'always' }}>
-              <ReelItem reel={reel} active={i === activeIndex} forcePause={false} onLikeChange={handleLikeChange} onFavoriteChange={handleFavoriteChange} onDeleted={handleDeleted}
-                onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))} />
+              <ReelItem
+                reel={reel}
+                active={i === activeIndex}
+                forcePause={false}
+                onLikeChange={handleLikeChange}
+                onFavoriteChange={handleFavoriteChange}
+                onDeleted={handleDeleted}
+                onCommentCountChange={updateCommentCount}
+                onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))}
+              />
             </div>
           ))}
           <div ref={sentinelRef} className="h-1 w-full" />
