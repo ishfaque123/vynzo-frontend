@@ -190,6 +190,7 @@ export default function ReelsPage() {
   const [pendingDuration, setPendingDuration] = useState<number>(0);
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -285,6 +286,10 @@ export default function ReelsPage() {
       }
       setPendingFile(file);
       setPendingDuration(probe.duration);
+      setPreviewUrl((prevUrl) => {
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
+        return URL.createObjectURL(file);
+      });
     };
     probe.src = URL.createObjectURL(file);
   }
@@ -397,7 +402,7 @@ export default function ReelsPage() {
               </button>
             ) : (
               <div className="space-y-3">
-                <video src={URL.createObjectURL(pendingFile)} controls className="max-h-64 w-full rounded-lg bg-black" />
+                {previewUrl && <video src={previewUrl} controls className="max-h-64 w-full rounded-lg bg-black" />}
                 <textarea
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
@@ -413,7 +418,11 @@ export default function ReelsPage() {
                 )}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setPendingFile(null)}
+                    onClick={() => {
+                      if (previewUrl) URL.revokeObjectURL(previewUrl);
+                      setPreviewUrl(null);
+                      setPendingFile(null);
+                    }}
                     className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700"
                   >
                     Choose different video
