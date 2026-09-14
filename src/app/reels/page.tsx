@@ -13,11 +13,11 @@ import {
   toggleReelLike,
   toggleReelFavorite,
   deleteReel,
-  createReelWithProgress,
   fetchReelComments,
   addReelComment,
   deleteReelComment,
 } from '@/lib/api/reelApi';
+import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 
 interface Reel {
   id: string;
@@ -340,15 +340,6 @@ export default function ReelsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
-  const [caption, setCaption] = useState('');
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [pendingDuration, setPendingDuration] = useState<number>(0);
-  const [posting, setPosting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -430,13 +421,11 @@ export default function ReelsPage() {
 
   async function openUpload() {
     const status = await fetchMyReelStatus();
-    const rem = status.success ? status.data.remaining : null;
-    setRemaining(rem);
-    if (rem === 0) {
-      setUploadOpen(true);
-    } else {
-      fileInputRef.current?.click();
+    if (status.success && status.data.remaining === 0) {
+      alert("You've already posted your reel for today. Come back tomorrow!");
+      return;
     }
+    fileInputRef.current?.click();
   }
 
   function handleFilePicked(file: File) {
@@ -449,32 +438,10 @@ export default function ReelsPage() {
         alert(`Reels must be ${maxDuration} seconds or shorter.`);
         return;
       }
-      setPendingFile(file);
-      setPendingDuration(probe.duration);
-      setPreviewUrl((prevUrl) => {
-        if (prevUrl) URL.revokeObjectURL(prevUrl);
-        return URL.createObjectURL(file);
-      });
-      setUploadOpen(true);
+      setPendingReelVideo(file, probe.duration);
+      router.push('/reels/new');
     };
     probe.src = URL.createObjectURL(file);
-  }
-
-  async function handlePost() {
-    if (!pendingFile || posting) return;
-    setPosting(true);
-    setUploadProgress(0);
-    const result = await createReelWithProgress({ video: pendingFile, caption: caption.trim() || undefined, durationSec: pendingDuration }, setUploadProgress);
-    setPosting(false);
-    setUploadProgress(null);
-    if (result.success) {
-      setUploadOpen(false);
-      setPendingFile(null);
-      setCaption('');
-      loadFeed();
-    } else {
-      alert(result.error?.message || 'Could not post your reel. Please try again.');
-    }
   }
 
   if (!config) {
@@ -502,7 +469,7 @@ export default function ReelsPage() {
         <div ref={containerRef} className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
           {reels.map((reel, i) => (
             <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-full w-full snap-start">
-              <ReelItem reel={reel} active={i === activeIndex} forcePause={uploadOpen} onLikeChange={handleLikeChange} onFavoriteChange={handleFavoriteChange} onDeleted={handleDeleted}
+              <ReelItem reel={reel} active={i === activeIndex} forcePause={false} onLikeChange={handleLikeChange} onFavoriteChange={handleFavoriteChange} onDeleted={handleDeleted}
                 onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))} />
             </div>
           ))}
@@ -538,76 +505,6 @@ export default function ReelsPage() {
         }}
       />
 
-      {uploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => { setUploadOpen(false); setPendingFile(null); }}>
-          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-800">New reel</p>
-              <button onClick={() => { setUploadOpen(false); setPendingFile(null); }} className="text-slate-500">
-                <CloseIcon />
-              </button>
-            </div>
-
-            {remaining === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500">
-                You've already posted your reel for today. Come back tomorrow!
-              </p>
-            ) : !pendingFile ? (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left"
-              >
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
-                  </svg>
-                </span>
-                <span>
-                  <span className="block text-sm font-medium text-slate-800">Choose a video</span>
-                  <span className="block text-xs text-slate-400">Max {config.maxDurationSec} seconds</span>
-                </span>
-              </button>
-            ) : (
-              <div className="space-y-3">
-                {previewUrl && <video src={previewUrl} controls className="max-h-64 w-full rounded-lg bg-black" />}
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Write a caption"
-                  rows={2}
-                  maxLength={500}
-                  className="w-full resize-none rounded-lg border px-3 py-2 text-sm"
-                />
-                {uploadProgress !== null && (
-                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: `${uploadProgress}%` }} />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      if (previewUrl) URL.revokeObjectURL(previewUrl);
-                      setPreviewUrl(null);
-                      setPendingFile(null);
-                      fileInputRef.current?.click();
-                    }}
-                    className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700"
-                  >
-                    Choose different video
-                  </button>
-                  <button
-                    onClick={handlePost}
-                    disabled={posting}
-                    className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                  >
-                    {posting ? `Posting ${uploadProgress ?? 0}%` : 'Post'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
