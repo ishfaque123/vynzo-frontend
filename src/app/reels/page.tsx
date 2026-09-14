@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
+import { toggleFollow } from '@/lib/api/userApi';
 import {
   fetchReelsConfig,
   fetchReelFeed,
@@ -22,6 +23,7 @@ interface Reel {
   likeCount: number;
   liked: boolean;
   isMine: boolean;
+  friendStatus?: string;
   author: { id: string; username: string; displayName: string; profilePictureUrl?: string };
 }
 
@@ -75,10 +77,21 @@ function CloseIcon() {
   );
 }
 
-function ReelItem({ reel, active, onLikeChange, onDeleted }: { reel: Reel; active: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onDeleted: (id: string) => void }) {
+function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel: Reel; active: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
+
+  async function handleFollow(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (following) return;
+    setFollowing(true);
+    const result = await toggleFollow(reel.author.id);
+    setFollowing(false);
+    if (result.success && result.data.following) onFollowed(reel.author.id);
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -149,10 +162,24 @@ function ReelItem({ reel, active, onLikeChange, onDeleted }: { reel: Reel; activ
 
       <div className="absolute bottom-0 left-0 right-16 z-10 p-4 pb-6 text-white">
         <Link href={`/u/${reel.author.username}`} className="mb-2 flex items-center gap-2">
-          <span
-            className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center"
-            style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}}
-          />
+          <span className="relative h-9 w-9 flex-shrink-0">
+            <span
+              className="block h-9 w-9 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center"
+              style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}}
+            />
+            {showFollow && (
+              <button
+                onClick={handleFollow}
+                disabled={following}
+                aria-label="Follow"
+                className="absolute -bottom-1 left-1/2 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full bg-red-500 text-white disabled:opacity-50"
+              >
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            )}
+          </span>
           <span className="text-sm font-semibold">{reel.author.displayName}</span>
         </Link>
         {reel.caption && <p className="text-sm">{reel.caption}</p>}
@@ -336,7 +363,8 @@ export default function ReelsPage() {
         <div ref={containerRef} className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
           {reels.map((reel, i) => (
             <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-full w-full snap-start">
-              <ReelItem reel={reel} active={i === activeIndex} onLikeChange={handleLikeChange} onDeleted={handleDeleted} />
+              <ReelItem reel={reel} active={i === activeIndex} onLikeChange={handleLikeChange} onDeleted={handleDeleted}
+                onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))} />
             </div>
           ))}
           <div ref={sentinelRef} className="h-1 w-full" />
