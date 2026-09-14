@@ -11,6 +11,7 @@ import {
   fetchReelFeed,
   fetchMyReelStatus,
   toggleReelLike,
+  toggleReelFavorite,
   deleteReel,
   createReelWithProgress,
   fetchReelComments,
@@ -26,6 +27,7 @@ interface Reel {
   createdAt: string;
   likeCount: number;
   liked: boolean;
+  favorited: boolean;
   isMine: boolean;
   friendStatus?: string;
   commentCount?: number;
@@ -70,7 +72,15 @@ function PlusIcon() {
 function ShareIcon() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-      <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
+      <circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" />
+      <line x1="8.3" y1="10.7" x2="15.7" y2="6.3" /><line x1="8.3" y1="13.3" x2="15.7" y2="17.7" />
+    </svg>
+  );
+}
+function BookmarkIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill={filled ? 'white' : 'none'} stroke="white" strokeWidth="2">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" />
     </svg>
   );
 }
@@ -96,12 +106,13 @@ function CloseIcon() {
   );
 }
 
-function ReelItem({ reel, active, forcePause, onLikeChange, onDeleted, onFollowed }: { reel: Reel; active: boolean; forcePause: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void }) {
+function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, onDeleted, onFollowed }: { reel: Reel; active: boolean; forcePause: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [liking, setLiking] = useState(false);
   const [following, setFollowing] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [favoriting, setFavoriting] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -185,6 +196,15 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onDeleted, onFollowe
     if (result.success) onLikeChange(reel.id, result.data.liked, reel.likeCount + (result.data.liked ? 1 : -1));
   }
 
+  async function handleFavorite() {
+    if (favoriting) return;
+    setFavoriting(true);
+    onFavoriteChange(reel.id, !reel.favorited);
+    const result = await toggleReelFavorite(reel.id);
+    setFavoriting(false);
+    if (result.success) onFavoriteChange(reel.id, result.data.favorited);
+  }
+
   async function handleDelete() {
     if (!confirm('Delete this reel?')) return;
     const result = await deleteReel(reel.id);
@@ -199,7 +219,9 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onDeleted, onFollowe
         loop
         muted={isMuted}
         playsInline
-        className="h-full w-full object-contain"
+        className="h-full w-full select-none object-contain"
+        style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
+        onContextMenu={(e) => e.preventDefault()}
         onClick={() => {
           const video = videoRef.current;
           if (!video) return;
@@ -237,7 +259,7 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onDeleted, onFollowe
         {reel.caption && <p className="text-sm">{reel.caption}</p>}
       </div>
 
-      <div className="absolute bottom-6 right-3 z-10 flex flex-col items-center gap-5">
+      <div className="absolute bottom-24 right-3 z-10 flex flex-col items-center gap-5">
         <button onClick={handleLike} className="flex flex-col items-center gap-1">
           <HeartIcon filled={reel.liked} />
           <span className="text-xs font-medium text-white">{reel.likeCount}</span>
@@ -245,6 +267,9 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onDeleted, onFollowe
         <button onClick={(e) => { e.stopPropagation(); openComments(); }} className="flex flex-col items-center gap-1">
           <CommentIcon />
           <span className="text-xs font-medium text-white">{reel.commentCount ?? ''}</span>
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); handleFavorite(); }} className="flex flex-col items-center gap-1">
+          <BookmarkIcon filled={reel.favorited} />
         </button>
         <button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1">
           <ShareIcon />
@@ -396,6 +421,9 @@ export default function ReelsPage() {
   function handleLikeChange(id: string, liked: boolean, count: number) {
     setReels((prev) => prev.map((r) => (r.id === id ? { ...r, liked, likeCount: Math.max(0, count) } : r)));
   }
+  function handleFavoriteChange(id: string, favorited: boolean) {
+    setReels((prev) => prev.map((r) => (r.id === id ? { ...r, favorited } : r)));
+  }
   function handleDeleted(id: string) {
     setReels((prev) => prev.filter((r) => r.id !== id));
   }
@@ -474,7 +502,7 @@ export default function ReelsPage() {
         <div ref={containerRef} className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
           {reels.map((reel, i) => (
             <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-full w-full snap-start">
-              <ReelItem reel={reel} active={i === activeIndex} forcePause={uploadOpen} onLikeChange={handleLikeChange} onDeleted={handleDeleted}
+              <ReelItem reel={reel} active={i === activeIndex} forcePause={uploadOpen} onLikeChange={handleLikeChange} onFavoriteChange={handleFavoriteChange} onDeleted={handleDeleted}
                 onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))} />
             </div>
           ))}
@@ -561,6 +589,7 @@ export default function ReelsPage() {
                       if (previewUrl) URL.revokeObjectURL(previewUrl);
                       setPreviewUrl(null);
                       setPendingFile(null);
+                      fileInputRef.current?.click();
                     }}
                     className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700"
                   >
