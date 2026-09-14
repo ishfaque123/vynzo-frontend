@@ -75,12 +75,15 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
 export default function ReelsPage() {
   const router = useRouter();
   useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploadReady, setUploadReady] = useState(false);
+  const [uploadMaxDuration, setUploadMaxDuration] = useState(60);
+  const [reelsEnabled, setReelsEnabled] = useState(false);
   const [forcePause] = useState(false);
-  useEffect(() => { let cancelled = false; (async () => { const [feed, status, config] = await Promise.all([fetchReelFeed(), fetchMyReelStatus(), fetchReelsConfig()]); if (cancelled) return; if (feed.success) setReels(feed.data.reels || []); setUploadReady(status.success && status.data.canUpload); void config; setLoading(false); })(); return () => { cancelled = true; }; }, []);
+  useEffect(() => { let cancelled = false; (async () => { const [feed, status, config] = await Promise.all([fetchReelFeed(), fetchMyReelStatus(), fetchReelsConfig()]); if (cancelled) return; if (feed.success) setReels(feed.data.reels || []); const enabled = !!(config.success && config.data?.enabled); const remaining = status.success ? Number(status.data?.remaining) : 0; setReelsEnabled(enabled); setUploadMaxDuration(Number(config.data?.maxDurationSec) > 0 ? Number(config.data.maxDurationSec) : 60); setUploadReady(enabled && status.success && Number.isFinite(remaining) && remaining > 0); setLoading(false); })(); return () => { cancelled = true; }; }, []);
   useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (visible) setActiveIndex(Number((visible.target as HTMLElement).dataset.reelIndex)); }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
@@ -88,8 +91,32 @@ export default function ReelsPage() {
   function handleFollowed(userId: string) { setReels((items) => items.map((item) => item.author.id === userId ? { ...item, friendStatus: 'following' } : item)); }
   function handleDeleted(id: string) { setReels((items) => items.filter((item) => item.id !== id)); }
   function goNext() { setActiveIndex((index) => Math.min(index + 1, reels.length - 1)); const next = document.querySelector<HTMLElement>(`[data-reel-index="${Math.min(activeIndex + 1, reels.length - 1)}"]`); next?.scrollIntoView({ behavior: 'smooth' }); }
-  function handleUpload() { if (!uploadReady) return; setPendingReelVideo(''); router.push('/reels/upload'); }
+  async function handleUpload() {
+    if (!reelsEnabled) return;
+    const status = await fetchMyReelStatus();
+    if (!status.success) { alert(status.error?.message || 'Unable to check reel upload limit. Please try again.'); return; }
+    const remaining = Number(status.data?.remaining);
+    if (!Number.isFinite(remaining) || remaining <= 0) { setUploadReady(false); alert("You've reached your reel limit for the last 24 hours. Please try again later."); return; }
+    fileInputRef.current?.click();
+  }
+  function handleFilePicked(file: File) {
+    if (!file.type.startsWith('video/')) { alert('Please select a video file.'); return; }
+    const objectUrl = URL.createObjectURL(file);
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.onloadedmetadata = () => {
+      const duration = probe.duration;
+      URL.revokeObjectURL(objectUrl);
+      probe.removeAttribute('src');
+      probe.load();
+      if (!Number.isFinite(duration) || duration <= 0) { alert('Could not read the video duration. Please choose another video.'); return; }
+      if (duration > uploadMaxDuration) { alert(`Reels must be ${uploadMaxDuration} seconds or shorter.`); return; }
+      setPendingReelVideo(file, duration);
+      router.push('/reels/new');
+    };
+    probe.onerror = () => { URL.revokeObjectURL(objectUrl); probe.removeAttribute('src'); probe.load(); alert('Could not read this video. Please choose another video.'); };
+    probe.src = objectUrl;
+  }
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white">Loading...</div>;
-  if (!reels.length) return <div className="flex min-h-screen items-center justify-center bg-black text-white">No reels yet.</div>;
-  return <main className="fixed inset-0 bg-black"><div id="reels-feed" className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain">{reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"> <ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} onNext={goNext} /></section>)}</div><button onClick={handleUpload} disabled={!uploadReady} aria-label="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white disabled:opacity-40"><PlusIcon /></button></main>;
+  return <main className="fixed inset-0 bg-black"><div id="reels-feed" className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} onNext={goNext} /></section>) : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div><button onClick={handleUpload} disabled={!uploadReady} aria-label="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white disabled:opacity-40"><PlusIcon /></button><input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleFilePicked(file); }} /></main>;
 }
