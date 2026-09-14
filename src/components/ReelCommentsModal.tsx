@@ -46,8 +46,10 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
   const [reaction, setReaction] = useState<string | null>(comment.myReaction);
   const [count, setCount] = useState(comment.reactionCount || 0);
   const [busy, setBusy] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const isOwner = currentUserId === comment.author.id;
   const canDelete = isOwner || reelOwner;
+  const replies = comment.replies || [];
 
   useEffect(() => {
     setReaction(comment.myReaction);
@@ -104,7 +106,6 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     setMenuOpen(false);
     const ok = window.confirm('Report this comment?');
     if (!ok) return;
-    // The menu is intentionally wired separately from delete/edit so reporting can be connected to moderation without changing comment ownership rules.
     window.dispatchEvent(new CustomEvent('reel-comment-report', { detail: comment.id }));
   }
   function copy() {
@@ -138,9 +139,10 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
             </div>}
           </div>
         </div>
+        {depth === 0 && replies.length > 0 && <button onClick={() => setShowReplies((v) => !v)} className="mt-2 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900">{showReplies ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}</button>}
       </div>
     </div>
-    {(comment.replies || []).map((reply) => <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId} reelOwner={reelOwner} onReply={onReply} onChanged={onChanged} depth={depth + 1} />)}
+    {showReplies && depth === 0 && replies.map((reply) => <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId} reelOwner={reelOwner} onReply={onReply} onChanged={onChanged} depth={1} />)}
   </div>;
 }
 
