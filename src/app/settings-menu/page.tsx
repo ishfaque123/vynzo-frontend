@@ -341,7 +341,7 @@ export default function SettingsMenuPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowLogoutConfirm(false)}>
           <div className="w-full max-w-xs rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
             <p className="mb-1 font-semibold">Log out?</p>
-            <p className="mb-4 text-sm text-slate-500">You'll need to sign in again to use Friendzo.</p>
+            <p className="mb-4 text-sm text-slate-500">You'll need to sign in again to use Frianzo.</p>
             <div className="flex gap-2">
               <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 rounded-lg border py-2 text-sm font-medium">Cancel</button>
               <button onClick={handleLogout} disabled={loggingOut} className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white disabled:opacity-50">
