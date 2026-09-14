@@ -15,8 +15,18 @@ export async function fetchMyReelStatus() {
   return res.json();
 }
 
+export async function fetchFavoriteReels() {
+  const res = await fetch(`${API_URL}/api/reels/me/favorites`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function toggleReelLike(reelId: string) {
   const res = await fetch(`${API_URL}/api/reels/${reelId}/like`, { method: 'POST', credentials: 'include' });
+  return res.json();
+}
+
+export async function toggleReelFavorite(reelId: string) {
+  const res = await fetch(`${API_URL}/api/reels/${reelId}/favorite`, { method: 'POST', credentials: 'include' });
   return res.json();
 }
 

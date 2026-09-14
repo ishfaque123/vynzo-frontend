@@ -1,6 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export async function createShareLink(type: 'profile' | 'post', id: string) {
+export async function createShareLink(type: 'profile' | 'post' | 'reel', id: string) {
   const res = await fetch(`${API_URL}/api/share`, {
     method: 'POST',
     credentials: 'include',
