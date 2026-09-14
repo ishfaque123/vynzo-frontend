@@ -96,7 +96,7 @@ function CloseIcon() {
   );
 }
 
-function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel: Reel; active: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void }) {
+function ReelItem({ reel, active, forcePause, onLikeChange, onDeleted, onFollowed }: { reel: Reel; active: boolean; forcePause: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [liking, setLiking] = useState(false);
@@ -139,25 +139,33 @@ function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel:
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-    if (active) {
-      video.currentTime = 0;
-      video.muted = false;
-      setIsMuted(false);
-      const playPromise = video.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
-          // Browser blocked unmuted autoplay — fall back to muted so the
-          // reel still plays, matching what the status-video player does.
-          video.muted = true;
-          setIsMuted(true);
-          video.play().catch(() => {});
-        });
-      }
-    } else {
-      video.pause();
+    if (!video || !active) return;
+    video.currentTime = 0;
+    video.muted = false;
+    setIsMuted(false);
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        // Browser blocked unmuted autoplay — fall back to muted so the
+        // reel still plays, matching what the status-video player does.
+        video.muted = true;
+        setIsMuted(true);
+        video.play().catch(() => {});
+      });
     }
   }, [active]);
+
+  // Pauses (without resetting position/mute) while the "new reel" composer
+  // is open over it, and resumes from the same spot once it closes.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!active || forcePause) {
+      video.pause();
+    } else {
+      video.play().catch(() => {});
+    }
+  }, [active, forcePause]);
 
   function toggleMute(e: React.MouseEvent) {
     e.stopPropagation();
@@ -394,8 +402,13 @@ export default function ReelsPage() {
 
   async function openUpload() {
     const status = await fetchMyReelStatus();
-    if (status.success) setRemaining(status.data.remaining);
-    setUploadOpen(true);
+    const rem = status.success ? status.data.remaining : null;
+    setRemaining(rem);
+    if (rem === 0) {
+      setUploadOpen(true);
+    } else {
+      fileInputRef.current?.click();
+    }
   }
 
   function handleFilePicked(file: File) {
@@ -414,6 +427,7 @@ export default function ReelsPage() {
         if (prevUrl) URL.revokeObjectURL(prevUrl);
         return URL.createObjectURL(file);
       });
+      setUploadOpen(true);
     };
     probe.src = URL.createObjectURL(file);
   }
@@ -460,7 +474,7 @@ export default function ReelsPage() {
         <div ref={containerRef} className="h-full w-full snap-y snap-mandatory overflow-y-scroll">
           {reels.map((reel, i) => (
             <div key={reel.id} ref={(el) => { itemRefs.current[i] = el; }} className="h-full w-full snap-start">
-              <ReelItem reel={reel} active={i === activeIndex} onLikeChange={handleLikeChange} onDeleted={handleDeleted}
+              <ReelItem reel={reel} active={i === activeIndex} forcePause={uploadOpen} onLikeChange={handleLikeChange} onDeleted={handleDeleted}
                 onFollowed={(userId) => setReels((prev) => prev.map((r) => (r.author.id === userId ? { ...r, friendStatus: r.friendStatus === 'follow_back' ? 'friends' : 'following' } : r)))} />
             </div>
           ))}
@@ -531,7 +545,7 @@ export default function ReelsPage() {
                 <textarea
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Write a caption (optional)"
+                  placeholder="Write a caption"
                   rows={2}
                   maxLength={500}
                   className="w-full resize-none rounded-lg border px-3 py-2 text-sm"
