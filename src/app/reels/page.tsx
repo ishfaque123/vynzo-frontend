@@ -13,6 +13,9 @@ import {
   toggleReelLike,
   deleteReel,
   createReelWithProgress,
+  fetchReelComments,
+  addReelComment,
+  deleteReelComment,
 } from '@/lib/api/reelApi';
 
 interface Reel {
@@ -77,6 +80,13 @@ function BackIcon() {
     </svg>
   );
 }
+function CommentIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+    </svg>
+  );
+}
 function CloseIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -91,6 +101,30 @@ function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel:
   const [liking, setLiking] = useState(false);
   const [following, setFollowing] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const { user: currentUser } = useAuth();
+
+  async function openComments() {
+    setCommentsOpen(true);
+    setLoadingComments(true);
+    const result = await fetchReelComments(reel.id);
+    if (result.success) setComments(result.data.comments);
+    setLoadingComments(false);
+  }
+  async function handleAddComment() {
+    const content = commentText.trim();
+    if (!content) return;
+    setCommentText('');
+    const result = await addReelComment(reel.id, content);
+    if (result.success) setComments((prev) => [...prev, result.data.comment]);
+  }
+  async function handleDeleteComment(commentId: string) {
+    const result = await deleteReelComment(commentId);
+    if (result.success) setComments((prev) => prev.filter((c) => c.id !== commentId));
+  }
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
 
   async function handleFollow(e: React.MouseEvent) {
@@ -199,6 +233,10 @@ function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel:
           <HeartIcon filled={reel.liked} />
           <span className="text-xs font-medium text-white">{reel.likeCount}</span>
         </button>
+        <button onClick={(e) => { e.stopPropagation(); openComments(); }} className="flex flex-col items-center gap-1">
+          <CommentIcon />
+          <span className="text-xs font-medium text-white">{reel.commentCount ?? ''}</span>
+        </button>
         <button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1">
           <ShareIcon />
         </button>
@@ -210,6 +248,50 @@ function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel:
       </div>
 
       {shareOpen && <ShareModal reelId={reel.id} onClose={() => setShareOpen(false)} />}
+
+      {commentsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+          onClick={(e) => { e.stopPropagation(); setCommentsOpen(false); }}
+        >
+          <div className="flex h-[70vh] w-full max-w-xl flex-col rounded-t-2xl bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="border-b py-3 text-center text-sm font-semibold text-slate-800">Comments</div>
+            <div className="flex-1 overflow-y-auto px-4 py-3">
+              {loadingComments ? (
+                <p className="pt-6 text-center text-sm text-slate-400">Loading...</p>
+              ) : comments.length === 0 ? (
+                <p className="pt-6 text-center text-sm text-slate-400">No comments yet.</p>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="mb-3 flex items-start gap-2">
+                    <span
+                      className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-slate-200 bg-cover bg-center"
+                      style={c.user.profilePictureUrl ? { backgroundImage: `url(${c.user.profilePictureUrl})` } : {}}
+                    />
+                    <div className="flex-1 rounded-2xl bg-slate-100 px-3 py-2">
+                      <p className="text-sm font-semibold">{c.user.displayName}</p>
+                      <p className="text-sm">{c.content}</p>
+                    </div>
+                    {(c.user.id === currentUser?.id || reel.isMine) && (
+                      <button onClick={() => handleDeleteComment(c.id)} className="mt-2 text-xs text-slate-400">✕</button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="flex gap-2 border-t p-3">
+              <input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                placeholder="Add a comment..."
+                className="flex-1 rounded-full border px-4 py-2 text-sm"
+              />
+              <button onClick={handleAddComment} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white">Send</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
