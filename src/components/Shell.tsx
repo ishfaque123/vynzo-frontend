@@ -120,8 +120,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <header className={`sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Friendzo" className="h-7 w-7 object-contain" />
-          <span className="text-xl font-bold tracking-tight text-slate-900">Friendzo</span>
+          <img src="/logo.png" alt="Frianzo" className="h-7 w-7 object-contain" />
+          <span className="text-xl font-bold tracking-tight text-slate-900">Frianzo</span>
         </Link>
 
         <div className="flex items-center gap-1">
