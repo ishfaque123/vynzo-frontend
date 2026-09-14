@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { toggleFollow } from '@/lib/api/userApi';
+import ShareModal from '@/components/ShareModal';
 import {
   fetchReelsConfig,
   fetchReelFeed,
@@ -62,6 +63,13 @@ function PlusIcon() {
     </svg>
   );
 }
+function ShareIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+      <path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+  );
+}
 function BackIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
@@ -82,6 +90,7 @@ function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel:
   const [isMuted, setIsMuted] = useState(false);
   const [liking, setLiking] = useState(false);
   const [following, setFollowing] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
 
   async function handleFollow(e: React.MouseEvent) {
@@ -190,12 +199,17 @@ function ReelItem({ reel, active, onLikeChange, onDeleted, onFollowed }: { reel:
           <HeartIcon filled={reel.liked} />
           <span className="text-xs font-medium text-white">{reel.likeCount}</span>
         </button>
+        <button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1">
+          <ShareIcon />
+        </button>
         {reel.isMine && (
           <button onClick={handleDelete} className="flex flex-col items-center gap-1">
             <TrashIcon />
           </button>
         )}
       </div>
+
+      {shareOpen && <ShareModal reelId={reel.id} onClose={() => setShareOpen(false)} />}
     </div>
   );
 }
