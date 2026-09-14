@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
-import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow, blockUser, unblockUser } from '@/lib/api/userApi';
+import { useRef } from 'react';
+import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow, blockUser, unblockUser, updateAvatar, updateCover } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { createConversation } from '@/lib/api/messageApi';
@@ -80,6 +81,32 @@ export default function ProfilePage() {
   const [blockedByOther, setBlockedByOther] = useState(false);
   const [blockBusy, setBlockBusy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploadingAvatar(true);
+    const result = await updateAvatar(file);
+    setUploadingAvatar(false);
+    if (result.success) setProfile((prev: any) => ({ ...prev, profilePictureUrl: result.data.user.profilePictureUrl }));
+    else alert(result.error?.message || 'Could not update photo.');
+  }
+
+  async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploadingCover(true);
+    const result = await updateCover(file);
+    setUploadingCover(false);
+    if (result.success) setProfile((prev: any) => ({ ...prev, coverPhotoUrl: result.data.user.coverPhotoUrl }));
+    else alert(result.error?.message || 'Could not update cover photo.');
+  }
 
   useEffect(() => {
     fetchUserProfile(username).then((result) => {
@@ -205,13 +232,44 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-xl pb-6">
-      <div className="h-32 bg-slate-200 bg-cover bg-center" style={profile.coverPhotoUrl ? { backgroundImage: `url(${profile.coverPhotoUrl})` } : {}} />
+      <div className="relative">
+        <div className="h-32 bg-slate-200 bg-cover bg-center" style={profile.coverPhotoUrl ? { backgroundImage: `url(${profile.coverPhotoUrl})` } : {}} />
+        {isMe && (
+          <>
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={uploadingCover}
+              className="absolute bottom-2 right-2 rounded-full bg-black/50 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            >
+              {uploadingCover ? 'Uploading...' : 'Edit cover'}
+            </button>
+          </>
+        )}
+      </div>
 
       <div className="px-4">
         <div className="-mt-10 mb-2 flex items-end justify-between">
-          <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 bg-cover bg-center" style={profile.profilePictureUrl ? { backgroundImage: `url(${profile.profilePictureUrl})` } : {}}>
-            {!profile.profilePictureUrl && (
-              <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
+          <div className="relative h-20 w-20 flex-shrink-0">
+            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 bg-cover bg-center" style={profile.profilePictureUrl ? { backgroundImage: `url(${profile.profilePictureUrl})` } : {}}>
+              {!profile.profilePictureUrl && (
+                <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
+              )}
+            </div>
+            {isMe && (
+              <>
+                <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  aria-label="Change profile photo"
+                  className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white disabled:opacity-50"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </>
             )}
           </div>
           <div className="flex items-center">
