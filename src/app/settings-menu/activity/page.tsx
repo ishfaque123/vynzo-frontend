@@ -38,7 +38,7 @@ export default function ActivityPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
       <h1 className="mb-1 text-xl font-semibold">Your Activity</h1>
-      <p className="mb-4 text-sm text-slate-500">How much time you've spent on Friendzo today.</p>
+      <p className="mb-4 text-sm text-slate-500">How much time you've spent on Frianzo today.</p>
 
       {loading ? (
         <p className="text-slate-500">Loading...</p>
