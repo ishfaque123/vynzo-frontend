@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { addReelComment, deleteReelComment, setReelCommentReaction } from '@/lib/api/reelCommentApi';
+import { reportReelComment } from '@/lib/api/reelApi';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 const CLOSE_THRESHOLD = 100;
@@ -106,7 +107,9 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     setMenuOpen(false);
     const ok = window.confirm('Report this comment?');
     if (!ok) return;
-    window.dispatchEvent(new CustomEvent('reel-comment-report', { detail: comment.id }));
+    const result = await reportReelComment(comment.id);
+    if (result.success) window.alert('Comment reported.');
+    else if (result.error?.message) window.alert(result.error.message);
   }
   function copy() {
     navigator.clipboard?.writeText(comment.content).catch(() => {});
