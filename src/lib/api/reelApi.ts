@@ -16,6 +16,18 @@ function apiUrl(path: string) {
   return `${API_URL}${path}`;
 }
 
+const reelActionLocks = new Map<string, Promise<any>>();
+
+function serializeReelAction<T>(key: string, action: () => Promise<T>): Promise<T> {
+  const previous = reelActionLocks.get(key) || Promise.resolve();
+  const current = previous.catch(() => undefined).then(action);
+  reelActionLocks.set(key, current);
+  void current.finally(() => {
+    if (reelActionLocks.get(key) === current) reelActionLocks.delete(key);
+  });
+  return current;
+}
+
 export async function fetchReelsConfig() {
   try {
     const res = await fetch(apiUrl('/api/reels/config'), { credentials: 'include' });
@@ -45,17 +57,21 @@ export async function fetchFavoriteReels() {
 }
 
 export async function toggleReelLike(reelId: string) {
-  try {
-    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/like`), { method: 'POST', credentials: 'include' });
-    return await readResponse(res);
-  } catch { return { success: false, error: { message: 'Unable to update like.' } }; }
+  return serializeReelAction(`like:${reelId}`, async () => {
+    try {
+      const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/like`), { method: 'POST', credentials: 'include' });
+      return await readResponse(res);
+    } catch { return { success: false, error: { message: 'Unable to update like.' } }; }
+  });
 }
 
 export async function toggleReelFavorite(reelId: string) {
-  try {
-    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/favorite`), { method: 'POST', credentials: 'include' });
-    return await readResponse(res);
-  } catch { return { success: false, error: { message: 'Unable to update favorite.' } }; }
+  return serializeReelAction(`favorite:${reelId}`, async () => {
+    try {
+      const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/favorite`), { method: 'POST', credentials: 'include' });
+      return await readResponse(res);
+    } catch { return { success: false, error: { message: 'Unable to update favorite.' } }; }
+  });
 }
 
 export async function deleteReel(reelId: string) {
