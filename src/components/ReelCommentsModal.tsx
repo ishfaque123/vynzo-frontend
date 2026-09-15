@@ -15,15 +15,7 @@ type CommentNode = { id: string; content: string; createdAt: string; reactionCou
 function timeAgo(date: string) { const seconds = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 1000)); if (seconds < 60) return 'now'; const minutes = Math.floor(seconds / 60); if (minutes < 60) return `${minutes}m`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours}h`; const days = Math.floor(hours / 24); if (days < 7) return `${days}d`; const weeks = Math.floor(days / 7); if (weeks < 4) return `${weeks}w`; const months = Math.floor(days / 30); if (months < 12) return `${months}mo`; return `${Math.floor(days / 365)}y`; }
 function Avatar({ author }: { author: CommentNode['author'] }) { return <Link href={author.username ? `/u/${author.username}` : '#'} className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200 bg-cover bg-center text-center text-xs font-semibold leading-8 text-slate-600" style={author.profilePictureUrl ? { backgroundImage: `url(${author.profilePictureUrl})` } : {}}>{!author.profilePictureUrl && (author.displayName?.[0]?.toUpperCase() || '?')}</Link>; }
 function DotsIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>; }
-function renderWithMentions(text: string) {
-  const parts = text.split(/(@[a-zA-Z0-9_.]+)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('@') && part.length > 1) {
-      return <Link key={i} href={`/u/${part.slice(1)}`} className="font-semibold text-blue-600">{part}</Link>;
-    }
-    return <span key={i}>{part}</span>;
-  });
-}
+function renderWithMentions(text: string) { const parts = text.split(/(@[a-zA-Z0-9_.]+)/g); return parts.map((part, i) => part.startsWith('@') && part.length > 1 ? <Link key={i} href={`/u/${part.slice(1)}`} className="font-semibold text-blue-600">{part}</Link> : <span key={i}>{part}</span>); }
 
 function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, depth = 0 }: { comment: CommentNode; currentUserId?: string; reelOwner: boolean; onReply: (comment: CommentNode) => void; onChanged: (topLevel: boolean) => void; depth?: number }) {
   const [picker, setPicker] = useState(false); const [menuOpen, setMenuOpen] = useState(false); const [editing, setEditing] = useState(false); const [editText, setEditText] = useState(comment.content); const [reaction, setReaction] = useState<string | null>(comment.myReaction); const [count, setCount] = useState(comment.reactionCount || 0); const [busy, setBusy] = useState(false); const [showReplies, setShowReplies] = useState(false); const isOwner = currentUserId === comment.author.id; const canDelete = isOwner || reelOwner; const replies = comment.replies || [];
@@ -41,51 +33,38 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
 }
 
 export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, comments, onClose, onCountChange }: { reelId: string; reelOwner: boolean; currentUserId?: string; comments: CommentNode[]; onClose: () => void; onCountChange: (delta: number) => void }) {
-  const [items, setItems] = useState<CommentNode[]>(comments || []); const [text, setText] = useState(''); const [replyTo, setReplyTo] = useState<CommentNode | null>(null); const [dragY, setDragY] = useState(0); const [dragging, setDragging] = useState(false); const startY = useRef(0); const commentsRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<CommentNode[]>(comments || []); const [text, setText] = useState(''); const [replyTo, setReplyTo] = useState<CommentNode | null>(null); const [dragY, setDragY] = useState(0); const [dragging, setDragging] = useState(false); const startY = useRef(0); const commentsRef = useRef<HTMLDivElement>(null); const inputRef = useRef<HTMLInputElement>(null); const [viewport, setViewport] = useState<{ top: number; height: number } | null>(null);
   useEffect(() => setItems(comments || []), [comments]);
   useEffect(() => { const old = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = old; }; }, []);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { function updateViewport() { const vv = window.visualViewport; if (vv) setViewport({ top: vv.offsetTop, height: vv.height }); } updateViewport(); window.visualViewport?.addEventListener('resize', updateViewport); window.visualViewport?.addEventListener('scroll', updateViewport); return () => { window.visualViewport?.removeEventListener('resize', updateViewport); window.visualViewport?.removeEventListener('scroll', updateViewport); }; }, []);
+  useEffect(() => { const t = window.setTimeout(() => inputRef.current?.focus(), 300); return () => window.clearTimeout(t); }, []);
   const [sending, setSending] = useState(false);
   const justSentRef = useRef(false);
-  useEffect(() => {
-    if (!justSentRef.current) return;
-    justSentRef.current = false;
-    const el = commentsRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [items]);
+  useEffect(() => { if (!justSentRef.current) return; justSentRef.current = false; const el = commentsRef.current; if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }); }, [items]);
 
   function beginDrag(y: number) { startY.current = y; setDragging(true); }
   function moveDrag(y: number) { if (!dragging) return; const delta = y - startY.current; if (delta > 0) setDragY(delta); }
   function endDrag() { if (!dragging) return; setDragging(false); if (dragY > CLOSE_THRESHOLD) onClose(); setDragY(0); }
-
   function listTouchStart(e: React.TouchEvent) { startY.current = e.touches[0].clientY; setDragging(false); }
-  function listTouchMove(e: React.TouchEvent) {
-    const currentY = e.touches[0].clientY;
-    const delta = currentY - startY.current;
-    const el = commentsRef.current;
-    if (!dragging) {
-      if (delta > 0 && el && el.scrollTop <= 0) { setDragging(true); } else { return; }
-    }
-    e.preventDefault();
-    setDragY(Math.max(0, delta));
-  }
+  function listTouchMove(e: React.TouchEvent) { const currentY = e.touches[0].clientY; const delta = currentY - startY.current; const el = commentsRef.current; if (!dragging) { if (delta > 0 && el && el.scrollTop <= 0) setDragging(true); else return; } e.preventDefault(); setDragY(Math.max(0, delta)); }
   function listTouchEnd() { if (!dragging) return; setDragging(false); setDragY((current) => { if (current > CLOSE_THRESHOLD) onClose(); return 0; }); }
-
+  function startReply(comment: CommentNode) { setReplyTo(comment); setText(`@${comment.author.username || comment.author.displayName || 'user'} `); window.setTimeout(() => { inputRef.current?.focus(); inputRef.current?.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 0); }
   async function send() { const content = text.trim(); if (!content || sending) return; setSending(true); const result = await addReelComment(reelId, content, replyTo?.id); setSending(false); if (!result.success) return; setText(''); setReplyTo(null); onCountChange(replyTo ? 0 : 1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; justSentRef.current = true; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
   function changed(topLevel: boolean) { if (topLevel) onCountChange(-1); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
-
   if (!mounted) return null;
-
+  const wrapperStyle: React.CSSProperties = viewport ? { position: 'fixed', top: viewport.top, left: 0, right: 0, height: viewport.height } : { position: 'fixed', inset: 0 };
+  const modalHeight = viewport ? Math.round(viewport.height * 0.9) : undefined;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
-    <div className="flex h-[88vh] w-full max-w-xl min-h-0 flex-col rounded-t-2xl bg-white" style={{ transform: `translateY(${dragY}px)`, transition: dragging ? 'none' : 'transform 0.2s ease' }} onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-col items-center py-2" style={{ touchAction: 'none' }} onTouchStart={(e) => beginDrag(e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientY)} onTouchEnd={endDrag}><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
-      <div className="border-b px-4 py-2 text-center font-semibold">Comments</div>
-      <div ref={commentsRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3" onTouchStart={listTouchStart} onTouchMove={listTouchMove} onTouchEnd={listTouchEnd}>{items.length === 0 ? <p className="pt-8 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p> : items.map((comment) => <CommentRow key={comment.id} comment={comment} currentUserId={currentUserId} reelOwner={reelOwner} onReply={(c) => { setReplyTo(c); setText(`@${c.author.username || c.author.displayName || 'user'} `); }} onChanged={changed} />)}</div>
-      <div className="border-t p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><div className="flex-1"><input value={text} maxLength={COMMENT_MAX_LENGTH} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="w-full rounded-full border px-4 py-2 text-sm" />{text.length > COMMENT_MAX_LENGTH - 60 && <p className="mt-1 px-2 text-right text-[11px] text-slate-400">{text.length}/{COMMENT_MAX_LENGTH}</p>}</div><button onClick={send} disabled={sending || !text.trim()} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50">{sending ? '...' : 'Send'}</button></div></div>
-    </div>
-  </div>,
+    <div className="z-50 flex items-end justify-center bg-black/50" style={wrapperStyle} onClick={onClose}>
+      <div className="flex w-full max-w-xl min-h-0 flex-col rounded-t-2xl bg-white" style={{ height: modalHeight ? `${modalHeight}px` : '88vh', maxHeight: '100%', transform: `translateY(${dragY}px)`, transition: dragging ? 'none' : 'transform 0.2s ease' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col items-center py-2" style={{ touchAction: 'none' }} onTouchStart={(e) => beginDrag(e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientY)} onTouchEnd={endDrag}><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
+        <div className="border-b px-4 py-2 text-center font-semibold">Comments</div>
+        <div ref={commentsRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3" onTouchStart={listTouchStart} onTouchMove={listTouchMove} onTouchEnd={listTouchEnd}>{items.length === 0 ? <p className="pt-8 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p> : items.map((comment) => <CommentRow key={comment.id} comment={comment} currentUserId={currentUserId} reelOwner={reelOwner} onReply={startReply} onChanged={changed} />)}</div>
+        <div className="border-t px-3 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><div className="flex-1"><input ref={inputRef} value={text} maxLength={COMMENT_MAX_LENGTH} onChange={(e) => setText(e.target.value)} onFocus={(e) => window.setTimeout(() => e.currentTarget.scrollIntoView({ block: 'center', inline: 'nearest' }), 0)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="w-full rounded-full border px-4 py-2 text-sm" />{text.length > COMMENT_MAX_LENGTH - 60 && <p className="mt-1 px-2 text-right text-[11px] text-slate-400">{text.length}/{COMMENT_MAX_LENGTH}</p>}</div><button onClick={send} disabled={sending || !text.trim()} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50">{sending ? '...' : 'Send'}</button></div></div>
+      </div>
+    </div>,
     document.body
   );
 }
