@@ -207,6 +207,28 @@ function formatLastSeen(dateStr?: string | null) {
   return `Last seen ${days}d ago`;
 }
 
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+
+function renderMessageText(text: string, isMine: boolean) {
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className={isMine ? 'text-blue-700 underline' : 'text-blue-600 underline'}
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 function formatMessageTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -701,7 +723,11 @@ export default function ChatPage() {
                       {isVoice && (
                         <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
                       )}
-                      {m.content && <p className={isImage ? 'px-1.5 pt-1' : ''}>{decrypted[m.id] ?? '\u00b7\u00b7\u00b7'}</p>}
+                      {m.content && (
+                        <p className={`break-words ${isImage ? 'px-1.5 pt-1' : ''}`}>
+                          {decrypted[m.id] ? renderMessageText(decrypted[m.id], isMine) : '\u00b7\u00b7\u00b7'}
+                        </p>
+                      )}
                       <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
                         <span className="text-[11px]">{formatMessageTime(m.createdAt)}</span>
                         {isMine && status && <Ticks status={status} />}
