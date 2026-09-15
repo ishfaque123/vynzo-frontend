@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { toggleFollow } from '@/lib/api/userApi';
 import ShareModal from '@/components/ShareModal';
 import ReelCommentsModal from '@/components/ReelCommentsModal';
-import { fetchReelsConfig, fetchReelFeed, fetchMyReelStatus, toggleReelLike, toggleReelFavorite, deleteReel } from '@/lib/api/reelApi';
+import ReelReportModal from '@/components/ReelReportModal';
+import { fetchReelsConfig, fetchReelFeed, fetchMyReelStatus, toggleReelLike, toggleReelFavorite, deleteReel, recordReelView } from '@/lib/api/reelApi';
 import { fetchReelComments } from '@/lib/api/reelCommentApi';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 
@@ -16,6 +17,7 @@ function HeartIcon({ filled, size = 30 }: { filled: boolean; size?: number }) { 
 function PlayIcon({ playing }: { playing: boolean }) { return playing ? <svg width="38" height="38" viewBox="0 0 24 24" fill="white"><rect x="5" y="4" width="5" height="16" rx="1" /><rect x="14" y="4" width="5" height="16" rx="1" /></svg> : <svg width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>; }
 function SeekIcon({ forward }: { forward: boolean }) { return <div className="relative flex h-14 w-14 items-center justify-center"><svg width="50" height="50" viewBox="0 0 42 42" fill="none" stroke="white" strokeWidth="2.2"><path d={forward ? 'M18 10a12 12 0 11-8.4 20.5' : 'M24 10a12 12 0 11-8.4 20.5'} /><path d={forward ? 'M25 6l-1 7 7-1' : 'M17 6l1 7-7-1'} /></svg><span className="absolute text-[10px] font-bold text-white">10</span></div>; }
 function TrashIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /></svg>; }
+function FlagIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M5 21V4" /><path d="M5 4c5-3 9 3 14 0v9c-5 3-9-3-14 0" /></svg>; }
 function MuteIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>; }
 function UnmuteIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.5 8.5a5 5 0 010 7" /><path d="M18.5 5.5a9 9 0 010 13" /></svg>; }
 function PlusIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
@@ -37,16 +39,19 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
   const [shareOpen, setShareOpen] = useState(false);
   const [favoriting, setFavoriting] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [heartBursts, setHeartBursts] = useState<HeartBurst[]>([]);
   const [showControls, setShowControls] = useState(false);
   const [seekFeedback, setSeekFeedback] = useState<'back' | 'forward' | null>(null);
+  const [viewCount, setViewCount] = useState(0);
   const { user: currentUser } = useAuth();
 
   function revealControls() { setShowControls(true); if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); controlsTimerRef.current = setTimeout(() => setShowControls(false), 2500); }
   useEffect(() => () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); heartTimersRef.current.forEach((timer) => window.clearTimeout(timer)); }, []);
   async function openComments() { setCommentsOpen(true); const result = await fetchReelComments(reel.id); if (result.success) setComments(result.data.comments || []); }
   useEffect(() => { function refresh(e: Event) { const detail = (e as CustomEvent).detail; if (detail === reel.id && commentsOpen) void openComments(); } window.addEventListener('reel-comments-refresh', refresh); return () => window.removeEventListener('reel-comments-refresh', refresh); }, [reel.id, commentsOpen]);
+  useEffect(() => { if (!active) return; void recordReelView(reel.id).then((result) => { if (result.success) setViewCount(Number(result.data?.viewCount || 0)); }); }, [active, reel.id]);
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
   async function handleFollow(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); if (following) return; setFollowing(true); const result = await toggleFollow(reel.author.id); setFollowing(false); if (result.success && result.data.following) onFollowed(reel.author.id); }
   useEffect(() => { const video = videoRef.current; if (!video || !active) return; video.currentTime = 0; video.muted = false; setIsMuted(false); setShowControls(false); setIsPlaying(false); video.play().then(() => setIsPlaying(true)).catch(() => { video.muted = true; setIsMuted(true); video.play().then(() => setIsPlaying(true)).catch(() => {}); }); }, [active]);
@@ -66,9 +71,10 @@ function ReelItem({ reel, active, forcePause, onLikeChange, onFavoriteChange, on
     <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>
     {showControls && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="pointer-events-auto flex items-center gap-8 px-4 py-3"><button aria-label="Back 10 seconds" onClick={(e) => seek(-10, e)} className="flex h-14 w-14 items-center justify-center"><SeekIcon forward={false} /></button><button aria-label="Play or pause" onClick={togglePlayback} className="flex h-14 w-14 items-center justify-center"><PlayIcon playing={isPlaying} /></button><button aria-label="Forward 10 seconds" onClick={(e) => seek(10, e)} className="flex h-14 w-14 items-center justify-center"><SeekIcon forward /></button></div></div>}
     <div className="absolute bottom-0 left-0 right-16 z-10 p-4 pb-6 text-white"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author.username}`} className="flex min-w-0 items-center gap-2"><span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center" style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}} /><span className="text-sm font-semibold">{reel.author.displayName}</span></Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label="Follow" className="absolute left-4 top-8 z-20 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white shadow-md disabled:opacity-50"><span className="text-[10px] font-bold">+</span></button>}</div>{reel.caption && <p className="text-sm">{reel.caption}</p>}</div>
-    <div className="absolute bottom-24 right-3 z-10 flex flex-col items-center gap-5"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button>{reel.isMine && <button onClick={(e) => { e.stopPropagation(); void handleDelete(); }} className="flex flex-col items-center gap-1"><TrashIcon /><span className="text-xs font-medium text-white">Delete</span></button>}</div>
+    <div className="absolute bottom-24 right-3 z-10 flex flex-col items-center gap-5"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div>{reel.isMine ? <button onClick={(e) => { e.stopPropagation(); void handleDelete(); }} className="flex flex-col items-center gap-1"><TrashIcon /><span className="text-xs font-medium text-white">Delete</span></button> : <button onClick={(e) => { e.stopPropagation(); setReportOpen(true); }} className="flex flex-col items-center gap-1"><FlagIcon /><span className="text-xs font-medium text-white">Report</span></button>}</div>
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
+    {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
   </div>;
 }
 
@@ -106,16 +112,7 @@ export default function ReelsPage() {
     const objectUrl = URL.createObjectURL(file);
     const probe = document.createElement('video');
     probe.preload = 'metadata';
-    probe.onloadedmetadata = () => {
-      const duration = probe.duration;
-      URL.revokeObjectURL(objectUrl);
-      probe.removeAttribute('src');
-      probe.load();
-      if (!Number.isFinite(duration) || duration <= 0) { alert('Could not read the video duration. Please choose another video.'); return; }
-      if (duration > uploadMaxDuration) { alert(`Reels must be ${uploadMaxDuration} seconds or shorter.`); return; }
-      setPendingReelVideo(file, duration);
-      router.push('/reels/new');
-    };
+    probe.onloadedmetadata = () => { const duration = probe.duration; URL.revokeObjectURL(objectUrl); probe.removeAttribute('src'); probe.load(); if (!Number.isFinite(duration) || duration <= 0) { alert('Could not read the video duration. Please choose another video.'); return; } if (duration > uploadMaxDuration) { alert(`Reels must be ${uploadMaxDuration} seconds or shorter.`); return; } setPendingReelVideo(file, duration); router.push('/reels/new'); };
     probe.onerror = () => { URL.revokeObjectURL(objectUrl); probe.removeAttribute('src'); probe.load(); alert('Could not read this video. Please choose another video.'); };
     probe.src = objectUrl;
   }
