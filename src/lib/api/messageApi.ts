@@ -15,6 +15,14 @@ export async function createConversation(userId: string) {
   return res.json();
 }
 
+export async function deleteConversation(conversationId: string) {
+  const res = await fetch(`${API_URL}/api/messages/conversations/${conversationId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
 export async function fetchMessages(conversationId: string, cursor?: string) {
   const url = new URL(`${API_URL}/api/messages/conversations/${conversationId}/messages`);
   if (cursor) url.searchParams.set('cursor', cursor);

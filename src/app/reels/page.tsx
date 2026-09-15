@@ -27,13 +27,14 @@ function CommentIcon() { return <svg width="28" height="28" viewBox="0 0 24 24" 
 
 type HeartBurst = { id: number; left: number; top: number };
 
-function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteChange, onDeleted, onFollowed, onCommentCountChange, onNext }: { reel: Reel; active: boolean; forcePause: boolean; preload: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void; onCommentCountChange: (id: string, delta: number) => void; onNext: () => void }) {
+function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteChange, onDeleted, onFollowed, onCommentCountChange }: { reel: Reel; active: boolean; forcePause: boolean; preload: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void; onCommentCountChange: (id: string, delta: number) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastTapRef = useRef(0);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartTimersRef = useRef<number[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [liking, setLiking] = useState(false);
   const [following, setFollowing] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -58,10 +59,7 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
   useEffect(() => { if (!active) return; void recordReelView(reel.id).then((result) => { if (result.success) setViewCount(Number(result.data?.viewCount || 0)); }); }, [active, reel.id]);
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
   async function handleFollow(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); if (following) return; setFollowing(true); const result = await toggleFollow(reel.author.id); setFollowing(false); if (result.success && result.data.following) onFollowed(reel.author.id); }
-  useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); return; } video.currentTime = 0; video.muted = false; setIsMuted(false); setShowControls(false); setIsPlaying(false); video.play().then(() => setIsPlaying(true)).catch(() => { video.muted = true; setIsMuted(true); video.play().then(() => setIsPlaying(true)).catch(() => {}); }); }, [active]);
-  // Handles pausing/resuming for an external overlay (e.g. an upload composer) WITHOUT
-  // re-running on every `active` change — that's what was causing two competing
-  // play() calls (and the resulting glitch/blip) whenever a reel became active.
+  useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); return; } video.currentTime = 0; video.muted = false; setIsMuted(false); setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 3); video.play().then(() => setIsPlaying(true)).catch(() => { video.muted = true; setIsMuted(true); video.play().then(() => setIsPlaying(true)).catch(() => {}); }); }, [active]);
   useEffect(() => { const video = videoRef.current; if (!video || !active) return; if (forcePause) { video.pause(); setIsPlaying(false); } else if (video.paused) { video.play().then(() => setIsPlaying(true)).catch(() => {}); } }, [forcePause]);
   function toggleMute(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); const video = videoRef.current; if (!video) return; video.muted = !video.muted; setIsMuted(video.muted); }
   function togglePlayback(e?: React.MouseEvent) { e?.preventDefault(); e?.stopPropagation(); const video = videoRef.current; if (!video) return; if (video.paused) { video.play().then(() => setIsPlaying(true)).catch(() => {}); } else { video.pause(); setIsPlaying(false); } revealControls(); }
@@ -72,7 +70,8 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
   async function handleDelete() { if (!confirm('Delete this reel?')) return; const result = await deleteReel(reel.id); if (result.success) onDeleted(reel.id); }
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
-    <video ref={videoRef} src={reel.videoUrl} playsInline muted={isMuted} preload={preload ? 'auto' : 'metadata'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={onNext} />
+    <video ref={videoRef} src={reel.videoUrl} playsInline muted={isMuted} preload={preload ? 'auto' : 'metadata'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={() => setIsVideoLoading(false)} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); }} onPause={() => setIsPlaying(false)} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} />
+    {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
     {heartBursts.map((heart) => <div key={heart.id} className="pointer-events-none absolute z-30" style={{ left: `${heart.left}%`, top: `${heart.top}%`, transform: 'translate(-50%, -50%)' }}><div className="animate-[heartPop_700ms_ease-out_forwards] drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"><HeartIcon filled size={105} /></div></div>)}
     {seekFeedback && <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"><div className="rounded-2xl bg-black/70 px-6 py-4 text-base font-bold text-white">{seekFeedback === 'forward' ? '+10 sec' : '-10 sec'}</div></div>}
     <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>
@@ -90,6 +89,9 @@ export default function ReelsPage() {
   useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadingMoreRef = useRef(false);
+  const gestureLockedRef = useRef(false);
+  const touchStartYRef = useRef(0);
+  const wheelLockRef = useRef(false);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,13 @@ export default function ReelsPage() {
   function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
   function handleFollowed(userId: string) { setReels((items) => items.map((item) => item.author.id === userId ? { ...item, friendStatus: 'following' } : item)); }
   function handleDeleted(id: string) { setReels((items) => items.filter((item) => item.id !== id)); }
-  function goNext() { setActiveIndex((index) => Math.min(index + 1, reels.length - 1)); const next = document.querySelector<HTMLElement>(`[data-reel-index="${Math.min(activeIndex + 1, reels.length - 1)}"]`); next?.scrollIntoView({ behavior: 'smooth' }); }
+  function scrollToIndex(index: number) { const targetIndex = Math.max(0, Math.min(index, reels.length - 1)); setActiveIndex(targetIndex); const next = document.querySelector<HTMLElement>(`[data-reel-index="${targetIndex}"]`); next?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  function goNext() { if (gestureLockedRef.current || !reels.length || activeIndex >= reels.length - 1) return; gestureLockedRef.current = true; scrollToIndex(activeIndex + 1); window.setTimeout(() => { gestureLockedRef.current = false; }, 550); }
+  function goPrevious() { if (gestureLockedRef.current || !reels.length || activeIndex <= 0) return; gestureLockedRef.current = true; scrollToIndex(activeIndex - 1); window.setTimeout(() => { gestureLockedRef.current = false; }, 550); }
+  function handleWheel(e: React.WheelEvent<HTMLDivElement>) { if (Math.abs(e.deltaY) < 8) return; e.preventDefault(); if (wheelLockRef.current) return; wheelLockRef.current = true; if (e.deltaY > 0) goNext(); else goPrevious(); window.setTimeout(() => { wheelLockRef.current = false; }, 650); }
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) { touchStartYRef.current = e.touches[0]?.clientY || 0; }
+  function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) { e.preventDefault(); }
+  function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) { const endY = e.changedTouches[0]?.clientY || touchStartYRef.current; const deltaY = touchStartYRef.current - endY; if (Math.abs(deltaY) < 45) return; if (deltaY > 0) goNext(); else goPrevious(); }
   async function handleUpload() {
     if (!reelsEnabled) return;
     const status = await fetchMyReelStatus();
@@ -124,5 +132,5 @@ export default function ReelsPage() {
     probe.src = objectUrl;
   }
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white">Loading...</div>;
-  return <main className="fixed inset-0 bg-black"><div id="reels-feed" className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} onNext={goNext} /></section>) : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div><button onClick={handleUpload} disabled={!uploadReady} aria-label="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white disabled:opacity-40"><PlusIcon /></button><input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleFilePicked(file); }} /></main>;
+  return <main className="fixed inset-0 bg-black"><div id="reels-feed" onWheel={handleWheel} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-none">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div><button onClick={handleUpload} disabled={!uploadReady} aria-label="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white disabled:opacity-40"><PlusIcon /></button><input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleFilePicked(file); }} /></main>;
 }
