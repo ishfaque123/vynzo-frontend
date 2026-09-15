@@ -26,6 +26,12 @@ input::placeholder, textarea::placeholder {
   color: #94a3b8;
 }
 
+/* Keep long URLs inside their message/container instead of expanding the layout. */
+a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 html.dark body {
   background-color: #1e2530;
   color: #e2e8f0;
