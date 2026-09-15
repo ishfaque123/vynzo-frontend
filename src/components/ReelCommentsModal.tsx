@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { addReelComment, deleteReelComment, setReelCommentReaction } from '@/lib/api/reelCommentApi';
 import { reportReelComment } from '@/lib/api/reelApi';
@@ -32,6 +33,8 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
   const [items, setItems] = useState<CommentNode[]>(comments || []); const [text, setText] = useState(''); const [replyTo, setReplyTo] = useState<CommentNode | null>(null); const [dragY, setDragY] = useState(0); const [dragging, setDragging] = useState(false); const startY = useRef(0); const commentsRef = useRef<HTMLDivElement>(null);
   useEffect(() => setItems(comments || []), [comments]);
   useEffect(() => { const old = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = old; }; }, []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   function beginDrag(y: number) { startY.current = y; setDragging(true); }
   function moveDrag(y: number) { if (!dragging) return; const delta = y - startY.current; if (delta > 0) setDragY(delta); }
@@ -40,12 +43,17 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
   async function send() { const content = text.trim(); if (!content) return; const result = await addReelComment(reelId, content, replyTo?.id); if (!result.success) return; setText(''); setReplyTo(null); onCountChange(replyTo ? 0 : 1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
   function changed(topLevel: boolean) { if (topLevel) onCountChange(-1); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
 
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
     <div className="flex h-[88vh] w-full max-w-xl min-h-0 flex-col rounded-t-2xl bg-white" style={{ transform: `translateY(${dragY}px)`, transition: dragging ? 'none' : 'transform 0.2s ease' }} onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-col items-center py-2" style={{ touchAction: 'none' }} onTouchStart={(e) => beginDrag(e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientY)} onTouchEnd={endDrag}><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
       <div className="border-b px-4 py-2 text-center font-semibold">Comments</div>
       <div ref={commentsRef} className="min-h-0 flex-1 overflow-y-scroll overscroll-y-contain px-4 py-3" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain', maxHeight: 'calc(88vh - 130px)' }}>{items.length === 0 ? <p className="pt-8 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p> : items.map((comment) => <CommentRow key={comment.id} comment={comment} currentUserId={currentUserId} reelOwner={reelOwner} onReply={(c) => { setReplyTo(c); setText(`@${c.author.displayName || c.author.username || 'user'} `); }} onChanged={changed} />)}</div>
       <div className="border-t p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="flex-1 rounded-full border px-4 py-2 text-sm" /><button onClick={send} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white">Send</button></div></div>
     </div>
-  </div>;
+  </div>,
+    document.body
+  );
 }
