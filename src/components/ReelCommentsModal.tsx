@@ -8,6 +8,7 @@ import { reportReelComment } from '@/lib/api/reelApi';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 const CLOSE_THRESHOLD = 100;
+const COMMENT_MAX_LENGTH = 500;
 
 type CommentNode = { id: string; content: string; createdAt: string; reactionCount: number; myReaction: string | null; author: { id: string; username?: string | null; displayName?: string | null; profilePictureUrl?: string | null }; replies?: CommentNode[] };
 
@@ -82,7 +83,7 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
       <div className="flex flex-col items-center py-2" style={{ touchAction: 'none' }} onTouchStart={(e) => beginDrag(e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientY)} onTouchEnd={endDrag}><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
       <div className="border-b px-4 py-2 text-center font-semibold">Comments</div>
       <div ref={commentsRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3" onTouchStart={listTouchStart} onTouchMove={listTouchMove} onTouchEnd={listTouchEnd}>{items.length === 0 ? <p className="pt-8 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p> : items.map((comment) => <CommentRow key={comment.id} comment={comment} currentUserId={currentUserId} reelOwner={reelOwner} onReply={(c) => { setReplyTo(c); setText(`@${c.author.username || c.author.displayName || 'user'} `); }} onChanged={changed} />)}</div>
-      <div className="border-t p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="flex-1 rounded-full border px-4 py-2 text-sm" /><button onClick={send} disabled={sending || !text.trim()} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50">{sending ? '...' : 'Send'}</button></div></div>
+      <div className="border-t p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><div className="flex-1"><input value={text} maxLength={COMMENT_MAX_LENGTH} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="w-full rounded-full border px-4 py-2 text-sm" />{text.length > COMMENT_MAX_LENGTH - 60 && <p className="mt-1 px-2 text-right text-[11px] text-slate-400">{text.length}/{COMMENT_MAX_LENGTH}</p>}</div><button onClick={send} disabled={sending || !text.trim()} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50">{sending ? '...' : 'Send'}</button></div></div>
     </div>
   </div>,
     document.body
