@@ -35,6 +35,7 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
   useEffect(() => { const old = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = old; }; }, []);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const [sending, setSending] = useState(false);
 
   function beginDrag(y: number) { startY.current = y; setDragging(true); }
   function moveDrag(y: number) { if (!dragging) return; const delta = y - startY.current; if (delta > 0) setDragY(delta); }
@@ -53,7 +54,7 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
   }
   function listTouchEnd() { if (!dragging) return; setDragging(false); setDragY((current) => { if (current > CLOSE_THRESHOLD) onClose(); return 0; }); }
 
-  async function send() { const content = text.trim(); if (!content) return; const result = await addReelComment(reelId, content, replyTo?.id); if (!result.success) return; setText(''); setReplyTo(null); onCountChange(replyTo ? 0 : 1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
+  async function send() { const content = text.trim(); if (!content || sending) return; setSending(true); const result = await addReelComment(reelId, content, replyTo?.id); setSending(false); if (!result.success) return; setText(''); setReplyTo(null); onCountChange(replyTo ? 0 : 1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
   function changed(topLevel: boolean) { if (topLevel) onCountChange(-1); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
 
   if (!mounted) return null;
@@ -64,7 +65,7 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
       <div className="flex flex-col items-center py-2" style={{ touchAction: 'none' }} onTouchStart={(e) => beginDrag(e.touches[0].clientY)} onTouchMove={(e) => moveDrag(e.touches[0].clientY)} onTouchEnd={endDrag}><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
       <div className="border-b px-4 py-2 text-center font-semibold">Comments</div>
       <div ref={commentsRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3" onTouchStart={listTouchStart} onTouchMove={listTouchMove} onTouchEnd={listTouchEnd}>{items.length === 0 ? <p className="pt-8 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p> : items.map((comment) => <CommentRow key={comment.id} comment={comment} currentUserId={currentUserId} reelOwner={reelOwner} onReply={(c) => { setReplyTo(c); setText(`@${c.author.displayName || c.author.username || 'user'} `); }} onChanged={changed} />)}</div>
-      <div className="border-t p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="flex-1 rounded-full border px-4 py-2 text-sm" /><button onClick={send} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white">Send</button></div></div>
+      <div className="border-t p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}><div className="flex gap-2"><input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="flex-1 rounded-full border px-4 py-2 text-sm" /><button onClick={send} disabled={sending || !text.trim()} className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50">{sending ? '...' : 'Send'}</button></div></div>
     </div>
   </div>,
     document.body
