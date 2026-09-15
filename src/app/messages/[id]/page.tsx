@@ -85,21 +85,21 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    const player = audio;
     function onTime() {
-      if (!audio) return;
-      setCurrentTime(audio.currentTime);
-      if (audio.duration) setProgress(audio.currentTime / audio.duration);
+      setCurrentTime(player.currentTime);
+      if (player.duration) setProgress(player.currentTime / player.duration);
     }
     function onEnded() {
       setPlaying(false);
       setProgress(0);
       setCurrentTime(0);
     }
-    audio.addEventListener('timeupdate', onTime);
-    audio.addEventListener('ended', onEnded);
+    player.addEventListener('timeupdate', onTime);
+    player.addEventListener('ended', onEnded);
     return () => {
-      audio.removeEventListener('timeupdate', onTime);
-      audio.removeEventListener('ended', onEnded);
+      player.removeEventListener('timeupdate', onTime);
+      player.removeEventListener('ended', onEnded);
     };
   }, []);
 
