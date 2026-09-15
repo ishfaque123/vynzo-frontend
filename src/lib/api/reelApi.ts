@@ -74,6 +74,13 @@ export async function toggleReelFavorite(reelId: string) {
   });
 }
 
+export async function reportReelComment(commentId: string, reason: string = 'other', details?: string) {
+  try {
+    const res = await fetch(apiUrl(`/api/reels/comments/${encodeURIComponent(commentId)}/report`), { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason, details }) });
+    return await readResponse(res);
+  } catch { return { success: false, error: { message: 'Unable to report comment.' } }; }
+}
+
 export async function deleteReel(reelId: string) {
   try {
     const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}`), { method: 'DELETE', credentials: 'include' });
