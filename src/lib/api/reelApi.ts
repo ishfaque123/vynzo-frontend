@@ -74,6 +74,20 @@ export async function toggleReelFavorite(reelId: string) {
   });
 }
 
+export async function reportReel(reelId: string, reason: string = 'other', details?: string) {
+  try {
+    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/report`), { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason, details }) });
+    return await readResponse(res);
+  } catch { return { success: false, error: { message: 'Unable to report reel.' } }; }
+}
+
+export async function recordReelView(reelId: string) {
+  try {
+    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/view`), { method: 'POST', credentials: 'include' });
+    return await readResponse(res);
+  } catch { return { success: false, error: { message: 'Unable to record reel view.' } }; }
+}
+
 export async function reportReelComment(commentId: string, reason: string = 'other', details?: string) {
   try {
     const res = await fetch(apiUrl(`/api/reels/comments/${encodeURIComponent(commentId)}/report`), { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason, details }) });
@@ -91,12 +105,10 @@ export async function deleteReel(reelId: string) {
 export function createReelWithProgress(data: { video: File; caption?: string; durationSec?: number }, onProgress: (pct: number) => void): Promise<any> {
   return new Promise((resolve) => {
     if (!API_URL) { resolve({ success: false, error: { message: 'API is not configured.' } }); return; }
-
     const formData = new FormData();
     formData.append('video', data.video);
     if (data.caption) formData.append('caption', data.caption);
     if (data.durationSec != null) formData.append('durationSec', String(Math.round(data.durationSec)));
-
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_URL}/api/reels`);
     xhr.withCredentials = true;
@@ -105,10 +117,7 @@ export function createReelWithProgress(data: { video: File; caption?: string; du
     xhr.onload = () => {
       let data: any = {};
       try { data = xhr.responseText ? JSON.parse(xhr.responseText) : {}; } catch { data = {}; }
-      if (xhr.status < 200 || xhr.status >= 300) {
-        resolve({ success: false, error: { message: data?.error?.message || `Upload failed (${xhr.status}).`, code: data?.error?.code } });
-        return;
-      }
+      if (xhr.status < 200 || xhr.status >= 300) { resolve({ success: false, error: { message: data?.error?.message || `Upload failed (${xhr.status}).`, code: data?.error?.code } }); return; }
       resolve(data);
     };
     xhr.onerror = () => resolve({ success: false, error: { message: 'Network error during upload.' } });
