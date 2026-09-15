@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
 import { getOrCreateIdentity, deriveSharedKey, tryDecryptText } from '@/lib/crypto/e2ee';
@@ -35,7 +34,6 @@ interface ConversationItem {
 }
 
 export default function MessagesPage() {
-  const router = useRouter();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -108,14 +106,14 @@ export default function MessagesPage() {
     }, 550);
   }
 
-  function handleTouchStart(id: string, event: React.TouchEvent) {
+  function handleTouchStart(id: string, event: TouchEvent<HTMLDivElement>) {
     touchStartX.current = event.touches[0]?.clientX ?? null;
     touchStartY.current = event.touches[0]?.clientY ?? null;
     touchMoved.current = false;
     startPress(id);
   }
 
-  function handleTouchMove(event: React.TouchEvent) {
+  function handleTouchMove(event: TouchEvent<HTMLDivElement>) {
     const startX = touchStartX.current;
     const startY = touchStartY.current;
     if (startX == null || startY == null) return;
@@ -125,7 +123,7 @@ export default function MessagesPage() {
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) clearPressTimer();
   }
 
-  function handleTouchEnd(id: string, event: React.TouchEvent) {
+  function handleTouchEnd(id: string, event: TouchEvent<HTMLDivElement>) {
     clearPressTimer();
     const startX = touchStartX.current;
     const startY = touchStartY.current;
@@ -142,7 +140,7 @@ export default function MessagesPage() {
     }
   }
 
-  function handleRowClick(event: React.MouseEvent, id: string) {
+  function handleRowClick(event: MouseEvent<HTMLAnchorElement>, id: string) {
     if (suppressClick.current) {
       event.preventDefault();
       suppressClick.current = false;
