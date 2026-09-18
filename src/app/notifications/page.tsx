@@ -423,7 +423,11 @@ export default function NotificationsPage() {
   }
 
   if (loading) {
-    return <p className="py-10 text-center text-slate-500">Loading...</p>;
+    return (
+      <div className="flex justify-center py-10" role="status" aria-label="Loading notifications">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+      </div>
+    );
   }
 
   if (notifications.length === 0 && !pendingUndo) {
