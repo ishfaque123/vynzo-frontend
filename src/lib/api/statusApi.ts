@@ -1,8 +1,19 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+async function readJson(res: Response) {
+  if (res.status === 204 || res.status === 304) return { success: true, data: {} };
+  const text = await res.text();
+  if (!text) return { success: false, error: { message: `Request failed (HTTP ${res.status}).` } };
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { success: false, error: { message: `Invalid server response (HTTP ${res.status}).` } };
+  }
+}
+
 export async function fetchStatusFeed() {
-  const res = await fetch(`${API_URL}/api/statuses`, { credentials: 'include' });
-  return res.json();
+  const res = await fetch(`${API_URL}/api/statuses`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
 }
 
 export async function createStatus(data: { media?: File | null; textContent?: string; bgColor?: string; visibility?: string }) {
@@ -12,27 +23,27 @@ export async function createStatus(data: { media?: File | null; textContent?: st
   if (data.bgColor) formData.append('bgColor', data.bgColor);
   if (data.visibility) formData.append('visibility', data.visibility);
   const res = await fetch(`${API_URL}/api/statuses`, { method: 'POST', credentials: 'include', body: formData });
-  return res.json();
+  return readJson(res);
 }
 
 export async function viewStatus(statusId: string) {
   const res = await fetch(`${API_URL}/api/statuses/${statusId}/view`, { method: 'POST', credentials: 'include' });
-  return res.json();
+  return readJson(res);
 }
 
 export async function fetchStatusViewers(statusId: string) {
-  const res = await fetch(`${API_URL}/api/statuses/${statusId}/viewers`, { credentials: 'include' });
-  return res.json();
+  const res = await fetch(`${API_URL}/api/statuses/${statusId}/viewers`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
 }
 
 export async function deleteStatus(statusId: string) {
   const res = await fetch(`${API_URL}/api/statuses/${statusId}`, { method: 'DELETE', credentials: 'include' });
-  return res.json();
+  return readJson(res);
 }
 
 export async function toggleStatusLike(statusId: string) {
   const res = await fetch(`${API_URL}/api/statuses/${statusId}/like`, { method: 'POST', credentials: 'include' });
-  return res.json();
+  return readJson(res);
 }
 
 // Uses XMLHttpRequest instead of fetch so we can report upload progress
@@ -56,7 +67,12 @@ export function createStatusWithProgress(
     };
     xhr.onload = () => {
       try {
-        resolve(JSON.parse(xhr.responseText));
+        const text = xhr.responseText;
+        if (!text) {
+          resolve({ success: false, error: { message: `Upload failed (HTTP ${xhr.status}).` } });
+          return;
+        }
+        resolve(JSON.parse(text));
       } catch {
         resolve({ success: false, error: { message: 'Upload failed.' } });
       }
