@@ -36,7 +36,7 @@ export default function SearchPage() {
       />
 
       <div className="mt-4 space-y-2">
-        {loading && <p className="text-slate-500">Searching...</p>}
+        {loading && <div className="flex justify-center py-3" role="status" aria-label="Searching"><div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" /></div>}
         {results.map((u) => (
           <Link
             key={u.id}
