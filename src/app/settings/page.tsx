@@ -161,7 +161,7 @@ export default function SettingsPage() {
     setToast({ message: 'Profile updated successfully.', type: 'success' });
   }
 
-  if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
+  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading settings"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
   if (!user) return null;
 
   return (
