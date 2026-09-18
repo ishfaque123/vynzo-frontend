@@ -94,7 +94,7 @@ export default function PostDetailPage() {
     }
   }
 
-  if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
+  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading post"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
   if (!post) return <p className="p-8 text-center text-slate-500">Post not found.</p>;
 
   return (
