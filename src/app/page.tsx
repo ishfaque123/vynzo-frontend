@@ -160,7 +160,14 @@ export default function HomePage() {
     }
   }
 
-  if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo">
+        <span className="absolute inset-0 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+        <img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" />
+      </div>
+    </div>
+  );
   if (!user) return null;
 
   const openPost = posts.find((p) => p.id === openComments);
@@ -201,7 +208,9 @@ export default function HomePage() {
       <StatusBar user={user} />
 
       {feedLoading ? (
-        <p className="text-slate-500">Loading feed...</p>
+        <div className="flex justify-center py-10" role="status" aria-label="Loading feed">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+        </div>
       ) : feedError ? (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <p className="text-sm text-red-500">Failed to load posts. Please try again.</p>
@@ -235,8 +244,10 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div ref={sentinelRef} className="py-6 text-center text-sm text-slate-400">
-            {loadingMore ? 'Loading more...' : hasMore ? '' : "You're all caught up"}
+          <div ref={sentinelRef} className="flex min-h-12 items-center justify-center py-4 text-sm text-slate-400">
+            {loadingMore ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" />
+            ) : hasMore ? null : "You're all caught up"}
           </div>
         </>
       )}
