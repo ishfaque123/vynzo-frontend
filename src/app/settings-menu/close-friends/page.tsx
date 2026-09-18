@@ -47,7 +47,7 @@ export default function CloseFriendsPage() {
     }
   }
 
-  if (loading) return <p className="py-10 text-center text-slate-500">Loading...</p>;
+  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading close friends"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4 pb-20">
