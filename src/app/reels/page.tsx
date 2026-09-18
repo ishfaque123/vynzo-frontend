@@ -131,6 +131,13 @@ export default function ReelsPage() {
     probe.onerror = () => { URL.revokeObjectURL(objectUrl); probe.removeAttribute('src'); probe.load(); alert('Could not read this video. Please choose another video.'); };
     probe.src = objectUrl;
   }
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white">Loading...</div>;
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-black">
+      <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo reels">
+        <span className="absolute inset-0 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+        <img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" />
+      </div>
+    </div>
+  );
   return <main className="fixed inset-0 bg-black"><div id="reels-feed" onWheel={handleWheel} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-none">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div><button onClick={handleUpload} disabled={!uploadReady} aria-label="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white disabled:opacity-40"><PlusIcon /></button><input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleFilePicked(file); }} /></main>;
 }
