@@ -19,18 +19,222 @@ function DotsIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fil
 function renderWithMentions(text: string) { const parts = text.split(/(@[a-zA-Z0-9_.]+)/g); return parts.map((part, i) => part.startsWith('@') && part.length > 1 ? <Link key={i} href={`/u/${part.slice(1)}`} className="font-semibold text-blue-600">{part}</Link> : <span key={i}>{part}</span>); }
 
 function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, depth = 0 }: { comment: CommentNode; currentUserId?: string; reelOwner: boolean; onReply: (comment: CommentNode) => void; onChanged: (topLevel: boolean) => void; depth?: number }) {
-  const [picker, setPicker] = useState(false); const [menuOpen, setMenuOpen] = useState(false); const [editing, setEditing] = useState(false); const [editText, setEditText] = useState(comment.content); const [reaction, setReaction] = useState<string | null>(comment.myReaction); const [count, setCount] = useState(comment.reactionCount || 0); const [busy, setBusy] = useState(false); const [showReplies, setShowReplies] = useState(false); const isOwner = currentUserId === comment.author.id; const canDelete = isOwner || reelOwner; const replies = comment.replies || [];
-  useEffect(() => { setReaction(comment.myReaction); setCount(comment.reactionCount || 0); setEditText(comment.content); }, [comment.myReaction, comment.reactionCount, comment.content]);
-  useEffect(() => { const closeOther = (e: Event) => { const id = (e as CustomEvent).detail; if (id !== comment.id) { setMenuOpen(false); setPicker(false); } }; window.addEventListener('reel-comment-popup-open', closeOther); return () => window.removeEventListener('reel-comment-popup-open', closeOther); }, [comment.id]);
-  function openMenu() { window.dispatchEvent(new CustomEvent('reel-comment-popup-open', { detail: comment.id })); setPicker(false); setMenuOpen((v) => !v); }
-  function openPicker() { window.dispatchEvent(new CustomEvent('reel-comment-popup-open', { detail: comment.id })); setMenuOpen(false); setPicker((v) => !v); }
-  async function react(type: string) { if (busy) return; setPicker(false); const previous = reaction; const previousCount = count; const next = previous === type ? null : type; setReaction(next); setCount(Math.max(0, previousCount + (previous === type ? -1 : previous ? 0 : 1))); setBusy(true); const result = await setReelCommentReaction(comment.id, type); setBusy(false); if (!result.success) { setReaction(previous); setCount(previousCount); } else setReaction(result.data?.reaction ?? null); }
-  async function remove() { setMenuOpen(false); if (!canDelete || !confirm('Delete this comment?')) return; const result = await deleteReelComment(comment.id); if (result.success) onChanged(depth === 0); }
+  const [picker, setPicker] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const [reaction, setReaction] = useState<string | null>(comment.myReaction);
+  const [count, setCount] = useState(comment.reactionCount || 0);
+  const [busy, setBusy] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
+  const isOwner = currentUserId === comment.author.id;
+  const canDelete = isOwner || reelOwner;
+  const replies = comment.replies || [];
+
+  useEffect(() => {
+    setReaction(comment.myReaction);
+    setCount(comment.reactionCount || 0);
+    setEditText(comment.content);
+  }, [comment.myReaction, comment.reactionCount, comment.content]);
+
+  useEffect(() => {
+    const closeOther = (e: Event) => {
+      const id = (e as CustomEvent).detail;
+      if (id !== comment.id) {
+        setMenuOpen(false);
+        setPicker(false);
+      }
+    };
+    window.addEventListener('reel-comment-popup-open', closeOther);
+    return () => window.removeEventListener('reel-comment-popup-open', closeOther);
+  }, [comment.id]);
+
+  function openMenu() {
+    window.dispatchEvent(new CustomEvent('reel-comment-popup-open', { detail: comment.id }));
+    setPicker(false);
+    setMenuOpen((v) => !v);
+  }
+
+  function openPicker() {
+    window.dispatchEvent(new CustomEvent('reel-comment-popup-open', { detail: comment.id }));
+    setMenuOpen(false);
+    setPicker((v) => !v);
+  }
+
+  async function react(type: string) {
+    if (busy) return;
+    setPicker(false);
+    const previous = reaction;
+    const previousCount = count;
+    const next = previous === type ? null : type;
+    setReaction(next);
+    setCount(Math.max(0, previousCount + (previous === type ? -1 : previous ? 0 : 1)));
+    setBusy(true);
+    const result = await setReelCommentReaction(comment.id, type);
+    setBusy(false);
+    if (!result.success) {
+      setReaction(previous);
+      setCount(previousCount);
+    } else {
+      setReaction(result.data?.reaction ?? null);
+    }
+  }
+
+  async function remove() {
+    if (!canDelete || deleteBusy) return;
+    setConfirmDelete(false);
+    setDeleteBusy(true);
+    const result = await deleteReelComment(comment.id);
+    setDeleteBusy(false);
+    if (result.success) {
+      setFeedback('success');
+      onChanged(depth === 0);
+    } else {
+      setFeedback('error');
+    }
+  }
+
   const [saving, setSaving] = useState(false);
-  async function saveEdit() { const text = editText.trim(); if (!text || saving) return; setSaving(true); const result = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reels/comments/${encodeURIComponent(comment.id)}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) }).then((r) => r.json()).catch(() => ({ success: false })); setSaving(false); if (result.success) { setEditing(false); onChanged(false); } }
-  async function report() { setMenuOpen(false); const ok = window.confirm('Report this comment?'); if (!ok) return; const result = await reportReelComment(comment.id); if (result.success) window.alert('Comment reported.'); else if (result.error?.message) window.alert(result.error.message); }
-  function copy() { navigator.clipboard?.writeText(comment.content).catch(() => {}); setMenuOpen(false); }
-  return <div className={depth > 0 ? 'ml-9 mt-2' : 'mb-3'}><div className="flex items-start gap-2"><Avatar author={comment.author} /><div className="min-w-0 flex-1">{depth > 0 ? <div className="flex items-baseline gap-2"><Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="shrink-0 text-sm font-semibold text-slate-900 hover:underline">@{comment.author.username || comment.author.displayName || 'user'}</Link><p className="min-w-0 break-words text-sm leading-5 text-slate-800">{renderWithMentions(comment.content.replace(/^@[a-zA-Z0-9_.]+\s*/, ''))}</p></div> : <><div className="group"><div className="flex items-center gap-2"><Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="text-sm font-semibold text-slate-900 hover:underline">{comment.author.displayName || comment.author.username || 'User'}</Link><span className="text-[11px] text-slate-400">{timeAgo(comment.createdAt)}</span></div>{editing ? <div className="mt-1 flex gap-2"><input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)} className="min-w-0 flex-1 rounded-lg border bg-white px-2 py-1 text-sm" /><button onClick={saveEdit} disabled={saving} className="text-xs font-semibold text-blue-600 disabled:opacity-50">{saving ? "..." : "Save"}</button><button onClick={() => { setEditing(false); setEditText(comment.content); }} className="text-xs text-slate-500">Cancel</button></div> : <p className="break-words text-sm leading-5 text-slate-800">{renderWithMentions(comment.content)}</p>}</div><div className="mt-1 flex items-center gap-4 px-1 text-[11px] text-slate-500"><div className="relative"><button onClick={openPicker} className={reaction ? 'font-semibold text-blue-600' : ''}>{reaction ? REACTIONS[reaction] : 'Like'}</button>{picker && <div className="absolute bottom-full left-0 z-30 mb-2 flex gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl">{Object.entries(REACTIONS).map(([key, emoji]) => <button key={key} onClick={() => react(key)} className="text-lg transition-transform hover:scale-125">{emoji}</button>)}</div>}</div>{count > 0 && <span>{count}</span>}<button onClick={() => onReply(comment)}>Reply</button><span>{timeAgo(comment.createdAt)}</span><div className="relative ml-auto"><button aria-label="Comment options" onClick={openMenu} className="rounded-full p-1 hover:bg-slate-200"><DotsIcon /></button>{menuOpen && <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">{isOwner && <button onClick={() => { setEditing(true); setMenuOpen(false); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}{canDelete && <button onClick={remove} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-slate-50">Delete</button>}<button onClick={copy} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Copy</button>{!isOwner && <button onClick={report} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Report</button>}</div>}</div></div>{depth === 0 && replies.length > 0 && <button onClick={() => setShowReplies((v) => !v)} className="mt-2 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900">{showReplies ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}</button>}</div>}</div>{showReplies && depth === 0 && replies.map((reply) => <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId} reelOwner={reelOwner} onReply={onReply} onChanged={onChanged} depth={1} />)}</div>;
+
+  async function saveEdit() {
+    const text = editText.trim();
+    if (!text || saving) return;
+    setSaving(true);
+    const result = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reels/comments/${encodeURIComponent(comment.id)}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text }),
+    }).then((r) => r.json()).catch(() => ({ success: false }));
+    setSaving(false);
+    if (result.success) {
+      setEditing(false);
+      onChanged(false);
+    }
+  }
+
+  async function report() {
+    setMenuOpen(false);
+    const ok = window.confirm('Report this comment?');
+    if (!ok) return;
+    const result = await reportReelComment(comment.id);
+    if (result.success) window.alert('Comment reported.');
+    else if (result.error?.message) window.alert(result.error.message);
+  }
+
+  function copy() {
+    navigator.clipboard?.writeText(comment.content).catch(() => {});
+    setMenuOpen(false);
+  }
+
+  return (
+    <>
+      <div className={depth > 0 ? 'ml-9 mt-2' : 'mb-3'}>
+        <div className="flex items-start gap-2">
+          <Avatar author={comment.author} />
+          <div className="min-w-0 flex-1">
+            {depth > 0 ? (
+              <>
+                <div className="flex items-baseline gap-2">
+                  <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="shrink-0 text-sm font-semibold text-slate-900 hover:underline">
+                    @{comment.author.username || comment.author.displayName || 'user'}
+                  </Link>
+                  <p className="min-w-0 break-words text-sm leading-5 text-slate-800">
+                    {renderWithMentions(comment.content.replace(/^@[a-zA-Z0-9_.]+\s*/, ''))}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="group">
+                  <div className="flex items-center gap-2">
+                    <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="text-sm font-semibold text-slate-900 hover:underline">
+                      {comment.author.displayName || comment.author.username || 'User'}
+                    </Link>
+                    <span className="text-[11px] text-slate-400">{timeAgo(comment.createdAt)}</span>
+                  </div>
+                  {editing ? (
+                    <div className="mt-1 flex gap-2">
+                      <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)} className="min-w-0 flex-1 rounded-lg border bg-white px-2 py-1 text-sm" />
+                      <button onClick={saveEdit} disabled={saving} className="text-xs font-semibold text-blue-600 disabled:opacity-50">{saving ? '...' : 'Save'}</button>
+                      <button onClick={() => { setEditing(false); setEditText(comment.content); }} className="text-xs text-slate-500">Cancel</button>
+                    </div>
+                  ) : (
+                    <p className="break-words text-sm leading-5 text-slate-800">{renderWithMentions(comment.content)}</p>
+                  )}
+                </div>
+
+                <div className="mt-1 flex items-center gap-4 px-1 text-[11px] text-slate-500">
+                  <div className="relative">
+                    <button onClick={openPicker} className={reaction ? 'font-semibold text-blue-600' : ''}>
+                      {reaction ? REACTIONS[reaction] : 'Like'}
+                    </button>
+                    {picker && (
+                      <div className="absolute bottom-full left-0 z-30 mb-2 flex gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl">
+                        {Object.entries(REACTIONS).map(([key, emoji]) => (
+                          <button key={key} onClick={() => react(key)} className="text-lg transition-transform hover:scale-125">{emoji}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {count > 0 && <span>{count}</span>}
+                  <button onClick={() => onReply(comment)}>Reply</button>
+                  <span>{timeAgo(comment.createdAt)}</span>
+                  <div className="relative ml-auto">
+                    <button aria-label="Comment options" onClick={openMenu} className="rounded-full p-1 hover:bg-slate-200">
+                      <DotsIcon />
+                    </button>
+                    {menuOpen && (
+                      <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">
+                        {isOwner && <button onClick={() => { setEditing(true); setMenuOpen(false); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}
+                        {canDelete && <button onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-slate-50">Delete</button>}
+                        <button onClick={copy} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Copy</button>
+                        {!isOwner && <button onClick={report} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Report</button>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {depth === 0 && replies.length > 0 && (
+                  <button onClick={() => setShowReplies((v) => !v)} className="mt-2 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
+                    {showReplies ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {showReplies && depth === 0 && replies.map((reply) => (
+          <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId} reelOwner={reelOwner} onReply={onReply} onChanged={onChanged} depth={1} />
+        ))}
+      </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 px-5" onClick={() => setConfirmDelete(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-base font-semibold text-slate-900">Delete comment?</div>
+            <p className="mt-1.5 text-sm leading-5 text-slate-500">This comment will be permanently removed.</p>
+            <div className="mt-5 flex gap-2">
+              <button type="button" onClick={() => setConfirmDelete(false)} className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+              <button type="button" onClick={remove} disabled={deleteBusy} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{deleteBusy ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {feedback && (
+        <div className="fixed inset-x-0 top-5 z-[110] flex justify-center px-4 pointer-events-none">
+          <div className={`rounded-xl px-4 py-3 text-sm font-semibold shadow-xl ${feedback === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+            {feedback === 'success' ? 'Comment deleted successfully.' : 'Failed to delete comment. Please try again.'}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, comments, onClose, onCountChange }: { reelId: string; reelOwner: boolean; currentUserId?: string; comments: CommentNode[]; onClose: () => void; onCountChange: (delta: number) => void }) {
