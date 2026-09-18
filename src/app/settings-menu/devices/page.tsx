@@ -61,7 +61,7 @@ export default function DevicesPage() {
       <p className="mb-4 text-sm text-slate-500">Places where you're currently logged in.</p>
 
       {loading ? (
-        <p className="text-slate-500">Loading...</p>
+        <div className="flex justify-center py-6" role="status" aria-label="Loading devices"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
       ) : devices.length === 0 ? (
         <p className="text-slate-500">No active sessions found.</p>
       ) : (
