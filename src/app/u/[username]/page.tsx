@@ -223,7 +223,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
+  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading profile"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
   if (!profile) return <p className="p-8 text-center text-slate-500">User not found.</p>;
 
   const isMe = currentUser?.username === profile.username;
