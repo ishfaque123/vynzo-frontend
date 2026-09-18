@@ -1,13 +1,24 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+async function readJson(res: Response) {
+  if (res.status === 204 || res.status === 304) return { success: true, data: {} };
+  const text = await res.text();
+  if (!text) return { success: false, error: { message: `Request failed (HTTP ${res.status}).` } };
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { success: false, error: { message: `Invalid server response (HTTP ${res.status}).` } };
+  }
+}
+
 export async function fetchMe() {
-  const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include' });
-  return res.json();
+  const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
 }
 
 export async function getSavedAccounts() {
-  const res = await fetch(`${API_URL}/api/auth/accounts`, { credentials: 'include' });
-  return res.json();
+  const res = await fetch(`${API_URL}/api/auth/accounts`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
 }
 
 export async function switchAccountRequest(accountId: string) {
@@ -17,7 +28,7 @@ export async function switchAccountRequest(accountId: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ accountId }),
   });
-  return res.json();
+  return readJson(res);
 }
 
 export async function logoutRequest() {
@@ -25,7 +36,7 @@ export async function logoutRequest() {
     method: 'POST',
     credentials: 'include',
   });
-  return res.json();
+  return readJson(res);
 }
 
 export async function deleteAccountRequest() {
@@ -33,7 +44,7 @@ export async function deleteAccountRequest() {
     method: 'DELETE',
     credentials: 'include',
   });
-  return res.json();
+  return readJson(res);
 }
 
 export async function submitProfileSetup(data: {
@@ -45,7 +56,7 @@ export async function submitProfileSetup(data: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  return res.json();
+  return readJson(res);
 }
 
 export async function savePublicKeyRequest(publicKey: string) {
@@ -55,22 +66,22 @@ export async function savePublicKeyRequest(publicKey: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ publicKey }),
   });
-  return res.json();
+  return readJson(res);
 }
 
 
 export async function requestEmailCode(email: string) {
   const res = await fetch(API_URL + '/api/auth/email/request-code', {
-    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-  return res.json();
+  return readJson(res);
 }
 
 export async function verifyEmailCode(email: string, code: string) {
   const res = await fetch(API_URL + '/api/auth/email/verify-code', {
-    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code }),
   });
-  return res.json();
+  return readJson(res);
 }
