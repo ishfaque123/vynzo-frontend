@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function readJson(res: Response) {
-  if (res.status === 204 || res.status === 304) return { success: true, data: {} };
+  if (res.status === 204 || res.status === 304) return { success: false, error: { message: `Empty server response (HTTP ${res.status}).` } };
   const text = await res.text();
   if (!text) return { success: false, error: { message: `Request failed (HTTP ${res.status}).` } };
   try {
