@@ -364,7 +364,7 @@ export default function SettingsMenuPage() {
             <p className="mb-3 text-center text-sm font-semibold text-slate-800">Account Privacy</p>
 
             {privacyLoading ? (
-              <p className="py-6 text-center text-sm text-slate-500">Loading...</p>
+              <div className="flex justify-center py-6" role="status" aria-label="Loading accounts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
             ) : (
               <div className="mb-4 space-y-3">
                 <div className="rounded-lg border p-3">
