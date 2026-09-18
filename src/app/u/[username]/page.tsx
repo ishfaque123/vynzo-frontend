@@ -357,7 +357,7 @@ export default function ProfilePage() {
             </div>
           )
         ) : postsLoading ? (
-          <p className="px-4 text-slate-500">Loading posts...</p>
+          <div className="flex justify-center py-6" role="status" aria-label="Loading posts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
         ) : posts.length === 0 ? (
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
