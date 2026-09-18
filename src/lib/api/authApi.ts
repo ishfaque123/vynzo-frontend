@@ -57,3 +57,20 @@ export async function savePublicKeyRequest(publicKey: string) {
   });
   return res.json();
 }
+
+
+export async function requestEmailCode(email: string) {
+  const res = await fetch(API_URL + '/api/auth/email/request-code', {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return res.json();
+}
+
+export async function verifyEmailCode(email: string, code: string) {
+  const res = await fetch(API_URL + '/api/auth/email/verify-code', {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  });
+  return res.json();
+}
