@@ -72,6 +72,7 @@ function CloseIcon() {
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentPath = pathname ?? '';
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -101,18 +102,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (pathname === '/notifications') setUnreadCount(0);
-  }, [pathname]);
+    if (currentPath === '/notifications') setUnreadCount(0);
+  }, [currentPath]);
 
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
-  const hideChrome = pathname === '/login' || pathname === '/profile-setup' || pathname === '/compose' || pathname === '/reels' || pathname === '/reels/new' || pathname.startsWith('/s/') || isChatThread;
+  const hideChrome = currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels' || currentPath === '/reels/new' || currentPath.startsWith('/s/') || isChatThread;
 
   if (hideChrome || !isAuthenticated) {
     return <>{isAuthenticated && <UsageTracker />}{children}</>;
   }
 
   const profileHref = user?.username ? `/u/${user.username}` : '/settings';
-  const isInSettingsMenu = pathname.startsWith('/settings-menu');
+  const isInSettingsMenu = currentPath.startsWith('/settings-menu');
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -128,13 +129,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           {!isInSettingsMenu && (
             <>
               <Link href="/search" aria-label="Search" className="p-2">
-                <SearchIcon active={pathname === '/search'} />
+                <SearchIcon active={currentPath === '/search'} />
               </Link>
               <Link href="/messages" aria-label="Messages" className="p-2">
-                <ChatIcon active={pathname === '/messages'} />
+                <ChatIcon active={currentPath === '/messages'} />
               </Link>
               <Link href="/notifications" aria-label="Notifications" className="relative p-2">
-                <BellIcon size={24} className={pathname === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />
+                <BellIcon size={24} className={currentPath === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />
                 {unreadCount > 0 && (
                   <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -160,10 +161,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-white">
         <div className="mx-auto flex max-w-xl items-center justify-around py-2">
-          <Link href="/" className="p-2"><HomeIcon active={pathname === '/'} /></Link>
-          <Link href="/reels" className="p-2"><ReelsIcon active={pathname === '/reels'} /></Link>
+          <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
+          <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
           <Link href="/messages" className="p-2"><ChatIcon active={pathname === '/messages'} /></Link>
-          <Link href={profileHref} className="p-2"><ProfileIcon active={pathname === profileHref} /></Link>
+          <Link href={profileHref} className="p-2"><ProfileIcon active={currentPath === profileHref} /></Link>
         </div>
       </nav>
     </div>
