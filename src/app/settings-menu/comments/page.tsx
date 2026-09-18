@@ -27,7 +27,7 @@ export default function CommentsSettingPage() {
     if (result.success) setDisabled(result.data.commentsDisabled);
   }
 
-  if (loading) return <p className="p-8 text-center text-slate-500">Loading...</p>;
+  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading comment settings"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
