@@ -691,7 +691,7 @@ export default function ChatPage() {
           </div>
         )}
 
-        {loading && <p className="text-center text-slate-500">Loading...</p>}
+        {loading && <div className="flex justify-center py-6" role="status" aria-label="Loading messages"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>}
         {!loading && messages.length === 0 && (
           <p className="text-center text-slate-500">Say hi 👋</p>
         )}
