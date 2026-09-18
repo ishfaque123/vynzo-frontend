@@ -41,7 +41,7 @@ export default function ActivityPage() {
       <p className="mb-4 text-sm text-slate-500">How much time you've spent on Frianzo today.</p>
 
       {loading ? (
-        <p className="text-slate-500">Loading...</p>
+        <div className="flex justify-center py-6" role="status" aria-label="Loading activity"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
       ) : (
         <>
           <div className="mb-6 rounded-lg border bg-white p-4">
