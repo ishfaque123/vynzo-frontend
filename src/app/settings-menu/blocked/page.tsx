@@ -242,7 +242,7 @@ export default function BlockedPage() {
     }
   }
 
-  if (loading) return <p className="py-10 text-center text-slate-500">Loading...</p>;
+  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading blocked users"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
 
   if (entries.length === 0) {
     return (
