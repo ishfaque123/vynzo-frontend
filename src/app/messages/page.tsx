@@ -177,7 +177,11 @@ export default function MessagesPage() {
         </Link>
       </div>
 
-      {loading && <p className="px-4 text-slate-500">Loading...</p>}
+      {loading && (
+        <div className="flex justify-center py-6" role="status" aria-label="Loading messages">
+          <div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+        </div>
+      )}
 
       {!loading && conversations.length === 0 && (
         <p className="px-4 text-slate-500">No conversations yet. Start one!</p>
