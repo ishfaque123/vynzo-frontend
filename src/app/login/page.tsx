@@ -62,7 +62,7 @@ function LoginForm() {
         setCodeStep(true);
         setEmailMessage('Verification code sent to your email.');
       } else {
-        setEmailMessage(result.error || 'Could not send the verification code.');
+        setEmailMessage(result.error?.message || 'Could not send the verification code.');
       }
     } catch {
       setEmailMessage('Could not send the verification code. Please try again.');
@@ -87,7 +87,7 @@ function LoginForm() {
         router.push(result.data?.isNewUser ? '/profile-setup' : '/');
         return;
       }
-      setEmailMessage(result.error || 'Invalid verification code.');
+      setEmailMessage(result.error?.message || 'Invalid verification code.');
     } catch {
       setEmailMessage('Verification failed. Please try again.');
     } finally {
