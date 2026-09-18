@@ -30,6 +30,8 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressStart = useRef<{ x: number; y: number } | null>(null);
   const isOwner = currentUserId === comment.author.id;
   const canDelete = isOwner || reelOwner;
   const replies = comment.replies || [];
@@ -57,6 +59,11 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     setPicker(false);
     setMenuOpen((v) => !v);
   }
+
+  function cancelLongPress() { if (longPressTimer.current) clearTimeout(longPressTimer.current); longPressTimer.current = null; longPressStart.current = null; }
+  function startLongPress(x: number, y: number) { cancelLongPress(); longPressStart.current = { x, y }; longPressTimer.current = setTimeout(() => { longPressTimer.current = null; longPressStart.current = null; window.dispatchEvent(new CustomEvent('reel-comment-popup-open', { detail: comment.id })); setPicker(false); setMenuOpen(true); }, 550); }
+  function moveLongPress(x: number, y: number) { const s = longPressStart.current; if (s && Math.hypot(x - s.x, y - s.y) > 10) cancelLongPress(); }
+  function endLongPress() { cancelLongPress(); }
 
   function openPicker() {
     window.dispatchEvent(new CustomEvent('reel-comment-popup-open', { detail: comment.id }));
@@ -132,7 +139,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
 
   return (
     <>
-      <div className={depth > 0 ? 'ml-9 mt-2' : 'mb-3'}>
+      <div className={depth > 0 ? 'ml-9 mt-2' : 'mb-3'} onTouchStart={(e) => startLongPress(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => moveLongPress(e.touches[0].clientX, e.touches[0].clientY)} onTouchEnd={endLongPress} onTouchCancel={endLongPress} onPointerDown={(e) => startLongPress(e.clientX, e.clientY)} onPointerMove={(e) => moveLongPress(e.clientX, e.clientY)} onPointerUp={endLongPress} onPointerCancel={endLongPress}>
         <div className="flex items-start gap-2">
           <Avatar author={comment.author} />
           <div className="min-w-0 flex-1">
@@ -146,6 +153,15 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
                     {renderWithMentions(comment.content.replace(/^@[a-zA-Z0-9_.]+\s*/, ''))}
                   </p>
                 </div>
+                {menuOpen && depth > 0 && <div className="relative mt-1 flex justify-end">
+                  <div className="w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">
+                    <button onClick={() => onReply(comment)} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Reply</button>
+                    <button onClick={copy} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Copy</button>
+                    {isOwner && <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}
+                    {canDelete && <button onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-slate-50">Delete</button>}
+                    {!isOwner && !reelOwner && <button onClick={report} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Report</button>}
+                  </div>
+                </div>}
               </>
             ) : (
               <>
@@ -191,6 +207,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
                       <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">
                         <button onClick={() => onReply(comment)} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Reply</button>
                         <button onClick={copy} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Copy</button>
+                        {isOwner && <button onClick={() => { setMenuOpen(false); setEditing(true); setEditText(comment.content); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}
                         {canDelete && <button onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-slate-50">Delete</button>}
                         {!isOwner && !reelOwner && <button onClick={report} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Report</button>}
                       </div>
@@ -215,7 +232,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
 
       {confirmDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 px-5" onClick={() => setConfirmDelete(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()} onTouchCancel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerCancel={(e) => e.stopPropagation()}>
             <div className="text-base font-semibold text-slate-900">Delete comment?</div>
             <p className="mt-1.5 text-sm leading-5 text-slate-500">This comment will be permanently removed.</p>
             <div className="mt-5 flex gap-2">
