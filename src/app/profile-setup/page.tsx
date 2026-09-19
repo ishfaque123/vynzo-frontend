@@ -20,8 +20,21 @@ export default function ProfileSetupPage() {
     }
   }, [authLoading, user, router]);
 
+  function isAtLeast13(dobStr: string): boolean {
+    const dob = new Date(dobStr);
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const hadBirthday = now.getMonth() > dob.getMonth() || (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+    if (!hadBirthday) age -= 1;
+    return age >= 13;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isAtLeast13(form.dateOfBirth)) {
+      setToast({ message: 'You must be at least 13 years old to use Frianzo.', type: 'error' });
+      return;
+    }
     setLoading(true);
     const result = await submitProfileSetup(form as any);
     setLoading(false);
@@ -85,9 +98,11 @@ export default function ProfileSetupPage() {
             type="date"
             value={form.dateOfBirth}
             onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+            max={new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
             className="w-full rounded-lg border px-4 py-2"
             required
           />
+          <p className="mt-1 text-xs text-slate-400">You must be at least 13 years old to use Frianzo.</p>
         </div>
 
         <div>
