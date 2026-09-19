@@ -331,6 +331,21 @@ export default function SettingsMenuPage() {
       </div>
 
       <div className="mb-3 divide-y rounded-lg border">
+        <Link href="/about" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-slate-800">About Frianzo</span>
+        </Link>
+        <Link href="/privacy" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-slate-800">Privacy Policy</span>
+        </Link>
+        <Link href="/terms" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-slate-800">Terms of Service</span>
+        </Link>
+        <Link href="/child-safety" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-slate-800">Child Safety</span>
+        </Link>
+      </div>
+
+      <div className="mb-3 divide-y rounded-lg border">
         <button onClick={() => setShowLogoutConfirm(true)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
           <span className="text-red-600"><PowerIcon /></span>
           <span className="font-medium text-red-600">Logout</span>
