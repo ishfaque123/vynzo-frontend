@@ -34,6 +34,14 @@ export async function setReelCommentReaction(commentId: string, type: string) {
   });
 }
 
+export async function editReelComment(commentId: string, content: string) {
+  return request(`/api/reels/comments/${encodeURIComponent(commentId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+}
+
 export async function deleteReelComment(commentId: string) {
   return request(`/api/reels/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' });
 }
