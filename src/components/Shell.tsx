@@ -107,7 +107,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
   const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath.startsWith('/s/') || isChatThread;
-  const hideHeader = hideChrome || currentPath === '/reels';
+  const hideHeader = hideChrome;
 
   if (!isAuthenticated) {
     return <>{isAuthenticated && <UsageTracker />}{children}</>;
