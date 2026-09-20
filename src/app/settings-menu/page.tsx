@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logoutRequest, fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
 import { updateProfile } from '@/lib/api/userApi';
+import { clearOfflineCache } from '@/lib/offline/feedCache';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -263,6 +264,7 @@ export default function SettingsMenuPage() {
   async function handleLogout() {
     setLoggingOut(true);
     await logoutRequest();
+    await clearOfflineCache();
     router.push('/login');
   }
 
