@@ -158,9 +158,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>}
 
-      <main className="flex-1 pb-16">{children}</main>
-
-      <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-white">
+      <nav className="border-t border-b bg-white">
         <div className="mx-auto flex max-w-xl items-center justify-around py-2">
           <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
@@ -168,6 +166,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <Link href={profileHref} className="p-2"><ProfileIcon active={currentPath === profileHref} /></Link>
         </div>
       </nav>
+
+      <main className="flex-1">{children}</main>
     </div>
   );
 }
