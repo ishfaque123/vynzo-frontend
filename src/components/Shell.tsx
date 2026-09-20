@@ -121,11 +121,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <div className={`flex flex-col bg-slate-50 ${isReels ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'}`}>
       <UsageTracker />
       {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
-        <Link href="/" className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Frianzo" className="h-7 w-7 object-contain" />
-          <span className="text-xl font-bold tracking-tight text-slate-900">Frianzo</span>
-        </Link>
+        <div className="flex items-center gap-1">
+          {isInSettingsMenu ? (
+            <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
+              <CloseIcon />
+            </button>
+          ) : (
+            <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+              <MenuIcon />
+            </Link>
+          )}
+          <Link href="/" className="text-xl font-bold tracking-tight text-blue-600">Frianzo</Link>
+        </div>
 
         <div className="flex items-center gap-1">
           {!isInSettingsMenu && (
@@ -136,25 +143,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <Link href="/messages" aria-label="Messages" className="p-2">
                 <ChatIcon active={currentPath === '/messages'} />
               </Link>
-              <Link href="/notifications" aria-label="Notifications" className="relative p-2">
-                <BellIcon size={24} className={currentPath === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />
-                {unreadCount > 0 && (
-                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Link>
             </>
-          )}
-
-          {isInSettingsMenu ? (
-            <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
-              <CloseIcon />
-            </button>
-          ) : (
-            <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
-              <MenuIcon />
-            </Link>
           )}
         </div>
       </header>}
@@ -163,7 +152,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-xl items-center justify-around py-2">
           <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
-          <Link href="/messages" className="p-2"><ChatIcon active={pathname === '/messages'} /></Link>
+          <Link href="/notifications" aria-label="Notifications" className="relative p-2">
+            <BellIcon size={24} className={currentPath === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />
+            {unreadCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
           <Link href={profileHref} className="p-2"><ProfileIcon active={currentPath === profileHref} /></Link>
         </div>
       </nav>}
