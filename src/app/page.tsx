@@ -79,15 +79,7 @@ export default function HomePage() {
         setFeedOffline(false);
         await saveOfflineFeed(user.id, result.data.posts, !!result.data.hasMore);
       } else {
-        const cached = await getOfflineFeed(user.id);
-        if (cached?.posts?.length) {
-          setPosts(cached.posts);
-          setHasMore(false);
-          setOffset(cached.posts.length);
-          setFeedOffline(true);
-        } else {
-          setFeedError(true);
-        }
+        setFeedError(true);
       }
     } catch {
       const cached = await getOfflineFeed(user.id);
