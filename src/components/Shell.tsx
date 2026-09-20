@@ -107,8 +107,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
   const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath.startsWith('/s/') || isChatThread;
+  const hideHeader = hideChrome || currentPath === '/reels';
 
-  if (hideChrome || !isAuthenticated) {
+  if (!isAuthenticated) {
     return <>{isAuthenticated && <UsageTracker />}{children}</>;
   }
 
@@ -118,7 +119,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <UsageTracker />
-      <header className={`sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      {!hideHeader && <header className={`sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Frianzo" className="h-7 w-7 object-contain" />
@@ -155,7 +156,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </Link>
           )}
         </div>
-      </header>
+      </header>}
 
       <main className="flex-1 pb-16">{children}</main>
 
