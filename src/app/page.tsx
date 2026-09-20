@@ -127,17 +127,29 @@ export default function HomePage() {
   async function loadMore() {
     if (loadingMore || !hasMore || offline || feedOffline) return;
     setLoadingMore(true);
-    const result = await fetchFeed(offset);
-    setLoadingMore(false);
-    if (result.success) {
-      setPosts((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id));
-        const fresh = result.data.posts.filter((p: any) => !existingIds.has(p.id));
-        return [...prev, ...fresh];
-      });
-      setHasMore(!!result.data.hasMore);
-      setOffset((o) => o + result.data.posts.length);
-      await saveOfflineFeed(user.id, [...posts, ...result.data.posts], !!result.data.hasMore);
+    try {
+      const result = await fetchFeed(offset);
+      if (result.success) {
+        setPosts((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const fresh = result.data.posts.filter((p: any) => !existingIds.has(p.id));
+          const nextPosts = [...prev, ...fresh];
+          void saveOfflineFeed(user.id, nextPosts, !!result.data.hasMore);
+          return nextPosts;
+        });
+        setHasMore(!!result.data.hasMore);
+        setOffset((o) => o + result.data.posts.length);
+      }
+    } catch {
+      const cached = await getOfflineFeed(user.id);
+      if (cached?.posts?.length) {
+        setPosts(cached.posts);
+        setHasMore(false);
+        setOffset(cached.posts.length);
+        setFeedOffline(true);
+      }
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -231,7 +243,8 @@ export default function HomePage() {
       <div className="mb-3 flex w-full items-center gap-2">
         <Link href={`/u/${user.username}`}><Avatar url={user.profilePictureUrl} name={user.displayName} /></Link>
         <button
-          onClick={() => router.push('/compose')}
+          onClick={() => { if (!feedOffline) router.push('/compose'); }}
+          disabled={feedOffline}
           className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-left text-slate-400 shadow-sm"
         >
           What's on your mind?
@@ -251,7 +264,8 @@ export default function HomePage() {
           }}
         />
         <button
-          onClick={() => galleryInputRef.current?.click()}
+          onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }}
+          disabled={feedOffline}
           aria-label="Add a photo"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
         >
