@@ -1,3 +1,5 @@
+import { clearOfflineCache } from '@/lib/offline/feedCache';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function readJson(res: Response) {
@@ -28,7 +30,9 @@ export async function switchAccountRequest(accountId: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ accountId }),
   });
-  return readJson(res);
+  const result = await readJson(res);
+  if (result.success) await clearOfflineCache();
+  return result;
 }
 
 export async function logoutRequest() {
@@ -36,7 +40,9 @@ export async function logoutRequest() {
     method: 'POST',
     credentials: 'include',
   });
-  return readJson(res);
+  const result = await readJson(res);
+  if (result.success) await clearOfflineCache();
+  return result;
 }
 
 export async function deleteAccountRequest() {
@@ -44,7 +50,9 @@ export async function deleteAccountRequest() {
     method: 'DELETE',
     credentials: 'include',
   });
-  return readJson(res);
+  const result = await readJson(res);
+  if (result.success) await clearOfflineCache();
+  return result;
 }
 
 export async function submitProfileSetup(data: {
