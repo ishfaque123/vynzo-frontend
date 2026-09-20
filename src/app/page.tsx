@@ -294,7 +294,7 @@ export default function HomePage() {
                   commentText={commentText} setCommentText={setCommentText}
                   replyTo={replyTo} setReplyTo={setReplyTo}
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
-                  onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+                  onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
                 {(index + 1) % 5 === 0 && (
                   <div className="my-4">
                     <AdUnit />
