@@ -279,9 +279,49 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
   function beginDrag(y: number) { startY.current = y; setDragging(true); }
   function moveDrag(y: number) { if (!dragging) return; const delta = y - startY.current; if (delta > 0) setDragY(delta); }
   function endDrag() { if (!dragging) return; setDragging(false); if (dragY > CLOSE_THRESHOLD) onClose(); setDragY(0); }
-  function beginPullClose(e: React.TouchEvent<HTMLDivElement>) { const el = commentsRef.current; if (!el || el.scrollTop > 0) return; pullStartY.current = e.touches[0].clientY; pullStartX.current = e.touches[0].clientX; setPullClosing(false); }
-  function movePullClose(e: React.TouchEvent<HTMLDivElement>) { const el = commentsRef.current; if (!el || pullStartY.current === 0 || el.scrollTop > 0) return; const touch = e.touches[0]; const dy = touch.clientY - pullStartY.current; const dx = Math.abs(touch.clientX - pullStartX.current); if (dy > 0 && dy > dx) { e.preventDefault(); setPullClosing(true); setDragY(dy); } }
-  function endPullClose() { if (pullStartY.current === 0) return; pullStartY.current = 0; pullStartX.current = 0; setPullClosing(false); setDragging(false); setDragY((current) => { if (current > CLOSE_THRESHOLD) { onClose(); return 0; } return 0; }); }
+  function beginPullClose(e: React.TouchEvent<HTMLDivElement>) {
+    const el = commentsRef.current;
+    if (!el || el.scrollTop > 0) return;
+    pullStartY.current = e.touches[0].clientY;
+    pullStartX.current = e.touches[0].clientX;
+    setPullClosing(false);
+    setDragY(0);
+  }
+  function movePullClose(e: React.TouchEvent<HTMLDivElement>) {
+    const el = commentsRef.current;
+    if (!el || pullStartY.current === 0) return;
+    const touch = e.touches[0];
+    const dy = touch.clientY - pullStartY.current;
+    const dx = Math.abs(touch.clientX - pullStartX.current);
+
+    // Upward swipe must remain a normal comments scroll. Only a downward
+    // swipe starting at the very top is treated as the close gesture.
+    if (dy < 0 || dx >= Math.abs(dy) || el.scrollTop > 0) {
+      pullStartY.current = 0;
+      pullStartX.current = 0;
+      setPullClosing(false);
+      setDragY(0);
+      return;
+    }
+
+    e.preventDefault();
+    setPullClosing(true);
+    setDragY(dy);
+  }
+  function endPullClose() {
+    if (pullStartY.current === 0) return;
+    pullStartY.current = 0;
+    pullStartX.current = 0;
+    setPullClosing(false);
+    setDragging(false);
+    setDragY((current) => {
+      if (current > CLOSE_THRESHOLD) {
+        onClose();
+        return 0;
+      }
+      return 0;
+    });
+  }
   function startReply(comment: CommentNode) { setReplyTo(comment); setText(''); window.setTimeout(() => { inputRef.current?.focus(); inputRef.current?.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 0); }
   async function send() { const content = text.trim(); if (!content || sending) return; setSending(true); const result = await addReelComment(reelId, content, replyTo?.id); setSending(false); if (!result.success) return; playCommentSound(); setText(''); setReplyTo(null); onCountChange(replyTo ? 0 : 1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; justSentRef.current = true; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
   function changed(topLevel: boolean) { if (topLevel) onCountChange(-1); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
