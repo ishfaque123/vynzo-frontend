@@ -74,7 +74,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const currentPath = pathname ?? '';
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, offline } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [headerHidden, setHeaderHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -90,7 +90,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || offline) return;
     function loadCount() {
       fetchUnreadCount().then((res) => {
         if (res.success) setUnreadCount(res.data.count);
@@ -99,7 +99,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     loadCount();
     const interval = setInterval(loadCount, 30000);
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, offline]);
 
   useEffect(() => {
     if (currentPath === '/notifications') setUnreadCount(0);
