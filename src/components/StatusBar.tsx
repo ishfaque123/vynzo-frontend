@@ -51,8 +51,12 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
     });
   }
   useEffect(() => {
+    if (offline) {
+      setLoading(false);
+      return;
+    }
     load();
-  }, []);
+  }, [offline]);
 
   const myGroup = groups.find((g) => g.userId === user.id);
   const otherGroups = groups.filter((g) => g.userId !== user.id);
