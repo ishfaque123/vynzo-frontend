@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
+import { getOfflineFeed, saveOfflineFeed } from '@/lib/offline/feedCache';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { playCommentSound } from '@/lib/sounds';
 import ShareModal from '@/components/ShareModal';
@@ -30,7 +31,7 @@ function PlusIcon() {
 }
 
 export default function HomePage() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, offline } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
@@ -38,6 +39,7 @@ export default function HomePage() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [feedOffline, setFeedOffline] = useState(false);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
@@ -49,30 +51,81 @@ export default function HomePage() {
 
   useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
 
-  function loadFeed() {
+  async function loadFeed() {
+    if (!user?.id) return;
     setFeedLoading(true);
-    fetchFeed(0)
-      .then((result) => {
-        if (result.success) {
-          setPosts(result.data.posts);
-          setHasMore(!!result.data.hasMore);
-          setOffset(result.data.posts.length);
-          setFeedError(false);
+    setFeedError(false);
+
+    if (offline || feedOffline) {
+      const cached = await getOfflineFeed(user.id);
+      if (cached?.posts?.length) {
+        setPosts(cached.posts);
+        setHasMore(false);
+        setOffset(cached.posts.length);
+        setFeedOffline(true);
+      } else {
+        setFeedError(true);
+      }
+      setFeedLoading(false);
+      return;
+    }
+
+    try {
+      const result = await fetchFeed(0);
+      if (result.success) {
+        setPosts(result.data.posts);
+        setHasMore(!!result.data.hasMore);
+        setOffset(result.data.posts.length);
+        setFeedOffline(false);
+        await saveOfflineFeed(user.id, result.data.posts, !!result.data.hasMore);
+      } else {
+        const cached = await getOfflineFeed(user.id);
+        if (cached?.posts?.length) {
+          setPosts(cached.posts);
+          setHasMore(false);
+          setOffset(cached.posts.length);
+          setFeedOffline(true);
         } else {
           setFeedError(true);
         }
-      })
-      .catch(() => setFeedError(true))
-      .finally(() => setFeedLoading(false));
+      }
+    } catch {
+      const cached = await getOfflineFeed(user.id);
+      if (cached?.posts?.length) {
+        setPosts(cached.posts);
+        setHasMore(false);
+        setOffset(cached.posts.length);
+        setFeedOffline(true);
+      } else {
+        setFeedError(true);
+      }
+    } finally {
+      setFeedLoading(false);
+    }
   }
 
   useEffect(() => {
     if (isAuthenticated) loadFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, offline]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setFeedOffline(false);
+      if (isAuthenticated) loadFeed();
+    };
+    const handleOffline = () => setFeedOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   async function loadMore() {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || offline || feedOffline) return;
     setLoadingMore(true);
     const result = await fetchFeed(offset);
     setLoadingMore(false);
@@ -84,6 +137,7 @@ export default function HomePage() {
       });
       setHasMore(!!result.data.hasMore);
       setOffset((o) => o + result.data.posts.length);
+      await saveOfflineFeed(user.id, [...posts, ...result.data.posts], !!result.data.hasMore);
     }
   }
 
@@ -206,6 +260,12 @@ export default function HomePage() {
       </div>
 
       <StatusBar user={user} />
+
+      {feedOffline && !feedLoading && (
+        <div className="mb-3 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-center text-xs text-slate-600">
+          You're offline. Showing your last saved feed.
+        </div>
+      )}
 
       {feedLoading ? (
         <div className="flex justify-center py-10" role="status" aria-label="Loading feed">
