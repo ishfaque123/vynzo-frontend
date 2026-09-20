@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { BellIcon } from '@/components/icons/UiIcons';
 import { fetchUnreadCount } from '@/lib/api/notificationApi';
 import UsageTracker from '@/components/UsageTracker';
+import PushRegistrar from '@/components/PushRegistrar';
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -120,6 +121,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className={`flex flex-col bg-slate-50 ${isReels ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'}`}>
       <UsageTracker />
+      <PushRegistrar />
       {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="flex items-center gap-1">
           {isInSettingsMenu ? (

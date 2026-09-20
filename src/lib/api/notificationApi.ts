@@ -46,3 +46,23 @@ export async function deleteAllNotifications() {
   });
   return readJson(res);
 }
+
+export async function registerPushToken(token: string) {
+  const res = await fetch(`${API_URL}/api/notifications/push-token`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  return readJson(res);
+}
+
+export async function removePushToken(token: string) {
+  const res = await fetch(`${API_URL}/api/notifications/push-token`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  return readJson(res);
+}
