@@ -30,7 +30,7 @@ function TextIcon() {
   );
 }
 
-export default function StatusBar({ user }: { user: any }) {
+export default function StatusBar({ user, offline = false }: { user: any; offline?: boolean }) {
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerOpenIndex, setViewerOpenIndex] = useState<number | null>(null);
@@ -58,6 +58,7 @@ export default function StatusBar({ user }: { user: any }) {
   const otherGroups = groups.filter((g) => g.userId !== user.id);
 
   function handleAvatarClick() {
+    if (offline) return;
     if (myGroup && myGroup.items.length > 0) {
       const idx = groups.findIndex((g) => g.userId === user.id);
       setViewerOpenIndex(idx);
@@ -108,7 +109,7 @@ export default function StatusBar({ user }: { user: any }) {
   return (
     <>
       <div className="mb-3 flex gap-3 overflow-x-auto pb-1">
-        <button onClick={handleAvatarClick} className="flex flex-shrink-0 flex-col items-center gap-1">
+        <button onClick={handleAvatarClick} disabled={offline} className="flex flex-shrink-0 flex-col items-center gap-1 disabled:opacity-60">
           <span className="relative">
             <span
               className={`flex h-14 w-14 items-center justify-center rounded-full p-0.5 ${
