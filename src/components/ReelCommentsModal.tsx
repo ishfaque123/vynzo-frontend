@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { addReelComment, deleteReelComment, setReelCommentReaction } from '@/lib/api/reelCommentApi';
+import { addReelComment, deleteReelComment, editReelComment, setReelCommentReaction } from '@/lib/api/reelCommentApi';
 import { reportReelComment } from '@/lib/api/reelApi';
 import { playCommentSound } from '@/lib/sounds';
 
@@ -110,12 +110,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     const text = editText.trim();
     if (!text || saving) return;
     setSaving(true);
-    const result = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reels/comments/${encodeURIComponent(comment.id)}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text }),
-    }).then((r) => r.json()).catch(() => ({ success: false }));
+    const result = await editReelComment(comment.id, text);
     setSaving(false);
     if (result.success) {
       setEditing(false);
