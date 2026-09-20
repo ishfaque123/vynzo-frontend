@@ -14,8 +14,11 @@ async function request(path: string, init?: RequestInit) {
   }
 }
 
-export async function fetchReelComments(reelId: string) {
-  return request(`/api/reels/${encodeURIComponent(reelId)}/comments`);
+export async function fetchReelComments(reelId: string, cursor?: string | null, limit = 20) {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (cursor) params.set('cursor', cursor);
+  return request(`/api/reels/${encodeURIComponent(reelId)}/comments?${params.toString()}`);
 }
 
 export async function addReelComment(reelId: string, content: string, parentCommentId?: string) {
