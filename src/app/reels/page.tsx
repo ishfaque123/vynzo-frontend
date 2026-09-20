@@ -117,7 +117,6 @@ export default function ReelsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadingMoreRef = useRef(false);
   const gestureLockedRef = useRef(false);
-  const touchStartYRef = useRef(0);
   const wheelLockRef = useRef(false);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -163,9 +162,6 @@ export default function ReelsPage() {
     window.setTimeout(() => { gestureLockedRef.current = false; }, 550);
   }
   function handleWheel(e: React.WheelEvent<HTMLDivElement>) { if (Math.abs(e.deltaY) < 8) return; e.preventDefault(); if (wheelLockRef.current) return; wheelLockRef.current = true; if (e.deltaY > 0) goNext(); else goPrevious(); window.setTimeout(() => { wheelLockRef.current = false; }, 650); }
-  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) { touchStartYRef.current = e.touches[0]?.clientY || 0; }
-  function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) { e.preventDefault(); }
-  function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) { const endY = e.changedTouches[0]?.clientY || touchStartYRef.current; const deltaY = touchStartYRef.current - endY; if (Math.abs(deltaY) < 45) return; if (deltaY > 0) goNext(); else goPrevious(); }
   async function handleUpload() {
     if (!reelsEnabled) return;
     const status = await fetchMyReelStatus();
@@ -191,5 +187,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <main className="fixed inset-x-0 top-0 bottom-16 bg-black"><div id="reels-feed" onWheel={handleWheel} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-none">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div><button type="button" onClick={handleUpload} aria-label="Upload reel" title="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white shadow-lg ring-1 ring-white/20"><PlusIcon /></button><input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleFilePicked(file); }} /></main>;
+  return <main className="fixed inset-x-0 top-0 bottom-16 bg-black"><div id="reels-feed" onWheel={handleWheel} className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div><button type="button" onClick={handleUpload} aria-label="Upload reel" title="Upload reel" className="absolute right-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white shadow-lg ring-1 ring-white/20"><PlusIcon /></button><input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleFilePicked(file); }} /></main>;
 }
