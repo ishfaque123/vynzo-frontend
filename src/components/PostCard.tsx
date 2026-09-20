@@ -95,7 +95,7 @@ function ReactionSummary({ post }: { post: any }) {
   );
 }
 
-export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted }: any) {
+export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted, offline = false }: any) {
   const isOwner = currentUser?.username === post.author.username;
   const [hiding, setHiding] = useState(false);
 
@@ -124,7 +124,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             <div className="leading-tight">
               <div className="flex items-center gap-2">
                 <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>
-                {!isOwner && <FollowButton userId={post.author.id} status={post.friendStatus} />}
+                {!isOwner && !offline && <FollowButton userId={post.author.id} status={post.friendStatus} />}
               </div>
               {post.taggedUsers?.length > 0 && (
                 <span className="block text-xs text-slate-500">
@@ -137,19 +137,21 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             </div>
           </div>
         )}
-        <div className="flex items-center gap-1">
-          <PostMenu postId={post.id} authorId={post.author.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience} friendStatus={post.friendStatus}
-            onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
-            onDeleted={() => onDeleted(post.id)} />
-          <button
-            onClick={handleHideClick}
-            disabled={hiding}
-            aria-label="Hide this post"
-            className="rounded-full p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-          >
-            <CloseIcon />
-          </button>
-        </div>
+        {!offline && (
+          <div className="flex items-center gap-1">
+            <PostMenu postId={post.id} authorId={post.author.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience} friendStatus={post.friendStatus}
+              onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
+              onDeleted={() => onDeleted(post.id)} />
+            <button
+              onClick={handleHideClick}
+              disabled={hiding}
+              aria-label="Hide this post"
+              className="rounded-full p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+        )}
       </div>
 
       {post.content && <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />}
@@ -173,7 +175,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       <ReactionSummary post={post} />
 
-      <div className="flex items-center border-t border-slate-100 px-2 py-1">
+      <div className={`flex items-center border-t border-slate-100 px-2 py-1 ${offline ? 'pointer-events-none opacity-50' : ''}`}>
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
         <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 active:bg-slate-100">
           <CommentIcon />
