@@ -68,7 +68,7 @@ export async function getOfflineUser<T = any>(): Promise<T | null> {
 }
 
 export async function saveOfflineFeed(userId: string, posts: any[], hasMore: boolean) {
-  if (!userId || !Array.isArray(posts) || posts.length === 0) return;
+  if (!userId || !Array.isArray(posts)) return;
   await putValue(`feed:${userId}`, { posts, hasMore });
 }
 
