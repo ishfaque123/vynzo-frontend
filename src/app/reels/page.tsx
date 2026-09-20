@@ -134,9 +134,34 @@ export default function ReelsPage() {
   function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
   function handleFollowed(userId: string) { setReels((items) => items.map((item) => item.author.id === userId ? { ...item, friendStatus: 'following' } : item)); }
   function handleDeleted(id: string) { setReels((items) => items.filter((item) => item.id !== id)); }
-  function scrollToIndex(index: number) { const targetIndex = Math.max(0, Math.min(index, reels.length - 1)); setActiveIndex(targetIndex); const next = document.querySelector<HTMLElement>(`[data-reel-index="${targetIndex}"]`); next?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  function goNext() { if (gestureLockedRef.current || !reels.length || activeIndex >= reels.length - 1) return; gestureLockedRef.current = true; scrollToIndex(activeIndex + 1); window.setTimeout(() => { gestureLockedRef.current = false; }, 550); }
-  function goPrevious() { if (gestureLockedRef.current || !reels.length || activeIndex <= 0) return; gestureLockedRef.current = true; scrollToIndex(activeIndex - 1); window.setTimeout(() => { gestureLockedRef.current = false; }, 550); }
+  function scrollToIndex(index: number) {
+    const root = document.getElementById('reels-feed');
+    if (!root) return;
+    const targetIndex = Math.max(0, Math.min(index, reels.length - 1));
+    setActiveIndex(targetIndex);
+    root.scrollTo({ top: targetIndex * root.clientHeight, behavior: 'smooth' });
+  }
+  function getCurrentIndex() {
+    const root = document.getElementById('reels-feed');
+    if (!root || !root.clientHeight) return activeIndex;
+    return Math.max(0, Math.min(reels.length - 1, Math.round(root.scrollTop / root.clientHeight)));
+  }
+  function goNext() {
+    if (gestureLockedRef.current || !reels.length) return;
+    const currentIndex = getCurrentIndex();
+    if (currentIndex >= reels.length - 1) return;
+    gestureLockedRef.current = true;
+    scrollToIndex(currentIndex + 1);
+    window.setTimeout(() => { gestureLockedRef.current = false; }, 550);
+  }
+  function goPrevious() {
+    if (gestureLockedRef.current || !reels.length) return;
+    const currentIndex = getCurrentIndex();
+    if (currentIndex <= 0) return;
+    gestureLockedRef.current = true;
+    scrollToIndex(currentIndex - 1);
+    window.setTimeout(() => { gestureLockedRef.current = false; }, 550);
+  }
   function handleWheel(e: React.WheelEvent<HTMLDivElement>) { if (Math.abs(e.deltaY) < 8) return; e.preventDefault(); if (wheelLockRef.current) return; wheelLockRef.current = true; if (e.deltaY > 0) goNext(); else goPrevious(); window.setTimeout(() => { wheelLockRef.current = false; }, 650); }
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) { touchStartYRef.current = e.touches[0]?.clientY || 0; }
   function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) { e.preventDefault(); }
