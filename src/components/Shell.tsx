@@ -118,7 +118,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isInSettingsMenu = currentPath.startsWith('/settings-menu');
 
   return (
-    <div className={`flex flex-col bg-slate-50 ${isReels ? 'h-dvh overflow-hidden' : 'min-h-screen'}`}>
+    <div className={`flex flex-col bg-slate-50 ${isReels ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'}`}>
       <UsageTracker />
       {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <Link href="/" className="flex items-center gap-2">
