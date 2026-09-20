@@ -108,6 +108,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
   const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath.startsWith('/s/') || isChatThread;
   const hideHeader = hideChrome;
+  const isReels = currentPath === '/reels';
 
   if (!isAuthenticated) {
     return <>{isAuthenticated && <UsageTracker />}{children}</>;
@@ -117,9 +118,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isInSettingsMenu = currentPath.startsWith('/settings-menu');
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className={`flex flex-col bg-slate-50 ${isReels ? 'h-dvh overflow-hidden' : 'min-h-screen'}`}>
       <UsageTracker />
-      {!hideHeader && <header className={`sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <Link href="/" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Frianzo" className="h-7 w-7 object-contain" />
@@ -158,16 +159,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>}
 
-      <nav className="border-t border-b bg-white">
+      {!hideChrome && <nav className="shrink-0 border-t border-b bg-white">
         <div className="mx-auto flex max-w-xl items-center justify-around py-2">
           <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
           <Link href="/messages" className="p-2"><ChatIcon active={pathname === '/messages'} /></Link>
           <Link href={profileHref} className="p-2"><ProfileIcon active={currentPath === profileHref} /></Link>
         </div>
-      </nav>
+      </nav>}
 
-      <main className="flex-1">{children}</main>
+      <main className={isReels ? 'relative min-h-0 flex-1' : 'flex-1'}>{children}</main>
     </div>
   );
 }
