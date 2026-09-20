@@ -42,6 +42,9 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
+  const [commentsCursor, setCommentsCursor] = useState<string | null>(null);
+  const [commentsHasMore, setCommentsHasMore] = useState(false);
+  const [commentsLoadingMore, setCommentsLoadingMore] = useState(false);
   const [heartBursts, setHeartBursts] = useState<HeartBurst[]>([]);
   const [showControls, setShowControls] = useState(false);
   const [seekFeedback, setSeekFeedback] = useState<'back' | 'forward' | null>(null);
@@ -54,7 +57,27 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
 
   function revealControls() { setShowControls(true); if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); controlsTimerRef.current = setTimeout(() => setShowControls(false), 2500); }
   useEffect(() => () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); heartTimersRef.current.forEach((timer) => window.clearTimeout(timer)); }, []);
-  async function openComments() { setCommentsOpen(true); const result = await fetchReelComments(reel.id); if (result.success) setComments(result.data.comments || []); }
+  async function openComments() {
+    setCommentsOpen(true);
+    setCommentsCursor(null);
+    setCommentsHasMore(false);
+    const result = await fetchReelComments(reel.id);
+    if (result.success) {
+      setComments(result.data.comments || []);
+      setCommentsCursor(result.data.pagination?.nextCursor || null);
+      setCommentsHasMore(!!result.data.pagination?.hasMore);
+    }
+  }
+  async function loadMoreComments() {
+    if (commentsLoadingMore || !commentsHasMore) return;
+    setCommentsLoadingMore(true);
+    const result = await fetchReelComments(reel.id, commentsCursor);
+    setCommentsLoadingMore(false);
+    if (!result.success) return;
+    setComments((prev) => [...prev, ...(result.data.comments || [])]);
+    setCommentsCursor(result.data.pagination?.nextCursor || null);
+    setCommentsHasMore(!!result.data.pagination?.hasMore);
+  }
   useEffect(() => { function refresh(e: Event) { const detail = (e as CustomEvent).detail; if (detail === reel.id && commentsOpen) void openComments(); } window.addEventListener('reel-comments-refresh', refresh); return () => window.removeEventListener('reel-comments-refresh', refresh); }, [reel.id, commentsOpen]);
   useEffect(() => { if (!active) return; void recordReelView(reel.id).then((result) => { if (result.success) setViewCount(Number(result.data?.viewCount || 0)); }); }, [active, reel.id]);
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
@@ -79,7 +102,7 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
     <div className="absolute bottom-16 left-0 right-16 z-10 p-4 pb-4 text-white"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author.username}`} className="flex min-w-0 items-center gap-2"><span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center" style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}} /><span className="text-sm font-semibold">{reel.author.displayName}</span></Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label="Follow" className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-white disabled:opacity-50">Follow</button>}</div>{reel.caption && <p className="text-sm">{captionShown}{captionLong && <button onClick={(e) => { e.stopPropagation(); setCaptionExpanded((v) => !v); }} className="ml-1 font-semibold text-white/80">{captionExpanded ? 'less' : 'more'}</button>}</p>}</div>
     <div className="absolute bottom-28 right-3 z-20 flex flex-col items-center gap-4 pb-1"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div>{reel.isMine ? <button onClick={(e) => { e.stopPropagation(); void handleDelete(); }} className="flex flex-col items-center gap-1"><TrashIcon /><span className="text-xs font-medium text-white">Delete</span></button> : <button onClick={(e) => { e.stopPropagation(); setReportOpen(true); }} className="flex flex-col items-center gap-1"><FlagIcon /><span className="text-xs font-medium text-white">Report</span></button>}</div>
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
-    {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
+    {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
     {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
   </div>;
 }
