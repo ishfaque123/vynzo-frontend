@@ -8,6 +8,7 @@ import {
   deleteNotifications,
   deleteAllNotifications,
 } from '@/lib/api/notificationApi';
+import SkeletonNotificationRow from '@/components/SkeletonNotificationRow';
 
 interface Actor {
   id: string;
@@ -443,8 +444,12 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-10" role="status" aria-label="Loading notifications">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+      <div className="mx-auto flex max-w-xl flex-col gap-0.5 px-2 py-2" role="status" aria-label="Loading notifications">
+        <SkeletonNotificationRow />
+        <SkeletonNotificationRow />
+        <SkeletonNotificationRow />
+        <SkeletonNotificationRow />
+        <SkeletonNotificationRow />
       </div>
     );
   }
