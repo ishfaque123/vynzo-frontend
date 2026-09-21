@@ -22,6 +22,7 @@ interface Notification {
   createdAt: string;
   postId?: string | null;
   commentId?: string | null;
+  reelId?: string | null;
   actor: Actor | null;
 }
 
@@ -104,9 +105,13 @@ function iconFor(type: string) {
       return { icon: <FollowIcon />, bg: 'bg-blue-100', color: 'text-blue-600' };
     case 'post_like':
     case 'comment_like':
+    case 'reel_like':
       return { icon: <HeartIcon />, bg: 'bg-red-100', color: 'text-red-600' };
     case 'post_comment':
     case 'comment_reply':
+    case 'reel_comment':
+    case 'reel_reply':
+    case 'comment_mention':
       return { icon: <CommentIcon />, bg: 'bg-blue-100', color: 'text-blue-600' };
     case 'post_share':
       return { icon: <ShareIcon />, bg: 'bg-green-100', color: 'text-green-600' };
@@ -132,6 +137,14 @@ function messageFor(n: Notification): string {
       return `${name} replied to your comment`;
     case 'post_share':
       return `${name} shared your post`;
+    case 'reel_like':
+      return `${name} liked your reel`;
+    case 'reel_comment':
+      return `${name} commented on your reel`;
+    case 'reel_reply':
+      return `${name} replied to your comment on a reel`;
+    case 'comment_mention':
+      return `${name} mentioned you in a comment`;
     case 'new_device_login':
       return 'New login detected on your account';
     default:
@@ -148,6 +161,12 @@ function hrefFor(n: Notification): string | null {
     case 'comment_like':
     case 'comment_reply':
     case 'post_share':
+      return n.postId ? `/post/${n.postId}` : null;
+    case 'reel_like':
+    case 'reel_comment':
+    case 'reel_reply':
+      return '/reels';
+    case 'comment_mention':
       return n.postId ? `/post/${n.postId}` : null;
     default:
       return null;
