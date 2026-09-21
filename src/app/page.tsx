@@ -14,6 +14,7 @@ import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
 import StatusBar from '@/components/StatusBar';
+import SkeletonPostCard from '@/components/SkeletonPostCard';
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -268,8 +269,10 @@ export default function HomePage() {
       <StatusBar user={user} offline={feedOffline} />
 
       {feedLoading ? (
-        <div className="flex justify-center py-10" role="status" aria-label="Loading feed">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+        <div className="flex flex-col gap-3" role="status" aria-label="Loading feed">
+          <SkeletonPostCard />
+          <SkeletonPostCard />
+          <SkeletonPostCard />
         </div>
       ) : feedError ? (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
