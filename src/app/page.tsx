@@ -224,10 +224,13 @@ export default function HomePage() {
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo">
-        <span className="absolute inset-0 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-        <img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" />
-      </div>
+      <img
+        src="/logo.png"
+        alt="Frianzo"
+        className="app-logo-pulse h-16 w-16 object-contain"
+        role="status"
+        aria-label="Loading Frianzo"
+      />
     </div>
   );
   if (!user) return null;

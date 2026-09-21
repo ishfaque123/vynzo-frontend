@@ -115,3 +115,12 @@ html.dark .skeleton-shimmer {
 html.dark .skeleton-shimmer::after {
   background-image: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.15) 60%, rgba(255,255,255,0));
 }
+
+/* App splash/loading logo — smooth breathing animation (Facebook/Instagram style) */
+@keyframes app-logo-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+.app-logo-pulse {
+  animation: app-logo-pulse 1.4s ease-in-out infinite;
+}
