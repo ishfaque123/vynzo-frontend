@@ -54,7 +54,10 @@ export default function HomePage() {
 
   async function loadFeed() {
     if (!user?.id) return;
-    setFeedLoading(true);
+    // Only show the full skeleton screen on a true first load. If posts are
+    // already on screen (e.g. we're just re-fetching after reconnecting),
+    // keep them visible instead of wiping the feed back to skeletons.
+    if (posts.length === 0) setFeedLoading(true);
     setFeedError(false);
 
     if (offline || feedOffline) {
