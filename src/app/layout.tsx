@@ -2,6 +2,7 @@ import './globals.css';
 import type { Viewport } from 'next';
 import Shell from '@/components/Shell';
 import ThemeProvider from '@/components/ThemeProvider';
+import { FollowProvider } from '@/contexts/FollowContext';
 import OfflineServiceWorker from '@/components/OfflineServiceWorker';
 
 export const metadata = {
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <OfflineServiceWorker />
         <ThemeProvider>
-          <Shell>{children}</Shell>
+          <FollowProvider>
+            <Shell>{children}</Shell>
+          </FollowProvider>
         </ThemeProvider>
       </body>
     </html>

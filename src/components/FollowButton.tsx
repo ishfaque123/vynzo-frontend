@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toggleFollow } from '@/lib/api/userApi';
+import { useFollowStatus } from '@/contexts/FollowContext';
 
 export default function FollowButton({ userId, status: initialStatus }: { userId: string; status: string }) {
-  const [status, setStatus] = useState(initialStatus);
+  const { status, setStatus } = useFollowStatus(userId, initialStatus);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setStatus(initialStatus);
-  }, [initialStatus]);
 
   if (status === 'self') return null;
   if (status === 'friends') return <span className="text-xs font-medium text-slate-500">• Friends</span>;

@@ -8,17 +8,17 @@ import { COUNTRIES } from '@/lib/countries';
 import Toast from '@/components/Toast';
 
 export default function ProfileSetupPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, verified } = useAuth();
   const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', phone: '', country: '' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && user?.profileCompleted) {
+    if (verified && user?.profileCompleted) {
       router.replace('/');
     }
-  }, [authLoading, user, router]);
+  }, [verified, user, router]);
 
   function isAtLeast13(dobStr: string): boolean {
     const dob = new Date(dobStr);

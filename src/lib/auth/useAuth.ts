@@ -9,14 +9,18 @@ export function useAuth() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  // "verified" only becomes true once the real server check (fetchMe) has
+  // resolved. The cached user shown below is optimistic and may still
+  // belong to a *different* account than the one actually logged in now
+  // (e.g. right after switching to a brand-new Google account on this
+  // device) - any decision that depends on the confirmed profile (such as
+  // redirecting away from profile setup) must wait for this, not just for
+  // `loading` to become false.
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    // Show the last known user immediately if we have one cached, so a
-    // reload doesn't blank the whole screen back to the splash logo while
-    // we revalidate the session in the background (same "show stale, then
-    // refresh" feel apps like Facebook use).
     getOfflineUser()
       .then((cachedUser) => {
         if (cancelled || !cachedUser) return;
@@ -31,11 +35,9 @@ export function useAuth() {
         const loggedInUser = result.success ? result.data.user : null;
         setUser(loggedInUser);
         setOffline(false);
+        setVerified(true);
         if (loggedInUser) {
           saveOfflineUser(loggedInUser).catch(() => {});
-          // Make sure this device has an E2EE identity and the server has
-          // its current public key on file, so other people can message
-          // this user securely. Safe to call on every load.
           getOrCreateIdentity()
             .then(({ publicKeyJson }) => savePublicKeyRequest(publicKeyJson))
             .catch(() => {});
@@ -51,6 +53,7 @@ export function useAuth() {
           setUser(null);
           setOffline(false);
         }
+        setVerified(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -61,5 +64,5 @@ export function useAuth() {
     };
   }, []);
 
-  return { user, loading, isAuthenticated: !!user, offline };
+  return { user, loading, isAuthenticated: !!user, offline, verified };
 }
