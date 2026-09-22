@@ -11,8 +11,23 @@ export function useAuth() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Show the last known user immediately if we have one cached, so a
+    // reload doesn't blank the whole screen back to the splash logo while
+    // we revalidate the session in the background (same "show stale, then
+    // refresh" feel apps like Facebook use).
+    getOfflineUser()
+      .then((cachedUser) => {
+        if (cancelled || !cachedUser) return;
+        setUser(cachedUser);
+        setLoading(false);
+      })
+      .catch(() => {});
+
     fetchMe()
       .then((result) => {
+        if (cancelled) return;
         const loggedInUser = result.success ? result.data.user : null;
         setUser(loggedInUser);
         setOffline(false);
@@ -27,6 +42,7 @@ export function useAuth() {
         }
       })
       .catch(async () => {
+        if (cancelled) return;
         const cachedUser = await getOfflineUser();
         if (cachedUser) {
           setUser(cachedUser);
@@ -37,8 +53,12 @@ export function useAuth() {
         }
       })
       .finally(() => {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { user, loading, isAuthenticated: !!user, offline };
