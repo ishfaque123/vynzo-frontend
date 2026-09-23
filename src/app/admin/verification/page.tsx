@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { fetchAdminVerificationRequests, reviewAdminVerificationRequest } from '@/lib/api/adminApi';
 
-type RequestItem = {
+type Requirement = { current: number; required: number; met: boolean };\ntype RequestItem = {
   id: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   adminNote?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
-  user: {
+  eligibility?: { eligible: boolean; requirements: { accountAge: Requirement; posts: Requirement; reels: Requirement; comments: Requirement; sharedPosts: Requirement } };\n  user: {
     id: string;
     username?: string | null;
     displayName?: string | null;
@@ -27,7 +27,7 @@ export default function VerificationPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');
+  const [error, setError] = useState('');\n  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -102,17 +102,38 @@ export default function VerificationPage() {
                 <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{item.reason}</p>
               </div>
 
+              <div className="mt-3 rounded-xl border border-slate-200 p-4">
+                <button type="button" onClick={() => setExpanded((v) => v === item.id ? null : item.id)} className="flex w-full items-center justify-between text-left">
+                  <span className="text-sm font-semibold text-slate-800">Eligibility requirements</span>
+                  <span className="text-xs font-semibold text-slate-500">{item.eligibility ? Object.values(item.eligibility.requirements).filter((r) => r.met).length : 0}/5 complete</span>
+                </button>
+                {expanded === item.id && item.eligibility && (
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {[
+                      ['Account age', item.eligibility.requirements.accountAge],
+                      ['Posts', item.eligibility.requirements.posts],
+                      ['Reels', item.eligibility.requirements.reels],
+                      ['Comments', item.eligibility.requirements.comments],
+                      ['Shared posts', item.eligibility.requirements.sharedPosts],
+                    ].map(([label, req]) => {
+                      const r = req as Requirement;
+                      return <div key={label as string} className="rounded-lg bg-slate-50 p-2.5 text-xs"><div className="font-medium text-slate-700">{label as string}</div><div className="mt-1 text-slate-500">{r.current}/{r.required} · {r.met ? 'Complete' : 'Not met'}</div></div>;
+                    })}
+                  </div>
+                )}
+              </div>
+
               {item.status === 'pending' && (
                 <>
                   <textarea value={note[item.id] || ''} onChange={(e) => setNote((prev) => ({ ...prev, [item.id]: e.target.value }))} maxLength={1000} placeholder="Optional admin note" className="mt-3 w-full rounded-xl border px-3 py-2 text-sm" rows={2} />
                   <div className="mt-3 flex gap-2">
-                    <button disabled={busyId === item.id} onClick={() => review(item.id, 'approve')} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Approve & Give Blue Tick</button>
+                    <button disabled={busyId === item.id || !item.eligibility?.eligible} onClick={() => review(item.id, 'approve')} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Approve & Give Blue Tick</button>
                     <button disabled={busyId === item.id} onClick={() => review(item.id, 'reject')} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-medium text-red-600 disabled:opacity-50">Reject</button>
                   </div>
                 </>
               )}
 
-              {item.adminNote && <p className="mt-3 text-sm text-slate-500">Admin note: {item.adminNote}</p>}
+              {item.status === 'pending' && item.eligibility && !item.eligibility.eligible && (\n                <p className="mt-2 text-xs font-medium text-amber-700">Approval is disabled because this user no longer meets all verification requirements.</p>\n              )}\n\n              {item.adminNote && <p className="mt-3 text-sm text-slate-500">Admin note: {item.adminNote}</p>}
             </div>
           ))}
         </div>
