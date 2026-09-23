@@ -14,7 +14,6 @@ type Eligibility = {
     reels: Requirement;
     comments: Requirement;
     sharedPosts: Requirement;
-    dailyScreenTime: Requirement;
   };
 };
 
@@ -125,7 +124,6 @@ export default function VerificationPage() {
           <RequirementRow label="Reels uploaded" item={r.reels} />
           <RequirementRow label="Comments made" item={r.comments} />
           <RequirementRow label="Posts shared" item={r.sharedPosts} />
-          <RequirementRow label="Daily screen time" item={r.dailyScreenTime} suffix=" days with 10+ min" />
         </div>
 
         {!eligibility.eligible && !request?.status?.includes('pending') && (
