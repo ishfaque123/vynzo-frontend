@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth/useAuth';
-import { updateProfile } from '@/lib/api/userApi';
+import { updateProfile, fetchMyVerificationRequest, createVerificationRequest } from '@/lib/api/userApi';
 import { useRouter } from 'next/navigation';
 import { COUNTRIES } from '@/lib/countries';
 import Toast from '@/components/Toast';
@@ -116,6 +116,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [verificationRequest, setVerificationRequest] = useState<any>(null);
+  const [verificationReason, setVerificationReason] = useState('');
+  const [verificationBusy, setVerificationBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,6 +139,12 @@ export default function SettingsPage() {
       setCoverUrl(user.coverPhotoUrl || '');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.isVerified) fetchMyVerificationRequest().then((result) => {
+      if (result.success) setVerificationRequest(result.data.request || null);
+    });
+  }, [user?.isVerified]);
 
   const usernameLock = cooldownInfo(user?.usernameChangedAt);
   const nameLock = cooldownInfo(user?.displayNameChangedAt);
@@ -256,6 +265,42 @@ export default function SettingsPage() {
         <div>
           <label className="mb-1 block text-sm text-slate-600">Contact Number</label>
           <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-lg border px-4 py-2" />
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4">
+          <h2 className="font-semibold">Blue Tick Verification</h2>
+          {user.isVerified ? (
+            <p className="mt-2 text-sm text-blue-600">Your account is verified.</p>
+          ) : verificationRequest?.status === 'pending' ? (
+            <p className="mt-2 text-sm text-amber-600">Your verification request is pending review.</p>
+          ) : (
+            <>
+              {verificationRequest?.status === 'rejected' && verificationRequest.adminNote && (
+                <p className="mt-2 text-sm text-red-600">Previous request was rejected: {verificationRequest.adminNote}</p>
+              )}
+              <p className="mt-2 text-sm text-slate-500">Tell the Frianzo team why your account should be verified.</p>
+              <textarea value={verificationReason} onChange={(e) => setVerificationReason(e.target.value)} maxLength={1000} rows={4} placeholder="Explain why you are requesting verification" className="mt-3 w-full rounded-xl border px-3 py-2 text-sm" />
+              <button
+                type="button"
+                disabled={verificationBusy || !verificationReason.trim()}
+                onClick={async () => {
+                  setVerificationBusy(true);
+                  const result = await createVerificationRequest(verificationReason.trim());
+                  setVerificationBusy(false);
+                  if (!result.success) {
+                    setToast({ message: result.error?.message || 'Could not submit verification request.', type: 'error' });
+                    return;
+                  }
+                  setVerificationRequest(result.data.request);
+                  setVerificationReason('');
+                  setToast({ message: 'Verification request submitted successfully.', type: 'success' });
+                }}
+                className="mt-3 w-full rounded-lg bg-blue-600 py-2 font-medium text-white disabled:opacity-50"
+              >
+                {verificationBusy ? 'Submitting...' : 'Request Blue Tick'}
+              </button>
+            </>
+          )}
         </div>
 
         <button type="submit" disabled={saving} className="w-full rounded-lg bg-slate-900 py-2 font-medium text-white disabled:opacity-50">
