@@ -79,3 +79,21 @@ export function updateAdminUserVerification(userId: string, verified: boolean) {
     body: JSON.stringify({ verified }),
   });
 }
+
+
+export function fetchAdminVerificationRequests(params: { page?: number; search?: string; status?: string } = {}) {
+  const query = new URLSearchParams();
+  query.set('page', String(params.page || 1));
+  query.set('limit', '20');
+  if (params.search) query.set('search', params.search);
+  if (params.status) query.set('status', params.status);
+  return request(`/verification-requests?${query.toString()}`);
+}
+
+export function reviewAdminVerificationRequest(requestId: string, action: 'approve' | 'reject', adminNote?: string) {
+  return request(`/verification-requests/${requestId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, adminNote: adminNote || '' }),
+  });
+}
