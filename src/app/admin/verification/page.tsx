@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react';
 import { fetchAdminVerificationRequests, reviewAdminVerificationRequest } from '@/lib/api/adminApi';
 
-type Requirement = { current: number; required: number; met: boolean };\ntype RequestItem = {
+type Requirement = { current: number; required: number; met: boolean };
+type RequestItem = {
   id: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   adminNote?: string | null;
   reviewedAt?: string | null;
   createdAt: string;
-  eligibility?: { eligible: boolean; requirements: { accountAge: Requirement; posts: Requirement; reels: Requirement; comments: Requirement; sharedPosts: Requirement } };\n  user: {
+  eligibility?: { eligible: boolean; requirements: { accountAge: Requirement; posts: Requirement; reels: Requirement; comments: Requirement; sharedPosts: Requirement } };
+  user: {
     id: string;
     username?: string | null;
     displayName?: string | null;
@@ -133,7 +135,8 @@ export default function VerificationPage() {
                 </>
               )}
 
-              {item.status === 'pending' && item.eligibility && !item.eligibility.eligible && (\n                <p className="mt-2 text-xs font-medium text-amber-700">Approval is disabled because this user no longer meets all verification requirements.</p>\n              )}\n\n              {item.adminNote && <p className="mt-3 text-sm text-slate-500">Admin note: {item.adminNote}</p>}
+              {item.status === 'pending' && item.eligibility && !item.eligibility.eligible && (
+                <p className="mt-2 text-xs font-medium text-amber-700">Approval is disabled because this user no longer meets all verification requirements.</p>\n              )}\n\n              {item.adminNote && <p className="mt-3 text-sm text-slate-500">Admin note: {item.adminNote}</p>}
             </div>
           ))}
         </div>
