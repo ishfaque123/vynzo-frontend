@@ -7,6 +7,7 @@ import PostMenu from './PostMenu';
 import FollowButton from './FollowButton';
 import PostContent from './PostContent';
 import { hidePost } from '@/lib/api/postApi';
+import VerifiedBadge from './VerifiedBadge';
 
 function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 10 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]';
@@ -113,7 +114,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         {post.originalPost ? (
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
-            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">✓</span>}
+            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <VerifiedBadge />}
             <span>reposted · {timeAgo(post.createdAt)}</span>
           </div>
         ) : (
@@ -123,7 +124,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             </Link>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">✓</span>}
+                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <VerifiedBadge />}
                 {!isOwner && !offline && <FollowButton userId={post.author.id} status={post.friendStatus} />}
               </div>
               {post.taggedUsers?.length > 0 && (
@@ -164,7 +165,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
             </Link>
             <div className="leading-tight">
-              <Link href={`/u/${post.originalPost.author.username}`} className="block text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>{post.originalPost.author.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">✓</span>}
+              <Link href={`/u/${post.originalPost.author.username}`} className="inline-flex items-center text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>{post.originalPost.author.isVerified && <VerifiedBadge />}
               <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
