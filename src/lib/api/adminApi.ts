@@ -63,3 +63,11 @@ export function deleteAdminComment(commentId: string) {
 export function deleteAdminReel(reelId: string) {
   return request(`/reels/${reelId}`, { method: 'DELETE' });
 }
+
+export function fetchAdminComments(params: { page?: number; search?: string } = {}) {
+  const query = new URLSearchParams();
+  query.set('page', String(params.page || 1));
+  query.set('limit', '20');
+  if (params.search) query.set('search', params.search);
+  return request(`/comments?${query.toString()}`);
+}
