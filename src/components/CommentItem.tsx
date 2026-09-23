@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { setCommentReaction, deleteComment, editComment, reportComment } from '@/lib/api/commentApi';
 import FollowButton from './FollowButton';
 import Toast from './Toast';
+import VerifiedBadge from './VerifiedBadge';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 
@@ -136,6 +137,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
           <div className="rounded-2xl bg-slate-100 px-3 py-2">
             <div className="flex items-center gap-2">
               <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold">{comment.author.displayName}</Link>
+              {comment.author.isVerified && <VerifiedBadge />}
               {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} />}
             </div>
             {editing ? (
