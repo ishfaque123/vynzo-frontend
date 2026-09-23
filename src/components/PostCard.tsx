@@ -113,7 +113,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         {post.originalPost ? (
           <div className="flex items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
-            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>
+            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">✓</span>}
             <span>reposted · {timeAgo(post.createdAt)}</span>
           </div>
         ) : (
@@ -123,7 +123,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             </Link>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>
+                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">✓</span>}
                 {!isOwner && !offline && <FollowButton userId={post.author.id} status={post.friendStatus} />}
               </div>
               {post.taggedUsers?.length > 0 && (
@@ -164,7 +164,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
             </Link>
             <div className="leading-tight">
-              <Link href={`/u/${post.originalPost.author.username}`} className="block text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>
+              <Link href={`/u/${post.originalPost.author.username}`} className="block text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>{post.originalPost.author.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white">✓</span>}
               <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
