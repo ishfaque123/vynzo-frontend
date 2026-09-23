@@ -30,6 +30,14 @@ function LockIcon() {
     </svg>
   );
 }
+function VerificationIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 3l7 3.5v5.2c0 4.4-3 7.6-7 9.3-4-1.7-7-4.9-7-9.3V6.5L12 3z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
 function StarIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -177,6 +185,7 @@ function PermissionSelect({ value, onChange }: { value: string; onChange: (v: st
 
 const menuItems = [
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
+  { label: 'Verification', href: '/settings-menu/verification', Icon: VerificationIcon },
   { label: 'Your Activity', href: '/settings-menu/activity', Icon: ClockIcon },
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: StarIcon },
 ];
