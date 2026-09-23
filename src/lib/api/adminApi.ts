@@ -71,3 +71,11 @@ export function fetchAdminComments(params: { page?: number; search?: string } = 
   if (params.search) query.set('search', params.search);
   return request(`/comments?${query.toString()}`);
 }
+
+export function updateAdminUserVerification(userId: string, verified: boolean) {
+  return request(`/users/${userId}/verification`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ verified }),
+  });
+}
