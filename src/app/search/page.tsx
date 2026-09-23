@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -43,11 +44,11 @@ export default function SearchPage() {
             href={`/u/${u.username}`}
             className="flex items-center gap-3 rounded-lg border p-3 hover:bg-slate-50"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
-              {u.displayName?.[0]?.toUpperCase() || '?'}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center text-sm font-semibold text-slate-600" style={u.profilePictureUrl ? { backgroundImage: `url(${u.profilePictureUrl})` } : {}}>
+              {!u.profilePictureUrl && (u.displayName?.[0]?.toUpperCase() || '?')}
             </div>
-            <div>
-              <p className="font-medium">{u.displayName}</p>
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 font-medium">{u.displayName}{u.isVerified && <VerifiedBadge />}</p>
               <p className="text-sm text-slate-500">@{u.username}</p>
             </div>
           </Link>
