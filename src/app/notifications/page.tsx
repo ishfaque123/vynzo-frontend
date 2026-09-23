@@ -409,7 +409,6 @@ export default function NotificationsPage() {
 
   async function handleDeleteAll() {
     if (deleting || notifications.length === 0) return;
-    if (!confirm('Delete all notifications? This cannot be undone.')) return;
     setDeleting(true);
     const result = await deleteAllNotifications();
     setDeleting(false);
