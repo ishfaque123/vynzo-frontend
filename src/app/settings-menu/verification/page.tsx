@@ -81,6 +81,26 @@ export default function VerificationPage() {
 
   if (!eligibility) return null;
 
+  if (eligibility.isVerified) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-6">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white">
+              <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-slate-900">You’re Verified</h1>
+              <p className="text-sm text-blue-700">Your account already has the Frianzo Blue Tick.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const r = eligibility.requirements;
 
   return (
@@ -149,11 +169,6 @@ export default function VerificationPage() {
           </div>
         )}
 
-        {eligibility.isVerified && (
-          <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm font-medium text-blue-700">
-            Your account already has the Blue Tick.
-          </div>
-        )}
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
