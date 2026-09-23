@@ -7,6 +7,7 @@ import Toast from '@/components/Toast';
 type Requirement = { current: number; required: number; met: boolean };
 type Eligibility = {
   eligible: boolean;
+  isVerified: boolean;
   requirements: {
     accountAge: Requirement;
     posts: Requirement;
