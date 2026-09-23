@@ -113,3 +113,19 @@ export async function updateCover(file: File) {
   });
   return res.json();
 }
+
+
+export async function fetchMyVerificationRequest() {
+  const res = await fetch(`${API_URL}/api/users/me/verification-request`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function createVerificationRequest(reason: string) {
+  const res = await fetch(`${API_URL}/api/users/me/verification-request`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return res.json();
+}
