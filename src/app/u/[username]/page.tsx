@@ -298,7 +298,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <h1 className="text-xl font-semibold">{profile.displayName}</h1>
+        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified&&<span title="Verified" aria-label="Verified" className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[11px] font-bold text-white">✓</span>}</h1>
         <p className="text-slate-500">@{profile.username}</p>
         {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
         {profile.website && (
