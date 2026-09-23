@@ -29,7 +29,8 @@ export default function VerificationPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');\n  const [expanded, setExpanded] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -136,7 +137,10 @@ export default function VerificationPage() {
               )}
 
               {item.status === 'pending' && item.eligibility && !item.eligibility.eligible && (
-                <p className="mt-2 text-xs font-medium text-amber-700">Approval is disabled because this user no longer meets all verification requirements.</p>\n              )}\n\n              {item.adminNote && <p className="mt-3 text-sm text-slate-500">Admin note: {item.adminNote}</p>}
+                <p className="mt-2 text-xs font-medium text-amber-700">Approval is disabled because this user no longer meets all verification requirements.</p>
+              )}
+
+              {item.adminNote && <p className="mt-3 text-sm text-slate-500">Admin note: {item.adminNote}</p>}
             </div>
           ))}
         </div>
