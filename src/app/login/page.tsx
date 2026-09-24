@@ -40,6 +40,24 @@ function LoginForm() {
   const [codeStep, setCodeStep] = useState(false);
   const [busy, setBusy] = useState(false);
   const [emailMessage, setEmailMessage] = useState('');
+  const [country, setCountry] = useState('your country');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/api/location/country', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.country) setCountry(data.country);
+      })
+      .catch(() => {
+        // Keep the generic fallback if country detection is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loginUrl = API_URL + '/api/auth/google/start' + (isSwitching ? '?switch=1' : '');
 
@@ -189,9 +207,9 @@ function LoginForm() {
         </div>
 
         <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-          By continuing, you agree to Frianzo&apos;s{' '}
+          By continuing with an account located in {country}, you agree to Frianzo&apos;s{' '}
           <a href="/terms" className="font-medium text-slate-500 hover:underline">Terms of Service</a>{' '}
-          and acknowledge our{' '}
+          and acknowledge that you have read our{' '}
           <a href="/privacy" className="font-medium text-slate-500 hover:underline">Privacy Policy</a>.
         </p>
 
