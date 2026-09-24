@@ -362,7 +362,7 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-3 gap-1 px-1">
               {reels.map((r) => (
-                <Link key={r.id} href="/reels" className="relative aspect-[9/16] w-full overflow-hidden bg-slate-200">
+                <Link key={r.id} href={`/reels?id=${r.id}`} className="relative aspect-[9/16] w-full overflow-hidden bg-slate-200">
                   <video src={r.videoUrl} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                   <svg className="absolute right-1.5 top-1.5 h-4 w-4 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </Link>
@@ -377,17 +377,27 @@ export default function ProfilePage() {
               {photoPosts.map((p) => (<img key={p.id} src={p.imageUrl} alt="" className="aspect-square w-full object-cover" />))}
             </div>
           )
-        ) : postsLoading ? (
+        ) : (postsLoading || reelsLoading) ? (
           <div className="flex justify-center py-6" role="status" aria-label="Loading posts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
-        ) : posts.length === 0 ? (
+        ) : posts.length === 0 && reels.length === 0 ? (
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
           <div className="px-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUser={currentUser}
-                onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
-                onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
-            ))}
+            {[...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
+              .sort((a, b) => new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime())
+              .map((entry) => entry.kind === 'post' ? (
+                <PostCard key={`post-${entry.item.id}`} post={entry.item} currentUser={currentUser}
+                  onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+                  onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+              ) : (
+                <Link key={`reel-${entry.item.id}`} href={`/reels?id=${entry.item.id}`} className="mb-4 block overflow-hidden rounded-xl border">
+                  <div className="relative aspect-[9/16] max-h-96 w-full bg-slate-200">
+                    <video src={entry.item.videoUrl} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                    <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
+                  </div>
+                  {entry.item.caption && <p className="px-3 py-2 text-sm text-slate-700">{entry.item.caption}</p>}
+                </Link>
+              ))}
           </div>
         )}
       </div>
