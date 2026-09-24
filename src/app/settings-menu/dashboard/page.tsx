@@ -54,18 +54,10 @@ export default function DashboardPage() {
           <div>
             <p className="text-sm font-semibold text-slate-900">Monetization</p>
             <p className="mt-1 text-xs text-slate-500">
-              {eligible
-                ? 'You have completed the 25-friend requirement.'
-                : 'Complete ' + requiredFriends + ' friends to become eligible.'}
+              {eligible ? 'You have completed the 25-friend requirement.' : 'Complete ' + requiredFriends + ' friends to become eligible.'}
             </p>
           </div>
-          <span
-            className={
-              eligible
-                ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700'
-                : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600'
-            }
-          >
+          <span className={eligible ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700' : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600'}>
             {eligible ? 'Eligible' : 'Locked'}
           </span>
         </div>
@@ -76,10 +68,7 @@ export default function DashboardPage() {
             <span>{progress}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-slate-900 transition-all"
-              style={{ width: progress + '%' }}
-            />
+            <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: progress + '%' }} />
           </div>
         </div>
 
