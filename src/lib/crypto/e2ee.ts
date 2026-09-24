@@ -71,51 +71,58 @@ async function importPrivateKey(stored: string): Promise<{ privateKey: CryptoKey
 const identityPromiseCache = new Map<string, Promise<{ privateKey: CryptoKey; publicKeyJson: string }>>();
 
 export async function getOrCreateIdentity(
-  userId?: string,
+  userId: string,
   serverPublicKey?: string | null
 ): Promise<{ privateKey: CryptoKey; publicKeyJson: string }> {
-  const cacheKey = userId || '__device__';
-  const cached = identityPromiseCache.get(cacheKey);
+  if (!userId) {
+    // Never generate or reuse a shared, unscoped identity: a message
+    // encrypted with a key that isn't tied to the signed-in account can
+    // never be decrypted again, by anyone, ever. Every caller must wait
+    // until the real signed-in user id is known before asking for one.
+    throw new Error('E2EE identity requires a signed-in user id.');
+  }
+
+  const cached = identityPromiseCache.get(userId);
   if (cached) return cached;
 
   const promise = getOrCreateIdentityUncached(userId, serverPublicKey);
-  identityPromiseCache.set(cacheKey, promise);
+  identityPromiseCache.set(userId, promise);
   try {
     return await promise;
   } catch (err) {
-    identityPromiseCache.delete(cacheKey);
+    identityPromiseCache.delete(userId);
     throw err;
   }
 }
 
 async function getOrCreateIdentityUncached(
-  userId?: string,
+  userId: string,
   serverPublicKey?: string | null
 ): Promise<{ privateKey: CryptoKey; publicKeyJson: string }> {
   if (typeof window === 'undefined') {
     throw new Error('E2EE identity is only available in the browser.');
   }
 
-  const scopedStorage = userId ? `${PRIVATE_KEY_STORAGE_PREFIX}${userId}` : null;
-  const scopedStored = scopedStorage ? localStorage.getItem(scopedStorage) : null;
+  const scopedStorage = `${PRIVATE_KEY_STORAGE_PREFIX}${userId}`;
+  const scopedStored = localStorage.getItem(scopedStorage);
 
   if (scopedStored) {
     const identity = await importPrivateKey(scopedStored);
     if (identity) return identity;
-    localStorage.removeItem(scopedStorage!);
+    localStorage.removeItem(scopedStorage);
   }
 
   // Migrate the old device-wide key only when its public half exactly matches
   // the public key already stored for this account. This prevents Account B
   // from accidentally inheriting Account A's private key.
-  if (userId && serverPublicKey) {
+  if (serverPublicKey) {
     const legacyStored = localStorage.getItem(PRIVATE_KEY_STORAGE);
     if (legacyStored) {
       const legacyIdentity = await importPrivateKey(legacyStored);
       const serverPublic = normalizePublicKey(serverPublicKey);
       const legacyPublic = legacyIdentity ? normalizePublicKey(legacyIdentity.publicKeyJson) : null;
       if (legacyIdentity && serverPublic && legacyPublic === serverPublic) {
-        localStorage.setItem(scopedStorage!, legacyStored);
+        localStorage.setItem(scopedStorage, legacyStored);
         return legacyIdentity;
       }
     }
@@ -124,11 +131,7 @@ async function getOrCreateIdentityUncached(
   const pair = await generateKeyPair();
   const privateJwk = await crypto.subtle.exportKey('jwk', pair.privateKey);
   const serializedPrivate = JSON.stringify(privateJwk);
-  if (scopedStorage) {
-    localStorage.setItem(scopedStorage, serializedPrivate);
-  } else {
-    localStorage.setItem(PRIVATE_KEY_STORAGE, serializedPrivate);
-  }
+  localStorage.setItem(scopedStorage, serializedPrivate);
   const publicJwk = await crypto.subtle.exportKey('jwk', pair.publicKey);
   return { privateKey: pair.privateKey, publicKeyJson: JSON.stringify(publicJwk) };
 }

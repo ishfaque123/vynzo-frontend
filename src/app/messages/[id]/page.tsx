@@ -311,15 +311,23 @@ export default function ChatPage() {
           fetchBlockStatus(convo.otherUser.id).then((res) => {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
-          getOrCreateIdentity(user?.id, null)
-            .then(({ privateKey }) =>
-              convo.otherUser.publicKey ? deriveSharedKey(privateKey, convo.otherUser.publicKey) : null
-            )
-            .then((key) => {
-              sharedKeyRef.current = key;
-            })
-            .catch(() => {})
-            .finally(() => setKeyReady(true));
+          if (user?.id) {
+            getOrCreateIdentity(user.id, null)
+              .then(({ privateKey }) =>
+                convo.otherUser.publicKey ? deriveSharedKey(privateKey, convo.otherUser.publicKey) : null
+              )
+              .then((key) => {
+                sharedKeyRef.current = key;
+              })
+              .catch(() => {})
+              .finally(() => setKeyReady(true));
+          }
+          // If user.id isn't loaded yet, do nothing here. This effect
+          // already re-runs once user?.id becomes available (see the
+          // dependency array below), and only then is the real,
+          // account-scoped key derived. Never derive a key from a
+          // missing id: a message sealed with the wrong key can never
+          // be decrypted again by anyone, ever.
         } else {
           setKeyReady(true);
         }
