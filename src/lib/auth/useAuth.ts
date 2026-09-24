@@ -38,7 +38,7 @@ export function useAuth() {
         setVerified(true);
         if (loggedInUser) {
           saveOfflineUser(loggedInUser).catch(() => {});
-          getOrCreateIdentity()
+          getOrCreateIdentity(loggedInUser.id, loggedInUser.publicKey)
             .then(({ publicKeyJson }) => savePublicKeyRequest(publicKeyJson))
             .catch(() => {});
         }
