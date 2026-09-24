@@ -48,7 +48,15 @@ function LoginForm() {
     fetch('/api/location/country', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data?.country) setCountry(data.country);
+        if (!cancelled && data?.country) {
+          const code = String(data.country).toUpperCase();
+          const specialNames: Record<string, string> = {
+            US: 'the United States',
+            GB: 'the United Kingdom',
+          };
+          const displayName = specialNames[code] ?? new Intl.DisplayNames(['en'], { type: 'region' }).of(code);
+          if (displayName) setCountry(displayName);
+        }
       })
       .catch(() => {
         // Keep the generic fallback if country detection is unavailable.
