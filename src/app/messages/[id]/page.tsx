@@ -311,7 +311,7 @@ export default function ChatPage() {
           fetchBlockStatus(convo.otherUser.id).then((res) => {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
-          getOrCreateIdentity()
+          getOrCreateIdentity(user?.id, null)
             .then(({ privateKey }) =>
               convo.otherUser.publicKey ? deriveSharedKey(privateKey, convo.otherUser.publicKey) : null
             )
@@ -435,7 +435,17 @@ export default function ChatPage() {
     const content = text.trim();
     if (!content) return;
     const socket = getSocket();
-    const payload = sharedKeyRef.current ? await encryptText(sharedKeyRef.current, content) : content;
+    if (!sharedKeyRef.current) {
+      showToast('Secure encryption is not ready. Please try again.', 'error');
+      return;
+    }
+    let payload: string;
+    try {
+      payload = await encryptText(sharedKeyRef.current, content);
+    } catch {
+      showToast('Could not secure this message. Please try again.', 'error');
+      return;
+    }
     socket.emit(
       'message:send',
       { conversationId, content: payload },
