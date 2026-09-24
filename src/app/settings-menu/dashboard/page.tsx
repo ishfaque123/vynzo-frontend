@@ -17,9 +17,10 @@ type DashboardData = {
   earnings: number;
   monetization?: {
     status: 'locked' | 'eligible';
-    friends: number;
-    requiredFriends: number;
+    referrals: number;
+    requiredReferrals: number;
     progress: number;
+    referralLink: string | null;
   };
 };
 
@@ -33,8 +34,8 @@ export default function DashboardPage() {
   }, []);
 
   const monetization = dashboard?.monetization;
-  const requiredFriends = monetization?.requiredFriends ?? 25;
-  const friends = monetization?.friends ?? 0;
+  const requiredReferrals = monetization?.requiredReferrals ?? 25;
+  const referrals = monetization?.referrals ?? 0;
   const progress = monetization?.progress ?? 0;
   const eligible = monetization?.status === 'eligible';
 
@@ -54,7 +55,7 @@ export default function DashboardPage() {
           <div>
             <p className="text-sm font-semibold text-slate-900">Monetization</p>
             <p className="mt-1 text-xs text-slate-500">
-              {eligible ? 'You have completed the 25-friend requirement.' : 'Complete ' + requiredFriends + ' friends to become eligible.'}
+              {eligible ? 'You have completed the 25-referral requirement.' : 'Complete ' + requiredReferrals + ' valid referrals to become eligible.'}
             </p>
           </div>
           <span className={eligible ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700' : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600'}>
@@ -64,7 +65,7 @@ export default function DashboardPage() {
 
         <div className="mt-4">
           <div className="mb-1.5 flex items-center justify-between text-xs text-slate-500">
-            <span>{friends} / {requiredFriends} friends</span>
+            <span>{referrals} / {requiredReferrals} referrals</span>
             <span>{progress}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-100">
@@ -77,6 +78,31 @@ export default function DashboardPage() {
             Monetization eligibility unlocked. Application flow will be added next.
           </p>
         )}
+      </div>
+
+      <div className="mb-3 rounded-lg border bg-white p-4">
+        <p className="text-sm font-semibold text-slate-900">Your referral link</p>
+        <p className="mt-1 text-xs text-slate-500">
+          Share this Google Play link. A valid first-time referral counts toward your 25-referral requirement.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <input
+            readOnly
+            value={monetization?.referralLink ?? ''}
+            placeholder="Complete your profile to get a referral link"
+            className="min-w-0 flex-1 rounded-md border bg-slate-50 px-3 py-2 text-xs text-slate-700"
+          />
+          <button
+            type="button"
+            disabled={!monetization?.referralLink}
+            onClick={() => {
+              if (monetization?.referralLink) navigator.clipboard?.writeText(monetization.referralLink);
+            }}
+            className="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
+          >
+            Copy
+          </button>
+        </div>
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-3">
