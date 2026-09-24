@@ -127,15 +127,7 @@ function TrashIcon() {
 }
 function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={`transition-transform ${open ? 'rotate-180' : ''}`}
-    >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform ${open ? 'rotate-180' : ''}`}>
       <polyline points="6 9 12 15 18 9" />
     </svg>
   );
@@ -146,22 +138,12 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation();
     const now = Date.now();
-    // Ignore a second tap landing within 300ms of the first — guards
-    // against duplicate touch+click synthetic events some mobile
-    // browsers fire for a single tap, which could otherwise toggle
-    // the switch twice and leave it stuck in the wrong direction.
     if (now - lastToggleRef.current < 300) return;
     lastToggleRef.current = now;
     onChange(!checked);
   }
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={handleClick}
-      className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-green-500' : 'bg-slate-300'}`}
-    >
+    <button type="button" role="switch" aria-checked={checked} onClick={handleClick} className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${checked ? 'bg-green-500' : 'bg-slate-300'}`}>
       <span className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
   );
@@ -176,13 +158,7 @@ function PermissionSelect({ value, onChange }: { value: string; onChange: (v: st
   return (
     <div className="flex gap-1.5">
       {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={`flex-1 rounded-full border py-1.5 text-xs font-medium ${
-            value === o.value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 text-slate-600'
-          }`}
-        >
+        <button key={o.value} onClick={() => onChange(o.value)} className={`flex-1 rounded-full border py-1.5 text-xs font-medium ${value === o.value ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 text-slate-600'}`}>
           {o.label}
         </button>
       ))}
@@ -209,7 +185,6 @@ export default function SettingsMenuPage() {
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-
   const [securityOpen, setSecurityOpen] = useState(false);
   const [privacySheetOpen, setPrivacySheetOpen] = useState(false);
   const [privacyLoading, setPrivacyLoading] = useState(false);
@@ -290,21 +265,14 @@ export default function SettingsMenuPage() {
       <h1 className="mb-4 text-xl font-semibold">Settings</h1>
       <div className="mb-3 divide-y rounded-lg border">
         {menuItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50"
-          >
+          <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
             <span className="text-slate-600"><item.Icon /></span>
             <span className="text-slate-800">{item.label}</span>
           </Link>
         ))}
 
         <div>
-          <button
-            onClick={() => setSecurityOpen((v) => !v)}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
-          >
+          <button onClick={() => setSecurityOpen((v) => !v)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
             <span className="text-slate-600"><ShieldIcon /></span>
             <span className="flex-1 text-slate-800">Login &amp; Security</span>
             <span className="text-slate-400"><ChevronIcon open={securityOpen} /></span>
@@ -312,27 +280,17 @@ export default function SettingsMenuPage() {
 
           {securityOpen && (
             <div className="divide-y bg-slate-50">
-              <button
-                onClick={openPrivacySheet}
-                className="flex w-full items-center gap-3 py-2.5 pl-11 pr-4 text-left hover:bg-slate-100"
-              >
+              <button onClick={openPrivacySheet} className="flex w-full items-center gap-3 py-2.5 pl-11 pr-4 text-left hover:bg-slate-100">
                 <span className="text-slate-500"><LockIcon /></span>
                 <span className="text-sm text-slate-700">Account Privacy</span>
               </button>
               {securityItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-3 py-2.5 pl-11 pr-4 hover:bg-slate-100"
-                >
+                <Link key={item.href} href={item.href} className="flex items-center gap-3 py-2.5 pl-11 pr-4 hover:bg-slate-100">
                   <span className="text-slate-500"><item.Icon /></span>
                   <span className="text-sm text-slate-700">{item.label}</span>
                 </Link>
               ))}
-              <Link
-                href="/settings-menu/delete-account"
-                className="flex items-center gap-3 py-2.5 pl-11 pr-4 hover:bg-slate-100"
-              >
+              <Link href="/settings-menu/delete-account" className="flex items-center gap-3 py-2.5 pl-11 pr-4 hover:bg-slate-100">
                 <span className="text-red-500"><TrashIcon /></span>
                 <span className="text-sm font-medium text-red-600">Delete Account</span>
               </Link>
@@ -340,28 +298,10 @@ export default function SettingsMenuPage() {
           )}
         </div>
 
-        <button
-          onClick={openSwitchSheet}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
-        >
+        <button onClick={openSwitchSheet} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
           <span className="text-slate-600"><SwitchIcon /></span>
           <span className="text-slate-800">Switch / Add Account</span>
         </button>
-      </div>
-
-      <div className="mb-3 divide-y rounded-lg border">
-        <Link href="/about" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-          <span className="text-slate-800">About Frianzo</span>
-        </Link>
-        <Link href="/privacy" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-          <span className="text-slate-800">Privacy Policy</span>
-        </Link>
-        <Link href="/terms" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-          <span className="text-slate-800">Terms of Service</span>
-        </Link>
-        <Link href="/child-safety" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-          <span className="text-slate-800">Child Safety</span>
-        </Link>
       </div>
 
       <div className="mb-3 divide-y rounded-lg border">
@@ -387,16 +327,9 @@ export default function SettingsMenuPage() {
       )}
 
       {privacySheetOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
-          onClick={() => setPrivacySheetOpen(false)}
-        >
-          <div
-            className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-4 pb-6"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setPrivacySheetOpen(false)}>
+          <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <p className="mb-3 text-center text-sm font-semibold text-slate-800">Account Privacy</p>
-
             {privacyLoading ? (
               <div className="flex justify-center py-6" role="status" aria-label="Loading accounts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
             ) : (
@@ -408,7 +341,6 @@ export default function SettingsMenuPage() {
                   </div>
                   <p className="text-xs text-slate-500">Only people who follow you can see your posts.</p>
                 </div>
-
                 <div className="rounded-lg border p-3">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-800">Show online status</span>
@@ -416,49 +348,29 @@ export default function SettingsMenuPage() {
                   </div>
                   <p className="text-xs text-slate-500">Let others see when you're active or your last seen time.</p>
                 </div>
-
                 <div className="rounded-lg border p-3">
                   <p className="mb-2 text-sm font-medium text-slate-800">Who can message you</p>
                   <PermissionSelect value={messagePermission} onChange={handleMessagePermission} />
                 </div>
-
                 <div className="rounded-lg border p-3">
                   <p className="mb-2 text-sm font-medium text-slate-800">Who can tag you</p>
                   <PermissionSelect value={tagPermission} onChange={handleTagPermission} />
                 </div>
-
-                <Link
-                  href="/settings-menu/comments"
-                  onClick={() => setPrivacySheetOpen(false)}
-                  className="flex items-center gap-3 rounded-lg border px-3 py-3 hover:bg-slate-50"
-                >
+                <Link href="/settings-menu/comments" onClick={() => setPrivacySheetOpen(false)} className="flex items-center gap-3 rounded-lg border px-3 py-3 hover:bg-slate-50">
                   <span className="text-slate-500"><CommentIcon /></span>
                   <span className="text-sm text-slate-700">Comments</span>
                 </Link>
               </div>
             )}
-
-            <button
-              onClick={() => setPrivacySheetOpen(false)}
-              className="w-full rounded-full border py-2.5 text-sm font-medium text-slate-700"
-            >
-              Close
-            </button>
+            <button onClick={() => setPrivacySheetOpen(false)} className="w-full rounded-full border py-2.5 text-sm font-medium text-slate-700">Close</button>
           </div>
         </div>
       )}
 
       {switchSheetOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
-          onClick={() => setSwitchSheetOpen(false)}
-        >
-          <div
-            className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setSwitchSheetOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <p className="mb-3 text-center text-sm font-semibold text-slate-800">Switch account</p>
-
             {accountsLoading ? (
               <div className="flex justify-center py-6" role="status" aria-label="Loading accounts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
             ) : (
@@ -466,12 +378,7 @@ export default function SettingsMenuPage() {
                 {accounts.map((acc) => {
                   const isActive = acc.id === activeId;
                   return (
-                    <button
-                      key={acc.id}
-                      onClick={() => !isActive && handleSelectAccount(acc.id)}
-                      disabled={isActive || switchingId === acc.id}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60"
-                    >
+                    <button key={acc.id} onClick={() => !isActive && handleSelectAccount(acc.id)} disabled={isActive || switchingId === acc.id} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60">
                       <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
                         {acc.profilePictureUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -479,9 +386,7 @@ export default function SettingsMenuPage() {
                         )}
                       </span>
                       <span className="flex-1">
-                        <span className="block text-sm font-medium text-slate-800">
-                          {acc.displayName || acc.username || 'Vynzo user'}
-                        </span>
+                        <span className="block text-sm font-medium text-slate-800">{acc.displayName || acc.username || 'Vynzo user'}</span>
                         {acc.username && <span className="block text-xs text-slate-500">@{acc.username}</span>}
                       </span>
                       {isActive && <span className="text-xs font-medium text-slate-400">Active</span>}
@@ -489,25 +394,12 @@ export default function SettingsMenuPage() {
                     </button>
                   );
                 })}
-                {accounts.length === 0 && (
-                  <p className="px-4 py-3 text-sm text-slate-500">No saved accounts yet.</p>
-                )}
+                {accounts.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">No saved accounts yet.</p>}
               </div>
             )}
-
             <div className="flex gap-2">
-              <button
-                onClick={() => setSwitchSheetOpen(false)}
-                className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddAccount}
-                className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white"
-              >
-                + Add account
-              </button>
+              <button onClick={() => setSwitchSheetOpen(false)} className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700">Cancel</button>
+              <button onClick={handleAddAccount} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white">+ Add account</button>
             </div>
           </div>
         </div>
