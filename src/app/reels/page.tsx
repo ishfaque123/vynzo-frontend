@@ -106,6 +106,95 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
   useEffect(() => { const video = videoRef.current; if (!video || !active) return; if (forcePause) { video.pause(); setIsPlaying(false); } else if (video.paused) { video.play().then(() => setIsPlaying(true)).catch(() => {}); } }, [forcePause]);
   function toggleMute(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); const video = videoRef.current; if (!video) return; video.muted = !video.muted; setIsMuted(video.muted); }
   function togglePlayback(e?: React.MouseEvent) { e?.preventDefault(); e?.stopPropagation(); const video = videoRef.current; if (!video) return; if (video.paused) { video.play().then(() => setIsPlaying(true)).catch(() => {}); } else { video.pause(); setIsPlaying(false); } revealControls(); }
+  function handleVideoTap(e: React.MouseEvent<HTMLVideoElement>) { const now = Date.now(); if (now - lastTapRef.current < 300) { lastTapRef.current = 0; e.preventDefault(); e.stopPropagation(); if (!reel.liked && !liking) void handleLike(); const burst: HeartBurst = { id: Date.now() + Math.random(), left: 42 + Math.random() * 16, top: 38 + Math.random() * 22 }; setHeartBursts((items) => [...items, burst]); const timer = window.setTimeout(() => setHeartBursts((items) => items.filter((item) => item.id !== burst.id)), 700); heartTimersRef.current.push(timer); return; } lastTapRef.current = now; window.setTimeout(() => { if (lastTapRef.current !== now) return; lastTapRef.current = 0; revealControls(); }, 300); }
+  async function handleLike() { if (liking) return; setLiking(true); const nextLiked = !reel.liked; const optimisticCount = Math.max(0, reel.likeCount + (nextLiked ? 1 : -1)); onLikeChange(reel.id, nextLiked, optimisticCount); const result = await toggleReelLike(reel.id); setLiking(false); if (result.success) onLikeChange(reel.id, result.data.liked, result.data.likeCount); else onLikeChange(reel.id, reel.liked, reel.likeCount); }
+  async function handleFavorite() { if (favoriting) return; setFavoriting(true); onFavoriteChange(reel.id, !reel.favorited); const result = await toggleReelFavorite(reel.id); setFavoriting(false); if (result.success) onFavoriteChange(reel.id, result.data.favorited); else onFavoriteChange(reel.id, reel.favorited); }
+  async function handleDelete() { setNotice({ message: 'Delete this reel? This action cannot be undone.', confirm: true }); }
+  async function confirmDelete() { setNotice(null); const result = await deleteReel(reel.id); if (result.success) onDeleted(reel.id); else setNotice({ message: result.error?.message || 'Unable to delete this reel. Please try again.', confirm: false }); }
+
+  return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
+    <video ref={videoRef} src={reel.videoUrl} playsInline muted={isMuted} preload={preload ? 'auto' : 'metadata'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={() => setIsVideoLoading(false)} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); }} onPause={() => setIsPlaying(false)} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} />
+    {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
+    {heartBursts.map((heart) => <div key={heart.id} className="pointer-events-none absolute z-30" style={{ left: `${heart.left}%`, top: `${heart.top}%`, transform: 'translate(-50%, -50%)' }}><div className="animate-[heartPop_700ms_ease-out_forwards] drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"><HeartIcon filled size={105} /></div></div>)}
+    {!isPlaying && <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>
+    {showControls && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="pointer-events-auto flex items-center gap-8 px-4 py-3"><button aria-label="Play or pause" onClick={togglePlayback} className="flex h-14 w-14 items-center justify-center"><PlayIcon playing={isPlaying} /></button></div></div>}
+    <div className="absolute bottom-2 left-0 right-16 z-10 p-4 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author.username}`} className="flex min-w-0 items-center gap-2"><span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center" style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}} /><span className="text-sm font-semibold">{reel.author.displayName}</span>{reel.author.isVerified && <VerifiedBadge size="sm" />}</Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label="Follow" className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-white disabled:opacity-50">Follow</button>}</div>{reel.caption && <p className="text-sm">{captionShown}{captionLong && <button onClick={(e) => { e.stopPropagation(); setCaptionExpanded((v) => !v); }} className="ml-1 font-semibold text-white/80">{captionExpanded ? 'less' : 'more'}</button>}</p>}</div>
+    <div className="absolute bottom-6 right-3 z-20 flex flex-col items-center gap-4 pb-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] [&_svg]:drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div>{reel.isMine ? <button onClick={(e) => { e.stopPropagation(); void handleDelete(); }} className="flex flex-col items-center gap-1"><TrashIcon /><span className="text-xs font-medium text-white">Delete</span></button> : <button onClick={(e) => { e.stopPropagation(); setReportOpen(true); }} className="flex flex-col items-center gap-1"><FlagIcon /><span className="text-xs font-medium text-white">Report</span></button>}</div>
+    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
+    {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
+    {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
+    {notice && <ReelNotice message={notice.message} confirm={notice.confirm} onClose={() => setNotice(null)} onConfirm={confirmDelete} />}
+  </div>;
+}
+
+export default function ReelsPage() {
+  const router = useRouter();
+  useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadingMoreRef = useRef(false);
+  const gestureLockedRef = useRef(false);
+  const wheelLockRef = useRef(false);
+  const [reels, setReels] = useState<Reel[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [uploadReady, setUploadReady] = useState(false);
+  const [uploadMaxDuration, setUploadMaxDuration] = useState(60);
+  const [reelsEnabled, setReelsEnabled] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [forcePause] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const targetId = new URLSearchParams(window.location.search).get('id');
+      const [targetResult, feed, status, config] = await Promise.all([
+        targetId ? fetchReelById(targetId) : Promise.resolve(null),
+        fetchReelFeed(),
+        fetchMyReelStatus(),
+        fetchReelsConfig(),
+      ]);
+      if (cancelled) return;
+
+      let combined: Reel[] = feed.success ? (feed.data.reels || []) : [];
+      if (targetId && targetResult && targetResult.success) {
+        const targetReel: Reel = targetResult.data.reel;
+        combined = [targetReel, ...combined.filter((item) => item.id !== targetReel.id)];
+      }
+
+      const authorIds = [...new Set(combined.filter((item: Reel) => !item.isMine).map((item: Reel) => item.author.id))] as string[];
+      const statusResults: Array<[string, string] | null> = await Promise.all(authorIds.map(async (userId) => {
+        const result = await fetchFollowStatus(userId);
+        const followStatus = result.success ? result.data?.status : null;
+        return typeof followStatus === 'string' ? [userId, followStatus] : null;
+      }));
+      if (cancelled) return;
+      const statusMap = new Map<string, string>();
+      statusResults.forEach((item) => { if (item && typeof item[0] === 'string' && typeof item[1] === 'string') statusMap.set(item[0], item[1]); });
+      setReels(combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item));
+      setHasMore(!!feed.data?.hasMore);
+
+      const enabled = !!(config.success && config.data?.enabled);
+      const remaining = status.success ? Number(status.data?.remaining) : 0;
+      setReelsEnabled(enabled);
+      setUploadMaxDuration(Number(config.data?.maxDurationSec) > 0 ? Number(config.data.maxDurationSec) : 60);
+      setUploadReady(enabled && status.success && Number.isFinite(remaining) && remaining > 0);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length).then((result) => { if (result.success) { setReels((items) => [...items, ...(result.data.reels || [])]); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
+  function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
+  function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
+  function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
+  function handleFollowed(userId: string) { setReels((items) => items.map((item) => item.author.id === userId ? { ...item, friendStatus: 'following' } : item)); }
+  function handleDeleted(id: string) { setReels((items) => items.filter((item) => item.id !== id)); }
+  function scrollToIndex(index: number) {
+    const root = document.getElementById('reels-feed');
+    if (!root) return;
+    const targetIndex = Math.max(0, Math.min(index, reels.length - 1));
+    setActiveIndex(targetIndex);
+    root.scrollTo({ top: targetIndex * root.clientHeight, behavior: 'smooth' });
+  }
   function getCurrentIndex() {
     const root = document.getElementById('reels-feed');
     if (!root || !root.clientHeight) return activeIndex;
