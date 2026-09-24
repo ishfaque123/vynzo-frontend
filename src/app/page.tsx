@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
+import { fetchReelFeed } from '@/lib/api/reelApi';
 import { getOfflineFeed, saveOfflineFeed } from '@/lib/offline/feedCache';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { playCommentSound } from '@/lib/sounds';
@@ -35,6 +36,7 @@ export default function HomePage() {
   const { user, loading, isAuthenticated, offline } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
+  const [reels, setReels] = useState<any[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -75,7 +77,7 @@ export default function HomePage() {
     }
 
     try {
-      const result = await fetchFeed(0);
+      const [result, reelResult] = await Promise.all([fetchFeed(0), fetchReelFeed(0)]);
       if (result.success) {
         setPosts(result.data.posts);
         setHasMore(!!result.data.hasMore);
@@ -85,6 +87,7 @@ export default function HomePage() {
       } else {
         setFeedError(true);
       }
+      if (reelResult.success) setReels(reelResult.data.reels || []);
     } catch {
       const cached = await getOfflineFeed(user.id);
       if (cached?.posts?.length) {
@@ -309,6 +312,24 @@ export default function HomePage() {
                     <AdUnit />
                   </div>
                 )}
+                {(index + 1) % 6 === 0 && reels.length > 0 && (() => {
+                  const reel = reels[Math.floor(index / 6) % reels.length];
+                  return (
+                    <div className="my-4">
+                      <Link href={`/reels?id=${reel.id}`} className="block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <Avatar url={reel.author.profilePictureUrl} name={reel.author.displayName} />
+                          <span className="text-sm font-semibold text-slate-800">{reel.author.displayName}</span>
+                        </div>
+                        <div className="relative aspect-[9/16] max-h-[420px] w-full bg-slate-200">
+                          <video src={`${reel.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                          <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
+                        </div>
+                        {reel.caption && <p className="px-3 py-2 text-sm text-slate-700">{reel.caption}</p>}
+                      </Link>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
