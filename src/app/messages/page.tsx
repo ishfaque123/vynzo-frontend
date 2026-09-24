@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
 import { getOrCreateIdentity, deriveSharedKey, tryDecryptText } from '@/lib/crypto/e2ee';
+import { useAuth } from '@/lib/auth/useAuth';
 
 function PlusIcon() {
   return (
@@ -34,6 +35,7 @@ interface ConversationItem {
 }
 
 export default function MessagesPage() {
+  const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -69,13 +71,14 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
+    if (!user?.id) return;
     const pending = conversations.filter(
       (c) => c.lastMessage?.content && c.otherUser?.publicKey && !(c.id in previews)
     );
     if (!pending.length) return;
     let cancelled = false;
     (async () => {
-      const { privateKey } = await getOrCreateIdentity();
+      const { privateKey } = await getOrCreateIdentity(user.id, user.publicKey);
       const updates: Record<string, string> = {};
       for (const c of pending) {
         const key = await deriveSharedKey(privateKey, c.otherUser!.publicKey!);
@@ -86,7 +89,7 @@ export default function MessagesPage() {
     return () => {
       cancelled = true;
     };
-  }, [conversations]);
+  }, [conversations, user?.id]);
 
   function clearPressTimer() {
     if (pressTimer.current) {
@@ -224,7 +227,7 @@ export default function MessagesPage() {
                 </p>
                 <p className={`truncate text-sm ${c.unread ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
                   {c.lastMessage?.content
-                    ? previews[c.id] ?? (c.otherUser?.publicKey ? '···' : c.lastMessage.content)
+                    ? (previews[c.id] || '···')
                     : 'Say hi 👋'}
                 </p>
               </div>
