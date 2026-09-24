@@ -122,10 +122,17 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             <Link href={`/u/${post.author.username}`}>
               <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
             </Link>
-            <div className="min-w-0 leading-tight">
-              <div className="flex min-w-0 items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="min-w-0 truncate text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
-                {!isOwner && !offline && <span className="shrink-0"><FollowButton userId={post.author.id} status={post.friendStatus} /></span>}
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <Link href={`/u/${post.author.username}`} title={post.author.displayName}
+                  className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-900"
+                >
+                  {post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+                {!isOwner && !offline && (
+                  <span className="shrink-0 whitespace-nowrap">
+                    <FollowButton userId={post.author.id} status={post.friendStatus} />
+                  </span>
+                )}
               </div>
               {post.taggedUsers?.length > 0 && (
                 <span className="block text-xs text-slate-500">
@@ -139,7 +146,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           </div>
         )}
         {!offline && (
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0.5">
             <PostMenu postId={post.id} authorId={post.author.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience} friendStatus={post.friendStatus}
               onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
               onDeleted={() => onDeleted(post.id)} />
@@ -160,11 +167,11 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       {post.originalPost && (
         <div className="mx-3 mb-2 rounded-lg border p-3">
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
             <Link href={`/u/${post.originalPost.author.username}`}>
               <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
             </Link>
-            <div className="min-w-0 leading-tight">
+            <div className="min-w-0 flex-1 leading-tight">
               <div className="flex min-w-0 items-center gap-1">
                 <Link href={`/u/${post.originalPost.author.username}`} className="min-w-0 truncate text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>
                 {post.originalPost.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
