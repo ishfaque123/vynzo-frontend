@@ -74,7 +74,7 @@ export async function getOrCreateIdentity(
   if (scopedStored) {
     const identity = await importPrivateKey(scopedStored);
     if (identity) return identity;
-    localStorage.removeItem(scopedStorage);
+    localStorage.removeItem(scopedStorage!);
   }
 
   // Migrate the old device-wide key only when its public half exactly matches
