@@ -60,7 +60,35 @@ async function importPrivateKey(stored: string): Promise<{ privateKey: CryptoKey
   }
 }
 
+// If two callers ask for the identity at nearly the same time (e.g. the
+// app shell and a page both mount and call this on load), without this
+// cache each one could independently decide no key exists yet and
+// generate a *different* one, with whichever write happens last silently
+// winning. That leaves a mismatch between the key actually used to
+// encrypt a just-sent message and the key loaded after a reload, so the
+// message can never be decrypted again. Caching the in-flight/resolved
+// promise per user ensures every caller gets the exact same identity.
+const identityPromiseCache = new Map<string, Promise<{ privateKey: CryptoKey; publicKeyJson: string }>>();
+
 export async function getOrCreateIdentity(
+  userId?: string,
+  serverPublicKey?: string | null
+): Promise<{ privateKey: CryptoKey; publicKeyJson: string }> {
+  const cacheKey = userId || '__device__';
+  const cached = identityPromiseCache.get(cacheKey);
+  if (cached) return cached;
+
+  const promise = getOrCreateIdentityUncached(userId, serverPublicKey);
+  identityPromiseCache.set(cacheKey, promise);
+  try {
+    return await promise;
+  } catch (err) {
+    identityPromiseCache.delete(cacheKey);
+    throw err;
+  }
+}
+
+async function getOrCreateIdentityUncached(
   userId?: string,
   serverPublicKey?: string | null
 ): Promise<{ privateKey: CryptoKey; publicKeyJson: string }> {
