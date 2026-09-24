@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ country: 'your country' });
   }
 
-  const country = COUNTRY_NAMES[code] ?? code;
+  const country = COUNTRY_NAMES[code] ?? 'your country';
 
   return NextResponse.json(
     { country },
