@@ -127,6 +127,13 @@ export function createReelWithProgress(data: { video: File; caption?: string; du
   });
 }
 
+export async function fetchUserReels(username: string) {
+  try {
+    const res = await fetch(apiUrl(`/api/reels/user/${encodeURIComponent(username)}`), { credentials: 'include' });
+    return await readResponse(res);
+  } catch { return { success: false, error: { message: 'Unable to load reels.' } }; }
+}
+
 export async function fetchReelComments(reelId: string) {
   try {
     const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/comments`), { credentials: 'include' });

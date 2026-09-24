@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { useRef } from 'react';
 import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow, blockUser, unblockUser, updateAvatar, updateCover } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
+import { fetchUserReels } from '@/lib/api/reelApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { createConversation } from '@/lib/api/messageApi';
 import ShareModal from '@/components/ShareModal';
@@ -70,6 +71,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [reels, setReels] = useState<any[]>([]);
+  const [reelsLoading, setReelsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'reels' | 'photos'>('all');
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
@@ -123,6 +126,10 @@ export default function ProfilePage() {
     fetchUserPosts(username).then((result) => {
       if (result.success) setPosts(result.data.posts);
       setPostsLoading(false);
+    });
+    fetchUserReels(username).then((result) => {
+      if (result.success) setReels(result.data.reels);
+      setReelsLoading(false);
     });
   }, [username]);
 
@@ -348,7 +355,20 @@ export default function ProfilePage() {
 
       <div className="mt-2">
         {activeTab === 'reels' ? (
-          <p className="px-4 py-8 text-center text-slate-500">No reels yet.</p>
+          reelsLoading ? (
+            <div className="flex justify-center py-6" role="status" aria-label="Loading reels"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
+          ) : reels.length === 0 ? (
+            <p className="px-4 py-8 text-center text-slate-500">No reels yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-1 px-1">
+              {reels.map((r) => (
+                <Link key={r.id} href="/reels" className="relative aspect-[9/16] w-full overflow-hidden bg-slate-200">
+                  <video src={r.videoUrl} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                  <svg className="absolute right-1.5 top-1.5 h-4 w-4 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                </Link>
+              ))}
+            </div>
+          )
         ) : activeTab === 'photos' ? (
           photoPosts.length === 0 ? (
             <p className="px-4 py-8 text-center text-slate-500">No photos yet.</p>
