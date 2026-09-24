@@ -16,6 +16,13 @@ interface Account {
   profilePictureUrl: string | null;
 }
 
+function MonetizationIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /><circle cx="12" cy="14.5" r="1.5" />
+    </svg>
+  );
+}
 function ChartIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -185,6 +192,7 @@ function PermissionSelect({ value, onChange }: { value: string; onChange: (v: st
 
 const menuItems = [
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
+  { label: 'Monetization', href: '/settings-menu/monetization', Icon: MonetizationIcon },
   { label: 'Verification', href: '/settings-menu/verification', Icon: VerificationIcon },
   { label: 'Your Activity', href: '/settings-menu/activity', Icon: ClockIcon },
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: StarIcon },
