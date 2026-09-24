@@ -363,7 +363,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-3 gap-1 px-1">
               {reels.map((r) => (
                 <Link key={r.id} href={`/reels?id=${r.id}`} className="relative aspect-[9/16] w-full overflow-hidden bg-slate-200">
-                  <video src={r.videoUrl} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                  <video src={`${r.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                   <svg className="absolute right-1.5 top-1.5 h-4 w-4 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </Link>
               ))}
@@ -392,7 +392,7 @@ export default function ProfilePage() {
               ) : (
                 <Link key={`reel-${entry.item.id}`} href={`/reels?id=${entry.item.id}`} className="mb-4 block overflow-hidden rounded-xl border">
                   <div className="relative aspect-[9/16] max-h-96 w-full bg-slate-200">
-                    <video src={entry.item.videoUrl} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                    <video src={`${entry.item.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                     <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
                   </div>
                   {entry.item.caption && <p className="px-3 py-2 text-sm text-slate-700">{entry.item.caption}</p>}
