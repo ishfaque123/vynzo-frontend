@@ -77,7 +77,9 @@ export default function HomePage() {
     }
 
     try {
-      const [result, reelResult] = await Promise.all([fetchFeed(0), fetchReelFeed(0)]);
+      const [result, reelPage1, reelPage2, reelPage3] = await Promise.all([
+        fetchFeed(0), fetchReelFeed(0), fetchReelFeed(10), fetchReelFeed(20),
+      ]);
       if (result.success) {
         setPosts(result.data.posts);
         setHasMore(!!result.data.hasMore);
@@ -87,7 +89,20 @@ export default function HomePage() {
       } else {
         setFeedError(true);
       }
-      if (reelResult.success) setReels(reelResult.data.reels || []);
+      // Pull a bigger pool of recent reels, then prioritize reels from
+      // friends/people you follow, and within the rest, the most-liked
+      // ("viral") ones, instead of just showing them in upload order.
+      const reelPool = new Map<string, any>();
+      for (const page of [reelPage1, reelPage2, reelPage3]) {
+        if (page.success) for (const r of page.data.reels || []) reelPool.set(r.id, r);
+      }
+      const sortedReels = [...reelPool.values()].sort((a, b) => {
+        const aFriend = a.friendStatus === 'friends' || a.friendStatus === 'following' ? 1 : 0;
+        const bFriend = b.friendStatus === 'friends' || b.friendStatus === 'following' ? 1 : 0;
+        if (aFriend !== bFriend) return bFriend - aFriend;
+        return (b.likeCount || 0) - (a.likeCount || 0);
+      });
+      setReels(sortedReels);
     } catch {
       const cached = await getOfflineFeed(user.id);
       if (cached?.posts?.length) {
@@ -312,8 +327,8 @@ export default function HomePage() {
                     <AdUnit />
                   </div>
                 )}
-                {(index + 1) % 6 === 0 && reels.length > 0 && (() => {
-                  const reel = reels[Math.floor(index / 6) % reels.length];
+                {(index + 1) % 2 === 0 && reels.length > 0 && (() => {
+                  const reel = reels[Math.floor(index / 2) % reels.length];
                   return (
                     <div className="my-4">
                       <Link href={`/reels?id=${reel.id}`} className="block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
