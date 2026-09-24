@@ -29,7 +29,7 @@ function TrashIcon() {
 interface ConversationItem {
   id: string;
   otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean; publicKey?: string | null } | null;
-  lastMessage: { content: string; senderId: string; createdAt: string } | null;
+  lastMessage: { content: string; senderId: string; createdAt: string; mediaType?: 'image' | 'voice' | null; isDeleted?: boolean } | null;
   unread: boolean;
   updatedAt: string;
 }
@@ -226,8 +226,16 @@ export default function MessagesPage() {
                   {c.otherUser?.displayName || c.otherUser?.username}
                 </p>
                 <p className={`truncate text-sm ${c.unread ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
-                  {c.lastMessage?.content
-                    ? (previews[c.id] || '···')
+                  {c.lastMessage
+                    ? c.lastMessage.isDeleted
+                      ? 'This message was deleted'
+                      : c.lastMessage.mediaType === 'image'
+                      ? '📷 Photo'
+                      : c.lastMessage.mediaType === 'voice'
+                      ? '🎤 Voice message'
+                      : c.lastMessage.content
+                      ? (previews[c.id] || '···')
+                      : 'Say hi 👋'
                     : 'Say hi 👋'}
                 </p>
               </div>
