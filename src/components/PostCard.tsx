@@ -112,20 +112,20 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
     <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-start justify-between p-3 pb-2">
         {post.originalPost ? (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
-            <Link href={`/u/${post.author.username}`} className="font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <VerifiedBadge />}
-            <span>reposted · {timeAgo(post.createdAt)}</span>
+            <Link href={`/u/${post.author.username}`} className="max-w-[45%] truncate font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+            <span className="shrink-0 whitespace-nowrap">reposted · {timeAgo(post.createdAt)}</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <Link href={`/u/${post.author.username}`}>
               <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
             </Link>
-            <div className="leading-tight">
-              <div className="flex items-center gap-2">
-                <Link href={`/u/${post.author.username}`} className="text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <VerifiedBadge />}
-                {!isOwner && !offline && <FollowButton userId={post.author.id} status={post.friendStatus} />}
+            <div className="min-w-0 leading-tight">
+              <div className="flex min-w-0 items-center gap-2">
+                <Link href={`/u/${post.author.username}`} className="min-w-0 truncate text-[15px] font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+                {!isOwner && !offline && <span className="shrink-0"><FollowButton userId={post.author.id} status={post.friendStatus} /></span>}
               </div>
               {post.taggedUsers?.length > 0 && (
                 <span className="block text-xs text-slate-500">
@@ -160,12 +160,15 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       {post.originalPost && (
         <div className="mx-3 mb-2 rounded-lg border p-3">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <Link href={`/u/${post.originalPost.author.username}`}>
               <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
             </Link>
-            <div className="leading-tight">
-              <Link href={`/u/${post.originalPost.author.username}`} className="inline-flex items-center text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>{post.originalPost.author.isVerified && <VerifiedBadge />}
+            <div className="min-w-0 leading-tight">
+              <div className="flex min-w-0 items-center gap-1">
+                <Link href={`/u/${post.originalPost.author.username}`} className="min-w-0 truncate text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>
+                {post.originalPost.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+              </div>
               <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
