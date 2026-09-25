@@ -2,7 +2,7 @@ import Skeleton from './Skeleton';
 
 export default function SkeletonPostCard() {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="border-b-[8px] border-slate-100 bg-white p-3">
       <div className="flex items-center gap-2">
         <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
         <div className="flex flex-1 flex-col gap-1.5">
@@ -15,7 +15,7 @@ export default function SkeletonPostCard() {
         <Skeleton className="h-3 w-4/5" />
       </div>
       <Skeleton className="mt-3 h-48 w-full" />
-      <div className="mt-3 flex gap-4">
+      <div className="mt-3 flex gap-4 pb-2">
         <Skeleton className="h-3 w-14" />
         <Skeleton className="h-3 w-14" />
         <Skeleton className="h-3 w-14" />
