@@ -45,6 +45,14 @@ function ForwardIcon() {
     </svg>
   );
 }
+
+function ReplyIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M9 8l-5 4 5 4" /><path d="M5 12h8a6 6 0 016 6v1" />
+    </svg>
+  );
+}
 function PinIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1130,6 +1138,13 @@ export default function ChatPage() {
               </div>
             )}
             <div className="flex items-center justify-center gap-2 px-2 py-2">
+              <button
+                onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setReplyTo(m); setEditingMessage(null); }}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95"
+                aria-label="Reply to message"
+              >
+                <ReplyIcon />
+              </button>
               <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Pin message"><PinIcon /></button>
               <button onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Delete message"><DeleteIcon /></button>
               <button onClick={() => enterSelectionMode(actionMenuFor)} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Forward message"><ForwardIcon /></button>
