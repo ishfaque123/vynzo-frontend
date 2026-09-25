@@ -97,3 +97,8 @@ export function reviewAdminVerificationRequest(requestId: string, action: 'appro
     body: JSON.stringify({ action, adminNote: adminNote || '' }),
   });
 }
+
+
+export function clearAllAdminMessages() {
+  return request('/messages/clear-all', { method: 'DELETE' });
+}
