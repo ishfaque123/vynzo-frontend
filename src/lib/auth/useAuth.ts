@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchMe, savePublicKeyRequest } from '@/lib/api/authApi';
-import { getOrCreateIdentity } from '@/lib/crypto/e2ee';
+import { fetchMe } from '@/lib/api/authApi';
 import { getOfflineUser, saveOfflineUser } from '@/lib/offline/feedCache';
 
 export function useAuth() {
@@ -38,9 +37,6 @@ export function useAuth() {
         setVerified(true);
         if (loggedInUser) {
           saveOfflineUser(loggedInUser).catch(() => {});
-          getOrCreateIdentity(loggedInUser.id, loggedInUser.publicKey)
-            .then(({ publicKeyJson }) => savePublicKeyRequest(publicKeyJson))
-            .catch(() => {});
         }
       })
       .catch(async () => {
