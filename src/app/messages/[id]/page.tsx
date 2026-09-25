@@ -5,10 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchMessages, fetchConversations, uploadChatMedia } from '@/lib/api/messageApi';
-import { blockUser, unblockUser, fetchBlockStatus, reportUser, updateProfile } from '@/lib/api/userApi';
+import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 import { takePendingMessageText } from '@/lib/pendingMessageText';
-import { getOrCreateIdentity, deriveSharedKey, encryptText, tryDecryptText } from '@/lib/crypto/e2ee';
 
 function BackIcon() {
   return (
@@ -214,7 +213,6 @@ interface OtherUser {
   profilePictureUrl?: string;
   isOnline: boolean;
   lastActiveAt?: string | null;
-  publicKey?: string | null;
 }
 interface Toast {
   message: string;
@@ -315,10 +313,6 @@ export default function ChatPage() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [pinnedBannerIndex, setPinnedBannerIndex] = useState(0);
-  const [decrypted, setDecrypted] = useState<Record<string, string>>({});
-  const [keyReady, setKeyReady] = useState(false);
-  const sharedKeyRef = useRef<CryptoKey | null>(null);
-  const otherUserIdRef = useRef<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -354,37 +348,14 @@ export default function ChatPage() {
         const convo = result.data.find((c: any) => c.id === conversationId);
         if (convo?.otherUser) {
           setOtherUser(convo.otherUser);
-          otherUserIdRef.current = convo.otherUser.id;
           fetchBlockStatus(convo.otherUser.id).then((res) => {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
-          if (user?.id) {
-            getOrCreateIdentity(user.id, convo.otherUser.publicKey)
-              .then(async ({ privateKey, publicKeyJson }) => {
-                // Publish only the public half. The private key stays in
-                // account-scoped localStorage and never leaves this browser.
-                await updateProfile({ publicKey: publicKeyJson });
-                getSocket().emit('e2ee:public-key', { publicKey: publicKeyJson });
-                if (!convo.otherUser.publicKey) {
-                  sharedKeyRef.current = null;
-                  setKeyReady(false);
-                  return;
-                }
-                const key = await deriveSharedKey(privateKey, convo.otherUser.publicKey);
-                sharedKeyRef.current = key;
-                setKeyReady(!!key);
-              })
-              .catch(() => {
-                sharedKeyRef.current = null;
-                setKeyReady(false);
-              });
-          }
-          // If user.id isn't loaded yet, do nothing here. This effect
+          // If user.id isn't loaded yet          // If user.id isn't loaded yet, do nothing here. This effect
           // already re-runs once user?.id becomes available (see the
           // dependency array below), and only then is the real,
           // account-scoped key derived. Never derive a key from a
           // missing id: a message sealed with the wrong key can never
-          // be decrypted again by anyone, ever.
         } else {
           setKeyReady(true);
         }
@@ -406,20 +377,6 @@ export default function ChatPage() {
     function handleTypingStop({ conversationId: cid, userId }: { conversationId: string; userId: string }) {
       if (cid === conversationId && userId !== user?.id) setOtherTyping(false);
     }
-    function handleE2eePublicKey({ userId: incomingUserId, publicKey }: { userId: string; publicKey: string }) {
-      if (incomingUserId !== otherUserIdRef.current || !user?.id) return;
-      getOrCreateIdentity(user.id, publicKey)
-        .then(({ privateKey }) => deriveSharedKey(privateKey, publicKey))
-        .then((key) => {
-          sharedKeyRef.current = key;
-          setKeyReady(!!key);
-        })
-        .catch(() => {
-          sharedKeyRef.current = null;
-          setKeyReady(false);
-        });
-    }
-
     function handlePresenceOnline({ userId }: { userId: string }) {
       setOtherUser((prev) => (prev && prev.id === userId ? { ...prev, isOnline: true } : prev));
     }
@@ -444,7 +401,6 @@ export default function ChatPage() {
     }
     function handleMessageEdited(message: Message) {
       setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
-      setDecrypted((prev) => ({ ...prev, [message.id]: '' }));
     }
     function handleMessageReaction({ messageId, reactions }: { messageId: string; reactions: { userId: string; emoji: string }[] }) {
       setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
@@ -460,7 +416,6 @@ export default function ChatPage() {
     socket.on('message:deleted', handleMessageDeleted);
     socket.on('typing:start', handleTypingStart);
     socket.on('typing:stop', handleTypingStop);
-    socket.on('e2ee:public-key', handleE2eePublicKey);
     socket.on('presence:online', handlePresenceOnline);
     socket.on('presence:offline', handlePresenceOffline);
     socket.on('conversation:read', handleConversationRead);
@@ -475,7 +430,6 @@ export default function ChatPage() {
       socket.off('message:deleted', handleMessageDeleted);
       socket.off('typing:start', handleTypingStart);
       socket.off('typing:stop', handleTypingStop);
-      socket.off('e2ee:public-key', handleE2eePublicKey);
       socket.off('presence:online', handlePresenceOnline);
       socket.off('presence:offline', handlePresenceOffline);
       socket.off('conversation:read', handleConversationRead);
@@ -487,24 +441,7 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    if (!keyReady) return;
-    const pending = messages.filter((m) => m.content && !(m.id in decrypted));
-    if (!pending.length) return;
-    let cancelled = false;
-    (async () => {
-      const updates: Record<string, string> = {};
-      for (const m of pending) {
-        updates[m.id] = await tryDecryptText(sharedKeyRef.current, m.content);
-      }
-      if (!cancelled) setDecrypted((prev) => ({ ...prev, ...updates }));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [messages, keyReady]);
-
-  // Stop any in-progress recording (mic + timer) if this page unmounts
+  // Stop any in-progress recording  // Stop any in-progress recording (mic + timer) if this page unmounts
   // mid-recording, e.g. the user navigates away with the back button.
   useEffect(() => {
     return () => {
@@ -532,17 +469,6 @@ export default function ChatPage() {
     const content = text.trim();
     if (!content) return;
     const socket = getSocket();
-    if (!sharedKeyRef.current) {
-      showToast('Secure encryption is not ready. Please try again.', 'error');
-      return;
-    }
-    let payload: string;
-    try {
-      payload = await encryptText(sharedKeyRef.current, content);
-    } catch {
-      showToast('Could not secure this message. Please try again.', 'error');
-      return;
-    }
     if (editingMessage) {
       socket.emit('message:edit', { messageId: editingMessage.id, content: payload }, (res: { success: boolean; error?: string }) => {
         if (res.success) {
@@ -556,7 +482,7 @@ export default function ChatPage() {
     }
     socket.emit(
       'message:send',
-      { conversationId, content: payload, replyToId: replyTo?.id || undefined },
+      { conversationId, content, replyToId: replyTo?.id || undefined },
       (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
         if (res.success && res.data) {
           setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
@@ -709,23 +635,13 @@ export default function ChatPage() {
 
     setForwarding(true);
     try {
-      const { privateKey } = await getOrCreateIdentity(user.id);
-
       for (const targetConversationId of selectedForwardTargetIds) {
-        const target = forwardTargets.find((c: any) => c.id === targetConversationId);
-        const targetPublicKey = target?.otherUser?.publicKey;
-        if (!targetPublicKey) throw new Error('NO_TARGET_KEY');
-
-        const targetKey = await deriveSharedKey(privateKey, targetPublicKey);
-        if (!targetKey) throw new Error('NO_KEY');
-
         for (const message of selected) {
-          const plainText = decrypted[message.id] || '';
-          const encryptedContent = plainText ? await encryptText(targetKey, plainText) : '';
+          const content = message.content || '';
           await new Promise<void>((resolve, reject) => {
             getSocket().emit('message:send', {
               conversationId: targetConversationId,
-              content: encryptedContent,
+              content,
               mediaUrl: message.mediaUrl || undefined,
               mediaType: message.mediaType || undefined,
               voiceDuration: message.voiceDuration || undefined,
@@ -894,7 +810,7 @@ export default function ChatPage() {
             <span className="min-w-0 flex-1">
               <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pinned message</span>
               <span className="block truncate text-sm text-slate-800">
-                {decrypted[activePinnedMessage.id] || (activePinnedMessage.mediaType === 'image' ? 'Photo' : activePinnedMessage.mediaType === 'voice' ? 'Voice message' : 'Message')}
+                {activePinnedMessage.content || (activePinnedMessage.mediaType === 'image' ? 'Photo' : activePinnedMessage.mediaType === 'voice' ? 'Voice message' : 'Message')}
               </span>
             </span>
             {pinnedMessages.length > 1 && (
@@ -924,9 +840,6 @@ export default function ChatPage() {
             >
               View profile
             </Link>
-            <p className="mt-2 max-w-[280px] text-center text-xs text-slate-400">
-              Messages and calls are secured with end-to-end encryption. Only people in this chat can read, listen to, or share them.
-            </p>
           </div>
         )}
 
@@ -970,12 +883,12 @@ export default function ChatPage() {
                       {m.replyTo && (
                         <div className="mb-1 rounded-lg border-l-2 border-slate-400 bg-black/5 px-2 py-1 text-xs text-slate-500">
                           <p className="font-medium">{m.replyTo.sender?.displayName || 'Message'}</p>
-                          <p className="truncate">{decrypted[m.replyTo.id] || (m.replyTo.mediaType === 'image' ? 'Photo' : m.replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p>
+                          <p className="truncate">{m.replyTo.content || (m.replyTo.mediaType === 'image' ? 'Photo' : m.replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p>
                         </div>
                       )}
                       {m.content && (
                         <p className={`break-words ${isImage ? 'px-1.5 pt-1' : ''}`}>
-                          {decrypted[m.id] ? renderMessageText(decrypted[m.id], isMine) : '\u00b7\u00b7\u00b7'}
+                          {renderMessageText(m.content, isMine)}
                         </p>
                       )}
                       <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
@@ -997,7 +910,7 @@ export default function ChatPage() {
       {replyTo && !editingMessage && (
         <div className="border-t bg-slate-50 px-3 py-2 text-xs">
           <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0"><span className="font-semibold">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</span><p className="truncate text-slate-500">{decrypted[replyTo.id] || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p></div>
+            <div className="min-w-0"><span className="font-semibold">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</span><p className="truncate text-slate-500">{replyTo.content || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p></div>
             <button onClick={() => setReplyTo(null)} className="px-2 text-slate-500">✕</button>
           </div>
         </div>
