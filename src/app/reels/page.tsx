@@ -237,7 +237,11 @@ export default function ReelsPage() {
   if (loading) return (
     <div className="absolute inset-0 flex items-center justify-center bg-black">
       <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo reels">
-        <span className="absolute inset-0 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+        <div className="flex items-center gap-2" aria-hidden="true">
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white" />
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:150ms]" />
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:300ms]" />
+        </div>
       </div>
     </div>
   );
