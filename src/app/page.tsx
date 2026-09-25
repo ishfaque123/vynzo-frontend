@@ -241,17 +241,6 @@ export default function HomePage() {
     }
   }
 
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <img
-        src="/logo.png"
-        alt="Frianzo"
-        className="app-logo-pulse h-16 w-16 object-contain"
-        role="status"
-        aria-label="Loading Frianzo"
-      />
-    </div>
-  );
   if (!user) return null;
 
   const openPost = posts.find((p) => p.id === openComments);
