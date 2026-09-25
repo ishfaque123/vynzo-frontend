@@ -13,6 +13,7 @@ export async function updateProfile(data: {
   tagPermission?: 'everyone' | 'followers' | 'none';
   showOnlineStatus?: boolean;
   isPrivate?: boolean;
+  publicKey?: string;
 }) {
   const res = await fetch(`${API_URL}/api/users/me`, {
     method: 'PATCH',
