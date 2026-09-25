@@ -230,12 +230,12 @@ export default function MessagesPage() {
                     ? c.lastMessage.isDeleted
                       ? 'This message was deleted'
                       : c.lastMessage.mediaType === 'image'
-                      ? '📷 Photo'
+                      ? 'Photo'
                       : c.lastMessage.mediaType === 'voice'
-                      ? '🎤 Voice message'
+                      ? 'Voice message'
                       : c.lastMessage.content
                       ? (previews[c.id] || '···')
-                      : 'Say hi 👋'
+                      : 'Say hi'
                     : 'Say hi 👋'}
                 </p>
               </div>
