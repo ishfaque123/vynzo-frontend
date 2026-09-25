@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchMessages, fetchConversations, uploadChatMedia } from '@/lib/api/messageApi';
-import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
+import { blockUser, unblockUser, fetchBlockStatus, reportUser, updateProfile } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 import { takePendingMessageText } from '@/lib/pendingMessageText';
 import { getOrCreateIdentity, deriveSharedKey, encryptText, tryDecryptText } from '@/lib/crypto/e2ee';
@@ -321,15 +321,24 @@ export default function ChatPage() {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
           if (user?.id) {
-            getOrCreateIdentity(user.id, null)
-              .then(({ privateKey }) =>
-                convo.otherUser.publicKey ? deriveSharedKey(privateKey, convo.otherUser.publicKey) : null
-              )
-              .then((key) => {
+            getOrCreateIdentity(user.id, convo.otherUser.publicKey)
+              .then(async ({ privateKey, publicKeyJson }) => {
+                // Publish only the public half. The private key stays in
+                // account-scoped localStorage and never leaves this browser.
+                await updateProfile({ publicKey: publicKeyJson });
+                if (!convo.otherUser.publicKey) {
+                  sharedKeyRef.current = null;
+                  setKeyReady(false);
+                  return;
+                }
+                const key = await deriveSharedKey(privateKey, convo.otherUser.publicKey);
                 sharedKeyRef.current = key;
+                setKeyReady(!!key);
               })
-              .catch(() => {})
-              .finally(() => setKeyReady(true));
+              .catch(() => {
+                sharedKeyRef.current = null;
+                setKeyReady(false);
+              });
           }
           // If user.id isn't loaded yet, do nothing here. This effect
           // already re-runs once user?.id becomes available (see the
@@ -481,10 +490,13 @@ export default function ChatPage() {
     }
     if (editingMessage) {
       socket.emit('message:edit', { messageId: editingMessage.id, content: payload }, (res: { success: boolean; error?: string }) => {
-        if (!res.success) showToast('Could not edit message.', 'error');
+        if (res.success) {
+          setEditingMessage(null);
+          setText('');
+        } else {
+          showToast('Could not edit message.', 'error');
+        }
       });
-      setEditingMessage(null);
-      setText('');
       return;
     }
     socket.emit(
@@ -494,14 +506,22 @@ export default function ChatPage() {
         if (res.success && res.data) {
           setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
           if (res.delivered) setOtherLastDeliveredAt(new Date());
-        } else if (res.error === 'BLOCKED') {
-          showToast("You can't send messages to this user.", 'error');
+          setText('');
+          setReplyTo(null);
+          socket.emit('typing:stop', { conversationId });
+        } else {
+          const errorText =
+            res.error === 'BLOCKED'
+              ? "You can't send messages to this user."
+              : res.error === 'MESSAGES_DISABLED'
+                ? 'This user is not accepting messages.'
+                : res.error === 'MESSAGES_RESTRICTED'
+                  ? 'This user only accepts messages from followers.'
+                  : 'Could not send message. Please try again.';
+          showToast(errorText, 'error');
         }
       }
     );
-    setText('');
-    setReplyTo(null);
-    socket.emit('typing:stop', { conversationId });
   }
 
   function sendMediaMessage(mediaUrl: string, mediaType: 'image' | 'voice', voiceDuration?: number) {
