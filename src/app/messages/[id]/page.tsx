@@ -168,6 +168,12 @@ interface Message {
   mediaType?: 'image' | 'voice' | null;
   voiceDuration?: number | null;
   isDeleted?: boolean;
+  editedAt?: string | null;
+  replyToId?: string | null;
+  replyTo?: { id: string; content: string; mediaType?: string | null; sender?: { displayName: string; username: string } | null } | null;
+  pinnedAt?: string | null;
+  pinnedById?: string | null;
+  reactions?: { userId: string; emoji: string }[];
   createdAt: string;
   sender?: { id: string; username: string; displayName: string; profilePictureUrl?: string };
 }
@@ -269,6 +275,9 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [deleteMenuFor, setDeleteMenuFor] = useState<Message | null>(null);
+  const [actionMenuFor, setActionMenuFor] = useState<Message | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [decrypted, setDecrypted] = useState<Record<string, string>>({});
   const [keyReady, setKeyReady] = useState(false);
   const sharedKeyRef = useRef<CryptoKey | null>(null);
@@ -371,7 +380,20 @@ export default function ChatPage() {
     function handleMessageDeleted({ messageId }: { messageId: string }) {
       setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, isDeleted: true, content: '', mediaUrl: null, mediaType: null } : m)));
     }
+    function handleMessageEdited(message: Message) {
+      setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
+      setDecrypted((prev) => ({ ...prev, [message.id]: '' }));
+    }
+    function handleMessageReaction({ messageId, reactions }: { messageId: string; reactions: { userId: string; emoji: string }[] }) {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
+    }
+    function handleMessagePinned({ messageId, pinnedAt, pinnedById }: { messageId: string; pinnedAt: string | null; pinnedById: string | null }) {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, pinnedAt, pinnedById } : m)));
+    }
 
+    socket.on('message:edited', handleMessageEdited);
+    socket.on('message:reaction', handleMessageReaction);
+    socket.on('message:pinned', handleMessagePinned);
     socket.on('message:new', handleNewMessage);
     socket.on('message:deleted', handleMessageDeleted);
     socket.on('typing:start', handleTypingStart);
@@ -384,6 +406,9 @@ export default function ChatPage() {
 
     return () => {
       socket.off('message:new', handleNewMessage);
+      socket.off('message:edited', handleMessageEdited);
+      socket.off('message:reaction', handleMessageReaction);
+      socket.off('message:pinned', handleMessagePinned);
       socket.off('message:deleted', handleMessageDeleted);
       socket.off('typing:start', handleTypingStart);
       socket.off('typing:stop', handleTypingStop);
@@ -454,9 +479,17 @@ export default function ChatPage() {
       showToast('Could not secure this message. Please try again.', 'error');
       return;
     }
+    if (editingMessage) {
+      socket.emit('message:edit', { messageId: editingMessage.id, content: payload }, (res: { success: boolean; error?: string }) => {
+        if (!res.success) showToast('Could not edit message.', 'error');
+      });
+      setEditingMessage(null);
+      setText('');
+      return;
+    }
     socket.emit(
       'message:send',
-      { conversationId, content: payload },
+      { conversationId, content: payload, replyToId: replyTo?.id || undefined },
       (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
         if (res.success && res.data) {
           setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
@@ -467,6 +500,7 @@ export default function ChatPage() {
       }
     );
     setText('');
+    setReplyTo(null);
     socket.emit('typing:stop', { conversationId });
   }
 
@@ -553,7 +587,7 @@ export default function ChatPage() {
 
   function startLongPress(m: Message) {
     if (m.isDeleted) return;
-    longPressTimer.current = setTimeout(() => setDeleteMenuFor(m), 450);
+    longPressTimer.current = setTimeout(() => setActionMenuFor(m), 450);
   }
   function cancelLongPress() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
@@ -665,7 +699,18 @@ export default function ChatPage() {
                   View profile
                 </Link>
               )}
-              {isBlocked ? (
+              {replyTo && !editingMessage && (
+        <div className="border-t bg-slate-50 px-3 py-2 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0"><span className="font-semibold">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</span><p className="truncate text-slate-500">{decrypted[replyTo.id] || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p></div>
+            <button onClick={() => setReplyTo(null)} className="px-2 text-slate-500">✕</button>
+          </div>
+        </div>
+      )}
+      {editingMessage && (
+        <div className="border-t bg-amber-50 px-3 py-2 text-xs"><div className="flex items-center justify-between"><span className="font-semibold">Editing message</span><button onClick={() => { setEditingMessage(null); setText(''); }}>Cancel</button></div></div>
+      )}
+      {isBlocked ? (
                 <button onClick={handleUnblock} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                   Unblock user
                 </button>
@@ -725,7 +770,7 @@ export default function ChatPage() {
                   onTouchStart={() => startLongPress(m)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
-                  onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setDeleteMenuFor(m); }}
+                  onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
                   className={`max-w-[75%] rounded-2xl text-[15px] leading-snug ${
                     m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
                     isImage || isVoice ? '' : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
@@ -741,15 +786,23 @@ export default function ChatPage() {
                       {isVoice && (
                         <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
                       )}
+                      {m.replyTo && (
+                        <div className="mb-1 rounded-lg border-l-2 border-slate-400 bg-black/5 px-2 py-1 text-xs text-slate-500">
+                          <p className="font-medium">{m.replyTo.sender?.displayName || 'Message'}</p>
+                          <p className="truncate">{decrypted[m.replyTo.id] || (m.replyTo.mediaType === 'image' ? 'Photo' : m.replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p>
+                        </div>
+                      )}
                       {m.content && (
                         <p className={`break-words ${isImage ? 'px-1.5 pt-1' : ''}`}>
                           {decrypted[m.id] ? renderMessageText(decrypted[m.id], isMine) : '\u00b7\u00b7\u00b7'}
                         </p>
                       )}
                       <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
-                        <span className="text-[11px]">{formatMessageTime(m.createdAt)}</span>
+                        <span className="text-[11px]">{m.editedAt ? 'edited · ' : ''}{formatMessageTime(m.createdAt)}</span>
                         {isMine && status && <Ticks status={status} />}
                       </div>
+                      {m.reactions?.length ? <div className="mt-1 flex flex-wrap gap-1">{Array.from(new Set(m.reactions.map((r) => r.emoji))).map((emoji) => <span key={emoji} className="rounded-full border bg-white px-1.5 py-0.5 text-xs">{emoji}</span>)}</div> : null}
+                      {m.pinnedAt && <div className="mt-1 text-[10px] font-medium text-slate-500">📌 Pinned</div>}
                     </>
                   )}
                 </div>
@@ -875,6 +928,26 @@ export default function ChatPage() {
                 Submit
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {actionMenuFor && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setActionMenuFor(null)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-center py-2"><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
+            <div className="flex gap-2 overflow-x-auto px-2 pb-2">
+              {['❤️','😂','😮','😢','😡','👍','👎'].map((emoji) => (
+                <button key={emoji} onClick={() => { getSocket().emit('message:reaction', { messageId: actionMenuFor.id, emoji }); setActionMenuFor(null); }} className="rounded-full border px-3 py-2 text-lg">{emoji}</button>
+              ))}
+            </div>
+            <button onClick={() => { setReplyTo(actionMenuFor); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-slate-50">Reply</button>
+            {actionMenuFor.senderId === user?.id && !actionMenuFor.mediaType && (
+              <button onClick={() => { setEditingMessage(actionMenuFor); setText(decrypted[actionMenuFor.id] || ''); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-slate-50">Edit</button>
+            )}
+            <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-slate-50">{actionMenuFor.pinnedAt ? 'Unpin message' : 'Pin message'}</button>
+            <button onClick={() => { setDeleteMenuFor(actionMenuFor); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm text-red-600 hover:bg-slate-50">Delete</button>
+            <button onClick={() => setActionMenuFor(null)} className="mt-1 w-full rounded-lg border px-4 py-3 text-sm">Cancel</button>
           </div>
         </div>
       )}
