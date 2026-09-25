@@ -305,6 +305,7 @@ export default function ChatPage() {
   const [selectedForwardTargetIds, setSelectedForwardTargetIds] = useState<string[]>([]);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [pinnedBannerIndex, setPinnedBannerIndex] = useState(0);
   const [decrypted, setDecrypted] = useState<Record<string, string>>({});
   const [keyReady, setKeyReady] = useState(false);
   const sharedKeyRef = useRef<CryptoKey | null>(null);
@@ -804,6 +805,16 @@ export default function ChatPage() {
 
   const displayName = otherUser?.displayName || otherUser?.username || 'Chat';
   const statusText = otherTyping ? 'Typing...' : otherUser?.isOnline ? 'Online' : formatLastSeen(otherUser?.lastActiveAt);
+  const pinnedMessages = messages
+    .filter((m) => !!m.pinnedAt && !m.isDeleted)
+    .sort((a, b) => new Date(b.pinnedAt!).getTime() - new Date(a.pinnedAt!).getTime());
+  const activePinnedMessage = pinnedMessages.length ? pinnedMessages[pinnedBannerIndex % pinnedMessages.length] : null;
+
+  function handlePinnedBannerClick() {
+    if (!activePinnedMessage) return;
+    document.getElementById(`message-${activePinnedMessage.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (pinnedMessages.length > 1) setPinnedBannerIndex((prev) => (prev + 1) % pinnedMessages.length);
+  }
 
   return (
     <div className="mx-auto flex h-[100dvh] max-w-xl flex-col">
@@ -860,6 +871,29 @@ export default function ChatPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
+        {activePinnedMessage && (
+          <button
+            type="button"
+            onClick={handlePinnedBannerClick}
+            className="sticky top-0 z-10 mb-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white/95 px-3 py-2.5 text-left shadow-sm backdrop-blur"
+            aria-label="Open pinned message"
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+              <PinIcon />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pinned message</span>
+              <span className="block truncate text-sm text-slate-800">
+                {decrypted[activePinnedMessage.id] || (activePinnedMessage.mediaType === 'image' ? 'Photo' : activePinnedMessage.mediaType === 'voice' ? 'Voice message' : 'Message')}
+              </span>
+            </span>
+            {pinnedMessages.length > 1 && (
+              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                {pinnedBannerIndex % pinnedMessages.length + 1}/{pinnedMessages.length}
+              </span>
+            )}
+          </button>
+        )}
         {!loading && otherUser && (
           <div className="flex flex-col items-center gap-2 py-6">
             {otherUser.profilePictureUrl ? (
@@ -898,7 +932,7 @@ export default function ChatPage() {
             const isVoice = m.mediaType === 'voice' && m.mediaUrl;
             const isSelected = selectedMessageIds.includes(m.id);
             return (
-              <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+              <div id={`message-${m.id}`} key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   onTouchStart={(e) => startLongPress(m, e.touches[0]?.clientX, e.touches[0]?.clientY)}
                   onTouchEnd={cancelLongPress}
