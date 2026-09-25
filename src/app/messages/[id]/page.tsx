@@ -297,6 +297,7 @@ export default function ChatPage() {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [deleteMenuFor, setDeleteMenuFor] = useState<Message | null>(null);
   const [actionMenuFor, setActionMenuFor] = useState<Message | null>(null);
+  const [actionMenuPosition, setActionMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [forwardPickerOpen, setForwardPickerOpen] = useState(false);
   const [forwarding, setForwarding] = useState(false);
@@ -649,9 +650,14 @@ export default function ChatPage() {
     else startRecording();
   }
 
-  function startLongPress(m: Message) {
+  function startLongPress(m: Message, clientX?: number, clientY?: number) {
     if (m.isDeleted || selectedMessageIds.length) return;
-    longPressTimer.current = setTimeout(() => setActionMenuFor(m), 450);
+    longPressTimer.current = setTimeout(() => {
+      const left = Math.max(8, Math.min((clientX ?? window.innerWidth / 2) - 145, window.innerWidth - 298));
+      const top = Math.max(70, Math.min((clientY ?? window.innerHeight / 2) - 115, window.innerHeight - 190));
+      setActionMenuPosition({ left, top });
+      setActionMenuFor(m);
+    }, 450);
   }
   function cancelLongPress() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
@@ -894,7 +900,7 @@ export default function ChatPage() {
             return (
               <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  onTouchStart={() => startLongPress(m)}
+                  onTouchStart={(e) => startLongPress(m, e.touches[0]?.clientX, e.touches[0]?.clientY)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
@@ -1070,20 +1076,29 @@ export default function ChatPage() {
         </div>
       )}
 
-      {actionMenuFor && (
-        <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setActionMenuFor(null)}>
-          <div className="fixed left-0 right-0 top-0 z-50 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
+      {actionMenuFor && actionMenuPosition && (
+        <div className="fixed inset-0 z-50" onClick={() => { setActionMenuFor(null); setActionMenuPosition(null); }}>
+          <div
+            className="absolute w-[290px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            style={{ left: actionMenuPosition.left, top: actionMenuPosition.top }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {actionMenuFor.senderId !== user?.id && (
-              <div className="flex gap-1 overflow-x-auto border-b px-3 py-2">
+              <div className="flex items-center justify-between border-b border-slate-100 px-2 py-1.5">
                 {['❤️','😂','😮','😢','😡','👍','👎'].map((emoji) => (
-                  <button key={emoji} onClick={() => { getSocket().emit('message:reaction', { messageId: actionMenuFor.id, emoji }); setActionMenuFor(null); }} className="rounded-full px-2 py-1 text-xl">{emoji}</button>
+                  <button
+                    key={emoji}
+                    onClick={() => { getSocket().emit('message:reaction', { messageId: actionMenuFor.id, emoji }); setActionMenuFor(null); setActionMenuPosition(null); }}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-[22px] transition hover:bg-slate-100 active:scale-90"
+                    aria-label={`React ${emoji}`}
+                  >{emoji}</button>
                 ))}
               </div>
             )}
-            <div className="flex items-center justify-end gap-1 px-3 py-2">
-              <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); }} className="rounded-full p-2.5 text-slate-700 hover:bg-slate-100" aria-label="Pin message"><PinIcon /></button>
-              <button onClick={() => { setActionMenuFor(null); setDeleteMenuFor(actionMenuFor); }} className="rounded-full p-2.5 text-red-600 hover:bg-red-50" aria-label="Delete message"><DeleteIcon /></button>
-              <button onClick={() => enterSelectionMode(actionMenuFor)} className="rounded-full p-2.5 text-slate-700 hover:bg-slate-100" aria-label="Forward message"><ForwardIcon /></button>
+            <div className="flex items-center justify-center gap-2 px-2 py-2">
+              <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Pin message"><PinIcon /></button>
+              <button onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Delete message"><DeleteIcon /></button>
+              <button onClick={() => enterSelectionMode(actionMenuFor)} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Forward message"><ForwardIcon /></button>
             </div>
           </div>
         </div>
