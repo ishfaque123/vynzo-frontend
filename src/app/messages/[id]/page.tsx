@@ -463,7 +463,7 @@ export default function ChatPage() {
     if (!content) return;
     const socket = getSocket();
     if (editingMessage) {
-      socket.emit('message:edit', { messageId: editingMessage.id, content: payload }, (res: { success: boolean; error?: string }) => {
+      socket.emit('message:edit', { messageId: editingMessage.id, content }, (res: { success: boolean; error?: string }) => {
         if (res.success) {
           setEditingMessage(null);
           setText('');
