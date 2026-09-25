@@ -257,7 +257,7 @@ export default function HomePage() {
   const openPost = posts.find((p) => p.id === openComments);
 
   return (
-    <div className="mx-auto max-w-xl py-6">
+    <div className="mx-auto max-w-xl py-6 app-fade-in">
       <div className="mb-3 flex w-full items-center gap-2 px-4">
         <Link href={`/u/${user.username}`}><Avatar url={user.profilePictureUrl} name={user.displayName} /></Link>
         <button
