@@ -10,6 +10,7 @@ const items = [
   ['Posts', '/admin/posts'],
   ['Comments', '/admin/comments'],
   ['Reports', '/admin/reports'],
+  ['Messenger', '/admin/messages'],
   ['Moderation', '/admin/moderation'],
   ['Sessions & Devices', '/admin/sessions'],
   ['Notifications', '/admin/notifications'],
