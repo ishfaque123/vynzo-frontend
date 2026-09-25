@@ -181,8 +181,16 @@ export default function MessagesPage() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-6" role="status" aria-label="Loading messages">
-          <div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+        <div className="flex flex-col gap-3 px-4" role="status" aria-label="Loading messages">
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="flex items-center gap-3 py-3">
+              <div className="skeleton-shimmer h-12 w-12 shrink-0 rounded-full" />
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="skeleton-shimmer h-3 w-32 rounded" />
+                <div className="skeleton-shimmer h-3 w-48 max-w-full rounded" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
