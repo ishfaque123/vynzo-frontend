@@ -49,6 +49,10 @@ html.dark .bg-slate-100 {
   background-color: #333d4d;
 }
 
+html.dark .border-slate-100 {
+  border-color: #333d4d;
+}
+
 html.dark .bg-slate-200 {
   background-color: #3d4759;
 }
