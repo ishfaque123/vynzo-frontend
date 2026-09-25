@@ -123,7 +123,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <UsageTracker />
       <PushRegistrar />
       {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between">
+        <div className="mx-auto flex w-full max-w-xl md:max-w-5xl items-center justify-between">
         <div className="flex items-center gap-1">
           {isInSettingsMenu ? (
             <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
@@ -153,7 +153,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </header>}
 
       {!hideChrome && <nav className="shrink-0 border-t border-b bg-white">
-        <div className="mx-auto flex max-w-xl items-center justify-around py-2">
+        <div className="mx-auto flex max-w-xl md:max-w-5xl items-center justify-around py-2">
           <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
           <Link href="/notifications" aria-label="Notifications" className="relative p-2">
