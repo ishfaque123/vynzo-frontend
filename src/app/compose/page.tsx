@@ -351,16 +351,18 @@ export default function ComposePage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={submitting}
-            className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-slate-600 disabled:opacity-40"
+            aria-label="Add photo"
+            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
-            <ImageIcon /> Photo
+            <ImageIcon />
           </button>
           <button
             onClick={() => setTagPickerOpen(true)}
             disabled={submitting || taggedUsers.length >= MAX_TAGS}
-            className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-slate-600 disabled:opacity-40"
+            aria-label="Tag people"
+            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
-            <TagIcon /> Tag
+            <TagIcon />
           </button>
           <input
             ref={cameraInputRef}
@@ -373,9 +375,10 @@ export default function ComposePage() {
           <button
             onClick={() => cameraInputRef.current?.click()}
             disabled={submitting}
-            className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-slate-600 disabled:opacity-40"
+            aria-label="Record video"
+            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
-            <CameraIcon /> Camera
+            <CameraIcon />
           </button>
           <input
             ref={videoInputRef}
@@ -387,9 +390,10 @@ export default function ComposePage() {
           <button
             onClick={() => videoInputRef.current?.click()}
             disabled={submitting}
-            className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-slate-600 disabled:opacity-40"
+            aria-label="Upload video"
+            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
-            <VideoIcon /> Video
+            <VideoIcon />
           </button>
         </div>
         <span className="text-xs text-slate-400">{content.length}/{MAX_LENGTH}</span>
