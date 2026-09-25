@@ -301,6 +301,7 @@ export default function ChatPage() {
   const [forwardPickerOpen, setForwardPickerOpen] = useState(false);
   const [forwarding, setForwarding] = useState(false);
   const [forwardTargets, setForwardTargets] = useState<any[]>([]);
+  const [selectedForwardTargetIds, setSelectedForwardTargetIds] = useState<string[]>([]);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [decrypted, setDecrypted] = useState<Record<string, string>>({});
@@ -621,7 +622,8 @@ export default function ChatPage() {
   function stopRecording() {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
-    if (recordTimerRef.current) clearInterval(recordTimerRef.current);    const startedAt = (recorder as any)._startedAt || Date.now();
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+    const startedAt = (recorder as any)._startedAt || Date.now();
     const duration = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
 
     recorder.onstop = async () => {
@@ -681,40 +683,43 @@ export default function ChatPage() {
       return;
     }
     setForwardTargets(result.data.filter((c: any) => c.id !== conversationId && c.otherUser));
+    setSelectedForwardTargetIds([]);
     setForwardPickerOpen(true);
   }
 
-  async function sendForwardedMessages(targetConversationId: string) {
+  async function sendForwardedMessages() {
     const selected = messages.filter((m) => selectedMessageIds.includes(m.id) && !m.isDeleted);
-    if (!selected.length || forwarding || !user?.id) return;
-    const target = forwardTargets.find((c: any) => c.id === targetConversationId);
-    const targetPublicKey = target?.otherUser?.publicKey;
-    if (!targetPublicKey) {
-      showToast('This chat is not ready for secure forwarding.', 'error');
-      return;
-    }
+    if (!selected.length || !selectedForwardTargetIds.length || forwarding || !user?.id) return;
 
     setForwarding(true);
     try {
       const { privateKey } = await getOrCreateIdentity(user.id);
-      const targetKey = await deriveSharedKey(privateKey, targetPublicKey);
-      if (!targetKey) throw new Error('NO_KEY');
 
-      for (const message of selected) {
-        const plainText = decrypted[message.id] || '';
-        const encryptedContent = plainText ? await encryptText(targetKey, plainText) : '';
-        await new Promise<void>((resolve, reject) => {
-          getSocket().emit('message:send', {
-            conversationId: targetConversationId,
-            content: encryptedContent,
-            mediaUrl: message.mediaUrl || undefined,
-            mediaType: message.mediaType || undefined,
-            voiceDuration: message.voiceDuration || undefined,
-          }, (res: { success: boolean; error?: string }) => res.success ? resolve() : reject(new Error(res.error || 'SEND_FAILED')));
-        });
+      for (const targetConversationId of selectedForwardTargetIds) {
+        const target = forwardTargets.find((c: any) => c.id === targetConversationId);
+        const targetPublicKey = target?.otherUser?.publicKey;
+        if (!targetPublicKey) throw new Error('NO_TARGET_KEY');
+
+        const targetKey = await deriveSharedKey(privateKey, targetPublicKey);
+        if (!targetKey) throw new Error('NO_KEY');
+
+        for (const message of selected) {
+          const plainText = decrypted[message.id] || '';
+          const encryptedContent = plainText ? await encryptText(targetKey, plainText) : '';
+          await new Promise<void>((resolve, reject) => {
+            getSocket().emit('message:send', {
+              conversationId: targetConversationId,
+              content: encryptedContent,
+              mediaUrl: message.mediaUrl || undefined,
+              mediaType: message.mediaType || undefined,
+              voiceDuration: message.voiceDuration || undefined,
+            }, (res: { success: boolean; error?: string }) => res.success ? resolve() : reject(new Error(res.error || 'SEND_FAILED')));
+          });
+        }
       }
 
       setForwardPickerOpen(false);
+      setSelectedForwardTargetIds([]);
       setSelectedMessageIds([]);
       showToast('Message forwarded.', 'success');
     } catch {
@@ -723,6 +728,7 @@ export default function ChatPage() {
       setForwarding(false);
     }
   }
+
   function handleDeleteForMe() {
     if (!deleteMenuFor) return;
     const id = deleteMenuFor.id;
@@ -1097,19 +1103,36 @@ export default function ChatPage() {
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" onClick={() => !forwarding && setForwardPickerOpen(false)}>
           <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <div><p className="font-semibold">Forward message</p><p className="text-xs text-slate-500">{selectedMessageIds.length} selected</p></div>
+              <div>
+                <p className="font-semibold">Forward message</p>
+                <p className="text-xs text-slate-500">{selectedMessageIds.length} selected</p>
+              </div>
               <button onClick={() => setForwardPickerOpen(false)} disabled={forwarding} className="text-sm text-slate-500">Cancel</button>
             </div>
             <div className="max-h-[55vh] overflow-y-auto">
-              {forwardTargets.map((c: any) => (
-                <button key={c.id} onClick={() => sendForwardedMessages(c.id)} disabled={forwarding} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-slate-50 disabled:opacity-50">
-                  {c.otherUser?.profilePictureUrl ? <img src={c.otherUser.profilePictureUrl} alt="" className="h-10 w-10 rounded-full object-cover" /> : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600">{(c.otherUser?.displayName || c.otherUser?.username || '?').charAt(0).toUpperCase()}</div>}
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.otherUser?.displayName || c.otherUser?.username}</span>
-                  <span className="text-xs text-slate-400">Send</span>
-                </button>
-              ))}
+              {forwardTargets.map((c: any) => {
+                const checked = selectedForwardTargetIds.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedForwardTargetIds((prev) => checked ? prev.filter((id) => id !== c.id) : [...prev, c.id])}
+                    disabled={forwarding}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-slate-50 disabled:opacity-50 ${checked ? 'bg-blue-50' : ''}`}
+                  >
+                    {c.otherUser?.profilePictureUrl ? <img src={c.otherUser.profilePictureUrl} alt="" className="h-10 w-10 rounded-full object-cover" /> : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600">{(c.otherUser?.displayName || c.otherUser?.username || '?').charAt(0).toUpperCase()}</div>}
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.otherUser?.displayName || c.otherUser?.username}</span>
+                    <span className={`flex h-5 w-5 items-center justify-center rounded-full border text-xs ${checked ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 text-transparent'}`}>✓</span>
+                  </button>
+                );
+              })}
             </div>
-            {forwarding && <p className="mt-3 text-center text-xs text-slate-500">Sending...</p>}
+            <button
+              onClick={() => sendForwardedMessages()}
+              disabled={!selectedForwardTargetIds.length || forwarding}
+              className="mt-3 w-full rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+            >
+              {forwarding ? 'Sending...' : `Send to ${selectedForwardTargetIds.length || ''}${selectedForwardTargetIds.length ? ' chat' + (selectedForwardTargetIds.length > 1 ? 's' : '') : ' selected chats'}`}
+            </button>
           </div>
         </div>
       )}
