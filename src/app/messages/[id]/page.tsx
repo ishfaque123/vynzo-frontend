@@ -351,7 +351,7 @@ export default function ChatPage() {
           fetchBlockStatus(convo.otherUser.id).then((res) => {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
-
+        }
       }
     });
 
