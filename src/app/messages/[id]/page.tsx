@@ -202,6 +202,7 @@ interface Message {
   replyTo?: { id: string; content: string; mediaType?: string | null; sender?: { displayName: string; username: string } | null } | null;
   pinnedAt?: string | null;
   pinnedById?: string | null;
+  isForwarded?: boolean | null;
   reactions?: { userId: string; emoji: string }[];
   createdAt: string;
   sender?: { id: string; username: string; displayName: string; profilePictureUrl?: string };
@@ -728,6 +729,7 @@ export default function ChatPage() {
               mediaUrl: message.mediaUrl || undefined,
               mediaType: message.mediaType || undefined,
               voiceDuration: message.voiceDuration || undefined,
+              isForwarded: message.senderId !== user?.id,
             }, (res: { success: boolean; error?: string }) => res.success ? resolve() : reject(new Error(res.error || 'SEND_FAILED')));
           });
         }
@@ -956,6 +958,9 @@ export default function ChatPage() {
                     <p>This message was deleted</p>
                   ) : (
                     <>
+                      {m.isForwarded && (
+                        <div className="mb-1 flex items-center gap-1 text-[11px] font-medium italic text-slate-500">Forwarded</div>
+                      )}
                       {isImage && (
                         <img src={m.mediaUrl!} alt="" className="max-h-72 w-full rounded-xl object-cover" />
                       )}
