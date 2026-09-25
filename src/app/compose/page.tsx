@@ -260,7 +260,7 @@ export default function ComposePage() {
   const currentAudience = AUDIENCE_OPTIONS.find((a) => a.value === visibility)!;
 
   return (
-    <div className="mx-auto flex h-[100dvh] max-w-xl flex-col">
+    <div className="mx-auto flex h-[100dvh] max-w-xl flex-col overflow-x-hidden">
       <div className="flex items-center justify-between border-b px-4 py-3">
         <button onClick={() => router.back()} aria-label="Close" disabled={submitting} className="text-slate-600 disabled:opacity-40">
           <CloseIcon />
@@ -282,7 +282,7 @@ export default function ComposePage() {
       )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Avatar url={user?.profilePictureUrl} name={user?.displayName} />
           <div>
             <p className="font-semibold text-slate-900">{user?.displayName || user?.username}</p>
@@ -339,8 +339,8 @@ export default function ComposePage() {
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3">
+        <div className="flex flex-wrap items-center gap-1.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -352,7 +352,7 @@ export default function ComposePage() {
             onClick={() => fileInputRef.current?.click()}
             disabled={submitting}
             aria-label="Add photo"
-            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <ImageIcon />
           </button>
@@ -360,7 +360,7 @@ export default function ComposePage() {
             onClick={() => setTagPickerOpen(true)}
             disabled={submitting || taggedUsers.length >= MAX_TAGS}
             aria-label="Tag people"
-            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <TagIcon />
           </button>
@@ -376,7 +376,7 @@ export default function ComposePage() {
             onClick={() => cameraInputRef.current?.click()}
             disabled={submitting}
             aria-label="Record video"
-            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <CameraIcon />
           </button>
@@ -391,7 +391,7 @@ export default function ComposePage() {
             onClick={() => videoInputRef.current?.click()}
             disabled={submitting}
             aria-label="Upload video"
-            className="flex h-9 w-9 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <VideoIcon />
           </button>
