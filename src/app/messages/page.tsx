@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from 'r
 import Link from 'next/link';
 import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
-import { getOrCreateIdentity, deriveSharedKey, tryDecryptText } from '@/lib/crypto/e2ee';
 import { useAuth } from '@/lib/auth/useAuth';
 
 function PlusIcon() {
@@ -28,7 +27,7 @@ function TrashIcon() {
 
 interface ConversationItem {
   id: string;
-  otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean; publicKey?: string | null } | null;
+  otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean;   } | null;
   lastMessage: { content: string; senderId: string; createdAt: string; mediaType?: 'image' | 'voice' | null; isDeleted?: boolean } | null;
   unread: boolean;
   updatedAt: string;
@@ -71,25 +70,18 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const pending = conversations.filter(
-      (c) => c.lastMessage?.content && c.otherUser?.publicKey && !(c.id in previews)
-    );
-    if (!pending.length) return;
-    let cancelled = false;
-    (async () => {
-      const { privateKey } = await getOrCreateIdentity(user.id, user.publicKey);
-      const updates: Record<string, string> = {};
-      for (const c of pending) {
-        const key = await deriveSharedKey(privateKey, c.otherUser!.publicKey!);
-        updates[c.id] = await tryDecryptText(key, c.lastMessage!.content);
+    const updates: Record<string, string> = {};
+    for (const c of conversations) {
+      if (c.lastMessage?.content && !(c.id in previews)) {
+        updates[c.id] = c.lastMessage.content;
       }
-      if (!cancelled) setPreviews((prev) => ({ ...prev, ...updates }));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [conversations, user?.id]);
+    }
+    if (Object.keys(updates).length) {
+      setPreviews((prev) => ({ ...prev, ...updates }));
+    }
+  }, [conversations, previews]);
+
+
 
   function clearPressTimer() {
     if (pressTimer.current) {
