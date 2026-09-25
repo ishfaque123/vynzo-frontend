@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { playPostSound } from '@/lib/sounds';
 import { takePendingComposeImage } from '@/lib/pendingComposeImage';
+import { setPendingReelVideo } from '@/lib/pendingReelVideo';
+import { fetchReelsConfig, fetchMyReelStatus } from '@/lib/api/reelApi';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_LENGTH = 2000;
@@ -29,6 +31,31 @@ function RemoveIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
     </svg>
+  );
+}
+function CameraIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+function VideoIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" />
+    </svg>
+  );
+}
+function VideoNotice({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-5" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <p className="mb-4 text-sm leading-6 text-slate-700">{message}</p>
+        <button type="button" onClick={onClose} className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">OK</button>
+      </div>
+    </div>
   );
 }
 function TagIcon() {
@@ -82,6 +109,9 @@ export default function ComposePage() {
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [videoNotice, setVideoNotice] = useState<string | null>(null);
 
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
@@ -104,6 +134,52 @@ export default function ComposePage() {
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
   }
+  async function handleVideoPicked(file: File) {
+    if (!file.type.startsWith('video/')) {
+      setVideoNotice('Please select a video file.');
+      return;
+    }
+    const [config, status] = await Promise.all([fetchReelsConfig(), fetchMyReelStatus()]);
+    const enabled = !!(config.success && config.data?.enabled);
+    if (!enabled) {
+      setVideoNotice('Video reels are not available right now.');
+      return;
+    }
+    const remaining = status.success ? Number(status.data?.remaining) : 0;
+    if (!Number.isFinite(remaining) || remaining <= 0) {
+      setVideoNotice("You've reached your reel limit for the last 24 hours. Please try again later.");
+      return;
+    }
+    const maxDuration = Number(config.data?.maxDurationSec) > 0 ? Number(config.data.maxDurationSec) : 60;
+
+    const objectUrl = URL.createObjectURL(file);
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.onloadedmetadata = () => {
+      const duration = probe.duration;
+      URL.revokeObjectURL(objectUrl);
+      probe.removeAttribute('src');
+      probe.load();
+      if (!Number.isFinite(duration) || duration <= 0) {
+        setVideoNotice('Could not read the video duration. Please choose another video.');
+        return;
+      }
+      if (duration > maxDuration) {
+        setVideoNotice(`Reels must be ${maxDuration} seconds or shorter.`);
+        return;
+      }
+      setPendingReelVideo(file, duration);
+      router.push('/reels/new');
+    };
+    probe.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      probe.removeAttribute('src');
+      probe.load();
+      setVideoNotice('Could not read this video. Please choose another video.');
+    };
+    probe.src = objectUrl;
+  }
+
   function removeImage() {
     setImage(null);
     if (imagePreview) URL.revokeObjectURL(imagePreview);
@@ -286,9 +362,40 @@ export default function ComposePage() {
           >
             <TagIcon /> Tag
           </button>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="video/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleVideoPicked(file); }}
+          />
+          <button
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={submitting}
+            className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-slate-600 disabled:opacity-40"
+          >
+            <CameraIcon /> Camera
+          </button>
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleVideoPicked(file); }}
+          />
+          <button
+            onClick={() => videoInputRef.current?.click()}
+            disabled={submitting}
+            className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-slate-600 disabled:opacity-40"
+          >
+            <VideoIcon /> Video
+          </button>
         </div>
         <span className="text-xs text-slate-400">{content.length}/{MAX_LENGTH}</span>
       </div>
+
+      {videoNotice && <VideoNotice message={videoNotice} onClose={() => setVideoNotice(null)} />}
 
       {audiencePickerOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setAudiencePickerOpen(false)}>
