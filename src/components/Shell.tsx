@@ -122,7 +122,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <div className={`flex flex-col bg-slate-50 ${isReels ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'}`}>
       <UsageTracker />
       <PushRegistrar />
-      {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 items-center justify-between bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+        <div className="mx-auto flex w-full max-w-xl items-center justify-between">
         <div className="flex items-center gap-1">
           {isInSettingsMenu ? (
             <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
@@ -147,6 +148,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             </>
           )}
+        </div>
         </div>
       </header>}
 
