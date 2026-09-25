@@ -145,7 +145,7 @@ function messageFor(n: Notification): string {
     case 'reel_reply':
       return `${name} replied to your comment on a reel`;
     case 'comment_mention':
-      return `${name} mentioned you in a comment`;
+      return n.commentId ? `${name} mentioned you in a comment` : `${name} tagged you in a post`;
     case 'new_device_login':
       return 'New login detected on your account';
     default:
