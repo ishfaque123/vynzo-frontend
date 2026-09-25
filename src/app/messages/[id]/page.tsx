@@ -326,6 +326,7 @@ export default function ChatPage() {
                 // Publish only the public half. The private key stays in
                 // account-scoped localStorage and never leaves this browser.
                 await updateProfile({ publicKey: publicKeyJson });
+                getSocket().emit('e2ee:public-key', { publicKey: publicKeyJson });
                 if (!convo.otherUser.publicKey) {
                   sharedKeyRef.current = null;
                   setKeyReady(false);
@@ -367,6 +368,20 @@ export default function ChatPage() {
     function handleTypingStop({ conversationId: cid, userId }: { conversationId: string; userId: string }) {
       if (cid === conversationId && userId !== user?.id) setOtherTyping(false);
     }
+    function handleE2eePublicKey({ userId: incomingUserId, publicKey }: { userId: string; publicKey: string }) {
+      if (incomingUserId !== otherUser?.id || !user?.id) return;
+      getOrCreateIdentity(user.id, publicKey)
+        .then(({ privateKey }) => deriveSharedKey(privateKey, publicKey))
+        .then((key) => {
+          sharedKeyRef.current = key;
+          setKeyReady(!!key);
+        })
+        .catch(() => {
+          sharedKeyRef.current = null;
+          setKeyReady(false);
+        });
+    }
+
     function handlePresenceOnline({ userId }: { userId: string }) {
       setOtherUser((prev) => (prev && prev.id === userId ? { ...prev, isOnline: true } : prev));
     }
@@ -407,6 +422,7 @@ export default function ChatPage() {
     socket.on('message:deleted', handleMessageDeleted);
     socket.on('typing:start', handleTypingStart);
     socket.on('typing:stop', handleTypingStop);
+    socket.on('e2ee:public-key', handleE2eePublicKey);
     socket.on('presence:online', handlePresenceOnline);
     socket.on('presence:offline', handlePresenceOffline);
     socket.on('conversation:read', handleConversationRead);
@@ -421,6 +437,7 @@ export default function ChatPage() {
       socket.off('message:deleted', handleMessageDeleted);
       socket.off('typing:start', handleTypingStart);
       socket.off('typing:stop', handleTypingStop);
+      socket.off('e2ee:public-key', handleE2eePublicKey);
       socket.off('presence:online', handlePresenceOnline);
       socket.off('presence:offline', handlePresenceOffline);
       socket.off('conversation:read', handleConversationRead);
