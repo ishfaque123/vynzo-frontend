@@ -699,18 +699,7 @@ export default function ChatPage() {
                   View profile
                 </Link>
               )}
-              {replyTo && !editingMessage && (
-        <div className="border-t bg-slate-50 px-3 py-2 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0"><span className="font-semibold">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</span><p className="truncate text-slate-500">{decrypted[replyTo.id] || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p></div>
-            <button onClick={() => setReplyTo(null)} className="px-2 text-slate-500">✕</button>
-          </div>
-        </div>
-      )}
-      {editingMessage && (
-        <div className="border-t bg-amber-50 px-3 py-2 text-xs"><div className="flex items-center justify-between"><span className="font-semibold">Editing message</span><button onClick={() => { setEditingMessage(null); setText(''); }}>Cancel</button></div></div>
-      )}
-      {isBlocked ? (
+              {isBlocked ? (
                 <button onClick={handleUnblock} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                   Unblock user
                 </button>
@@ -813,6 +802,17 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
+      {replyTo && !editingMessage && (
+        <div className="border-t bg-slate-50 px-3 py-2 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0"><span className="font-semibold">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</span><p className="truncate text-slate-500">{decrypted[replyTo.id] || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p></div>
+            <button onClick={() => setReplyTo(null)} className="px-2 text-slate-500">✕</button>
+          </div>
+        </div>
+      )}
+      {editingMessage && (
+        <div className="border-t bg-amber-50 px-3 py-2 text-xs"><div className="flex items-center justify-between"><span className="font-semibold">Editing message</span><button onClick={() => { setEditingMessage(null); setText(''); }}>Cancel</button></div></div>
+      )}
       {isBlocked ? (
         <div className="border-t bg-white p-3">
           <button
