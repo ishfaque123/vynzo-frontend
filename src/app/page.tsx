@@ -257,8 +257,8 @@ export default function HomePage() {
   const openPost = posts.find((p) => p.id === openComments);
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-6">
-      <div className="mb-3 flex w-full items-center gap-2">
+    <div className="mx-auto max-w-xl py-6">
+      <div className="mb-3 flex w-full items-center gap-2 px-4">
         <Link href={`/u/${user.username}`}><Avatar url={user.profilePictureUrl} name={user.displayName} /></Link>
         <button
           onClick={() => { if (!feedOffline) router.push('/compose'); }}
@@ -291,16 +291,16 @@ export default function HomePage() {
         </button>
       </div>
 
-      <StatusBar user={user} offline={feedOffline} />
+      <div className="px-4"><StatusBar user={user} offline={feedOffline} /></div>
 
       {feedLoading ? (
-        <div className="flex flex-col gap-3" role="status" aria-label="Loading feed">
+        <div className="flex flex-col gap-3 px-4" role="status" aria-label="Loading feed">
           <SkeletonPostCard />
           <SkeletonPostCard />
           <SkeletonPostCard />
         </div>
       ) : feedError ? (
-        <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
           <p className="text-sm text-red-500">Failed to load posts. Please try again.</p>
           <button
             onClick={loadFeed}
@@ -310,10 +310,10 @@ export default function HomePage() {
           </button>
         </div>
       ) : posts.length === 0 ? (
-        <p className="text-slate-500">No posts yet. Be the first to post!</p>
+        <p className="px-4 text-slate-500">No posts yet. Be the first to post!</p>
       ) : (
         <>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col">
             {posts.map((post, index) => (
               <div key={post.id}>
                 <PostCard post={post} currentUser={user}
@@ -324,12 +324,12 @@ export default function HomePage() {
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
                 {(index + 1) % 5 === 0 && (
-                  <div className="my-4">
+                  <div className="my-4 px-4">
                     <AdUnit />
                   </div>
                 )}
                 {(index + 1) % 2 === 0 && reels.length > 0 && (
-                  <div className="my-4">
+                  <div className="my-4 px-4">
                     <FeedReelCard reel={reels[Math.floor(index / 2) % reels.length]} />
                   </div>
                 )}
@@ -337,7 +337,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div ref={sentinelRef} className="flex min-h-12 items-center justify-center py-4 text-sm text-slate-400">
+          <div ref={sentinelRef} className="flex min-h-12 items-center justify-center px-4 py-4 text-sm text-slate-400">
             {loadingMore ? (
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" />
             ) : hasMore ? null : "You're all caught up"}

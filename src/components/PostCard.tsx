@@ -109,7 +109,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="w-full overflow-hidden border-b-[8px] border-slate-100 bg-white">
       <div className="flex items-start justify-between p-3 pb-2">
         {post.originalPost ? (
           <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">
