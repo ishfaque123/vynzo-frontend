@@ -125,7 +125,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             <div className="min-w-0 flex-1 leading-tight">
               <div className="flex min-w-0 items-center gap-1.5">
                 <Link href={`/u/${post.author.username}`} title={post.author.displayName}
-                  className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-900"
+                  className="min-w-0 max-w-[60%] truncate text-[15px] font-semibold text-slate-900"
                 >
                   {post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
                 {!isOwner && !offline && (
