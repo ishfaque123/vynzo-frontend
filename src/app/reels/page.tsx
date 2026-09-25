@@ -238,7 +238,6 @@ export default function ReelsPage() {
     <div className="absolute inset-0 flex items-center justify-center bg-black">
       <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo reels">
         <span className="absolute inset-0 animate-spin rounded-full border-4 border-white/20 border-t-white" />
-        <img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" />
       </div>
     </div>
   );
