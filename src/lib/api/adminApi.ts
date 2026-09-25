@@ -102,3 +102,7 @@ export function reviewAdminVerificationRequest(requestId: string, action: 'appro
 export function clearAllAdminMessages() {
   return request('/messages/clear-all', { method: 'DELETE' });
 }
+
+export function deleteAdminReport(type: 'post' | 'user' | 'comment' | 'reel-comment', reportId: string) {
+  return request(`/reports/${type}/${reportId}`, { method: 'DELETE' });
+}
