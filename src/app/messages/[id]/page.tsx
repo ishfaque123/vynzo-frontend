@@ -38,6 +38,27 @@ function CheckIcon() {
     </svg>
   );
 }
+function ForwardIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 12h12" /><path d="M12 6l6 6-6 6" />
+    </svg>
+  );
+}
+function PinIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M9 3h6l1 5 3 3-5 1v8l-2-2-2 2v-8l-5-1 3-3 1-5z" />
+    </svg>
+  );
+}
+function DeleteIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M7 7l1 13h8l1-13" />
+    </svg>
+  );
+}
 
 function ImageIcon() {
   return (
@@ -276,6 +297,10 @@ export default function ChatPage() {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [deleteMenuFor, setDeleteMenuFor] = useState<Message | null>(null);
   const [actionMenuFor, setActionMenuFor] = useState<Message | null>(null);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [forwardPickerOpen, setForwardPickerOpen] = useState(false);
+  const [forwarding, setForwarding] = useState(false);
+  const [forwardTargets, setForwardTargets] = useState<any[]>([]);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [decrypted, setDecrypted] = useState<Record<string, string>>({});
@@ -297,7 +322,6 @@ export default function ChatPage() {
     setToast({ message, type });
     toastTimeout.current = setTimeout(() => setToast(null), 3000);
   }
-
   useEffect(() => {
     const pending = takePendingMessageText();
     if (pending) setText(pending);
@@ -597,8 +621,7 @@ export default function ChatPage() {
   function stopRecording() {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
-    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-    const startedAt = (recorder as any)._startedAt || Date.now();
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current);    const startedAt = (recorder as any)._startedAt || Date.now();
     const duration = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
 
     recorder.onstop = async () => {
@@ -625,11 +648,80 @@ export default function ChatPage() {
   }
 
   function startLongPress(m: Message) {
-    if (m.isDeleted) return;
+    if (m.isDeleted || selectedMessageIds.length) return;
     longPressTimer.current = setTimeout(() => setActionMenuFor(m), 450);
   }
   function cancelLongPress() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+
+  function enterSelectionMode(message: Message) {
+    if (message.isDeleted) return;
+    setActionMenuFor(null);
+    setSelectedMessageIds((prev) => (prev.includes(message.id) ? prev : [...prev, message.id]));
+  }
+
+  function toggleSelectedMessage(message: Message) {
+    if (message.isDeleted) return;
+    setSelectedMessageIds((prev) =>
+      prev.includes(message.id) ? prev.filter((id) => id !== message.id) : [...prev, message.id]
+    );
+  }
+
+  function exitSelectionMode() {
+    setSelectedMessageIds([]);
+    setForwardPickerOpen(false);
+  }
+
+  async function openForwardPicker() {
+    if (!selectedMessageIds.length) return;
+    const result = await fetchConversations();
+    if (!result.success) {
+      showToast('Could not load chats.', 'error');
+      return;
+    }
+    setForwardTargets(result.data.filter((c: any) => c.id !== conversationId && c.otherUser));
+    setForwardPickerOpen(true);
+  }
+
+  async function sendForwardedMessages(targetConversationId: string) {
+    const selected = messages.filter((m) => selectedMessageIds.includes(m.id) && !m.isDeleted);
+    if (!selected.length || forwarding || !user?.id) return;
+    const target = forwardTargets.find((c: any) => c.id === targetConversationId);
+    const targetPublicKey = target?.otherUser?.publicKey;
+    if (!targetPublicKey) {
+      showToast('This chat is not ready for secure forwarding.', 'error');
+      return;
+    }
+
+    setForwarding(true);
+    try {
+      const { privateKey } = await getOrCreateIdentity(user.id);
+      const targetKey = await deriveSharedKey(privateKey, targetPublicKey);
+      if (!targetKey) throw new Error('NO_KEY');
+
+      for (const message of selected) {
+        const plainText = decrypted[message.id] || '';
+        const encryptedContent = plainText ? await encryptText(targetKey, plainText) : '';
+        await new Promise<void>((resolve, reject) => {
+          getSocket().emit('message:send', {
+            conversationId: targetConversationId,
+            content: encryptedContent,
+            mediaUrl: message.mediaUrl || undefined,
+            mediaType: message.mediaType || undefined,
+            voiceDuration: message.voiceDuration || undefined,
+          }, (res: { success: boolean; error?: string }) => res.success ? resolve() : reject(new Error(res.error || 'SEND_FAILED')));
+        });
+      }
+
+      setForwardPickerOpen(false);
+      setSelectedMessageIds([]);
+      showToast('Message forwarded.', 'success');
+    } catch {
+      showToast('Could not forward message.', 'error');
+    } finally {
+      setForwarding(false);
+    }
   }
   function handleDeleteForMe() {
     if (!deleteMenuFor) return;
@@ -792,14 +884,16 @@ export default function ChatPage() {
             const status = isMine ? messageStatus(m, otherLastReadAt, otherLastDeliveredAt) : null;
             const isImage = m.mediaType === 'image' && m.mediaUrl;
             const isVoice = m.mediaType === 'voice' && m.mediaUrl;
+            const isSelected = selectedMessageIds.includes(m.id);
             return (
               <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   onTouchStart={() => startLongPress(m)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
+                  onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
-                  className={`max-w-[75%] rounded-2xl text-[15px] leading-snug ${
+                  className={`max-w-[75%] rounded-2xl text-[15px] leading-snug transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
                     isImage || isVoice ? '' : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
                   } ${m.isDeleted ? 'px-3 py-2' : isImage ? 'p-1.5' : isVoice ? 'px-1 py-1' : 'px-3 py-2'}`}
@@ -897,8 +991,7 @@ export default function ChatPage() {
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Message..."
                 className="flex-1 rounded-full border px-4 py-2 text-sm"
-              />
-              {text.trim() ? (
+              />              {text.trim() ? (
                 <button onClick={sendMessage} className="rounded-full bg-slate-900 p-2.5 text-white" aria-label="Send">
                   <SendIcon />
                 </button>
@@ -972,57 +1065,63 @@ export default function ChatPage() {
       )}
 
       {actionMenuFor && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setActionMenuFor(null)}>
-          <div className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-center py-2"><span className="h-1 w-10 rounded-full bg-slate-300" /></div>
-            <div className="flex gap-2 overflow-x-auto px-2 pb-2">
-              {['❤️','😂','😮','😢','😡','👍','👎'].map((emoji) => (
-                <button key={emoji} onClick={() => { getSocket().emit('message:reaction', { messageId: actionMenuFor.id, emoji }); setActionMenuFor(null); }} className="rounded-full border px-3 py-2 text-lg">{emoji}</button>
+        <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setActionMenuFor(null)}>
+          <div className="fixed left-0 right-0 top-0 z-50 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
+            {actionMenuFor.senderId !== user?.id && (
+              <div className="flex gap-1 overflow-x-auto border-b px-3 py-2">
+                {['❤️','😂','😮','😢','😡','👍','👎'].map((emoji) => (
+                  <button key={emoji} onClick={() => { getSocket().emit('message:reaction', { messageId: actionMenuFor.id, emoji }); setActionMenuFor(null); }} className="rounded-full px-2 py-1 text-xl">{emoji}</button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-1 px-3 py-2">
+              <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); }} className="rounded-full p-2.5 text-slate-700 hover:bg-slate-100" aria-label="Pin message"><PinIcon /></button>
+              <button onClick={() => { setActionMenuFor(null); setDeleteMenuFor(actionMenuFor); }} className="rounded-full p-2.5 text-red-600 hover:bg-red-50" aria-label="Delete message"><DeleteIcon /></button>
+              <button onClick={() => enterSelectionMode(actionMenuFor)} className="rounded-full p-2.5 text-slate-700 hover:bg-slate-100" aria-label="Forward message"><ForwardIcon /></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedMessageIds.length > 0 && (
+        <div className="fixed left-0 right-0 top-0 z-50 flex items-center gap-3 bg-white px-3 py-2 shadow-md">
+          <button onClick={exitSelectionMode} className="p-2 text-slate-700" aria-label="Cancel selection">✕</button>
+          <span className="text-sm font-semibold">{selectedMessageIds.length}</span>
+          <div className="ml-auto">
+            <button onClick={openForwardPicker} className="rounded-full p-2 text-slate-700 hover:bg-slate-100" aria-label="Forward selected messages"><ForwardIcon /></button>
+          </div>
+        </div>
+      )}
+
+      {forwardPickerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" onClick={() => !forwarding && setForwardPickerOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <div><p className="font-semibold">Forward message</p><p className="text-xs text-slate-500">{selectedMessageIds.length} selected</p></div>
+              <button onClick={() => setForwardPickerOpen(false)} disabled={forwarding} className="text-sm text-slate-500">Cancel</button>
+            </div>
+            <div className="max-h-[55vh] overflow-y-auto">
+              {forwardTargets.map((c: any) => (
+                <button key={c.id} onClick={() => sendForwardedMessages(c.id)} disabled={forwarding} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-slate-50 disabled:opacity-50">
+                  {c.otherUser?.profilePictureUrl ? <img src={c.otherUser.profilePictureUrl} alt="" className="h-10 w-10 rounded-full object-cover" /> : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600">{(c.otherUser?.displayName || c.otherUser?.username || '?').charAt(0).toUpperCase()}</div>}
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.otherUser?.displayName || c.otherUser?.username}</span>
+                  <span className="text-xs text-slate-400">Send</span>
+                </button>
               ))}
             </div>
-            <button onClick={() => { setReplyTo(actionMenuFor); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-slate-50">Reply</button>
-            {actionMenuFor.senderId === user?.id && !actionMenuFor.mediaType && (
-              <button onClick={() => { setEditingMessage(actionMenuFor); setText(decrypted[actionMenuFor.id] || ''); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-slate-50">Edit</button>
-            )}
-            <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm hover:bg-slate-50">{actionMenuFor.pinnedAt ? 'Unpin message' : 'Pin message'}</button>
-            <button onClick={() => { setDeleteMenuFor(actionMenuFor); setActionMenuFor(null); }} className="w-full rounded-lg px-4 py-3 text-left text-sm text-red-600 hover:bg-slate-50">Delete</button>
-            <button onClick={() => setActionMenuFor(null)} className="mt-1 w-full rounded-lg border px-4 py-3 text-sm">Cancel</button>
+            {forwarding && <p className="mt-3 text-center text-xs text-slate-500">Sending...</p>}
           </div>
         </div>
       )}
 
       {deleteMenuFor && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
-          onClick={() => setDeleteMenuFor(null)}
-        >
-          <div
-            className="w-full max-w-xl rounded-t-2xl bg-white p-2 pb-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex flex-col items-center pt-2 pb-1">
-              <span className="h-1 w-10 rounded-full bg-slate-300" />
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setDeleteMenuFor(null)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-base font-semibold text-slate-900">Delete Message From {deleteMenuFor.senderId === user?.id ? 'you' : (deleteMenuFor.sender?.displayName || otherUser?.displayName || 'sender')}?</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setDeleteMenuFor(null)} className="rounded-full border px-5 py-2.5 text-sm font-medium text-slate-700">Cancel</button>
+              <button onClick={handleDeleteForMe} className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white">Delete</button>
             </div>
-            <button
-              onClick={handleDeleteForMe}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-slate-800 hover:bg-slate-50"
-            >
-              Delete for me
-            </button>
-            {deleteMenuFor.senderId === user?.id && (
-              <button
-                onClick={handleDeleteForEveryone}
-                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-red-600 hover:bg-slate-50"
-              >
-                Delete for everyone
-              </button>
-            )}
-            <button
-              onClick={() => setDeleteMenuFor(null)}
-              className="mt-1 flex w-full items-center justify-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium text-slate-700"
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
