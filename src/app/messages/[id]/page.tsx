@@ -281,6 +281,7 @@ export default function ChatPage() {
   const [decrypted, setDecrypted] = useState<Record<string, string>>({});
   const [keyReady, setKeyReady] = useState(false);
   const sharedKeyRef = useRef<CryptoKey | null>(null);
+  const otherUserIdRef = useRef<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -317,6 +318,7 @@ export default function ChatPage() {
         const convo = result.data.find((c: any) => c.id === conversationId);
         if (convo?.otherUser) {
           setOtherUser(convo.otherUser);
+          otherUserIdRef.current = convo.otherUser.id;
           fetchBlockStatus(convo.otherUser.id).then((res) => {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
@@ -369,7 +371,7 @@ export default function ChatPage() {
       if (cid === conversationId && userId !== user?.id) setOtherTyping(false);
     }
     function handleE2eePublicKey({ userId: incomingUserId, publicKey }: { userId: string; publicKey: string }) {
-      if (incomingUserId !== otherUser?.id || !user?.id) return;
+      if (incomingUserId !== otherUserIdRef.current || !user?.id) return;
       getOrCreateIdentity(user.id, publicKey)
         .then(({ privateKey }) => deriveSharedKey(privateKey, publicKey))
         .then((key) => {
