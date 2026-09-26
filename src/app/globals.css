@@ -57,6 +57,14 @@ html.dark .bg-slate-200 {
   background-color: #3d4759;
 }
 
+/* Selected-option highlight (audience / comment-audience pickers, etc.)
+   is a light blue tint designed for light mode; without a dark override
+   it stays near-white and swallows the light-colored text dark mode
+   gives everything else. */
+html.dark .bg-blue-50 {
+  background-color: #1e3a5f;
+}
+
 html.dark .bg-slate-900 {
   background-color: #e2e8f0;
   color: #1e2530;
