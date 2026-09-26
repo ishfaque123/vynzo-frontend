@@ -527,16 +527,47 @@ export default function ChatPage() {
   }
 
   async function startRecording() {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      showToast('Microphone is not available here.', 'error');
+      return;
+    }
+
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error) {
+      const name = error instanceof DOMException ? error.name : '';
+      const message =
+        name === 'NotAllowedError' || name === 'SecurityError'
+          ? 'Microphone permission denied. Please allow microphone access.'
+          : name === 'NotFoundError'
+            ? 'No microphone was found on this device.'
+            : name === 'NotReadableError'
+              ? 'Microphone is busy or unavailable. Please try again.'
+              : 'Could not access the microphone. Please try again.';
+      showToast(message, 'error');
+      return;
+    }
+
+    streamRef.current = stream;
+
+    try {
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus',
+      ];
+      const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
-      recorder.start();
       mediaRecorderRef.current = recorder;
+      recorder.start();
+
       const startedAt = Date.now();
       setRecording(true);
       setRecordSeconds(0);
@@ -545,7 +576,9 @@ export default function ChatPage() {
       }, 500);
       (recorder as any)._startedAt = startedAt;
     } catch {
-      showToast('Microphone permission denied.', 'error');
+      stream.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      showToast('Voice recording is not supported on this device.', 'error');
     }
   }
 
