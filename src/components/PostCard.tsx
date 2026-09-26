@@ -40,6 +40,17 @@ function RepostIcon() {
     </svg>
   );
 }
+const POST_BACKGROUND_CLASSES: Record<string, string> = {
+  sunset: 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600',
+  ocean: 'bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600',
+  violet: 'bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500',
+  mint: 'bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500',
+  peach: 'bg-gradient-to-br from-yellow-300 via-orange-400 to-rose-500',
+  night: 'bg-gradient-to-br from-slate-700 via-slate-900 to-black',
+  rose: 'bg-gradient-to-br from-rose-400 via-red-500 to-pink-600',
+  sky: 'bg-gradient-to-br from-sky-300 via-blue-400 to-indigo-500',
+};
+
 function CloseIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -162,7 +173,13 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         )}
       </div>
 
-      {post.content && <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />}
+      {post.content && (post.backgroundStyle && !post.imageUrl ? (
+        <div className={`mx-3 mb-2 flex min-h-56 items-center justify-center rounded-2xl p-6 text-center ${POST_BACKGROUND_CLASSES[post.backgroundStyle] || ''}`}>
+          <PostContent text={post.content} className="whitespace-pre-wrap text-2xl font-bold leading-snug text-white" />
+        </div>
+      ) : (
+        <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
+      ))}
       {post.imageUrl && <img src={post.imageUrl} alt="" className="w-full" />}
 
       {post.originalPost && (
@@ -179,7 +196,13 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
-          {post.originalPost.content && <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />}
+          {post.originalPost.content && (post.originalPost.backgroundStyle && !post.originalPost.imageUrl ? (
+            <div className={`mt-2 flex min-h-40 items-center justify-center rounded-lg p-5 text-center ${POST_BACKGROUND_CLASSES[post.originalPost.backgroundStyle] || ''}`}>
+              <PostContent text={post.originalPost.content} className="whitespace-pre-wrap text-xl font-bold text-white" />
+            </div>
+          ) : (
+            <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
+          ))}
           {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt="" className="mt-2 w-full rounded-lg" />}
         </div>
       )}
