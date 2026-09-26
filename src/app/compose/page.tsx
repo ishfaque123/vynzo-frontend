@@ -11,6 +11,7 @@ import { fetchReelsConfig, fetchMyReelStatus } from '@/lib/api/reelApi';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_LENGTH = 2000;
 const MAX_TAGS = 2;
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 function CloseIcon() {
   return (
@@ -109,6 +110,7 @@ export default function ComposePage() {
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [videoNotice, setVideoNotice] = useState<string | null>(null);
@@ -125,12 +127,29 @@ export default function ComposePage() {
   useEffect(() => {
     const pending = takePendingComposeImage();
     if (pending) {
+      if (pending.size > MAX_IMAGE_SIZE) {
+        setVideoNotice('Photo is too large. Please choose a photo smaller than 10 MB.');
+        return;
+      }
       setImage(pending);
       setImagePreview(URL.createObjectURL(pending));
     }
   }, []);
 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [content]);
+
   function handlePickImage(file: File) {
+    if (file.size > MAX_IMAGE_SIZE) {
+      setVideoNotice('Photo is too large. Please choose a photo smaller than 10 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
   }
@@ -322,6 +341,7 @@ export default function ComposePage() {
         )}
 
         <textarea
+          ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
           placeholder="What's on your mind?"
@@ -329,7 +349,7 @@ export default function ComposePage() {
           maxLength={MAX_LENGTH}
           autoFocus
           disabled={submitting}
-          className="mt-2 w-full resize-none border-none !bg-transparent p-0 text-lg outline-none placeholder:text-slate-400"
+          className="mt-2 w-full resize-none overflow-hidden border-none !bg-transparent p-0 text-lg outline-none placeholder:text-slate-400"
         />
 
         {imagePreview && (
