@@ -1078,7 +1078,7 @@ export default function ChatPage() {
                   <button
                     key={emoji}
                     onClick={() => { getSocket().emit('message:reaction', { messageId: actionMenuFor.id, emoji }); setActionMenuFor(null); setActionMenuPosition(null); }}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-[22px] transition hover:bg-slate-100 active:scale-90"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-[22px] outline-none transition hover:bg-slate-100 active:scale-90"
                     aria-label={`React ${emoji}`}
                   >{emoji}</button>
                 ))}
@@ -1087,14 +1087,14 @@ export default function ChatPage() {
             <div className="flex items-center justify-center gap-2 px-2 py-2">
               <button
                 onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setReplyTo(m); setEditingMessage(null); }}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95"
                 aria-label="Reply to message"
               >
                 <ReplyIcon />
               </button>
-              <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Pin message"><PinIcon /></button>
-              <button onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Delete message"><DeleteIcon /></button>
-              <button onClick={() => enterSelectionMode(actionMenuFor)} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100 active:scale-95" aria-label="Forward message"><ForwardIcon /></button>
+              <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Pin message"><PinIcon /></button>
+              <button onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Delete message"><DeleteIcon /></button>
+              <button onClick={() => enterSelectionMode(actionMenuFor)} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Forward message"><ForwardIcon /></button>
             </div>
           </div>
         </div>
