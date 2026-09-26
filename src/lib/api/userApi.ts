@@ -29,6 +29,17 @@ export async function fetchFollowCounts(userId: string) {
   return res.json();
 }
 
+export async function fetchFollowUsers(
+  userId: string,
+  direction: 'followers' | 'following',
+  page = 1,
+  limit = 20,
+) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  const res = await fetch(`${API_URL}/api/follows/${userId}/${direction}?${params.toString()}`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function toggleFollow(userId: string) {
   const res = await fetch(`${API_URL}/api/follows/${userId}`, {
     method: 'POST',
@@ -114,7 +125,6 @@ export async function updateCover(file: File) {
   });
   return res.json();
 }
-
 
 export async function fetchMyVerificationRequest() {
   const res = await fetch(`${API_URL}/api/users/me/verification-request`, { credentials: 'include' });
