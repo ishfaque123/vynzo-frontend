@@ -239,7 +239,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
               maxLength={500}
               placeholder="Type a status"
               rows={4}
-              className="w-full resize-none bg-transparent text-center text-2xl font-semibold text-white placeholder-white/60 outline-none"
+              className="w-full resize-none !bg-transparent text-center text-2xl font-semibold text-white placeholder-white/60 outline-none"
             />
           </div>
           <div className="flex justify-center gap-2 p-4">
