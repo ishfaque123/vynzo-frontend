@@ -611,7 +611,7 @@ export default function ChatPage() {
     }
   }
 
-  function stopRecording() {
+  function stopRecording(discard = false) {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
@@ -623,7 +623,7 @@ export default function ChatPage() {
       setRecording(false);
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
       chunksRef.current = [];
-      if (blob.size === 0) return;
+      if (discard || blob.size === 0) return;
       setUploadingMedia(true);
       const result = await uploadChatMedia(blob, 'voice-message.webm');
       setUploadingMedia(false);
@@ -634,6 +634,10 @@ export default function ChatPage() {
       sendMediaMessage(result.data.url, 'voice', duration);
     };
     recorder.stop();
+  }
+
+  function cancelRecording() {
+    stopRecording(true);
   }
 
   function handleMicClick() {
@@ -1022,11 +1026,14 @@ export default function ChatPage() {
           />
           {recording ? (
             <>
+              <button onClick={cancelRecording} className="rounded-full bg-slate-200 p-2.5 text-slate-600" aria-label="Cancel recording">
+                <DeleteIcon />
+              </button>
               <div className="flex flex-1 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
                 Recording... {recordSeconds}s
               </div>
-              <button onClick={stopRecording} className="rounded-full bg-red-600 p-2.5 text-white" aria-label="Stop and send">
+              <button onClick={() => stopRecording(false)} className="rounded-full bg-red-600 p-2.5 text-white" aria-label="Stop and send">
                 <SendIcon />
               </button>
             </>
