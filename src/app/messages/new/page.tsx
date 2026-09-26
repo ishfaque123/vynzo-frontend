@@ -32,7 +32,7 @@ export default function NewMessagePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setShareUrl(params.get('share') || '');
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,11 +81,11 @@ export default function NewMessagePage() {
       }
     }
 
-    loadRecipients();
+    if (user?.id) loadRecipients();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user?.id]);
 
   async function handleSearch(value: string) {
     setQuery(value);
