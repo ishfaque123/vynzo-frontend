@@ -38,10 +38,9 @@ export default function FollowListPage() {
       setLoading(true);
       setError(false);
       try {
-        const [profileResult, listResult] = await Promise.all([
-          fetchUserProfile(username),
-          profile ? Promise.resolve(null) : fetchUserProfile(username),
-        ]);
+        const profileResult = profile
+          ? { success: true, data: { user: profile } }
+          : await fetchUserProfile(username);
 
         if (cancelled) return;
         if (!profileResult.success) {
@@ -51,7 +50,7 @@ export default function FollowListPage() {
         }
 
         setProfile(profileResult.data.user);
-        const result = listResult ?? await fetchFollowUsers(profileResult.data.user.id, type, page, 20);
+        const result = await fetchFollowUsers(profileResult.data.user.id, type, page, 20);
         if (!result.success) {
           setError(true);
         } else {
