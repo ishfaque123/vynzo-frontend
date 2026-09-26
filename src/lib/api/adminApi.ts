@@ -106,3 +106,15 @@ export function clearAllAdminMessages() {
 export function deleteAdminReport(type: 'post' | 'user' | 'comment' | 'reel-comment', reportId: string) {
   return request(`/reports/${type}/${reportId}`, { method: 'DELETE' });
 }
+
+export function fetchAdminSeoSettings() {
+  return request('/seo-settings');
+}
+
+export function updateAdminSeoSettings(data: { seoTitle: string; seoDescription: string; seoKeywords: string }) {
+  return request('/seo-settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
