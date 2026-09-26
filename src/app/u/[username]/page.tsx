@@ -360,10 +360,14 @@ export default function ProfilePage() {
           <p className="mt-1 text-sm text-slate-500">{[profile.city, profile.province].filter(Boolean).join(', ')}</p>
         )}
 
-        <div className="mt-4 flex gap-6 border-y py-3 text-sm">
-          <span><b>{posts.length}</b> <span className="text-slate-500">Posts</span></span>
-          <span><b>{counts.followers}</b> <span className="text-slate-500">Followers</span></span>
-          <span><b>{counts.following}</b> <span className="text-slate-500">Following</span></span>
+        <div className="mt-4 flex border-y py-3 text-sm">
+          <span className="flex-1 text-center"><b>{posts.length}</b> <span className="text-slate-500">Posts</span></span>
+          <Link href={`/u/${encodeURIComponent(profile.username)}/followers`} className="flex-1 text-center hover:underline">
+            <b>{counts.followers}</b> <span className="text-slate-500">Followers</span>
+          </Link>
+          <Link href={`/u/${encodeURIComponent(profile.username)}/following`} className="flex-1 text-center hover:underline">
+            <b>{counts.following}</b> <span className="text-slate-500">Following</span>
+          </Link>
         </div>
 
         {isMe ? (
