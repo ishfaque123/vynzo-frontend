@@ -1,125 +1,71 @@
-'use client';
+import type { Metadata } from 'next';
+import PostDetailClient from './PostDetailClient';
 
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { useAuth } from '@/lib/auth/useAuth';
-import { fetchComments, addComment } from '@/lib/api/commentApi';
-import ShareModal from '@/components/ShareModal';
-import CommentsModal from '@/components/CommentsModal';
-import PostCard from '@/components/PostCard';
+const SITE_URL = 'https://www.frianzo.online';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.frianzo.online';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+type Props = { params: Promise<{ id: string }> };
 
-function playSubmitSound() {
+async function getPublicPost(id: string) {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(500, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(ctx.currentTime + 0.15);
-  } catch {}
+    const res = await fetch(`${API_URL}/api/posts/${encodeURIComponent(id)}`, {
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return null;
+    const result = await res.json();
+    return result?.success ? result.data?.post ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanDescription(value: unknown) {
+  return String(value || '').replace(/\\s+/g, ' ').trim().slice(0, 160);
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPublicPost(id);
+
+  if (!post) {
+    return {
+      title: 'Post | Frianzo',
+      description: 'View a post on Frianzo.',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const authorName = post.author?.displayName || post.author?.username || 'Frianzo user';
+  const authorUsername = post.author?.username;
+  const description = cleanDescription(post.content || post.caption) ||
+    `A post by ${authorName} on Frianzo.`;
+  const title = `${authorName} on Frianzo`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/post/${encodeURIComponent(id)}` },
+    robots: { index: true, follow: true },
+    openGraph: {
+      type: 'article',
+      url: `${SITE_URL}/post/${encodeURIComponent(id)}`,
+      title,
+      description,
+      siteName: 'Frianzo',
+      images: post.imageUrl
+        ? [{ url: post.imageUrl, alt: `Post by ${authorName}` }]
+        : [{ url: '/logo.png', alt: 'Frianzo logo' }],
+      authors: authorUsername ? [`${SITE_URL}/u/${encodeURIComponent(authorUsername)}`] : undefined,
+    },
+    twitter: {
+      card: post.imageUrl ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: post.imageUrl ? [post.imageUrl] : ['/logo.png'],
+    },
+  };
 }
 
 export default function PostDetailPage() {
-  const params = useParams();
-  const { user: currentUser } = useAuth();
-  const [post, setPost] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [openComments, setOpenComments] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
-  const [commentText, setCommentText] = useState('');
-  const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
-  const commentsSeqRef = useRef(0);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/posts/${params.id}`, { credentials: 'include' })
-      .then((r) => r.json())
-      .then((result) => { if (result.success) setPost(result.data.post); })
-      .finally(() => setLoading(false));
-  }, [params.id]);
-
-  function handleReactionChange(postId: string, reaction: string | null, count: number) {
-    setPost((p: any) => {
-      const newCounts = { ...(p.reactionCounts || {}) };
-      if (p.myReaction) {
-        newCounts[p.myReaction] = Math.max(0, (newCounts[p.myReaction] || 0) - 1);
-        if (newCounts[p.myReaction] === 0) delete newCounts[p.myReaction];
-      }
-      if (reaction) newCounts[reaction] = (newCounts[reaction] || 0) + 1;
-      return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
-    });
-  }
-  function handlePostUpdated(_postId: string, content: string, commentAudience: string) {
-    setPost((p: any) => ({ ...p, content, commentAudience }));
-  }
-  function handlePostDeleted() {
-    setPost(null);
-  }
-
-  // Guarded against out-of-order responses — see the matching note in the
-  // home feed. Only the most recently issued request's response is kept.
-  async function loadComments() {
-    const seq = commentsSeqRef.current + 1;
-    commentsSeqRef.current = seq;
-    const result = await fetchComments(post.id);
-    if (commentsSeqRef.current !== seq) return;
-    if (result.success) setComments(result.data.comments);
-  }
-  async function handleToggleComments() {
-    setOpenComments(true);
-    if (comments.length === 0) await loadComments();
-  }
-  async function handleAddComment() {
-    if (!commentText.trim()) return;
-    const parentCommentId = replyTo && replyTo.postId === post.id ? replyTo.commentId : undefined;
-    const result = await addComment(post.id, commentText, parentCommentId);
-    if (result.success) {
-      playSubmitSound();
-      await loadComments();
-      setCommentText('');
-      setReplyTo(null);
-      // Only top-level comments count toward the number shown on a post;
-      // replies do not increment it.
-      if (!parentCommentId) {
-        setPost((p: any) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
-      }
-    } else {
-      alert(result.error.message);
-    }
-  }
-
-  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading post"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
-  if (!post) return <p className="p-8 text-center text-slate-500">Post not found.</p>;
-
-  return (
-    <div className="mx-auto max-w-xl px-4 py-6">
-      <PostCard
-        post={post}
-        currentUser={currentUser}
-        onReactionChange={handleReactionChange}
-        onToggleComments={handleToggleComments}
-        onShare={() => setShareOpen(true)}
-        onUpdated={handlePostUpdated}
-        onDeleted={handlePostDeleted}
-      />
-
-      {shareOpen && <ShareModal postId={post.id} onClose={() => setShareOpen(false)} />}
-
-      {openComments && (
-        <CommentsModal
-          post={post} currentUser={currentUser} comments={comments}
-          commentText={commentText} setCommentText={setCommentText}
-          replyTo={replyTo} setReplyTo={setReplyTo}
-          onAddComment={handleAddComment} onCommentsChanged={loadComments}
-          onClose={() => setOpenComments(false)}
-        />
-      )}
-    </div>
-  );
+  return <PostDetailClient />;
 }
