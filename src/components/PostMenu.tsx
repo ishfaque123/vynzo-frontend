@@ -91,6 +91,7 @@ export default function PostMenu({
   const [editText, setEditText] = useState(content);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
 
@@ -127,10 +128,16 @@ export default function PostMenu({
     }
   }
 
-  async function handleDelete() {
-    if (!confirm('Delete this post?')) return;
+  function handleDelete() {
+    closeMenu();
+    setConfirmDelete(true);
+  }
+
+  async function confirmDeleteNow() {
+    setConfirmDelete(false);
     const result = await deletePost(postId);
     if (result.success) onDeleted();
+    else setToast({ message: 'Could not delete this post. Please try again.', type: 'error' });
   }
 
   async function setAudience(value: string) {
@@ -293,6 +300,18 @@ export default function PostMenu({
             <div className="mt-3 flex justify-end gap-2">
               <button onClick={() => setEditing(false)} className="rounded-lg border px-4 py-1.5 text-sm">Cancel</button>
               <button onClick={saveEdit} className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm text-white">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-5" onClick={() => setConfirmDelete(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-4 text-sm leading-6 text-slate-700">Delete this post? This can't be undone.</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setConfirmDelete(false)} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+              <button type="button" onClick={confirmDeleteNow} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Delete</button>
             </div>
           </div>
         </div>
