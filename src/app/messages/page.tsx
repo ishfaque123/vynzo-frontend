@@ -85,8 +85,6 @@ export default function MessagesPage() {
     }
   }, [conversations, previews]);
 
-
-
   function clearPressTimer() {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
