@@ -212,6 +212,15 @@ export default function ComposePage() {
     setTagResults([]);
   }
 
+  function handleClose() {
+    if (submitting) return;
+    if (content.trim() || image || taggedUsers.length > 0) {
+      const discard = window.confirm('Discard post? Your photo and caption will be lost.');
+      if (!discard) return;
+    }
+    router.back();
+  }
+
   function handleSubmit() {
     if ((!content.trim() && !image) || submitting) return;
 
@@ -262,7 +271,7 @@ export default function ComposePage() {
   return (
     <div className="mx-auto flex h-[100dvh] max-w-xl flex-col overflow-x-hidden">
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <button onClick={() => router.back()} aria-label="Close" disabled={submitting} className="text-slate-600 disabled:opacity-40">
+        <button onClick={handleClose} aria-label="Close" disabled={submitting} className="text-slate-600 disabled:opacity-40">
           <CloseIcon />
         </button>
         <h1 className="text-base font-semibold">New Post</h1>
