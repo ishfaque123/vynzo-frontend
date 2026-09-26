@@ -152,7 +152,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
                   ))}
                 </span>
               )}
-              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}</span>
+              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> · 📍 {post.location}</>}</span>
             </div>
           </div>
         )}
