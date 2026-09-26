@@ -942,7 +942,7 @@ export default function ChatPage() {
                   onDragStart={(e) => e.preventDefault()}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
                   style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
-                  className={`max-w-[75%] text-[15px] leading-snug shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
+                  className={`max-w-[75%] text-[16px] leading-relaxed shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     isMine ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
                   } ${
                     m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
