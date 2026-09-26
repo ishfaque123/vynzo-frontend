@@ -7,8 +7,7 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-lg bg-slate-100 p-4">
       <p className="text-sm text-slate-600">{label}</p>
-      <p className="mt-1 text-xl font-semibold">{value}</p>
-      <p className="mt-1.5 text-xs text-slate-400">Last 30 days</p>
+      <p className="mt-1 text-xl font-semibold">{typeof value === 'number' ? value.toLocaleString() : value}</p>
     </div>
   );
 }
@@ -67,7 +66,7 @@ export default function DashboardPage() {
       <div className="rounded-lg bg-slate-100 p-4">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-sm text-slate-600">Views, last 30 days</p>
-          <p className="text-xs text-slate-400">{totalViews30d} total</p>
+          <p className="text-xs text-slate-400">{totalViews30d.toLocaleString()} total views</p>
         </div>
         {dailyViews.length > 1 ? (
           <svg viewBox="0 0 320 90" className="w-full" style={{ height: 90 }}>
