@@ -11,6 +11,7 @@ import ReelReportModal from '@/components/ReelReportModal';
 import { fetchReelsConfig, fetchReelFeed, fetchMyReelStatus, toggleReelLike, toggleReelFavorite, deleteReel, recordReelView, fetchReelById } from '@/lib/api/reelApi';
 import { fetchReelComments } from '@/lib/api/reelCommentApi';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
+import { cacheReelVideo, getOfflineReels } from '@/lib/offline/reelCache';
 import VerifiedBadge from '@/components/VerifiedBadge';
 
 interface Reel { id: string; videoUrl: string; caption: string | null; durationSec: number | null; createdAt: string; likeCount: number; liked: boolean; favorited: boolean; isMine: boolean; friendStatus?: string; commentCount?: number; author: { id: string; username: string; displayName: string; profilePictureUrl?: string; isVerified?: boolean }; }
@@ -43,7 +44,7 @@ function CommentIcon() { return <svg width="28" height="28" viewBox="0 0 24 24" 
 
 type HeartBurst = { id: number; left: number; top: number };
 
-function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteChange, onDeleted, onFollowed, onCommentCountChange }: { reel: Reel; active: boolean; forcePause: boolean; preload: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void; onCommentCountChange: (id: string, delta: number) => void }) {
+function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange, onFavoriteChange, onDeleted, onFollowed, onCommentCountChange }: { reel: Reel; active: boolean; forcePause: boolean; preload: boolean; cacheUserId?: string; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void; onCommentCountChange: (id: string, delta: number) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastTapRef = useRef(0);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,6 +66,7 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
   const [heartBursts, setHeartBursts] = useState<HeartBurst[]>([]);
   const [showControls, setShowControls] = useState(false);
   const [viewCount, setViewCount] = useState(0);
+  const [cachedOffline, setCachedOffline] = useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [notice, setNotice] = useState<{ message: string; confirm: boolean } | null>(null);
   const { user: currentUser } = useAuth();
@@ -99,7 +101,22 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
     setCommentsHasMore(!!result.data.pagination?.hasMore);
   }
   useEffect(() => { function refresh(e: Event) { const detail = (e as CustomEvent).detail; if (detail === reel.id && commentsOpen) void openComments(); } window.addEventListener('reel-comments-refresh', refresh); return () => window.removeEventListener('reel-comments-refresh', refresh); }, [reel.id, commentsOpen]);
-  useEffect(() => { if (!active) return; void recordReelView(reel.id).then((result) => { if (result.success) setViewCount(Number(result.data?.viewCount || 0)); }); }, [active, reel.id]);
+  useEffect(() => {
+    if (!active) return;
+    void recordReelView(reel.id).then((result) => {
+      if (result.success) setViewCount(Number(result.data?.viewCount || 0));
+    });
+  }, [active, reel.id]);
+  useEffect(() => {
+    if (!active || !cacheUserId || !reel.videoUrl || reel.videoUrl.startsWith('blob:')) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void cacheReelVideo(cacheUserId, reel).then((saved) => {
+        if (!cancelled && saved) setCachedOffline(true);
+      });
+    }, 2500);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [active, cacheUserId, reel]);
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
   async function handleFollow(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); if (following) return; setFollowing(true); const result = await toggleFollow(reel.author.id); setFollowing(false); if (result.success && result.data.following) onFollowed(reel.author.id); }
   useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); return; } video.currentTime = 0; video.muted = false; setIsMuted(false); setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 3); video.play().then(() => setIsPlaying(true)).catch(() => {}); }, [active]);
@@ -115,6 +132,7 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
     <video ref={videoRef} src={reel.videoUrl} playsInline muted={isMuted} preload={preload ? 'auto' : 'metadata'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={() => setIsVideoLoading(false)} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); }} onPause={() => setIsPlaying(false)} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} />
     {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
+    {cachedOffline && <div className="pointer-events-none absolute left-3 top-20 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm">Available offline</div>}
     {heartBursts.map((heart) => <div key={heart.id} className="pointer-events-none absolute z-30" style={{ left: `${heart.left}%`, top: `${heart.top}%`, transform: 'translate(-50%, -50%)' }}><div className="animate-[heartPop_700ms_ease-out_forwards] drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"><HeartIcon filled size={105} /></div></div>)}
     {!isPlaying && <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>}
     {showControls && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="pointer-events-auto flex items-center gap-8 px-4 py-3"><button aria-label="Play or pause" onClick={togglePlayback} className="flex h-14 w-14 items-center justify-center"><PlayIcon playing={isPlaying} /></button></div></div>}
@@ -129,7 +147,7 @@ function ReelItem({ reel, active, forcePause, preload, onLikeChange, onFavoriteC
 
 export default function ReelsPage() {
   const router = useRouter();
-  useAuth();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadingMoreRef = useRef(false);
   const gestureLockedRef = useRef(false);
@@ -143,6 +161,7 @@ export default function ReelsPage() {
   const [reelsEnabled, setReelsEnabled] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [feedError, setFeedError] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
   const [forcePause] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -157,14 +176,23 @@ export default function ReelsPage() {
       if (cancelled) return;
 
       let combined: Reel[] = feed.success ? (feed.data.reels || []) : [];
-      setFeedError(!feed.success);
-      if (targetId && targetResult && targetResult.success) {
+      let usingOfflineReels = false;
+      if (!feed.success && user?.id) {
+        const cached = await getOfflineReels(user.id);
+        if (cached.length) {
+          combined = cached.map((item) => ({ ...item.reel, videoUrl: item.videoUrl }));
+          usingOfflineReels = true;
+        }
+      }
+      setFeedError(!feed.success && !usingOfflineReels);
+      setOfflineMode(usingOfflineReels);
+      if (targetId && targetResult && targetResult.success && !usingOfflineReels) {
         const targetReel: Reel = targetResult.data.reel;
         combined = [targetReel, ...combined.filter((item) => item.id !== targetReel.id)];
       }
 
       const authorIds = [...new Set(combined.filter((item: Reel) => !item.isMine).map((item: Reel) => item.author.id))] as string[];
-      const statusResults: Array<[string, string] | null> = await Promise.all(authorIds.map(async (userId) => {
+      const statusResults: Array<[string, string] | null> = usingOfflineReels ? [] : await Promise.all(authorIds.map(async (userId) => {
         const result = await fetchFollowStatus(userId);
         const followStatus = result.success ? result.data?.status : null;
         return typeof followStatus === 'string' ? [userId, followStatus] : null;
@@ -173,7 +201,7 @@ export default function ReelsPage() {
       const statusMap = new Map<string, string>();
       statusResults.forEach((item) => { if (item && typeof item[0] === 'string' && typeof item[1] === 'string') statusMap.set(item[0], item[1]); });
       setReels(combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item));
-      setHasMore(!!feed.data?.hasMore);
+      setHasMore(!usingOfflineReels && !!feed.data?.hasMore);
 
       const enabled = !!(config.success && config.data?.enabled);
       const remaining = status.success ? Number(status.data?.remaining) : 0;
@@ -247,5 +275,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 bg-black"><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div></div>;
+  return <div className="absolute inset-0 bg-black">{offlineMode && <div className="pointer-events-none absolute left-1/2 top-3 z-50 -translate-x-1/2 rounded-full bg-black/65 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm">Offline • Recently watched reels</div>}<div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 2} cacheUserId={user?.id} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div></div>;
 }
