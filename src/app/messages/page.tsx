@@ -290,12 +290,17 @@ export default function MessagesPage() {
             onTouchEnd={(event) => handleTouchEnd(c.id, event)}
             onContextMenu={(event) => {
               event.preventDefault();
+              event.stopPropagation();
               toggleConversationSelection(c.id);
             }}
           >
             <Link
               href={`/messages/${c.id}`}
               onClick={(event) => handleRowClick(event, c.id)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
               className={`relative z-10 flex items-center gap-3 px-4 py-3 transition-transform duration-200 hover:bg-slate-50 ${selectedConversationIds.includes(c.id) ? 'bg-blue-50' : 'bg-white'} ${openActions === c.id ? '-translate-x-20' : 'translate-x-0'}`}
             >
               {selectedConversationIds.includes(c.id) && (
