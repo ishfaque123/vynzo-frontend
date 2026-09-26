@@ -886,6 +886,10 @@ export default function ChatPage() {
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
+                  onSelectStart={(e) => e.preventDefault()}
+                  onCopy={(e) => e.preventDefault()}
+                  onCut={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
                   style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
                   className={`max-w-[75%] rounded-2xl text-[15px] leading-snug transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
