@@ -936,9 +936,11 @@ export default function ChatPage() {
                   onDragStart={(e) => e.preventDefault()}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
                   style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
-                  className={`max-w-[75%] rounded-2xl text-[15px] leading-snug transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
+                  className={`max-w-[75%] text-[15px] leading-snug shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
+                    isMine ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
+                  } ${
                     m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
-                    isImage || isVoice ? '' : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
+                    isImage ? '' : isVoice ? (isMine ? 'bg-[#dcf8c6]' : 'bg-slate-100') : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
                   } ${m.isDeleted ? 'px-3 py-2' : isImage ? 'p-1.5' : isVoice ? 'px-1 py-1' : 'px-3 py-2'}`}
                 >
                   {m.isDeleted ? (
