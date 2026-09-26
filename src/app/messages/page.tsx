@@ -19,15 +19,6 @@ function formatConversationTime(dateStr: string) {
   return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function PlusIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
 function TrashIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -178,11 +169,8 @@ export default function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-xl" onClick={() => openActions && setOpenActions(null)}>
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="px-4 py-3">
         <h1 className="text-lg font-semibold">Messages</h1>
-        <Link href="/messages/new" aria-label="New message" className="rounded-full bg-slate-900 p-2 text-white">
-          <PlusIcon />
-        </Link>
       </div>
 
       {loading && (
