@@ -382,7 +382,7 @@ export default function ProfilePage() {
         ) : posts.length === 0 && reels.length === 0 ? (
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
-          <div className="px-4">
+          <div>
             {[...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
               .sort((a, b) => new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime())
               .map((entry) => entry.kind === 'post' ? (
@@ -390,7 +390,7 @@ export default function ProfilePage() {
                   onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
               ) : (
-                <Link key={`reel-${entry.item.id}`} href={`/reels?id=${entry.item.id}`} className="mb-4 block overflow-hidden rounded-xl border">
+                <Link key={`reel-${entry.item.id}`} href={`/reels?id=${entry.item.id}`} className="mx-4 mb-4 block overflow-hidden rounded-xl border">
                   <div className="relative aspect-[9/16] max-h-96 w-full bg-slate-200">
                     <video src={`${entry.item.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                     <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
