@@ -1,4 +1,4 @@
-export const metadata = { title: 'About - Frianzo' };
+export const metadata = { title: 'About Frianzo | Social Network', description: 'Learn about Frianzo, a social network for sharing posts, photos, stories and reels, discovering people, and connecting with friends.', alternates: { canonical: '/about' } };
 
 export default function AboutPage() {
   return (
