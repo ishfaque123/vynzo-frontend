@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createConversation, fetchConversations } from '@/lib/api/messageApi';
 import { fetchFollowUsers } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
+import { useAuth } from '@/lib/auth/useAuth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_SELECTED = 12;
@@ -18,6 +19,7 @@ type ShareUser = {
 
 export default function NewMessagePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [shareUrl, setShareUrl] = useState('');
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<ShareUser[]>([]);
@@ -30,7 +32,7 @@ export default function NewMessagePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setShareUrl(params.get('share') || '');
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,8 +41,8 @@ export default function NewMessagePage() {
       setLoading(true);
       const [conversationsResult, followersResult, followingResult] = await Promise.all([
         fetchConversations(),
-        fetchFollowUsers('me', 'followers', 1, 12).catch(() => null),
-        fetchFollowUsers('me', 'following', 1, 12).catch(() => null),
+        user?.id ? fetchFollowUsers(user.id, 'followers', 1, 12).catch(() => null) : Promise.resolve(null),
+        user?.id ? fetchFollowUsers(user.id, 'following', 1, 12).catch(() => null) : Promise.resolve(null),
       ]);
 
       const merged: ShareUser[] = [];
