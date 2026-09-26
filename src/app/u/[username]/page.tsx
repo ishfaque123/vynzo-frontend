@@ -69,6 +69,7 @@ export default function ProfilePage() {
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [friendStatus, setFriendStatus] = useState<string>('none');
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [reels, setReels] = useState<any[]>([]);
@@ -113,24 +114,49 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    fetchUserProfile(username).then((result) => {
-      if (result.success) {
-        setProfile(result.data.user);
-        setBlockedByMe(!!result.data.user.blockedByMe);
-        setBlockedByOther(!!result.data.user.blockedByOther);
-        fetchFollowCounts(result.data.user.id).then((c) => { if (c.success) setCounts(c.data); });
-        setFriendStatus(result.data.user.friendStatus || 'none');
+    let cancelled = false;
+
+    async function loadProfile() {
+      setLoading(true);
+      setProfileError(false);
+      try {
+        const result = await fetchUserProfile(username);
+        if (cancelled) return;
+
+        if (result.success) {
+          setProfile(result.data.user);
+          setBlockedByMe(!!result.data.user.blockedByMe);
+          setBlockedByOther(!!result.data.user.blockedByOther);
+          fetchFollowCounts(result.data.user.id).then((c) => { if (c.success && !cancelled) setCounts(c.data); });
+          setFriendStatus(result.data.user.friendStatus || 'none');
+        } else if (result.error?.code === 'USER_NOT_FOUND') {
+          setProfile(null);
+        } else {
+          setProfileError(true);
+        }
+      } catch {
+        if (!cancelled) setProfileError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
-    });
+    }
+
+    loadProfile();
+
     fetchUserPosts(username).then((result) => {
       if (result.success) setPosts(result.data.posts);
-      setPostsLoading(false);
+      if (!cancelled) setPostsLoading(false);
+    }).catch(() => {
+      if (!cancelled) setPostsLoading(false);
     });
     fetchUserReels(username).then((result) => {
       if (result.success) setReels(result.data.reels);
-      setReelsLoading(false);
+      if (!cancelled) setReelsLoading(false);
+    }).catch(() => {
+      if (!cancelled) setReelsLoading(false);
     });
+
+    return () => { cancelled = true; };
   }, [username]);
 
   async function handleFollow() {
@@ -232,6 +258,16 @@ export default function ProfilePage() {
   }
 
   if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading profile"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
+  if (profileError) {
+    return (
+      <div className="flex flex-col items-center gap-3 p-8 text-center">
+        <p className="text-slate-500">Could not load this profile. Please try again.</p>
+        <button onClick={() => window.location.reload()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+          Try again
+        </button>
+      </div>
+    );
+  }
   if (!profile) return <p className="p-8 text-center text-slate-500">User not found.</p>;
 
   const isMe = currentUser?.username === profile.username;
