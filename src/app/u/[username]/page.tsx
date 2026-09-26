@@ -95,6 +95,10 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Photo is too large. Maximum size is 5MB.');
+      return;
+    }
     setUploadingAvatar(true);
     const result = await updateAvatar(file);
     setUploadingAvatar(false);
@@ -106,6 +110,10 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Cover photo is too large. Maximum size is 5MB.');
+      return;
+    }
     setUploadingCover(true);
     const result = await updateCover(file);
     setUploadingCover(false);
