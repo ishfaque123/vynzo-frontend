@@ -40,6 +40,7 @@ interface ConversationItem {
 export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [openActions, setOpenActions] = useState<string | null>(null);
@@ -84,6 +85,14 @@ export default function MessagesPage() {
       setPreviews((prev) => ({ ...prev, ...updates }));
     }
   }, [conversations, previews]);
+
+  const filteredConversations = conversations.filter((c) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const name = c.otherUser?.displayName?.toLowerCase() || '';
+    const username = c.otherUser?.username?.toLowerCase() || '';
+    return name.includes(q) || username.includes(q);
+  });
 
   function clearPressTimer() {
     if (pressTimer.current) {
@@ -166,9 +175,20 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl" onClick={() => openActions && setOpenActions(null)}>
+    <div className="mx-auto w-full max-w-xl" onClick={() => openActions && setOpenActions(null)}>
       <div className="px-4 py-3">
         <h1 className="text-lg font-semibold">Messages</h1>
+      </div>
+
+      <div className="px-4 pb-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search conversations..."
+          aria-label="Search conversations"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-300 focus:bg-white"
+        />
       </div>
 
       {loading && (
@@ -185,12 +205,14 @@ export default function MessagesPage() {
         </div>
       )}
 
-      {!loading && conversations.length === 0 && (
-        <p className="px-4 text-slate-500">No conversations yet. Start one!</p>
+      {!loading && filteredConversations.length === 0 && (
+        <p className="px-4 text-slate-500">
+          {search.trim() ? 'No conversations found.' : 'No conversations yet. Start one!'}
+        </p>
       )}
 
       <div className="divide-y">
-        {conversations.map((c) => (
+        {filteredConversations.map((c) => (
           <div
             key={c.id}
             className="relative overflow-hidden"
