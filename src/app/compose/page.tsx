@@ -213,7 +213,7 @@ export default function ComposePage() {
   }
 
   function handleSubmit() {
-    if (!content.trim() || submitting) return;
+    if ((!content.trim() && !image) || submitting) return;
 
     setSubmitting(true);
     setProgress(0);
@@ -268,7 +268,7 @@ export default function ComposePage() {
         <h1 className="text-base font-semibold">New Post</h1>
         <button
           onClick={handleSubmit}
-          disabled={!content.trim() || submitting}
+          disabled={(!content.trim() && !image) || submitting}
           className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
           {submitting ? 'Posting...' : 'Post'}
