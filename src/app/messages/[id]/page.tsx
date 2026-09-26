@@ -887,6 +887,7 @@ export default function ChatPage() {
                   onTouchMove={cancelLongPress}
                   onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
+                  style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
                   className={`max-w-[75%] rounded-2xl text-[15px] leading-snug transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
                     isImage || isVoice ? '' : isMine ? 'bg-[#dcf8c6] text-[#111827]' : 'bg-slate-100 text-slate-800'
