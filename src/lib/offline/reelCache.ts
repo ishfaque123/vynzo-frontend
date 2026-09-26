@@ -86,7 +86,7 @@ export async function cacheReelVideo(userId: string, reel: any): Promise<boolean
   if (typeof window === 'undefined' || !navigator.onLine) return false;
 
   try {
-    const response = await fetch(reel.videoUrl, { method: 'GET', credentials: 'include' });
+    const response = await fetch(reel.videoUrl, { method: 'GET' });
     if (!response.ok || response.type === 'opaque') return false;
 
     const blob = await response.blob();
