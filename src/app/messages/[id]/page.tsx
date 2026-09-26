@@ -1069,8 +1069,9 @@ export default function ChatPage() {
         <div className="fixed inset-0 z-50" onClick={() => { setActionMenuFor(null); setActionMenuPosition(null); }}>
           <div
             className="absolute w-[290px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            style={{ left: actionMenuPosition.left, top: actionMenuPosition.top }}
+            style={{ left: actionMenuPosition.left, top: actionMenuPosition.top, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
             onClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.preventDefault()}
           >
             {actionMenuFor.senderId !== user?.id && (
               <div className="flex items-center justify-between border-b border-slate-100 px-2 py-1.5">
