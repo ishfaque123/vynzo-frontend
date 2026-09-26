@@ -97,15 +97,15 @@ export default function FollowListPage() {
 
   return (
     <div className="mx-auto max-w-xl pb-6">
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-white/95 px-4 py-3 backdrop-blur">
-        <button onClick={() => router.back()} aria-label="Go back" className="p-1 text-slate-700">
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm">
+        <button onClick={() => router.back()} aria-label="Go back" className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 transition-all duration-150 hover:bg-slate-100 active:scale-95">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
         <div className="min-w-0">
-          <h1 className="font-semibold">{title}</h1>
-          <p className="truncate text-xs text-slate-500">@{profile.username}</p>
+          <h1 className="font-semibold text-slate-900">{title}</h1>
+          <p className="truncate text-xs font-medium text-slate-500">@{profile.username}</p>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ export default function FollowListPage() {
       ) : (
         <div className="divide-y">
           {users.map((user) => (
-            <div key={user.id} className="flex items-center gap-3 px-4 py-3">
+            <div key={user.id} className="flex items-center gap-3 bg-white px-4 py-3 text-slate-900 transition-colors hover:bg-slate-50">
               <Link href={user.username ? `/u/${encodeURIComponent(user.username)}` : '#'} className="shrink-0">
                 <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
                   {user.profilePictureUrl ? (
@@ -125,9 +125,9 @@ export default function FollowListPage() {
                 </div>
               </Link>
 
-              <Link href={user.username ? `/u/${encodeURIComponent(user.username)}` : '#'} className="min-w-0 flex-1">
+              <Link href={user.username ? `/u/${encodeURIComponent(user.username)}` : '#'} className="min-w-0 flex-1 no-underline">
                 <div className="flex items-center gap-1">
-                  <span className="truncate font-medium text-slate-900">{user.displayName || user.username || 'User'}</span>
+                  <span className="truncate font-medium text-slate-900 no-underline">{user.displayName || user.username || 'User'}</span>
                   {user.isVerified && <VerifiedBadge size="sm" />}
                 </div>
                 {user.username && <p className="truncate text-sm text-slate-500">@{user.username}</p>}
@@ -152,7 +152,7 @@ export default function FollowListPage() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={!pagination.hasPrevious}
-            className="rounded-lg border px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all duration-150 hover:bg-slate-50 active:scale-95 disabled:opacity-40"
           >
             Previous
           </button>
