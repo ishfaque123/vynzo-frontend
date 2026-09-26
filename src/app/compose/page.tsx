@@ -13,6 +13,17 @@ const MAX_LENGTH = 2000;
 const MAX_TAGS = 2;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
+const BACKGROUND_OPTIONS = [
+  { value: 'sunset' as const, label: 'Sunset', className: 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600' },
+  { value: 'ocean' as const, label: 'Ocean', className: 'bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600' },
+  { value: 'violet' as const, label: 'Violet', className: 'bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500' },
+  { value: 'mint' as const, label: 'Mint', className: 'bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500' },
+  { value: 'peach' as const, label: 'Peach', className: 'bg-gradient-to-br from-yellow-300 via-orange-400 to-rose-500' },
+  { value: 'night' as const, label: 'Night', className: 'bg-gradient-to-br from-slate-700 via-slate-900 to-black' },
+  { value: 'rose' as const, label: 'Rose', className: 'bg-gradient-to-br from-rose-400 via-red-500 to-pink-600' },
+  { value: 'sky' as const, label: 'Sky', className: 'bg-gradient-to-br from-sky-300 via-blue-400 to-indigo-500' },
+];
+
 function CloseIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -119,6 +130,8 @@ export default function ComposePage() {
   const { user } = useAuth();
   const [content, setContent] = useState('');
   const [image, setImage] = useState<File | null>(null);
+  const [backgroundStyle, setBackgroundStyle] = useState<typeof BACKGROUND_OPTIONS[number]['value'] | null>(null);
+  const [backgroundPickerOpen, setBackgroundPickerOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -166,6 +179,7 @@ export default function ComposePage() {
     }
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImage(file);
+    setBackgroundStyle(null);
     setImagePreview(URL.createObjectURL(file));
   }
   async function handleVideoPicked(file: File) {
@@ -265,6 +279,7 @@ export default function ComposePage() {
     formData.append('content', content.trim());
     formData.append('visibility', visibility);
     formData.append('commentAudience', commentAudience);
+    if (backgroundStyle && !image) formData.append('backgroundStyle', backgroundStyle);
     formData.append('taggedUserIds', JSON.stringify(taggedUsers.map((t) => t.id)));
     if (image) formData.append('image', image);
 
@@ -367,6 +382,21 @@ export default function ComposePage() {
           </p>
         )}
 
+        {backgroundStyle && !image ? (
+          <div className={`mt-3 flex min-h-56 items-center justify-center rounded-2xl p-6 text-center ${BACKGROUND_OPTIONS.find((b) => b.value === backgroundStyle)?.className}`}>
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
+              placeholder="What's on your mind?"
+              rows={4}
+              maxLength={MAX_LENGTH}
+              autoFocus
+              disabled={submitting}
+              className="w-full resize-none overflow-hidden border-none bg-transparent p-0 text-center text-2xl font-bold text-white outline-none placeholder:text-white/70"
+            />
+          </div>
+        ) : (
         <textarea
           ref={textareaRef}
           value={content}
@@ -378,6 +408,7 @@ export default function ComposePage() {
           disabled={submitting}
           className="mt-2 w-full resize-none overflow-hidden border-none !bg-transparent p-0 text-lg outline-none placeholder:text-slate-400"
         />
+        )}
 
         {imagePreview && (
           <div className="relative mt-2 overflow-hidden rounded-xl">
@@ -411,6 +442,14 @@ export default function ComposePage() {
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <ImageIcon />
+          </button>
+          <button
+            onClick={() => setBackgroundPickerOpen(true)}
+            disabled={submitting || !!image}
+            aria-label="Add text background"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
+          >
+            <span className="text-sm font-bold">Aa</span>
           </button>
           <button
             onClick={() => setTagPickerOpen(true)}
@@ -456,6 +495,20 @@ export default function ComposePage() {
       </div>
 
       {videoNotice && <VideoNotice message={videoNotice} onClose={() => setVideoNotice(null)} />}
+
+      {backgroundPickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setBackgroundPickerOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-3 text-center text-sm font-semibold text-slate-800">Choose a background</p>
+            <div className="grid grid-cols-4 gap-2">
+              {BACKGROUND_OPTIONS.map((opt) => (
+                <button key={opt.value} type="button" onClick={() => { setBackgroundStyle(opt.value); setBackgroundPickerOpen(false); }} className={`h-16 rounded-xl ${opt.className} ${backgroundStyle === opt.value ? 'ring-2 ring-blue-600 ring-offset-2' : ''}`} aria-label={opt.label} />
+              ))}
+            </div>
+            <button type="button" onClick={() => { setBackgroundStyle(null); setBackgroundPickerOpen(false); }} className="mt-3 w-full rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">No background</button>
+          </div>
+        </div>
+      )}
 
       {audiencePickerOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setAudiencePickerOpen(false)}>
