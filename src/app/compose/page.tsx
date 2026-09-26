@@ -80,6 +80,13 @@ function LockIcon() {
     </svg>
   );
 }
+function CommentIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 11.5a8.4 8.4 0 01-9 8.5 8.8 8.8 0 01-4.1-1L3 20l1.5-4.2A8.3 8.3 0 013 11.5 8.5 8.5 0 0112 3a8.5 8.5 0 019 8.5z" />
+    </svg>
+  );
+}
 function ChevronDownIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -95,6 +102,12 @@ function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: 
     </div>
   );
 }
+
+const COMMENT_AUDIENCE_OPTIONS = [
+  { value: 'everyone' as const, label: 'Everyone', desc: 'Anyone can comment' },
+  { value: 'followers' as const, label: 'Followers', desc: 'Only your followers can comment' },
+  { value: 'only_me' as const, label: 'Only me', desc: 'Comments are disabled for everyone else' },
+];
 
 const AUDIENCE_OPTIONS = [
   { value: 'public' as const, label: 'Public', desc: 'Anyone on Frianzo', icon: <GlobeIcon /> },
@@ -117,6 +130,8 @@ export default function ComposePage() {
 
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
+  const [commentAudience, setCommentAudience] = useState<'everyone' | 'followers' | 'only_me'>('everyone');
+  const [commentAudiencePickerOpen, setCommentAudiencePickerOpen] = useState(false);
 
   const [taggedUsers, setTaggedUsers] = useState<{ id: string; displayName: string; username: string; profilePictureUrl?: string }[]>([]);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
@@ -249,6 +264,7 @@ export default function ComposePage() {
     const formData = new FormData();
     formData.append('content', content.trim());
     formData.append('visibility', visibility);
+    formData.append('commentAudience', commentAudience);
     formData.append('taggedUserIds', JSON.stringify(taggedUsers.map((t) => t.id)));
     if (image) formData.append('image', image);
 
@@ -286,6 +302,7 @@ export default function ComposePage() {
   }
 
   const currentAudience = AUDIENCE_OPTIONS.find((a) => a.value === visibility)!;
+  const currentCommentAudience = COMMENT_AUDIENCE_OPTIONS.find((a) => a.value === commentAudience)!;
 
   return (
     <div className="mx-auto flex h-[100dvh] max-w-xl flex-col overflow-x-hidden">
@@ -322,6 +339,16 @@ export default function ComposePage() {
             >
               {currentAudience.icon}
               {currentAudience.label}
+              <ChevronDownIcon />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCommentAudiencePickerOpen(true)}
+              disabled={submitting}
+              className="mt-1 flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 disabled:opacity-40"
+            >
+              <CommentIcon />
+              Comments: {currentCommentAudience.label}
               <ChevronDownIcon />
             </button>
           </div>
@@ -442,6 +469,29 @@ export default function ComposePage() {
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left ${visibility === opt.value ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                 >
                   <span className="text-slate-600">{opt.icon}</span>
+                  <span>
+                    <span className="block text-sm font-medium text-slate-900">{opt.label}</span>
+                    <span className="block text-xs text-slate-500">{opt.desc}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {commentAudiencePickerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setCommentAudiencePickerOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-3 text-center text-sm font-semibold text-slate-800">Who can comment on this post?</p>
+            <div className="space-y-1">
+              {COMMENT_AUDIENCE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setCommentAudience(opt.value); setCommentAudiencePickerOpen(false); }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left ${commentAudience === opt.value ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                >
+                  <CommentIcon />
                   <span>
                     <span className="block text-sm font-medium text-slate-900">{opt.label}</span>
                     <span className="block text-xs text-slate-500">{opt.desc}</span>
