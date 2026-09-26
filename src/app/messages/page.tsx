@@ -44,6 +44,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [openActions, setOpenActions] = useState<string | null>(null);
+  const [selectedConversationIds, setSelectedConversationIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -101,13 +102,20 @@ export default function MessagesPage() {
     }
   }
 
+  function toggleConversationSelection(id: string) {
+    setSelectedConversationIds((prev) =>
+      prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id]
+    );
+    setOpenActions(null);
+  }
+
   function startPress(id: string) {
     clearPressTimer();
     touchMoved.current = false;
     pressTimer.current = setTimeout(() => {
       if (!touchMoved.current) {
         suppressClick.current = true;
-        setOpenActions(id);
+        toggleConversationSelection(id);
       }
     }, 550);
   }
@@ -152,6 +160,11 @@ export default function MessagesPage() {
       suppressClick.current = false;
       return;
     }
+    if (selectedConversationIds.length > 0) {
+      event.preventDefault();
+      toggleConversationSelection(id);
+      return;
+    }
     if (openActions === id) {
       event.preventDefault();
       setOpenActions(null);
@@ -174,10 +187,65 @@ export default function MessagesPage() {
     setDeleting(null);
   }
 
+  async function handleDeleteSelected() {
+    if (deleting || selectedConversationIds.length === 0) return;
+    const ids = [...selectedConversationIds];
+    setDeleting('selected');
+
+    const deletedIds: string[] = [];
+    for (const id of ids) {
+      const result = await deleteConversation(id);
+      if (result.success) deletedIds.push(id);
+    }
+
+    if (deletedIds.length) {
+      setConversations((prev) => prev.filter((c) => !deletedIds.includes(c.id)));
+      setPreviews((prev) => {
+        const next = { ...prev };
+        for (const id of deletedIds) delete next[id];
+        return next;
+      });
+    }
+
+    setSelectedConversationIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+    setOpenActions(null);
+    setDeleting(null);
+  }
+
+  function clearSelection() {
+    setSelectedConversationIds([]);
+    setOpenActions(null);
+  }
+
   return (
     <div className="mx-auto w-full max-w-xl" onClick={() => openActions && setOpenActions(null)}>
-      <div className="px-4 py-3">
-        <h1 className="text-lg font-semibold">Messages</h1>
+      <div className="flex items-center justify-between px-4 py-3">
+        {selectedConversationIds.length > 0 ? (
+          <>
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="text-sm font-medium text-slate-600"
+            >
+              Cancel
+            </button>
+            <h1 className="text-lg font-semibold">{selectedConversationIds.length} selected</h1>
+            <button
+              type="button"
+              aria-label="Delete selected conversations"
+              disabled={deleting === 'selected'}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDeleteSelected();
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-red-600 disabled:opacity-50"
+            >
+              <TrashIcon />
+            </button>
+          </>
+        ) : (
+          <h1 className="text-lg font-semibold">Messages</h1>
+        )}
       </div>
 
       <div className="px-4 pb-3">
@@ -222,14 +290,19 @@ export default function MessagesPage() {
             onTouchEnd={(event) => handleTouchEnd(c.id, event)}
             onContextMenu={(event) => {
               event.preventDefault();
-              setOpenActions(c.id);
+              toggleConversationSelection(c.id);
             }}
           >
             <Link
               href={`/messages/${c.id}`}
               onClick={(event) => handleRowClick(event, c.id)}
-              className={`relative z-10 flex items-center gap-3 bg-white px-4 py-3 transition-transform duration-200 hover:bg-slate-50 ${openActions === c.id ? '-translate-x-20' : 'translate-x-0'}`}
+              className={`relative z-10 flex items-center gap-3 px-4 py-3 transition-transform duration-200 hover:bg-slate-50 ${selectedConversationIds.includes(c.id) ? 'bg-blue-50' : 'bg-white'} ${openActions === c.id ? '-translate-x-20' : 'translate-x-0'}`}
             >
+              {selectedConversationIds.includes(c.id) && (
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  ✓
+                </span>
+              )}
               <div className="relative flex-shrink-0">
                 <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
                   {c.otherUser?.profilePictureUrl ? (
