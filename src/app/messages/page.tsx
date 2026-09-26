@@ -5,6 +5,19 @@ import Link from 'next/link';
 import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
 import { useAuth } from '@/lib/auth/useAuth';
+import VerifiedBadge from '@/components/VerifiedBadge';
+
+function formatConversationTime(dateStr: string) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
 
 function PlusIcon() {
   return (
@@ -27,7 +40,7 @@ function TrashIcon() {
 
 interface ConversationItem {
   id: string;
-  otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean;   } | null;
+  otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean; isVerified?: boolean } | null;
   lastMessage: { content: string; senderId: string; createdAt: string; mediaType?: 'image' | 'voice' | null; isDeleted?: boolean } | null;
   unread: boolean;
   updatedAt: string;
@@ -222,10 +235,12 @@ export default function MessagesPage() {
                 )}
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className={`truncate ${c.unread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
-                  {c.otherUser?.displayName || c.otherUser?.username}
+                <p className={`flex items-center gap-1 truncate ${c.unread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
+                  <span className="truncate">{c.otherUser?.displayName || c.otherUser?.username}</span>
+                  {c.otherUser?.isVerified && <VerifiedBadge size="sm" />}
                 </p>
                 <p className={`truncate text-sm ${c.unread ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
+                  {c.lastMessage && !c.lastMessage.isDeleted && c.lastMessage.senderId === user?.id ? 'You: ' : ''}
                   {c.lastMessage
                     ? c.lastMessage.isDeleted
                       ? 'This message was deleted'
@@ -239,7 +254,10 @@ export default function MessagesPage() {
                     : 'Say hi 👋'}
                 </p>
               </div>
-              {c.unread && <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-blue-500" />}
+              <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+                <span className={`text-xs ${c.unread ? 'font-semibold text-blue-600' : 'text-slate-400'}`}>{formatConversationTime(c.updatedAt)}</span>
+                {c.unread && <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
+              </div>
             </Link>
             <button
               type="button"

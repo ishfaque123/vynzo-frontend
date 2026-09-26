@@ -8,6 +8,7 @@ import { fetchMessages, fetchConversations, uploadChatMedia } from '@/lib/api/me
 import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 import { takePendingMessageText } from '@/lib/pendingMessageText';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 function BackIcon() {
   return (
@@ -238,6 +239,7 @@ interface OtherUser {
   displayName: string;
   profilePictureUrl?: string;
   isOnline: boolean;
+  isVerified?: boolean;
   lastActiveAt?: string | null;
 }
 interface Toast {
@@ -831,7 +833,7 @@ export default function ChatPage() {
             </div>
           )}
           <div>
-            <p className="font-semibold leading-tight">{displayName}</p>
+            <p className="flex items-center gap-1 font-semibold leading-tight">{displayName}{otherUser?.isVerified && <VerifiedBadge size="sm" />}</p>
             <p className={`text-xs leading-tight ${otherUser?.isOnline ? 'text-green-600' : 'text-slate-400'}`}>
               {otherTyping ? <TypingDots /> : statusText}
             </p>
