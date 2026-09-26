@@ -1,4 +1,4 @@
-export const metadata = { title: 'Privacy Policy - Frianzo' };
+export const metadata = { title: 'Privacy Policy | Frianzo', description: 'Read the Frianzo Privacy Policy to learn how account information, user content, technical data, advertising and privacy requests are handled.', alternates: { canonical: '/privacy' } };
 
 export default function PrivacyPage() {
   return (
