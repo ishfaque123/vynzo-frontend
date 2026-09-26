@@ -1,4 +1,4 @@
-export const metadata = { title: 'Terms of Service - Frianzo' };
+export const metadata = { title: 'Terms of Service | Frianzo', description: 'Read the Frianzo Terms of Service covering account use, content rules, safety, account termination and service changes.', alternates: { canonical: '/terms' } };
 
 export default function TermsPage() {
   return (
