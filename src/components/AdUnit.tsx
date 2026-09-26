@@ -8,9 +8,10 @@ const ADSENSE_SRC = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle
 export default function AdUnit() {
   const pushed = useRef(false);
   const [scriptReady, setScriptReady] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
   function pushAd() {
-    if (pushed.current) return;
+    if (pushed.current || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
     pushed.current = true;
     try {
       // @ts-ignore
@@ -21,8 +22,22 @@ export default function AdUnit() {
   }
 
   useEffect(() => {
+    setIsOnline(navigator.onLine);
+    function handleOnline() { setIsOnline(true); pushAd(); }
+    function handleOffline() { setIsOnline(false); }
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
     if (scriptReady) pushAd();
   }, [scriptReady]);
+
+  if (!isOnline) return null;
 
   return (
     <>
