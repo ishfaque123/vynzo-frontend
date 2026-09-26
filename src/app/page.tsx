@@ -33,6 +33,70 @@ function PlusIcon() {
   );
 }
 
+function PublicLanding() {
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-5xl">
+        <header className="flex items-center justify-between gap-4">
+          <Link href="/" className="text-2xl font-bold text-blue-600">Frianzo</Link>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700">
+              Log in
+            </Link>
+            <Link href="/register" className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white">
+              Sign up
+            </Link>
+          </div>
+        </header>
+
+        <section className="py-16 text-center sm:py-20">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-blue-600">Social networking</p>
+          <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            Connect, share and discover on Frianzo
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            Frianzo is a social platform where people can share posts, photos, stories and reels,
+            follow other users, react to posts, join conversations and discover new content.
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/register" className="rounded-full bg-blue-600 px-6 py-3 font-semibold text-white">
+              Create an account
+            </Link>
+            <Link href="/login" className="rounded-full border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700">
+              Log in to Frianzo
+            </Link>
+          </div>
+        </section>
+
+        <section className="grid gap-5 pb-14 sm:grid-cols-2 lg:grid-cols-3">
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Share posts and photos</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Publish text and photo posts, choose who can comment, and interact with posts through reactions and comments.
+            </p>
+          </article>
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Watch and share reels</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Discover short-form video content from people you follow and explore popular reels in your feed.
+            </p>
+          </article>
+          <article className="rounded-2xl bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Connect with people</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Find profiles, follow people, view their posts and reels, and take part in conversations through comments.
+            </p>
+          </article>
+        </section>
+
+        <footer className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
+          Frianzo — a place to connect and share with others.
+        </footer>
+      </div>
+    </main>
+  );
+}
+
 export default function HomePage() {
   const { user, loading, isAuthenticated, offline } = useAuth();
   const router = useRouter();
@@ -53,13 +117,8 @@ export default function HomePage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (!loading && !isAuthenticated) router.push('/login'); }, [loading, isAuthenticated, router]);
-
   async function loadFeed() {
     if (!user?.id) return;
-    // Only show the full skeleton screen on a true first load. If posts are
-    // already on screen (e.g. we're just re-fetching after reconnecting),
-    // keep them visible instead of wiping the feed back to skeletons.
     if (posts.length === 0) setFeedLoading(true);
     setFeedError(false);
 
@@ -90,9 +149,6 @@ export default function HomePage() {
       } else {
         setFeedError(true);
       }
-      // Pull a bigger pool of recent reels, then prioritize reels from
-      // friends/people you follow, and within the rest, the most-liked
-      // ("viral") ones, instead of just showing them in upload order.
       const reelPool = new Map<string, any>();
       for (const page of [reelPage1, reelPage2, reelPage3]) {
         if (page.success) for (const r of page.data.reels || []) reelPool.set(r.id, r);
@@ -121,7 +177,6 @@ export default function HomePage() {
 
   useEffect(() => {
     if (isAuthenticated) loadFeed();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, offline]);
 
   useEffect(() => {
@@ -136,7 +191,6 @@ export default function HomePage() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   async function loadMore() {
@@ -179,7 +233,6 @@ export default function HomePage() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, hasMore, loadingMore]);
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
@@ -190,9 +243,7 @@ export default function HomePage() {
         newCounts[p.myReaction] = Math.max(0, (newCounts[p.myReaction] || 0) - 1);
         if (newCounts[p.myReaction] === 0) delete newCounts[p.myReaction];
       }
-      if (reaction) {
-        newCounts[reaction] = (newCounts[reaction] || 0) + 1;
-      }
+      if (reaction) newCounts[reaction] = (newCounts[reaction] || 0) + 1;
       return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
     }));
   }
@@ -203,10 +254,6 @@ export default function HomePage() {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }
 
-  // Guarded against out-of-order responses: if two loadComments calls for
-  // the same post are in flight, only the reply to the most recently
-  // issued request is applied — an older, slower response can no longer
-  // clobber newer state.
   async function loadComments(postId: string) {
     const seq = (commentsSeqRef.current[postId] || 0) + 1;
     commentsSeqRef.current[postId] = seq;
@@ -231,8 +278,6 @@ export default function HomePage() {
       await loadComments(postId);
       setCommentText('');
       setReplyTo(null);
-      // Only top-level comments count toward the number shown on a post;
-      // replies do not increment it.
       if (!parentCommentId) {
         setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
       }
@@ -241,41 +286,24 @@ export default function HomePage() {
     }
   }
 
-  if (!user) return null;
+  if (loading) return null;
+  if (!user) return <PublicLanding />;
 
   const openPost = posts.find((p) => p.id === openComments);
 
   return (
-    <div className="mx-auto w-full max-w-xl md:max-w-4xl py-6 app-fade-in">
+    <div className="mx-auto w-full max-w-xl py-6 md:max-w-5xl app-fade-in">
       <div className="mb-3 flex w-full items-center gap-2 px-4">
         <Link href={`/u/${user.username}`}><Avatar url={user.profilePictureUrl} name={user.displayName} /></Link>
-        <button
-          onClick={() => { if (!feedOffline) router.push('/compose'); }}
-          disabled={feedOffline}
-          className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-left text-slate-400 shadow-sm"
-        >
+        <button onClick={() => { if (!feedOffline) router.push('/compose'); }} disabled={feedOffline} className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-left text-slate-400 shadow-sm">
           What's on your mind?
         </button>
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setPendingComposeImage(file);
-              router.push('/compose');
-            }
-            e.target.value = '';
-          }}
-        />
-        <button
-          onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }}
-          disabled={feedOffline}
-          aria-label="Add a photo"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm"
-        >
+        <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) { setPendingComposeImage(file); router.push('/compose'); }
+          e.target.value = '';
+        }} />
+        <button onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }} disabled={feedOffline} aria-label="Add a photo" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
           <PlusIcon />
         </button>
       </div>
@@ -284,19 +312,12 @@ export default function HomePage() {
 
       {feedLoading ? (
         <div className="flex flex-col gap-3 px-4" role="status" aria-label="Loading feed">
-          <SkeletonPostCard />
-          <SkeletonPostCard />
-          <SkeletonPostCard />
+          <SkeletonPostCard /><SkeletonPostCard /><SkeletonPostCard />
         </div>
       ) : feedError ? (
         <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
           <p className="text-sm text-red-500">Failed to load posts. Please try again.</p>
-          <button
-            onClick={loadFeed}
-            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white"
-          >
-            Retry
-          </button>
+          <button onClick={loadFeed} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
         </div>
       ) : posts.length === 0 ? (
         <p className="px-4 text-slate-500">No posts yet. Be the first to post!</p>
@@ -312,24 +333,13 @@ export default function HomePage() {
                   replyTo={replyTo} setReplyTo={setReplyTo}
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
-                {(index + 1) % 5 === 0 && (
-                  <div className="my-4 px-4">
-                    <AdUnit />
-                  </div>
-                )}
-                {(index + 1) % 2 === 0 && reels.length > 0 && (
-                  <div className="my-4 px-4">
-                    <FeedReelCard reel={reels[Math.floor(index / 2) % reels.length]} />
-                  </div>
-                )}
+                {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
+                {(index + 1) % 2 === 0 && reels.length > 0 && <div className="my-4 px-4"><FeedReelCard reel={reels[Math.floor(index / 2) % reels.length]} /></div>}
               </div>
             ))}
           </div>
-
           <div ref={sentinelRef} className="flex min-h-12 items-center justify-center px-4 py-4 text-sm text-slate-400">
-            {loadingMore ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" />
-            ) : hasMore ? null : "You're all caught up"}
+            {loadingMore ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" /> : hasMore ? null : "You're all caught up"}
           </div>
         </>
       )}
