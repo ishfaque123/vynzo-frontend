@@ -880,7 +880,7 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={handlePinnedBannerClick}
-            className="sticky top-0 z-10 mb-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white/95 px-3 py-2.5 text-left shadow-sm backdrop-blur"
+            className="sticky top-0 z-10 mb-3 flex w-full items-center gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-3 py-3 text-left shadow-lg shadow-amber-200/60 backdrop-blur"
             aria-label="Open pinned message"
           >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
