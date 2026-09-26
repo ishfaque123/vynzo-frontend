@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createConversation } from '@/lib/api/messageApi';
+import { setPendingMessageText } from '@/lib/pendingMessageText';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function NewMessagePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const shareUrl = searchParams.get('share');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +35,10 @@ export default function NewMessagePage() {
     setStarting(true);
     const result = await createConversation(userId);
     setStarting(false);
-    if (result.success) router.push(`/messages/${result.data.id}`);
+    if (result.success) {
+      if (shareUrl) setPendingMessageText(shareUrl);
+      router.push(`/messages/${result.data.id}`);
+    }
   }
 
   return (
