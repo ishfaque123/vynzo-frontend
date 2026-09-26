@@ -880,20 +880,20 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={handlePinnedBannerClick}
-            className="sticky top-0 z-10 mb-3 flex w-full items-center gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-3 py-3 text-left shadow-lg shadow-amber-200/60 backdrop-blur"
+            className="sticky top-0 z-10 mb-3 flex w-full items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left"
             aria-label="Open pinned message"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
               <PinIcon />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pinned message</span>
-              <span className="block truncate text-sm text-slate-800">
+              <span className="block text-[11px] font-medium text-slate-500">Pinned message</span>
+              <span className="mt-0.5 block break-words text-sm leading-5 text-slate-800">
                 {activePinnedMessage.content || (activePinnedMessage.mediaType === 'image' ? 'Photo' : activePinnedMessage.mediaType === 'voice' ? 'Voice message' : 'Message')}
               </span>
             </span>
             {pinnedMessages.length > 1 && (
-              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+              <span className="shrink-0 text-[11px] font-medium text-slate-500">
                 {pinnedBannerIndex % pinnedMessages.length + 1}/{pinnedMessages.length}
               </span>
             )}
