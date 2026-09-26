@@ -1,0 +1,59 @@
+[1mdiff --git a/src/app/admin/verification/page.tsx b/src/app/admin/verification/page.tsx[m
+[1mindex ece33c7..1f201aa 100644[m
+[1m--- a/src/app/admin/verification/page.tsx[m
+[1m+++ b/src/app/admin/verification/page.tsx[m
+[36m@@ -31,18 +31,28 @@[m [mexport default function VerificationPage() {[m
+   const [note, setNote] = useState<Record<string, string>>({});[m
+   const [error, setError] = useState('');[m
+   const [expanded, setExpanded] = useState<string | null>(null);[m
+[32m+[m[32m  const [page, setPage] = useState(1);[m
+[32m+[m[32m  const [pagination, setPagination] = useState<{ page: number; pages: number; total: number } | null>(null);[m
+ [m
+   async function load() {[m
+     setLoading(true);[m
+     setError('');[m
+[31m-    const result = await fetchAdminVerificationRequests({ status, search: search.trim() });[m
+[31m-    if (result.success) setRequests(result.data.requests || []);[m
+[31m-    else setError(result.error?.message || 'Could not load verification requests.');[m
+[32m+[m[32m    const result = await fetchAdminVerificationRequests({ status, search: search.trim(), page });[m
+[32m+[m[32m    if (result.success) {[m
+[32m+[m[32m      setRequests(result.data.requests || []);[m
+[32m+[m[32m      setPagination(result.data.pagination || null);[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      setError(result.error?.message || 'Could not load verification requests.');[m
+[32m+[m[32m    }[m
+     setLoading(false);[m
+   }[m
+ [m
+   useEffect(() => {[m
+     load();[m
+[32m+[m[32m  }, [status, page]);[m
+[32m+[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    setPage(1);[m
+   }, [status]);[m
+ [m
+   async function review(id: string, action: 'approve' | 'reject') {[m
+[36m@@ -73,11 +83,21 @@[m [mexport default function VerificationPage() {[m
+           <option value="rejected">Rejected</option>[m
+           <option value="">All</option>[m
+         </select>[m
+[31m-        <button onClick={load} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>[m
+[32m+[m[32m        <button onClick={() => { setPage(1); load(); }} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>[m
+       </div>[m
+ [m
+       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}[m
+ [m
+[32m+[m[32m      {pagination && pagination.pages > 1 && ([m
+[32m+[m[32m        <div className="flex items-center justify-between rounded-xl border bg-white px-4 py-2.5 text-sm">[m
+[32m+[m[32m          <span className="text-slate-500">Page {pagination.page} of {pagination.pages} · {pagination.total} total</span>[m
+[32m+[m[32m          <div className="flex gap-2">[m
+[32m+[m[32m            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-lg border px-3 py-1.5 font-medium text-slate-700 disabled:opacity-40">Previous</button>[m
+[32m+[m[32m            <button disabled={page >= pagination.pages} onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))} className="rounded-lg border px-3 py-1.5 font-medium text-slate-700 disabled:opacity-40">Next</button>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      )}[m
+[32m+[m
+       {loading ? ([m
+         <div className="rounded-2xl border bg-white p-8 text-center text-sm text-slate-500">Loading verification requests...</div>[m
+       ) : requests.length === 0 ? ([m
