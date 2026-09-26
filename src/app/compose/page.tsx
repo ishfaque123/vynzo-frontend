@@ -393,7 +393,7 @@ export default function ComposePage() {
               maxLength={MAX_LENGTH}
               autoFocus
               disabled={submitting}
-              className="w-full resize-none overflow-hidden border-none bg-transparent p-0 text-center text-2xl font-bold text-white outline-none placeholder:text-white/70"
+              className="w-full resize-none overflow-hidden border-none !bg-transparent p-0 text-center text-2xl font-bold text-white outline-none placeholder:text-white/70"
             />
           </div>
         ) : (
