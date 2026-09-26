@@ -65,7 +65,7 @@ function PublicLanding() {
             <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
               Log in
             </Link>
-            <Link href="/register" className="rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+            <Link href="/login" className="rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
               Sign up
             </Link>
           </div>
@@ -84,7 +84,7 @@ function PublicLanding() {
               discovering people, following profiles and joining conversations through comments and reactions.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/register" className="rounded-full bg-blue-600 px-7 py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
+              <Link href="/login" className="rounded-full bg-blue-600 px-7 py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
                 Create Account
               </Link>
               <Link href="/login" className="rounded-full border border-slate-200 bg-white px-7 py-3.5 text-center text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
