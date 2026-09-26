@@ -31,18 +31,28 @@ export default function VerificationPage() {
   const [note, setNote] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<{ page: number; pages: number; total: number } | null>(null);
 
   async function load() {
     setLoading(true);
     setError('');
-    const result = await fetchAdminVerificationRequests({ status, search: search.trim() });
-    if (result.success) setRequests(result.data.requests || []);
-    else setError(result.error?.message || 'Could not load verification requests.');
+    const result = await fetchAdminVerificationRequests({ status, search: search.trim(), page });
+    if (result.success) {
+      setRequests(result.data.requests || []);
+      setPagination(result.data.pagination || null);
+    } else {
+      setError(result.error?.message || 'Could not load verification requests.');
+    }
     setLoading(false);
   }
 
   useEffect(() => {
     load();
+  }, [status, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [status]);
 
   async function review(id: string, action: 'approve' | 'reject') {
@@ -73,10 +83,20 @@ export default function VerificationPage() {
           <option value="rejected">Rejected</option>
           <option value="">All</option>
         </select>
-        <button onClick={load} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>
+        <button onClick={() => { setPage(1); load(); }} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">Search</button>
       </div>
 
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+      {pagination && pagination.pages > 1 && (
+        <div className="flex items-center justify-between rounded-xl border bg-white px-4 py-2.5 text-sm">
+          <span className="text-slate-500">Page {pagination.page} of {pagination.pages} · {pagination.total} total</span>
+          <div className="flex gap-2">
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-lg border px-3 py-1.5 font-medium text-slate-700 disabled:opacity-40">Previous</button>
+            <button disabled={page >= pagination.pages} onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))} className="rounded-lg border px-3 py-1.5 font-medium text-slate-700 disabled:opacity-40">Next</button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="rounded-2xl border bg-white p-8 text-center text-sm text-slate-500">Loading verification requests...</div>
