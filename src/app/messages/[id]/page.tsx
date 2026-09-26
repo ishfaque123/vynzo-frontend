@@ -813,7 +813,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="mx-auto flex h-[100dvh] max-w-xl flex-col">
+    <div
+      className="mx-auto flex h-[100dvh] max-w-xl flex-col"
+      style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y' }}
+    >
       {toast && (
         <div
           className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-medium text-white shadow-lg transition-opacity ${
@@ -875,7 +878,10 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      <div
+        className="flex-1 overflow-y-auto px-3 py-3"
+        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y' }}
+      >
         {activePinnedMessage && (
           <button
             type="button"
