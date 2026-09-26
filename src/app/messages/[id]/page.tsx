@@ -886,7 +886,6 @@ export default function ChatPage() {
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
-                  onSelectStart={(e) => e.preventDefault()}
                   onCopy={(e) => e.preventDefault()}
                   onCut={(e) => e.preventDefault()}
                   onDragStart={(e) => e.preventDefault()}
