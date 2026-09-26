@@ -14,6 +14,7 @@ import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import Skeleton from '@/components/Skeleton';
 
 function playSubmitSound() {
   try {
@@ -50,6 +51,46 @@ function MoreIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
       <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
     </svg>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="mx-auto max-w-xl pb-6" role="status" aria-label="Loading profile">
+      <Skeleton className="h-32 w-full rounded-none" />
+      <div className="px-4">
+        <div className="-mt-10 mb-3 flex items-end justify-between">
+          <Skeleton className="h-20 w-20 shrink-0 rounded-full border-4 border-white" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-9 rounded-full" />
+            <Skeleton className="h-9 w-9 rounded-full" />
+          </div>
+        </div>
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="mt-2 h-3 w-24" />
+        <Skeleton className="mt-3 h-3 w-4/5" />
+        <Skeleton className="mt-2 h-3 w-3/5" />
+        <div className="mt-4 flex border-y py-3">
+          <div className="flex flex-1 flex-col items-center gap-2"><Skeleton className="h-4 w-8" /><Skeleton className="h-3 w-12" /></div>
+          <div className="flex flex-1 flex-col items-center gap-2"><Skeleton className="h-4 w-8" /><Skeleton className="h-3 w-16" /></div>
+          <div className="flex flex-1 flex-col items-center gap-2"><Skeleton className="h-4 w-8" /><Skeleton className="h-3 w-16" /></div>
+        </div>
+        <Skeleton className="mt-4 h-10 w-full rounded-lg" />
+      </div>
+      <div className="mt-4 flex border-y">
+        <Skeleton className="mx-4 my-3 h-3 flex-1" />
+        <Skeleton className="mx-4 my-3 h-3 flex-1" />
+        <Skeleton className="mx-4 my-3 h-3 flex-1" />
+      </div>
+      <div className="mt-2">
+        <div className="border-b-[8px] border-slate-100 bg-white p-3">
+          <div className="flex items-center gap-2"><Skeleton className="h-9 w-9 rounded-full" /><div className="flex flex-1 flex-col gap-1.5"><Skeleton className="h-3 w-28" /><Skeleton className="h-2.5 w-16" /></div></div>
+          <Skeleton className="mt-3 h-3 w-full" /><Skeleton className="mt-2 h-3 w-4/5" />
+          <Skeleton className="mt-3 h-48 w-full" />
+          <div className="mt-3 flex gap-4"><Skeleton className="h-3 w-14" /><Skeleton className="h-3 w-14" /><Skeleton className="h-3 w-14" /></div>
+        </div>
+      </div>
+    </div>
   );
 }
 function BlockIcon() {
@@ -265,7 +306,7 @@ export default function ProfileClient() {
     }
   }
 
-  if (loading) return <div className="flex justify-center py-10" role="status" aria-label="Loading profile"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
+  if (loading) return <ProfileSkeleton />;
   if (profileError) {
     return (
       <div className="flex flex-col items-center gap-3 p-8 text-center">
