@@ -67,6 +67,32 @@ function DeleteIcon() {
   );
 }
 
+function CopyIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
+    </svg>
+  );
+}
+function TypingDots() {
+  return (
+    <span className="inline-flex items-center gap-1 text-green-600">
+      Typing
+      <span className="inline-flex gap-0.5">
+        <span className="h-1 w-1 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '0ms' }} />
+        <span className="h-1 w-1 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '150ms' }} />
+        <span className="h-1 w-1 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '300ms' }} />
+      </span>
+    </span>
+  );
+}
 function ImageIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -313,6 +339,7 @@ export default function ChatPage() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [pinnedBannerIndex, setPinnedBannerIndex] = useState(0);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -612,6 +639,15 @@ export default function ChatPage() {
     else startRecording();
   }
 
+  function handleCopyMessage() {
+    if (!actionMenuFor?.content) return;
+    navigator.clipboard?.writeText(actionMenuFor.content)
+      .then(() => showToast('Copied to clipboard.', 'success'))
+      .catch(() => showToast('Could not copy.', 'error'));
+    setActionMenuFor(null);
+    setActionMenuPosition(null);
+  }
+
   function startLongPress(m: Message, clientX?: number, clientY?: number) {
     if (m.isDeleted || selectedMessageIds.length) return;
     longPressTimer.current = setTimeout(() => {
@@ -787,9 +823,18 @@ export default function ChatPage() {
           <button onClick={() => router.push('/messages')} aria-label="Back">
             <BackIcon />
           </button>
+          {otherUser?.profilePictureUrl ? (
+            <img src={otherUser.profilePictureUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="font-semibold leading-tight">{displayName}</p>
-            <p className={`text-xs leading-tight ${otherUser?.isOnline ? 'text-green-600' : 'text-slate-400'}`}>{statusText}</p>
+            <p className={`text-xs leading-tight ${otherUser?.isOnline ? 'text-green-600' : 'text-slate-400'}`}>
+              {otherTyping ? <TypingDots /> : statusText}
+            </p>
           </div>
         </div>
         <div className="relative">
@@ -904,7 +949,12 @@ export default function ChatPage() {
                         <div className="mb-1 flex items-center gap-1 text-[11px] font-medium italic text-slate-500">Forwarded</div>
                       )}
                       {isImage && (
-                        <img src={m.mediaUrl!} alt="" className="max-h-72 w-full rounded-xl object-cover" />
+                        <img
+                          src={m.mediaUrl!}
+                          alt=""
+                          onClick={(e) => { if (!selectedMessageIds.length) { e.stopPropagation(); setViewingImage(m.mediaUrl!); } }}
+                          className="max-h-72 w-full rounded-xl object-cover"
+                        />
                       )}
                       {isVoice && (
                         <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
@@ -1086,6 +1136,11 @@ export default function ChatPage() {
               </div>
             )}
             <div className="flex items-center justify-center gap-2 px-2 py-2">
+              {actionMenuFor.content && (
+                <button onClick={handleCopyMessage} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Copy message text">
+                  <CopyIcon />
+                </button>
+              )}
               <button
                 onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setReplyTo(m); setEditingMessage(null); }}
                 className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95"
@@ -1146,6 +1201,15 @@ export default function ChatPage() {
               {forwarding ? 'Sending...' : `Send to ${selectedForwardTargetIds.length || ''}${selectedForwardTargetIds.length ? ' chat' + (selectedForwardTargetIds.length > 1 ? 's' : '') : ' selected chats'}`}
             </button>
           </div>
+        </div>
+      )}
+
+      {viewingImage && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90" onClick={() => setViewingImage(null)}>
+          <button onClick={() => setViewingImage(null)} aria-label="Close" className="absolute right-4 top-4 text-white">
+            <CloseIcon />
+          </button>
+          <img src={viewingImage} alt="" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
 
