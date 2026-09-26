@@ -698,6 +698,8 @@ export default function ChatPage() {
       else showToast('Could not delete message.', 'error');
     });
   }
+  const deleteMenuForEveryoneAllowed = !!deleteMenuFor && deleteMenuFor.senderId === user?.id;
+
   function handleDeleteForEveryone() {
     if (!deleteMenuFor) return;
     const id = deleteMenuFor.id;
@@ -1148,6 +1150,9 @@ export default function ChatPage() {
             <p className="text-center text-base font-semibold text-slate-900">Delete Message From {deleteMenuFor.senderId === user?.id ? 'you' : (deleteMenuFor.sender?.displayName || otherUser?.displayName || 'sender')}?</p>
             <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => setDeleteMenuFor(null)} className="rounded-full border px-5 py-2.5 text-sm font-medium text-slate-700">Cancel</button>
+              {deleteMenuForEveryoneAllowed && (
+                <button onClick={handleDeleteForEveryone} className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600">Delete for everyone</button>
+              )}
               <button onClick={handleDeleteForMe} className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white">Delete</button>
             </div>
           </div>
