@@ -70,6 +70,13 @@ function VideoNotice({ message, onClose }: { message: string; onClose: () => voi
     </div>
   );
 }
+function LocationIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
 function TagIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -140,6 +147,8 @@ export default function ComposePage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [videoNotice, setVideoNotice] = useState<string | null>(null);
+  const [location, setLocation] = useState<string | null>(null);
+  const [locatingGps, setLocatingGps] = useState(false);
 
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [audiencePickerOpen, setAudiencePickerOpen] = useState(false);
@@ -228,6 +237,45 @@ export default function ComposePage() {
     probe.src = objectUrl;
   }
 
+  function handleUseLocation() {
+    if (locatingGps) return;
+    if (!navigator.geolocation) {
+      setVideoNotice('Location is not available on this device.');
+      return;
+    }
+    setLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(`${API_URL}/api/geo/reverse?lat=${latitude}&lng=${longitude}`, { credentials: 'include' });
+          const result = await res.json();
+          if (result.success && result.data.location) {
+            setLocation(result.data.location);
+          } else {
+            setVideoNotice('Could not determine your location name. Please try again.');
+          }
+        } catch {
+          setVideoNotice('Could not determine your location name. Please try again.');
+        } finally {
+          setLocatingGps(false);
+        }
+      },
+      (err) => {
+        setLocatingGps(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setVideoNotice('Location access was denied. You can enable it in your device settings.');
+        } else {
+          setVideoNotice('Could not get your current location. Please try again.');
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+  function removeLocation() {
+    setLocation(null);
+  }
+
   function removeImage() {
     setImage(null);
     if (imagePreview) URL.revokeObjectURL(imagePreview);
@@ -281,6 +329,7 @@ export default function ComposePage() {
     formData.append('commentAudience', commentAudience);
     if (backgroundStyle && !image) formData.append('backgroundStyle', backgroundStyle);
     formData.append('taggedUserIds', JSON.stringify(taggedUsers.map((t) => t.id)));
+    if (location) formData.append('location', location);
     if (image) formData.append('image', image);
 
     const xhr = new XMLHttpRequest();
@@ -379,6 +428,14 @@ export default function ComposePage() {
                 {i < taggedUsers.length - 1 ? ', ' : ''}
               </span>
             ))}
+          </p>
+        )}
+
+        {location && (
+          <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
+            <span>📍</span>
+            <span className="font-medium text-slate-700">{location}</span>
+            <button type="button" onClick={removeLocation} className="ml-0.5 text-slate-400">×</button>
           </p>
         )}
 
@@ -489,6 +546,14 @@ export default function ComposePage() {
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <VideoIcon />
+          </button>
+          <button
+            onClick={handleUseLocation}
+            disabled={submitting || locatingGps}
+            aria-label="Add your location"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
+          >
+            {locatingGps ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" /> : <LocationIcon />}
           </button>
         </div>
         <span className="text-xs text-slate-400">{content.length}/{MAX_LENGTH}</span>
