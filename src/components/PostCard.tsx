@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ReactionButton, { REACTIONS } from './ReactionButton';
 import PostMenu from './PostMenu';
 import FollowButton from './FollowButton';
 import PostContent from './PostContent';
-import { hidePost } from '@/lib/api/postApi';
+import { hidePost, recordPostView } from '@/lib/api/postApi';
 import VerifiedBadge from './VerifiedBadge';
 
 function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: number }) {
@@ -110,6 +110,21 @@ function ReactionSummary({ post }: { post: any }) {
 export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted, offline = false }: any) {
   const isOwner = currentUser?.username === post.author.username;
   const [hiding, setHiding] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const viewedRef = useRef(false);
+
+  useEffect(() => {
+    if (offline || !cardRef.current) return;
+    const el = cardRef.current;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !viewedRef.current) {
+        viewedRef.current = true;
+        recordPostView(post.id).catch(() => { viewedRef.current = false; });
+      }
+    }, { threshold: 0.6 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [post.id, offline]);
 
   async function handleHideClick() {
     if (hiding) return;
@@ -120,7 +135,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
   }
 
   return (
-    <div className="w-full overflow-hidden border-b-[8px] border-slate-100 bg-white">
+    <div ref={cardRef} className="w-full overflow-hidden border-b-[8px] border-slate-100 bg-white">
       <div className="flex items-start justify-between p-3 pb-2">
         {post.originalPost ? (
           <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">

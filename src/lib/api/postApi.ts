@@ -74,6 +74,13 @@ export async function reportPost(postId: string, reason: string = 'other', detai
   return readJson(res);
 }
 
+export async function recordPostView(postId: string) {
+  const res = await fetch(`${API_URL}/api/posts/${postId}/view`, {
+    method: 'POST', credentials: 'include',
+  });
+  return readJson(res);
+}
+
 export async function hidePost(postId: string) {
   const res = await fetch(`${API_URL}/api/posts/${postId}/hide`, {
     method: 'POST', credentials: 'include',
