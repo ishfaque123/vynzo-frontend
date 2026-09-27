@@ -11,6 +11,7 @@ import { fetchUserReels } from '@/lib/api/reelApi';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { createConversation } from '@/lib/api/messageApi';
 import ShareModal from '@/components/ShareModal';
+import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -479,13 +480,7 @@ export default function ProfileClient() {
                   onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
               ) : (
-                <Link key={`reel-${entry.item.id}`} href={`/reels?id=${entry.item.id}`} className="mx-4 mb-4 block overflow-hidden rounded-xl border">
-                  <div className="relative aspect-[9/16] max-h-96 w-full bg-slate-200">
-                    <video src={`${entry.item.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
-                    <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
-                  </div>
-                  {entry.item.caption && <p className="px-3 py-2 text-sm text-slate-700">{entry.item.caption}</p>}
-                </Link>
+                <div key={`reel-${entry.item.id}`} className="mx-4 mb-4"><FeedReelCard reel={entry.item} /></div>
               ))}
           </div>
         )}
