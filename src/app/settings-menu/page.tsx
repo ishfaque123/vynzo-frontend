@@ -257,6 +257,10 @@ export default function SettingsMenuPage() {
     setLoggingOut(true);
     const result = await logoutRequest();
     if (result?.success) {
+      // Force the WebView to persist the cleared cookie to disk right now,
+      // so closing the app immediately after logging out can't bring the
+      // old session back on next launch.
+      (window as any).FrianzoNative?.flushCookies?.();
       // Full navigation is more reliable in the Android WebView than a
       // client-side route transition after authentication state changes.
       window.location.replace('/login');
