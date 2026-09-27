@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import ShareModal from './ShareModal';
+import { toggleReelLike } from '@/lib/api/reelApi';
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -30,6 +32,10 @@ export default function FeedReelCard({ reel }: { reel: any }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [liked, setLiked] = useState(!!reel.liked);
+  const [likeCount, setLikeCount] = useState(Number(reel.likeCount || 0));
+  const [liking, setLiking] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -56,6 +62,37 @@ export default function FeedReelCard({ reel }: { reel: any }) {
       setIsMuted(true);
     }
   }, [inView]);
+
+  async function handleLike(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (liking) return;
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setLikeCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
+    setLiking(true);
+    const result = await toggleReelLike(reel.id);
+    setLiking(false);
+    if (result.success) {
+      setLiked(!!result.data.liked);
+      setLikeCount(Number(result.data.likeCount || 0));
+    } else {
+      setLiked(!nextLiked);
+      setLikeCount((count) => Math.max(0, count + (nextLiked ? -1 : 1)));
+    }
+  }
+
+  function openComments(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href = '/reels?id=' + encodeURIComponent(reel.id);
+  }
+
+  function openShare(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setShareOpen(true);
+  }
 
   function toggleMute(e: React.MouseEvent) {
     e.preventDefault();
@@ -97,6 +134,21 @@ export default function FeedReelCard({ reel }: { reel: any }) {
           {isMuted ? <MuteIcon /> : <UnmuteIcon />}
         </button>
       </div>
+      <div className="flex items-center border-t border-slate-100 px-2 py-1">
+        <button type="button" onClick={handleLike} disabled={liking} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium active:bg-slate-100 ${liked ? 'text-rose-500' : 'text-slate-600'}`}>
+          <svg width="21" height="21" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" /></svg>
+          {likeCount > 0 && <span>{likeCount}</span>}
+        </button>
+        <button type="button" onClick={openComments} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium text-slate-600 active:bg-slate-100">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-4.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></svg>
+          {Number(reel.commentCount || 0) > 0 && <span>{reel.commentCount}</span>}
+        </button>
+        <button type="button" onClick={openShare} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium text-slate-600 active:bg-slate-100">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><line x1="8.3" y1="10.7" x2="15.7" y2="6.3" /><line x1="8.3" y1="13.3" x2="15.7" y2="17.7" /></svg>
+          Share
+        </button>
+      </div>
     </Link>
+    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
   );
 }
