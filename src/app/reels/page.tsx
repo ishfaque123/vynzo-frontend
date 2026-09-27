@@ -22,16 +22,16 @@ function MoreIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fil
 function MuteIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>; }
 function UnmuteIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.5 8.5a5 5 0 010 7" /><path d="M18.5 5.5a9 9 0 010 13" /></svg>; }
 function ReelNotice({ message, confirm, onClose, onConfirm }: { message: string; confirm?: boolean; onClose: () => void; onConfirm?: () => void }) {
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm" onClick={onClose}>
-    <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-5 text-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 px-5 backdrop-blur-sm" onClick={onClose}>
+    <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" onClick={(e) => e.stopPropagation()}>
       <div className="mb-3 flex items-center gap-3">
         <img src="/logo.png" alt="Frianzo" className="h-9 w-9 object-contain" />
         <h3 className="text-base font-semibold">{confirm ? 'Confirm action' : 'Frianzo'}</h3>
       </div>
-      <p className="text-sm leading-6 text-white/80">{message}</p>
+      <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{message}</p>
       <div className="mt-5 flex justify-end gap-2">
-        {confirm && <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-sm font-medium text-white/70 hover:bg-white/10">Cancel</button>}
-        <button type="button" onClick={confirm ? onConfirm : onClose} className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900">{confirm ? 'Delete' : 'OK'}</button>
+        {confirm && <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</button>}
+        <button type="button" onClick={confirm ? onConfirm : onClose} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-100">{confirm ? 'Delete' : 'OK'}</button>
       </div>
     </div>
   </div>;
