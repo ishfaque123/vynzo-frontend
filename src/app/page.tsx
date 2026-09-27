@@ -215,17 +215,33 @@ export default function HomePage() {
 
   async function loadFeed() {
     if (!user?.id) return;
-    if (posts.length === 0) setFeedLoading(true);
     setFeedError(false);
 
-    if (offline || feedOffline) {
+    // Cache-first startup: show the last successful feed immediately when
+    // available. Network refresh happens afterwards, so reopening the app
+    // does not force the user through a skeleton every time.
+    let cachedPosts: any[] | null = null;
+    try {
       const cached = await getOfflineFeed(user.id);
       if (cached?.posts?.length) {
+        cachedPosts = cached.posts;
         setPosts(cached.posts);
-        setHasMore(false);
+        setHasMore(!!cached.hasMore);
         setOffset(cached.posts.length);
+        setFeedOffline(false);
+        setFeedLoading(false);
+      } else if (posts.length === 0) {
+        setFeedLoading(true);
+      }
+    } catch {
+      if (posts.length === 0) setFeedLoading(true);
+    }
+
+    if (offline || feedOffline) {
+      if (cachedPosts?.length) {
         setFeedOffline(true);
-      } else {
+        setHasMore(false);
+      } else if (posts.length === 0) {
         setFeedError(true);
       }
       setFeedLoading(false);
