@@ -398,8 +398,18 @@ export default function HomePage() {
     }
   }
 
+  // Inside the Android app's WebView, window.FrianzoNative is always
+  // present (it's injected by the native side). A logged-out visitor there
+  // is an existing app user, not a web SEO visitor, so send them straight
+  // to the login form instead of the public marketing landing page.
+  const isNativeApp = typeof window !== 'undefined' && !!(window as any).FrianzoNative;
+
+  useEffect(() => {
+    if (!loading && !user && isNativeApp) router.replace('/login');
+  }, [loading, user, isNativeApp, router]);
+
   if (loading) return null;
-  if (!user) return <PublicLanding />;
+  if (!user) return isNativeApp ? null : <PublicLanding />;
 
   const openPost = posts.find((p) => p.id === openComments);
 
