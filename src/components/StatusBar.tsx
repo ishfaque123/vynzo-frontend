@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchStatusFeed, createStatus, createStatusWithProgress } from '@/lib/api/statusApi';
 import StatusViewer from './StatusViewer';
+import Toast from './Toast';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
 
@@ -41,6 +42,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
   const [visibility, setVisibility] = useState<'everyone' | 'close_friends'>('everyone');
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
@@ -81,7 +83,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
     if (result.success) {
       load();
     } else {
-      alert(result.error?.message || 'Could not post your status. Please try again.');
+      setToast({ message: result.error?.message || 'Could not post your status. Please try again.', type: 'error' });
     }
   }
 
@@ -95,7 +97,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
       setTextValue('');
       load();
     } else {
-      alert(result.error?.message || 'Could not post your status. Please try again.');
+      setToast({ message: result.error?.message || 'Could not post your status. Please try again.', type: 'error' });
     }
   }
 
@@ -162,7 +164,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
             probe.onloadedmetadata = () => {
               URL.revokeObjectURL(probe.src);
               if (probe.duration > 60) {
-                alert('Status videos must be 60 seconds or shorter.');
+                setToast({ message: 'Status videos must be 60 seconds or shorter.', type: 'error' });
                 return;
               }
               handlePickPhoto(file);
@@ -266,6 +268,8 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {viewerOpenIndex !== null && (
         <StatusViewer
