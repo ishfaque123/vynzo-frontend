@@ -38,16 +38,22 @@ function ReelNotice({ message, confirm, onClose, onConfirm }: { message: string;
 }
 
 
-function ReelMoreOptionsSheet({ isMine, favorited, onInterested, onNotInterested, onSave, onCopyLink, onDelete, onReport, onClose }: { isMine: boolean; favorited: boolean; onInterested: () => void; onNotInterested: () => void; onSave: () => void; onCopyLink: () => void; onDelete: () => void; onReport: () => void; onClose: () => void }) {
-  const [loading, setLoading] = useState(true);
+function ReelOptionIcon({ type }: { type: 'interested' | 'not-interested' | 'save' | 'copy' | 'delete' | 'report' }) {
+  const paths = {
+    interested: <path d="M20 6L9 17l-5-5" />,
+    'not-interested': <><circle cx="12" cy="12" r="9" /><line x1="8" y1="8" x2="16" y2="16" /></>,
+    save: <path d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z" />,
+    copy: <><rect x="8" y="8" width="11" height="12" rx="2" /><path d="M5 16H4a2 2 0 01-2-2V4a2 2 0 012-2h8a2 2 0 012 2v1" /></>,
+    delete: <><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M7 7l1 14h8l1-14" /></>,
+    report: <><path d="M5 21V4" /><path d="M5 5c4-3 6 3 14 0v9c-8 3-10-3-14 0" /></>,
+  };
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[type]}</svg>;
+}
+
+function ReelMoreOptionsSheet({ isMine, favorited, loading, onInterested, onNotInterested, onSave, onCopyLink, onDelete, onReport, onClose }: { isMine: boolean; favorited: boolean; loading: boolean; onInterested: () => void; onNotInterested: () => void; onSave: () => void; onCopyLink: () => void; onDelete: () => void; onReport: () => void; onClose: () => void }) {
   const [dragY, setDragY] = useState(0);
   const [pullStartY, setPullStartY] = useState<number | null>(null);
   const CLOSE_THRESHOLD = 100;
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 280);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   function startPull(y: number) {
     setPullStartY(y);
@@ -112,14 +118,14 @@ function ReelMoreOptionsSheet({ isMine, favorited, onInterested, onNotInterested
             </div>
           ) : (
             <div className="space-y-1">
-              <button type="button" onClick={onInterested} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">Interested</button>
-              <button type="button" onClick={onNotInterested} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">Not interested</button>
-              <button type="button" onClick={onSave} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">{favorited ? 'Remove from saved' : 'Save reel'}</button>
-              <button type="button" onClick={onCopyLink} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">Copy link</button>
+              <button type="button" onClick={onInterested} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200"><span className="text-slate-600"><ReelOptionIcon type="interested" /></span><span>Interested</span></button>
+              <button type="button" onClick={onNotInterested} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200"><span className="text-slate-600"><ReelOptionIcon type="not-interested" /></span><span>Not interested</span></button>
+              <button type="button" onClick={onSave} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200"><span className="text-slate-600"><ReelOptionIcon type="save" /></span><span>{favorited ? 'Remove from saved' : 'Save reel'}</span></button>
+              <button type="button" onClick={onCopyLink} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200"><span className="text-slate-600"><ReelOptionIcon type="copy" /></span><span>Copy link</span></button>
               {isMine ? (
-                <button type="button" onClick={onDelete} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100">Delete reel</button>
+                <button type="button" onClick={onDelete} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100"><span><ReelOptionIcon type="delete" /></span><span>Delete reel</span></button>
               ) : (
-                <button type="button" onClick={onReport} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100">Report</button>
+                <button type="button" onClick={onReport} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100"><span><ReelOptionIcon type="report" /></span><span>Report reel</span></button>
               )}
             </div>
           )}
@@ -162,6 +168,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [notice, setNotice] = useState<{ message: string; confirm: boolean } | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [moreOptionsLoaded, setMoreOptionsLoaded] = useState(false);
   const { user: currentUser } = useAuth();
   const CAPTION_LIMIT = 80;
   const captionLong = (reel.caption?.length || 0) > CAPTION_LIMIT;
@@ -220,11 +227,15 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
   async function handleLike() { if (liking) return; setLiking(true); const nextLiked = !reel.liked; const optimisticCount = Math.max(0, reel.likeCount + (nextLiked ? 1 : -1)); onLikeChange(reel.id, nextLiked, optimisticCount); const result = await toggleReelLike(reel.id); setLiking(false); if (result.success) onLikeChange(reel.id, result.data.liked, result.data.likeCount); else onLikeChange(reel.id, reel.liked, reel.likeCount); }
   async function handleFavorite() { if (favoriting) return; setFavoriting(true); onFavoriteChange(reel.id, !reel.favorited); const result = await toggleReelFavorite(reel.id); setFavoriting(false); if (result.success) onFavoriteChange(reel.id, result.data.favorited); else onFavoriteChange(reel.id, reel.favorited); }
   async function handleDelete() { setNotice({ message: 'Delete this reel? This action cannot be undone.', confirm: true }); }
-  async function confirmDelete() { setNotice(null); const result = await deleteReel(reel.id); if (result.success) onDeleted(reel.id); else setNotice({ message: result.error?.message || 'Unable to delete reel. Please try again.', confirm: false }); }
+  async function confirmDelete() { setNotice(null); const result = await deleteReel(reel.id); if (result.success) onDeleted(reel.id); else setNotice({ message: 'Something went wrong. Please try again.', confirm: false }); }
   async function copyReelLink() {
     const link = window.location.origin + '/reels?id=' + encodeURIComponent(reel.id);
-    try { await navigator.clipboard.writeText(link); setMoreOpen(false); setNotice({ message: 'Reel link copied.', confirm: false }); }
-    catch { setMoreOpen(false); setNotice({ message: 'Unable to copy the reel link.', confirm: false }); }
+    try { await navigator.clipboard.writeText(link); setMoreOpen(false); setNotice({ message: 'Link copied successfully.', confirm: false }); }
+    catch { setMoreOpen(false); setNotice({ message: 'Couldn’t copy the link. Please try again.', confirm: false }); }
+  }
+  function openMoreOptions() {
+    setMoreOpen(true);
+    if (!moreOptionsLoaded) setMoreOptionsLoaded(true);
   }
   function handleInterestChoice(interested: boolean) {
     try {
@@ -234,7 +245,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
       localStorage.setItem(key, JSON.stringify(saved));
     } catch {}
     setMoreOpen(false);
-    setNotice({ message: interested ? 'Interested feedback saved on this device.' : 'Not interested feedback saved on this device.', confirm: false });
+    setNotice({ message: 'Your preference has been saved.', confirm: false });
   }
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
@@ -245,9 +256,10 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
     {!isPlaying && <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>}
     {showControls && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="pointer-events-auto flex items-center gap-8 px-4 py-3"><button aria-label="Play or pause" onClick={togglePlayback} className="flex h-14 w-14 items-center justify-center"><PlayIcon playing={isPlaying} /></button></div></div>}
     <div className="absolute bottom-2 left-0 right-16 z-10 p-4 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author.username}`} className="flex min-w-0 items-center gap-2"><span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center" style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}} /><span className="text-sm font-semibold">{reel.author.displayName}</span>{reel.author.isVerified && <VerifiedBadge size="sm" />}</Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label="Follow" className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-white disabled:opacity-50">Follow</button>}</div>{reel.caption && <p className="text-sm">{captionShown}{captionLong && <button onClick={(e) => { e.stopPropagation(); setCaptionExpanded((v) => !v); }} className="ml-1 font-semibold text-white/80">{captionExpanded ? 'less' : 'more'}</button>}</p>}<button type="button" onClick={(e) => { e.stopPropagation(); void openComments(); }} className="mt-3 flex w-full items-center rounded-full border border-white/30 bg-black/35 px-4 py-2.5 text-left text-sm text-white/75 backdrop-blur-sm transition hover:bg-black/45 active:scale-[0.99]" aria-label="Open comments"><span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/15"><CommentIcon /></span><span>Write a comment...</span></button></div>
-    <div className="absolute bottom-6 right-3 z-20 flex flex-col items-center gap-4 pb-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] [&_svg]:drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div><button type="button" onClick={(e) => { e.stopPropagation(); setMoreOpen((open) => !open); }} aria-label="More options" aria-expanded={moreOpen} className="flex flex-col items-center gap-1"><MoreIcon /><span className="text-xs font-medium text-white">More</span></button></div>
+    <div className="absolute bottom-6 right-3 z-20 flex flex-col items-center gap-4 pb-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] [&_svg]:drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div><button type="button" onClick={(e) => { e.stopPropagation(); openMoreOptions(); }} aria-label="More options" aria-expanded={moreOpen} className="flex flex-col items-center gap-1"><MoreIcon /><span className="text-xs font-medium text-white">More</span></button></div>
     {moreOpen && <ReelMoreOptionsSheet
       isMine={reel.isMine}
+      loading={!moreOptionsLoaded}
       favorited={reel.favorited}
       onInterested={() => handleInterestChoice(true)}
       onNotInterested={() => handleInterestChoice(false)}
