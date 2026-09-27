@@ -159,7 +159,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
       <button type="button" onClick={() => { setMoreOpen(false); void handleFavorite(); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium hover:bg-white/10 active:bg-white/15">{reel.favorited ? 'Remove from saved' : 'Save reel'}</button>
       <button type="button" onClick={() => { void copyReelLink(); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium hover:bg-white/10 active:bg-white/15">Copy link</button>
       {reel.isMine ? <button type="button" onClick={() => { setMoreOpen(false); void handleDelete(); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium text-red-300 hover:bg-white/10 active:bg-white/15">Delete reel</button> : <button type="button" onClick={() => { setMoreOpen(false); setReportOpen(true); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium text-red-300 hover:bg-white/10 active:bg-white/15">Report</button>}
-    </div>
+    </div>}
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
     {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
