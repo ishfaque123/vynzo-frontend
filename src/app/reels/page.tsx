@@ -13,6 +13,7 @@ import { fetchReelComments } from '@/lib/api/reelCommentApi';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import { cacheReelVideo, getOfflineReels } from '@/lib/offline/reelCache';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import Skeleton from '@/components/Skeleton';
 
 interface Reel { id: string; videoUrl: string; caption: string | null; durationSec: number | null; createdAt: string; likeCount: number; liked: boolean; favorited: boolean; isMine: boolean; friendStatus?: string; commentCount?: number; author: { id: string; username: string; displayName: string; profilePictureUrl?: string; isVerified?: boolean }; }
 function HeartIcon({ filled, size = 30 }: { filled: boolean; size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#f43f5e' : 'none'} stroke={filled ? '#f43f5e' : 'white'} strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" /></svg>; }
@@ -34,6 +35,98 @@ function ReelNotice({ message, confirm, onClose, onConfirm }: { message: string;
       </div>
     </div>
   </div>;
+}
+
+
+function ReelMoreOptionsSheet({ isMine, favorited, onInterested, onNotInterested, onSave, onCopyLink, onDelete, onReport, onClose }: { isMine: boolean; favorited: boolean; onInterested: () => void; onNotInterested: () => void; onSave: () => void; onCopyLink: () => void; onDelete: () => void; onReport: () => void; onClose: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [dragY, setDragY] = useState(0);
+  const [pullStartY, setPullStartY] = useState<number | null>(null);
+  const CLOSE_THRESHOLD = 100;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoading(false), 280);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  function startPull(y: number) {
+    setPullStartY(y);
+    setDragY(0);
+  }
+
+  function movePull(e: React.TouchEvent<HTMLDivElement>) {
+    if (pullStartY === null) return;
+    const dy = e.touches[0].clientY - pullStartY;
+    if (dy < 0) {
+      setPullStartY(null);
+      setDragY(0);
+      return;
+    }
+    e.preventDefault();
+    setDragY(dy);
+  }
+
+  function endPull() {
+    if (pullStartY === null) return;
+    const shouldClose = dragY > CLOSE_THRESHOLD;
+    setPullStartY(null);
+    setDragY(0);
+    if (shouldClose) onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="flex w-full max-w-xl min-h-0 flex-col rounded-t-2xl bg-white shadow-2xl"
+        style={{ height: 'auto', maxHeight: '78vh', transform: `translateY(${dragY}px)`, transition: pullStartY !== null ? 'none' : 'transform 0.2s ease' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex flex-col items-center py-2"
+          style={{ touchAction: 'none' }}
+          onTouchStart={(e) => startPull(e.touches[0].clientY)}
+          onTouchMove={movePull}
+          onTouchEnd={endPull}
+          onTouchCancel={() => { setPullStartY(null); setDragY(0); }}
+        >
+          <span className="h-1 w-10 rounded-full bg-slate-300" />
+        </div>
+        <div className="border-b border-slate-200 px-4 pb-3 text-center">
+          <div className="text-sm font-semibold text-slate-900">More options</div>
+          <div className="mt-0.5 text-[11px] text-slate-400">Reel actions</div>
+        </div>
+        <div
+          className="min-h-0 overflow-y-auto overscroll-contain px-3 py-3"
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehaviorY: 'contain' }}
+          onWheel={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {loading ? (
+            <div className="space-y-2 py-1" role="status" aria-label="Loading more options">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="flex items-center gap-3 rounded-xl px-3.5 py-3">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-4 flex-1 max-w-44" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <button type="button" onClick={onInterested} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">Interested</button>
+              <button type="button" onClick={onNotInterested} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">Not interested</button>
+              <button type="button" onClick={onSave} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">{favorited ? 'Remove from saved' : 'Save reel'}</button>
+              <button type="button" onClick={onCopyLink} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200">Copy link</button>
+              {isMine ? (
+                <button type="button" onClick={onDelete} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100">Delete reel</button>
+              ) : (
+                <button type="button" onClick={onReport} className="flex w-full items-center rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100">Report</button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function PlusIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>; }
@@ -153,13 +246,17 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
     {showControls && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="pointer-events-auto flex items-center gap-8 px-4 py-3"><button aria-label="Play or pause" onClick={togglePlayback} className="flex h-14 w-14 items-center justify-center"><PlayIcon playing={isPlaying} /></button></div></div>}
     <div className="absolute bottom-2 left-0 right-16 z-10 p-4 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author.username}`} className="flex min-w-0 items-center gap-2"><span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full border border-white/60 bg-slate-600 bg-cover bg-center" style={reel.author.profilePictureUrl ? { backgroundImage: `url(${reel.author.profilePictureUrl})` } : {}} /><span className="text-sm font-semibold">{reel.author.displayName}</span>{reel.author.isVerified && <VerifiedBadge size="sm" />}</Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label="Follow" className="rounded-md px-1.5 py-0.5 text-xs font-semibold text-white disabled:opacity-50">Follow</button>}</div>{reel.caption && <p className="text-sm">{captionShown}{captionLong && <button onClick={(e) => { e.stopPropagation(); setCaptionExpanded((v) => !v); }} className="ml-1 font-semibold text-white/80">{captionExpanded ? 'less' : 'more'}</button>}</p>}<button type="button" onClick={(e) => { e.stopPropagation(); void openComments(); }} className="mt-3 flex w-full items-center rounded-full border border-white/30 bg-black/35 px-4 py-2.5 text-left text-sm text-white/75 backdrop-blur-sm transition hover:bg-black/45 active:scale-[0.99]" aria-label="Open comments"><span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/15"><CommentIcon /></span><span>Write a comment...</span></button></div>
     <div className="absolute bottom-6 right-3 z-20 flex flex-col items-center gap-4 pb-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] [&_svg]:drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div><button type="button" onClick={(e) => { e.stopPropagation(); setMoreOpen((open) => !open); }} aria-label="More options" aria-expanded={moreOpen} className="flex flex-col items-center gap-1"><MoreIcon /><span className="text-xs font-medium text-white">More</span></button></div>
-    {moreOpen && <div className="absolute bottom-24 right-3 z-50 w-56 overflow-hidden rounded-2xl border border-white/15 bg-slate-950/95 p-1.5 text-white shadow-2xl backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
-      <button type="button" onClick={() => handleInterestChoice(true)} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium hover:bg-white/10 active:bg-white/15">Interested</button>
-      <button type="button" onClick={() => handleInterestChoice(false)} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium hover:bg-white/10 active:bg-white/15">Not interested</button>
-      <button type="button" onClick={() => { setMoreOpen(false); void handleFavorite(); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium hover:bg-white/10 active:bg-white/15">{reel.favorited ? 'Remove from saved' : 'Save reel'}</button>
-      <button type="button" onClick={() => { void copyReelLink(); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium hover:bg-white/10 active:bg-white/15">Copy link</button>
-      {reel.isMine ? <button type="button" onClick={() => { setMoreOpen(false); void handleDelete(); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium text-red-300 hover:bg-white/10 active:bg-white/15">Delete reel</button> : <button type="button" onClick={() => { setMoreOpen(false); setReportOpen(true); }} className="flex w-full items-center rounded-xl px-3.5 py-3 text-left text-sm font-medium text-red-300 hover:bg-white/10 active:bg-white/15">Report</button>}
-    </div>}
+    {moreOpen && <ReelMoreOptionsSheet
+      isMine={reel.isMine}
+      favorited={reel.favorited}
+      onInterested={() => handleInterestChoice(true)}
+      onNotInterested={() => handleInterestChoice(false)}
+      onSave={() => { setMoreOpen(false); void handleFavorite(); }}
+      onCopyLink={() => { setMoreOpen(false); void copyReelLink(); }}
+      onDelete={() => { setMoreOpen(false); void handleDelete(); }}
+      onReport={() => { setMoreOpen(false); setReportOpen(true); }}
+      onClose={() => setMoreOpen(false)}
+    />}
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
     {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
