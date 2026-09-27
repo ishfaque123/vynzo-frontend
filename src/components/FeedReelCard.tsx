@@ -107,8 +107,8 @@ export default function FeedReelCard({ reel }: { reel: any }) {
     <>
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center gap-2 px-3 py-2">
-        <Avatar url={reel.author.profilePictureUrl} name={reel.author.displayName} />
-        <span className="text-sm font-semibold text-slate-800">{reel.author.displayName}</span>
+        <Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} />
+        <span className="text-sm font-semibold text-slate-800">{reel.author?.displayName}</span>
       </div>
       <div ref={containerRef} className="relative aspect-[9/16] max-h-[420px] w-full bg-black">
         <video
