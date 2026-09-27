@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { fetchUserProfile, fetchFollowUsers, toggleFollow } from '@/lib/api/userApi';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import Skeleton from '@/components/Skeleton';
 
 type FollowUser = {
   id: string;
@@ -81,7 +82,29 @@ export default function FollowListPage() {
   }
 
   if (loading) {
-    return <div className="mx-auto max-w-xl p-6 text-center text-slate-500">Loading...</div>;
+    return (
+      <div className="mx-auto max-w-xl pb-6" role="status" aria-label={type === 'followers' ? 'Loading followers' : 'Loading following'}>
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-3.5 w-20" />
+          </div>
+        </div>
+        <div className="divide-y divide-slate-100 bg-white">
+          {Array.from({ length: 7 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-32 max-w-[70%]" />
+                <Skeleton className="h-3.5 w-24 max-w-[55%]" />
+              </div>
+              <Skeleton className="h-9 w-20 shrink-0 rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (error || !profile) {
