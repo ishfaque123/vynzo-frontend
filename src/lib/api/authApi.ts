@@ -31,7 +31,7 @@ export async function switchAccountRequest(accountId: string) {
     body: JSON.stringify({ accountId }),
   });
   const result = await readJson(res);
-  if (result.success) await clearOfflineCache();
+  await clearOfflineCache();
   return result;
 }
 
