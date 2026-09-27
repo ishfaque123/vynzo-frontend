@@ -255,9 +255,14 @@ export default function SettingsMenuPage() {
 
   async function handleLogout() {
     setLoggingOut(true);
-    await logoutRequest();
-    await clearOfflineCache();
-    router.push('/login');
+    const result = await logoutRequest();
+    if (result?.success) {
+      // Full navigation is more reliable in the Android WebView than a
+      // client-side route transition after authentication state changes.
+      window.location.replace('/login');
+      return;
+    }
+    setLoggingOut(false);
   }
 
   return (
