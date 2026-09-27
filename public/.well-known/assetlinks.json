@@ -3,6 +3,6 @@
   "target": {
     "namespace": "android_app",
     "package_name": "com.frianzo.app",
-    "sha256_cert_fingerprints": ["YOUR_SHA256_HERE"]
+    "sha256_cert_fingerprints": ["1E:DB:0D:4E:8A:18:4A:7B:62:30:70:F9:A7:54:4A:3D:63:4A:5C:0B:C4:89:71:B8:6D:E2:E4:6E:98:07:19:15"]
   }
 }]
