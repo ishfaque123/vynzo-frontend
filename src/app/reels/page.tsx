@@ -169,13 +169,15 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
   const [notice, setNotice] = useState<{ message: string; confirm: boolean } | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreOptionsLoaded, setMoreOptionsLoaded] = useState(false);
+  const [moreOptionsLoading, setMoreOptionsLoading] = useState(false);
+  const moreOptionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { user: currentUser } = useAuth();
   const CAPTION_LIMIT = 80;
   const captionLong = (reel.caption?.length || 0) > CAPTION_LIMIT;
   const captionShown = !captionLong || captionExpanded ? reel.caption : `${reel.caption!.slice(0, CAPTION_LIMIT)}...`;
 
   function revealControls() { setShowControls(true); if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); controlsTimerRef.current = setTimeout(() => setShowControls(false), 2500); }
-  useEffect(() => () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); heartTimersRef.current.forEach((timer) => window.clearTimeout(timer)); }, []);
+  useEffect(() => () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); if (moreOptionsTimerRef.current) clearTimeout(moreOptionsTimerRef.current); heartTimersRef.current.forEach((timer) => window.clearTimeout(timer)); }, []);
   async function openComments() {
     setCommentsOpen(true);
     setCommentsLoading(true);
@@ -235,7 +237,14 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
   }
   function openMoreOptions() {
     setMoreOpen(true);
-    if (!moreOptionsLoaded) setMoreOptionsLoaded(true);
+    if (moreOptionsLoaded) return;
+    setMoreOptionsLoading(true);
+    if (moreOptionsTimerRef.current) clearTimeout(moreOptionsTimerRef.current);
+    moreOptionsTimerRef.current = setTimeout(() => {
+      setMoreOptionsLoaded(true);
+      setMoreOptionsLoading(false);
+      moreOptionsTimerRef.current = null;
+    }, 280);
   }
   function handleInterestChoice(interested: boolean) {
     try {
@@ -259,7 +268,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
     <div className="absolute bottom-6 right-3 z-20 flex flex-col items-center gap-4 pb-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] [&_svg]:drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">Share</span></button><button onClick={(e) => { e.stopPropagation(); void handleFavorite(); }} className="flex flex-col items-center gap-1"><BookmarkIcon filled={reel.favorited} /><span className="text-xs font-medium text-white">Save</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div><button type="button" onClick={(e) => { e.stopPropagation(); openMoreOptions(); }} aria-label="More options" aria-expanded={moreOpen} className="flex flex-col items-center gap-1"><MoreIcon /><span className="text-xs font-medium text-white">More</span></button></div>
     {moreOpen && <ReelMoreOptionsSheet
       isMine={reel.isMine}
-      loading={!moreOptionsLoaded}
+      loading={moreOptionsLoading}
       favorited={reel.favorited}
       onInterested={() => handleInterestChoice(true)}
       onNotInterested={() => handleInterestChoice(false)}
