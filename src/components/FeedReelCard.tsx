@@ -104,6 +104,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
   }
 
   return (
+    <>
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center gap-2 px-3 py-2">
         <Avatar url={reel.author.profilePictureUrl} name={reel.author.displayName} />
@@ -150,5 +151,6 @@ export default function FeedReelCard({ reel }: { reel: any }) {
       </div>
     </div>
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
+    </>
   );
 }
