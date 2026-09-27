@@ -131,7 +131,29 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, onLikeChange
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
     <video ref={videoRef} src={reel.videoUrl} playsInline muted={isMuted} preload={preload ? 'auto' : 'metadata'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={() => setIsVideoLoading(false)} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); }} onPause={() => setIsPlaying(false)} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} />
-    {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
+    {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden bg-black/45" role="status" aria-label="Loading reel">
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-black/30" />
+      <div className="absolute inset-0 animate-pulse">
+        <div className="absolute bottom-5 left-4 right-20">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="h-9 w-9 rounded-full bg-white/15" />
+            <div className="h-3 w-28 rounded-full bg-white/15" />
+            <div className="h-3 w-10 rounded-full bg-white/10" />
+          </div>
+          <div className="mb-2 h-3 w-3/4 max-w-xs rounded-full bg-white/12" />
+          <div className="h-3 w-1/2 max-w-[220px] rounded-full bg-white/10" />
+          <div className="mt-4 h-10 w-full max-w-sm rounded-full border border-white/10 bg-white/[0.06]" />
+        </div>
+        <div className="absolute bottom-8 right-3 flex flex-col items-center gap-5">
+          <div className="h-11 w-11 rounded-full bg-white/12" />
+          <div className="h-11 w-11 rounded-full bg-white/12" />
+          <div className="h-11 w-11 rounded-full bg-white/12" />
+          <div className="h-11 w-11 rounded-full bg-white/12" />
+          <div className="h-8 w-8 rounded-full bg-white/10" />
+        </div>
+      </div>
+      <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+    </div>}
     {cachedOffline && <div className="pointer-events-none absolute left-3 top-20 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm">Available offline</div>}
     {heartBursts.map((heart) => <div key={heart.id} className="pointer-events-none absolute z-30" style={{ left: `${heart.left}%`, top: `${heart.top}%`, transform: 'translate(-50%, -50%)' }}><div className="animate-[heartPop_700ms_ease-out_forwards] drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"><HeartIcon filled size={105} /></div></div>)}
     {!isPlaying && <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>}
