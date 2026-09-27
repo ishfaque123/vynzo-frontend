@@ -305,8 +305,25 @@ export default function ReelsPage() {
   const [forcePause] = useState(false);
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       const targetId = new URLSearchParams(window.location.search).get('id');
+
+      // Offline-first: read IndexedDB before waiting for any network request.
+      // This makes previously cached reels usable even when Wi-Fi/mobile data is off.
+      if (user?.id && !navigator.onLine) {
+        const cached = await getOfflineReels(user.id);
+        if (cancelled) return;
+        if (cached.length) {
+          setReels(cached.map((item) => ({ ...item.reel, videoUrl: item.videoUrl })));
+          setOfflineMode(true);
+          setFeedError(false);
+          setHasMore(false);
+          setLoading(false);
+          return;
+        }
+      }
+
       const [targetResult, feed, status, config] = await Promise.all([
         targetId ? fetchReelById(targetId) : Promise.resolve(null),
         fetchReelFeed(),
@@ -317,6 +334,7 @@ export default function ReelsPage() {
 
       let combined: Reel[] = feed.success ? (feed.data.reels || []) : [];
       let usingOfflineReels = false;
+
       if (!feed.success && user?.id) {
         const cached = await getOfflineReels(user.id);
         if (cached.length) {
@@ -324,8 +342,10 @@ export default function ReelsPage() {
           usingOfflineReels = true;
         }
       }
+
       setFeedError(!feed.success && !usingOfflineReels);
       setOfflineMode(usingOfflineReels);
+
       if (targetId && targetResult && targetResult.success && !usingOfflineReels) {
         const targetReel: Reel = targetResult.data.reel;
         combined = [targetReel, ...combined.filter((item) => item.id !== targetReel.id)];
@@ -338,8 +358,12 @@ export default function ReelsPage() {
         return typeof followStatus === 'string' ? [userId, followStatus] : null;
       }));
       if (cancelled) return;
+
       const statusMap = new Map<string, string>();
-      statusResults.forEach((item) => { if (item && typeof item[0] === 'string' && typeof item[1] === 'string') statusMap.set(item[0], item[1]); });
+      statusResults.forEach((item) => {
+        if (item && typeof item[0] === 'string' && typeof item[1] === 'string') statusMap.set(item[0], item[1]);
+      });
+
       setReels(combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item));
       setHasMore(!usingOfflineReels && !!feed.data?.hasMore);
 
@@ -350,8 +374,9 @@ export default function ReelsPage() {
       setUploadReady(enabled && status.success && Number.isFinite(remaining) && remaining > 0);
       setLoading(false);
     })();
+
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.id]);
   useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length).then((result) => { if (result.success) { setReels((items) => [...items, ...(result.data.reels || [])]); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
