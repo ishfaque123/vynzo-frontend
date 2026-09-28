@@ -9,6 +9,7 @@ export default function AdUnit() {
   const pushed = useRef(false);
   const [scriptReady, setScriptReady] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [inApp, setInApp] = useState(true); // assume app until checked, so no ad flashes
 
   function pushAd() {
     if (pushed.current || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
@@ -23,6 +24,7 @@ export default function AdUnit() {
 
   useEffect(() => {
     setIsOnline(navigator.onLine);
+    setInApp(!!(window as any).FrianzoNative);
     function handleOnline() { setIsOnline(true); pushAd(); }
     function handleOffline() { setIsOnline(false); }
     window.addEventListener('online', handleOnline);
@@ -37,7 +39,8 @@ export default function AdUnit() {
     if (scriptReady) pushAd();
   }, [scriptReady]);
 
-  if (!isOnline) return null;
+  // AdSense is not allowed inside the Android app's WebView.
+  if (!isOnline || inApp) return null;
 
   return (
     <>
