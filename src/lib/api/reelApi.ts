@@ -162,16 +162,6 @@ export async function deleteReelComment(commentId: string) {
   } catch { return { success: false, error: { message: 'Unable to delete comment.' } }; }
 }
 
-export async function downloadReel(reelId: string) {
-  try {
-    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/download`), { credentials: 'include' });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      return { success: false, error: { message: data?.error?.message || `Download failed (${res.status}).`, code: data?.error?.code } };
-    }
-    const blob = await res.blob();
-    return { success: true, blob };
-  } catch {
-    return { success: false, error: { message: 'Unable to download reel.' } };
-  }
+export function getReelDownloadUrl(reelId: string) {
+  return apiUrl(`/api/reels/${encodeURIComponent(reelId)}/download`);
 }
