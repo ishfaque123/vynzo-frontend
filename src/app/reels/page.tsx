@@ -248,7 +248,24 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     try { await navigator.clipboard.writeText(link); setMoreOpen(false); setNotice({ message: 'Link copied successfully.', confirm: false }); }
     catch { setMoreOpen(false); setNotice({ message: 'Couldn’t copy the link. Please try again.', confirm: false }); }
   }
-  function handleSaveVideo() { setMoreOpen(false); try { downloadReel(reel.id); } catch { setNotice({ message: 'Unable to start the video save. Please try again.', confirm: false }); } }
+  async function handleSaveVideo() {
+    setMoreOpen(false);
+    setNotice({ message: 'Preparing your watermarked reel…', confirm: false });
+    const result = await downloadReel(reel.id);
+    if (!result.success) {
+      setNotice({ message: result.error?.message || 'Unable to download reel. Please try again.', confirm: false });
+      return;
+    }
+    const url = URL.createObjectURL(result.blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `frianzo-reel-${reel.id}.mp4`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    setNotice({ message: 'Reel download started.', confirm: false });
+  }
   function openMoreOptions() {
     setMoreOpen(true);
     if (moreOptionsLoaded) return;
