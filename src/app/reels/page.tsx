@@ -507,4 +507,3 @@ export default function ReelsPage() {
     probe.onerror = () => { URL.revokeObjectURL(objectUrl); probe.removeAttribute('src'); probe.load(); setNotice('Could not read this video. Please choose another video.'); };
     probe.src = objectUrl;
   }
-  if (loading) return (
