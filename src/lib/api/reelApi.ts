@@ -88,8 +88,6 @@ export async function recordReelView(reelId: string) {
   } catch { return { success: false, error: { message: 'Unable to record reel view.' } }; }
 }
 
-export function downloadReel(reelId: string) { if (!API_URL) throw new Error('API is not configured.'); window.location.assign(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/download`)); }
-
 export async function reportReelComment(commentId: string, reason: string = 'other', details?: string) {
   try {
     const res = await fetch(apiUrl(`/api/reels/comments/${encodeURIComponent(commentId)}/report`), { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason, details }) });
