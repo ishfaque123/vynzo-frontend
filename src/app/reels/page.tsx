@@ -270,14 +270,30 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     anchor.remove();
   }
   useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
     function onDownload(e: Event) {
       const detail = (e as CustomEvent).detail || {};
-      if (detail.status === 'progress') setDownloadState({ active: true, progress: Number(detail.progress) || 0, status: 'downloading' });
-      else if (detail.status === 'complete') setDownloadState({ active: true, progress: 100, status: 'complete' });
-      else if (detail.status === 'error') setDownloadState({ active: true, progress: Number(detail.progress) || 0, status: 'error' });
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      if (detail.status === 'progress') {
+        setDownloadState({ active: true, progress: Math.max(0, Math.min(99, Number(detail.progress) || 0)), status: 'downloading' });
+      } else if (detail.status === 'complete') {
+        setDownloadState({ active: true, progress: 100, status: 'complete' });
+        hideTimer = setTimeout(() => {
+          setDownloadState({ active: false, progress: 0, status: 'idle' });
+          hideTimer = null;
+        }, 1000);
+      } else if (detail.status === 'error') {
+        setDownloadState({ active: false, progress: 0, status: 'idle' });
+      }
     }
     window.addEventListener('frianzo-download-progress', onDownload);
-    return () => window.removeEventListener('frianzo-download-progress', onDownload);
+    return () => {
+      window.removeEventListener('frianzo-download-progress', onDownload);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
   }, []);
   function openMoreOptions() {
     setMoreOpen(true);
@@ -332,14 +348,8 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
     {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
-    {downloadState.active && <div className="fixed bottom-4 left-1/2 z-[120] w-[calc(100%-24px)] max-w-md -translate-x-1/2 overflow-hidden rounded-2xl bg-blue-600 text-white shadow-2xl">
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between gap-3 text-sm font-semibold">
-          <span>{downloadState.status === 'complete' ? 'Downloaded' : downloadState.status === 'error' ? 'Download failed' : 'Downloading reel…'}</span>
-          <span>{downloadState.progress}%</span>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/25"><div className="h-full rounded-full bg-white transition-[width] duration-200" style={{ width: `${downloadState.progress}%` }} /></div>
-      </div>
+    {downloadState.active && downloadState.status === 'downloading' && <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[60] h-[3px] bg-white/20">
+      <div className="h-full bg-blue-500 transition-[width] duration-200 ease-out" style={{ width: `${downloadState.progress}%` }} />
     </div>}
     {notice && <ReelNotice message={notice.message} confirm={notice.confirm} onClose={() => setNotice(null)} onConfirm={confirmDelete} />}
   </div>;
@@ -498,15 +508,3 @@ export default function ReelsPage() {
     probe.src = objectUrl;
   }
   if (loading) return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black">
-      <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo reels">
-        <div className="flex items-center gap-2" aria-hidden="true">
-          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white" />
-          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:150ms]" />
-          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:300ms]" />
-        </div>
-      </div>
-    </div>
-  );
-  return <div className="absolute inset-0 bg-black"><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div></div>;
-}
