@@ -248,6 +248,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     try { await navigator.clipboard.writeText(link); setMoreOpen(false); setNotice({ message: 'Link copied successfully.', confirm: false }); }
     catch { setMoreOpen(false); setNotice({ message: 'Couldn’t copy the link. Please try again.', confirm: false }); }
   }
+  function handleSaveVideo() { setMoreOpen(false); try { downloadReel(reel.id); } catch { setNotice({ message: 'Unable to start the video save. Please try again.', confirm: false }); } }
   function openMoreOptions() {
     setMoreOpen(true);
     if (moreOptionsLoaded) return;
@@ -293,6 +294,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
       onNotInterested={() => handleInterestChoice(false)}
       onSave={() => { setMoreOpen(false); void handleFavorite(); }}
       onCopyLink={() => { setMoreOpen(false); void copyReelLink(); }}
+      onSaveVideo={handleSaveVideo}
       onDelete={() => { setMoreOpen(false); void handleDelete(); }}
       onReport={() => { setMoreOpen(false); setReportOpen(true); }}
       onClose={() => setMoreOpen(false)}
