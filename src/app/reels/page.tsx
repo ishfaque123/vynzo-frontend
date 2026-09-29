@@ -8,7 +8,7 @@ import { toggleFollow, fetchFollowStatus } from '@/lib/api/userApi';
 import ShareModal from '@/components/ShareModal';
 import ReelCommentsModal from '@/components/ReelCommentsModal';
 import ReelReportModal from '@/components/ReelReportModal';
-import { fetchReelsConfig, fetchReelFeed, fetchMyReelStatus, toggleReelLike, toggleReelFavorite, deleteReel, recordReelView, fetchReelById, downloadReel } from '@/lib/api/reelApi';
+import { fetchReelsConfig, fetchReelFeed, fetchMyReelStatus, toggleReelLike, toggleReelFavorite, deleteReel, recordReelView, fetchReelById, getReelDownloadUrl } from '@/lib/api/reelApi';
 import { fetchReelComments } from '@/lib/api/reelCommentApi';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import { cacheReelVideo, getOfflineReels } from '@/lib/offline/reelCache';
@@ -249,27 +249,17 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     try { await navigator.clipboard.writeText(link); setMoreOpen(false); setNotice({ message: 'Link copied successfully.', confirm: false }); }
     catch { setMoreOpen(false); setNotice({ message: 'Couldn’t copy the link. Please try again.', confirm: false }); }
   }
-  async function handleSaveVideo() {
+  function handleSaveVideo() {
     setMoreOpen(false);
     setNotice({ message: 'Preparing your watermarked reel…', confirm: false });
-    const result = await downloadReel(reel.id);
-    if (!result.success) {
-      setNotice({ message: result.error?.message || 'Unable to download reel. Please try again.', confirm: false });
-      return;
-    }
-    if (!(result.blob instanceof Blob)) {
-      setNotice({ message: 'Download failed. Please try again.', confirm: false });
-      return;
-    }
-    const url = URL.createObjectURL(result.blob);
     const anchor = document.createElement('a');
-    anchor.href = url;
+    anchor.href = getReelDownloadUrl(reel.id);
     anchor.download = `frianzo-reel-${reel.id}.mp4`;
+    anchor.rel = 'noopener';
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-    setNotice({ message: 'Reel download started.', confirm: false });
+    window.setTimeout(() => setNotice({ message: 'Reel download started.', confirm: false }), 700);
   }
   function openMoreOptions() {
     setMoreOpen(true);
