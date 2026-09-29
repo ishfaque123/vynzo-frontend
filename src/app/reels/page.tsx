@@ -180,6 +180,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
   const [cachedOffline, setCachedOffline] = useState(false);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [notice, setNotice] = useState<{ message: string; confirm: boolean } | null>(null);
+  const [downloadState, setDownloadState] = useState<{ active: boolean; progress: number; status: 'idle' | 'downloading' | 'complete' | 'error' }>({ active: false, progress: 0, status: 'idle' });
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreOptionsLoaded, setMoreOptionsLoaded] = useState(false);
   const [moreOptionsLoading, setMoreOptionsLoading] = useState(false);
@@ -251,16 +252,33 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
   }
   function handleSaveVideo() {
     setMoreOpen(false);
-    setNotice({ message: 'Preparing your watermarked reel…', confirm: false });
+    const url = getReelDownloadUrl(reel.id);
+    setDownloadState({ active: true, progress: 0, status: 'downloading' });
+    setNotice(null);
+    const native = (window as any).FrianzoNative;
+    if (native?.startReelDownload) {
+      const started = native.startReelDownload(url);
+      if (started === false) setDownloadState({ active: true, progress: 0, status: 'error' });
+      return;
+    }
     const anchor = document.createElement('a');
-    anchor.href = getReelDownloadUrl(reel.id);
+    anchor.href = url;
     anchor.download = `frianzo-reel-${reel.id}.mp4`;
     anchor.rel = 'noopener';
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    window.setTimeout(() => setNotice({ message: 'Reel download started.', confirm: false }), 700);
   }
+  useEffect(() => {
+    function onDownload(e: Event) {
+      const detail = (e as CustomEvent).detail || {};
+      if (detail.status === 'progress') setDownloadState({ active: true, progress: Number(detail.progress) || 0, status: 'downloading' });
+      else if (detail.status === 'complete') setDownloadState({ active: true, progress: 100, status: 'complete' });
+      else if (detail.status === 'error') setDownloadState({ active: true, progress: Number(detail.progress) || 0, status: 'error' });
+    }
+    window.addEventListener('frianzo-download-progress', onDownload);
+    return () => window.removeEventListener('frianzo-download-progress', onDownload);
+  }, []);
   function openMoreOptions() {
     setMoreOpen(true);
     if (moreOptionsLoaded) return;
@@ -314,6 +332,15 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
     {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
+    {downloadState.active && <div className="fixed bottom-4 left-1/2 z-[120] w-[calc(100%-24px)] max-w-md -translate-x-1/2 overflow-hidden rounded-2xl bg-blue-600 text-white shadow-2xl">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between gap-3 text-sm font-semibold">
+          <span>{downloadState.status === 'complete' ? 'Downloaded' : downloadState.status === 'error' ? 'Download failed' : 'Downloading reel…'}</span>
+          <span>{downloadState.progress}%</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/25"><div className="h-full rounded-full bg-white transition-[width] duration-200" style={{ width: `${downloadState.progress}%` }} /></div>
+      </div>
+    </div>}
     {notice && <ReelNotice message={notice.message} confirm={notice.confirm} onClose={() => setNotice(null)} onConfirm={confirmDelete} />}
   </div>;
 }
