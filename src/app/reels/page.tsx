@@ -260,7 +260,8 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     if (!(result.blob instanceof Blob)) {
       setNotice({ message: 'Download failed. Please try again.', confirm: false });
       return;
-    }\n    const url = URL.createObjectURL(result.blob);
+    }
+    const url = URL.createObjectURL(result.blob);
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = `frianzo-reel-${reel.id}.mp4`;
