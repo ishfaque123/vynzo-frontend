@@ -43,7 +43,8 @@ function ReelOptionIcon({ type }: { type: 'interested' | 'not-interested' | 'sav
     interested: <path d="M20 6L9 17l-5-5" />,
     'not-interested': <><circle cx="12" cy="12" r="9" /><line x1="8" y1="8" x2="16" y2="16" /></>,
     save: <path d="M6 4a2 2 0 012-2h8a2 2 0 012 2v18l-6-4-6 4V4z" />,
-    download: <path d="M12 3v12m0 0l-5-5m5 5l5-5M5 20h14" />,\n    copy: <><rect x="8" y="8" width="11" height="12" rx="2" /><path d="M5 16H4a2 2 0 01-2-2V4a2 2 0 012-2h8a2 2 0 012 2v1" /></>,
+    download: <path d="M12 3v12m0 0l-5-5m5 5l5-5M5 20h14" />,
+    copy: <><rect x="8" y="8" width="11" height="12" rx="2" /><path d="M5 16H4a2 2 0 01-2-2V4a2 2 0 012-2h8a2 2 0 012 2v1" /></>,
     delete: <><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M7 7l1 14h8l1-14" /></>,
     report: <><path d="M5 21V4" /><path d="M5 5c4-3 6 3 14 0v9c-8 3-10-3-14 0" /></>,
   };
