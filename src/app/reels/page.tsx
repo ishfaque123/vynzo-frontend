@@ -50,7 +50,7 @@ function ReelOptionIcon({ type }: { type: 'interested' | 'not-interested' | 'sav
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[type]}</svg>;
 }
 
-function ReelMoreOptionsSheet({ isMine, favorited, loading, onInterested, onNotInterested, onSave, onCopyLink, onDelete, onReport, onClose }: { isMine: boolean; favorited: boolean; loading: boolean; onInterested: () => void; onNotInterested: () => void; onSave: () => void; onCopyLink: () => void; onDelete: () => void; onReport: () => void; onClose: () => void }) {
+function ReelMoreOptionsSheet({ isMine, favorited, loading, onInterested, onNotInterested, onSave, onCopyLink, onSaveVideo, onDelete, onReport, onClose }: { isMine: boolean; favorited: boolean; loading: boolean; onInterested: () => void; onNotInterested: () => void; onSave: () => void; onCopyLink: () => void; onSaveVideo: () => void; onDelete: () => void; onReport: () => void; onClose: () => void }) {
   const [dragY, setDragY] = useState(0);
   const [pullStartY, setPullStartY] = useState<number | null>(null);
   const CLOSE_THRESHOLD = 100;
