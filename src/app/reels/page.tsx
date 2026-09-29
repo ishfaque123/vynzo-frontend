@@ -141,6 +141,15 @@ function CommentIcon() { return <svg width="28" height="28" viewBox="0 0 24 24" 
 
 type HeartBurst = { id: number; left: number; top: number };
 
+function getNotInterestedIds(): Set<string> {
+  try {
+    const saved = JSON.parse(localStorage.getItem('frianzo_reel_interest_feedback') || '{}');
+    return new Set(Object.keys(saved).filter((id) => saved[id] === 'not_interested'));
+  } catch {
+    return new Set();
+  }
+}
+
 function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode, onLikeChange, onFavoriteChange, onDeleted, onFollowed, onCommentCountChange }: { reel: Reel; active: boolean; forcePause: boolean; preload: boolean; cacheUserId?: string; offlineMode?: boolean; onLikeChange: (id: string, liked: boolean, count: number) => void; onFavoriteChange: (id: string, favorited: boolean) => void; onDeleted: (id: string) => void; onFollowed: (userId: string) => void; onCommentCountChange: (id: string, delta: number) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastTapRef = useRef(0);
@@ -257,7 +266,11 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
       localStorage.setItem(key, JSON.stringify(saved));
     } catch {}
     setMoreOpen(false);
-    setNotice({ message: 'Your preference has been saved.', confirm: false });
+    if (interested) {
+      setNotice({ message: 'Your preference has been saved.', confirm: false });
+    } else {
+      onDeleted(reel.id);
+    }
   }
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
@@ -361,6 +374,9 @@ export default function ReelsPage() {
       // assumes reel.author exists, instead of crashing the whole page.
       combined = combined.filter((item) => !!item?.author?.id);
 
+      const notInterested = getNotInterestedIds();
+      combined = combined.filter((item) => !notInterested.has(item.id));
+
       const authorIds = [...new Set(combined.filter((item: Reel) => !item.isMine).map((item: Reel) => item.author.id))] as string[];
       const statusResults: Array<[string, string] | null> = usingOfflineReels ? [] : await Promise.all(authorIds.map(async (userId) => {
         const result = await fetchFollowStatus(userId);
@@ -387,7 +403,7 @@ export default function ReelsPage() {
 
     return () => { cancelled = true; };
   }, [user?.id]);
-  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length).then((result) => { if (result.success) { setReels((items) => { const existingIds = new Set(items.map((item) => item.id)); const newOnes = (result.data.reels || []).filter((item: Reel) => !existingIds.has(item.id)); return [...items, ...newOnes]; }); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
+  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length).then((result) => { if (result.success) { setReels((items) => { const existingIds = new Set(items.map((item) => item.id)); const notInterested = getNotInterestedIds(); const newOnes = (result.data.reels || []).filter((item: Reel) => !existingIds.has(item.id) && !notInterested.has(item.id)); return [...items, ...newOnes]; }); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
   function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
