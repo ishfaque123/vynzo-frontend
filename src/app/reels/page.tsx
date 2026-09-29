@@ -507,3 +507,16 @@ export default function ReelsPage() {
     probe.onerror = () => { URL.revokeObjectURL(objectUrl); probe.removeAttribute('src'); probe.load(); setNotice('Could not read this video. Please choose another video.'); };
     probe.src = objectUrl;
   }
+  if (loading) return (
+    <div className="absolute inset-0 flex items-center justify-center bg-black">
+      <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo reels">
+        <div className="flex items-center gap-2" aria-hidden="true">
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white" />
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:150ms]" />
+          <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:300ms]" />
+        </div>
+      </div>
+    </div>
+  );
+  return <div className="absolute inset-0 bg-black"><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div></div>;
+}
