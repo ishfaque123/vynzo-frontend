@@ -2,6 +2,9 @@ import { cookies } from 'next/headers';
 import HomeClient from './HomeClient';
 import PublicLanding from '@/components/PublicLanding';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Frianzo - Connect. Share. Discover.',
   description:
