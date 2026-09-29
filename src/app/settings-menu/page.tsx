@@ -167,6 +167,8 @@ function PermissionSelect({ value, onChange }: { value: string; onChange: (v: st
 }
 
 const menuItems = [
+  { label: 'Admin', href: '/admin/dashboard', Icon: ShieldIcon },
+
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
   { label: 'Monetization', href: '/settings-menu/monetization', Icon: MonetizationIcon },
   { label: 'Verification', href: '/settings-menu/verification', Icon: VerificationIcon },
