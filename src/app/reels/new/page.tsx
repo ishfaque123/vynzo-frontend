@@ -31,6 +31,7 @@ export default function NewReelPage() {
   const [trimEnd, setTrimEnd] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [timelineThumbnails, setTimelineThumbnails] = useState<string[]>([]);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -89,6 +90,62 @@ export default function NewReelPage() {
       window.removeEventListener('pointerup', onPointerUp);
     };
   }, [draggingHandle, trimStart, trimEnd, videoDuration]);
+
+  useEffect(() => {
+    if (!trimOpen || !previewUrl || !videoDuration) return;
+
+    let cancelled = false;
+    const thumbnailCount = 14;
+    const video = document.createElement('video');
+    video.src = previewUrl;
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+
+    const createThumbnails = async () => {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          video.onloadedmetadata = () => resolve();
+          video.onerror = () => reject(new Error('Unable to load video thumbnails'));
+        });
+
+        const canvas = document.createElement('canvas');
+        const width = 96;
+        const height = 64;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const frames: string[] = [];
+        for (let index = 0; index < thumbnailCount; index += 1) {
+          if (cancelled) return;
+          const target = videoDuration * ((index + 0.5) / thumbnailCount);
+          await new Promise<void>((resolve) => {
+            const onSeeked = () => {
+              video.removeEventListener('seeked', onSeeked);
+              resolve();
+            };
+            video.addEventListener('seeked', onSeeked);
+            video.currentTime = Math.min(target, Math.max(0, video.duration - 0.01));
+          });
+          ctx.drawImage(video, 0, 0, width, height);
+          frames.push(canvas.toDataURL('image/jpeg', 0.72));
+        }
+
+        if (!cancelled) setTimelineThumbnails(frames);
+      } catch {
+        if (!cancelled) setTimelineThumbnails([]);
+      }
+    };
+
+    createThumbnails();
+    return () => {
+      cancelled = true;
+      video.removeAttribute('src');
+      video.load();
+    };
+  }, [trimOpen, previewUrl, videoDuration]);
 
   const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
   const playheadTime = Math.max(trimStart, Math.min(currentTime, trimEnd));
@@ -296,9 +353,19 @@ export default function NewReelPage() {
             aria-label="Video trim timeline"
           >
             <div className="absolute inset-x-0 top-6 h-8 overflow-hidden rounded-lg border border-white/10 bg-white/5">
-              <div className="absolute inset-0 flex items-center gap-1 px-1 opacity-40">
-                {Array.from({ length: 14 }).map((_, index) => (
-                  <div key={index} className="h-6 flex-1 rounded-sm bg-white/20" />
+              <div className="absolute inset-0 flex overflow-hidden rounded-lg bg-black">
+                {(timelineThumbnails.length ? timelineThumbnails : Array.from({ length: 14 }, () => '')) .map((thumbnail, index) => (
+                  thumbnail ? (
+                    <img
+                      key={index}
+                      src={thumbnail}
+                      alt=""
+                      draggable={false}
+                      className="h-full min-w-0 flex-1 object-cover"
+                    />
+                  ) : (
+                    <div key={index} className="h-full min-w-0 flex-1 bg-white/10" />
+                  )
                 ))}
               </div>
             </div>
