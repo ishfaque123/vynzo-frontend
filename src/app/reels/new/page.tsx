@@ -159,15 +159,7 @@ export default function NewReelPage() {
 
   const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
   const playheadTime = Math.max(trimStart, Math.min(currentTime, trimEnd));
-  const playheadPercent = videoDuration ? (playheadTime / videoDuration) * 100 : 0;
-  const previewElapsed = trimApplied ? Math.max(0, currentTime - trimStart) : currentTime;
-  const previewTotal = trimApplied ? Math.max(1, trimEnd - trimStart) : videoDuration;
-  const formatTime = (seconds: number) => {
-    const total = Math.max(0, Math.floor(seconds));
-    const minutes = Math.floor(total / 60);
-    const secs = total % 60;
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
+  const playheadPercent = videoDuration ? (playheadTime / videoDuration) * 100 : 0; 
 
   // Keep trim preview playback simple: only loop when the selected end is reached.
   // Do not continuously clamp currentTime in an effect; that fights the native video controls
@@ -306,7 +298,7 @@ export default function NewReelPage() {
         </button>
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4">
+      <div className="flex flex-1 items-center justify-center overflow-hidden px-4">
         <video
           ref={videoRef}
           key={previewUrl}
@@ -322,9 +314,6 @@ export default function NewReelPage() {
             }
           }}
         />
-        <div className="pointer-events-none absolute bottom-4 rounded-full bg-black/70 px-2.5 py-1 text-xs font-medium text-white">
-          {formatTime(previewElapsed)} / {formatTime(previewTotal)}
-        </div>
       </div>
 
       <div className="space-y-3 p-4">
