@@ -69,7 +69,7 @@ export default function NewReelPage() {
       if (draggingHandle === 'start') {
         const next = Math.min(time, trimEnd - 0.1);
         setTrimStart(next);
-        if (videoRef.current) videoRef.current.currentTime = next;
+        if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
       } else {
         const next = Math.max(time, trimStart + 0.1);
         setTrimEnd(next);
@@ -122,9 +122,13 @@ export default function NewReelPage() {
     const time = ratio * videoDuration;
 
     if (kind === 'start') {
-      setTrimStart(Math.min(time, trimEnd - 0.1));
+      const next = Math.min(time, trimEnd - 0.1);
+      setTrimStart(next);
+      if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
     } else {
-      setTrimEnd(Math.max(time, trimStart + 0.1));
+      const next = Math.max(time, trimStart + 0.1);
+      setTrimEnd(next);
+      if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
     }
   }
 
