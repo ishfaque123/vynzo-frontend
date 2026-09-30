@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { takePendingReelVideo } from '@/lib/pendingReelVideo';
 import { createReelWithProgress } from '@/lib/api/reelApi';
@@ -30,6 +30,8 @@ export default function NewReelPage() {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
+  const timelineRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const pending = takePendingReelVideo();
@@ -39,6 +41,7 @@ export default function NewReelPage() {
     }
     setFile(pending.file);
     setDuration(pending.duration);
+    setTrimStart(0);
     setTrimEnd(pending.duration);
     setVideoDuration(pending.duration);
     setPreviewUrl(URL.createObjectURL(pending.file));
@@ -51,13 +54,76 @@ export default function NewReelPage() {
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    if (!draggingHandle) return;
+
+    function onPointerMove(event: PointerEvent) {
+      const track = timelineRef.current;
+      if (!track || !videoDuration) return;
+
+      const rect = track.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const time = ratio * videoDuration;
+
+      if (draggingHandle === 'start') {
+        setTrimStart(Math.min(time, trimEnd - 0.1));
+      } else {
+        setTrimEnd(Math.max(time, trimStart + 0.1));
+      }
+    }
+
+    function onPointerUp() {
+      setDraggingHandle(null);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [draggingHandle, trimStart, trimEnd, videoDuration]);
+
   const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
+  const startPercent = videoDuration ? (trimStart / videoDuration) * 100 : 0;
+  const endPercent = videoDuration ? (trimEnd / videoDuration) * 100 : 100;
+
+  function moveHandleToClientX(kind: 'start' | 'end', clientX: number) {
+    const track = timelineRef.current;
+    if (!track || !videoDuration) return;
+
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const time = ratio * videoDuration;
+
+    if (kind === 'start') {
+      setTrimStart(Math.min(time, trimEnd - 0.1));
+    } else {
+      setTrimEnd(Math.max(time, trimStart + 0.1));
+    }
+  }
+
+  function handleTimelinePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (draggingHandle || !videoDuration) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-trim-handle]')) return;
+
+    const rect = timelineRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const time = ratio * videoDuration;
+    const distanceToStart = Math.abs(time - trimStart);
+    const distanceToEnd = Math.abs(time - trimEnd);
+
+    moveHandleToClientX(distanceToStart <= distanceToEnd ? 'start' : 'end', event.clientX);
+  }
 
   async function handlePost() {
-    if (!file || posting) return;
-    if (trimEnd <= trimStart) return;
+    if (!file || posting || trimEnd <= trimStart) return;
     setPosting(true);
     setUploadProgress(0);
+
     const trimChanged = trimStart > 0.05 || trimEnd < videoDuration - 0.05;
     const result = await createReelWithProgress(
       {
@@ -68,10 +134,15 @@ export default function NewReelPage() {
       },
       setUploadProgress
     );
+
     setPosting(false);
     setUploadProgress(null);
-    if (result.success) router.replace('/reels');
-    else alert(result.error?.message || 'Could not post your reel. Please try again.');
+
+    if (result.success) {
+      router.replace('/reels');
+    } else {
+      alert(result.error?.message || 'Could not post your reel. Please try again.');
+    }
   }
 
   function openTrim() {
@@ -95,18 +166,28 @@ export default function NewReelPage() {
   }
 
   if (!file || !previewUrl) {
-    return <div className="fixed inset-0 flex items-center justify-center bg-black"><div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo"><span className="absolute inset-0 animate-spin rounded-full border-4 border-white/20 border-t-white" /><img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" /></div></div>;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black">
+        <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo">
+          <span className="absolute inset-0 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+          <img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" />
+        </div>
+      </div>
+    );
   }
-
-  const startPercent = videoDuration ? (trimStart / videoDuration) * 100 : 0;
-  const endPercent = videoDuration ? (trimEnd / videoDuration) * 100 : 100;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="flex items-center justify-between p-4">
-        <button onClick={() => router.replace('/reels')} className="text-white" aria-label="Cancel"><CloseIcon /></button>
+        <button onClick={() => router.replace('/reels')} className="text-white" aria-label="Cancel">
+          <CloseIcon />
+        </button>
         <p className="text-base font-semibold text-white">New Reel</p>
-        <button onClick={handlePost} disabled={posting || trimEnd <= trimStart} className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50">
+        <button
+          onClick={handlePost}
+          disabled={posting || trimEnd <= trimStart}
+          className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50"
+        >
           {posting ? `${uploadProgress ?? 0}%` : 'Post'}
         </button>
       </div>
@@ -121,41 +202,119 @@ export default function NewReelPage() {
             const d = Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : duration;
             if (d > 0) {
               setVideoDuration(d);
-              if (trimEnd === 0) setTrimEnd(d);
+              setTrimEnd((current) => current || d);
             }
           }}
         />
       </div>
 
       <div className="space-y-3 p-4">
-        <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Write a caption" rows={2} maxLength={500} className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 outline-none" />
+        <textarea
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Write a caption"
+          rows={2}
+          maxLength={500}
+          className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 outline-none"
+        />
 
-        {uploadProgress !== null && <div className="h-1.5 overflow-hidden rounded-full bg-white/20"><div className="h-full rounded-full bg-white transition-all" style={{ width: `${uploadProgress}%` }} /></div>}
+        {uploadProgress !== null && (
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
+            <div className="h-full rounded-full bg-white transition-all" style={{ width: `${uploadProgress}%` }} />
+          </div>
+        )}
 
-        <div className="flex items-center gap-4 border-t border-white/10 pt-3 text-white/40">
-          <button onClick={openTrim} className="flex flex-col items-center gap-1 text-xs text-white"><TrimIcon />Trim</button>
-          <button disabled className="flex flex-col items-center gap-1 text-xs"><EffectsIcon />Effects</button>
-          <button disabled className="flex flex-col items-center gap-1 text-xs"><MusicIcon />Music</button>
-          <span className="ml-auto text-[11px] text-white/30">{selectedDuration}s</span>
+        <div className="flex items-center gap-4 border-t border-white/10 pt-3">
+          <button onClick={openTrim} className="flex flex-col items-center gap-1 text-xs text-white">
+            <TrimIcon />
+            Trim
+          </button>
+          <button disabled className="flex flex-col items-center gap-1 text-xs text-white/40">
+            <EffectsIcon />
+            Effects
+          </button>
+          <button disabled className="flex flex-col items-center gap-1 text-xs text-white/40">
+            <MusicIcon />
+            Music
+          </button>
+          <span className="ml-auto text-[11px] text-white/50">{selectedDuration}s selected</span>
         </div>
       </div>
 
       {trimOpen && (
         <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
-          <div className="mb-4 flex items-center justify-between">
-            <div><p className="text-sm font-semibold text-white">Trim video</p><p className="text-xs text-white/50">Choose the part you want to post</p></div>
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Trim video</p>
+              <p className="mt-1 text-xs text-white/50">Drag the two handles to choose exactly which part of the video to keep.</p>
+            </div>
             <button onClick={() => setTrimOpen(false)} className="text-xs text-white/60">Cancel</button>
           </div>
-          <div className="relative h-10">
-            <div className="absolute left-0 right-0 top-4 h-2 rounded-full bg-white/15" />
-            <div className="absolute top-4 h-2 rounded-full bg-blue-500" style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }} />
-            <input aria-label="Trim start" type="range" min="0" max={videoDuration} step="0.1" value={trimStart} onChange={(e) => setTrimStart(Math.min(Number(e.target.value), trimEnd - 0.1))} className="absolute inset-0 w-full appearance-none bg-transparent accent-blue-500" />
-            <input aria-label="Trim end" type="range" min="0" max={videoDuration} step="0.1" value={trimEnd} onChange={(e) => setTrimEnd(Math.max(Number(e.target.value), trimStart + 0.1))} className="absolute inset-0 w-full appearance-none bg-transparent accent-blue-500" />
+
+          <div
+            ref={timelineRef}
+            onPointerDown={handleTimelinePointerDown}
+            className="relative h-16 touch-none select-none"
+            aria-label="Video trim timeline"
+          >
+            <div className="absolute inset-x-0 top-6 h-8 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+              <div className="absolute inset-0 flex items-center gap-1 px-1 opacity-40">
+                {Array.from({ length: 14 }).map((_, index) => (
+                  <div key={index} className="h-6 flex-1 rounded-sm bg-white/20" />
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="pointer-events-none absolute top-5 h-10 rounded-lg border-2 border-blue-500 bg-blue-500/10"
+              style={{ left: `${startPercent}%`, width: `${Math.max(0, endPercent - startPercent)}%` }}
+            />
+
+            <button
+              type="button"
+              data-trim-handle="start"
+              aria-label="Trim start"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDraggingHandle('start');
+              }}
+              className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
+              style={{ left: `${startPercent}%` }}
+            >
+              <span className="h-8 w-1 rounded-full bg-white" />
+            </button>
+
+            <button
+              type="button"
+              data-trim-handle="end"
+              aria-label="Trim end"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDraggingHandle('end');
+              }}
+              className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
+              style={{ left: `${endPercent}%` }}
+            >
+              <span className="h-8 w-1 rounded-full bg-white" />
+            </button>
+
+            <div className="absolute left-0 top-14 text-[10px] text-white/50">START {trimStart.toFixed(1)}s</div>
+            <div className="absolute right-0 top-14 text-[10px] text-white/50">END {trimEnd.toFixed(1)}s</div>
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-white/60"><span>{trimStart.toFixed(1)}s</span><span>{selectedDuration}s selected</span><span>{trimEnd.toFixed(1)}s</span></div>
+
+          <div className="mt-5 rounded-lg bg-white/5 px-3 py-2 text-center text-sm text-white">
+            Keeping <span className="font-semibold text-blue-400">{selectedDuration}s</span> of {Math.round(videoDuration)}s
+          </div>
+
           <div className="mt-4 flex gap-2">
-            <button onClick={resetTrim} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white">Reset</button>
-            <button onClick={applyTrim} className="flex-1 rounded-lg bg-white py-2 text-sm font-semibold text-black">Done</button>
+            <button onClick={resetTrim} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white">
+              Reset
+            </button>
+            <button onClick={applyTrim} className="flex-1 rounded-lg bg-white py-2 text-sm font-semibold text-black">
+              Done
+            </button>
           </div>
         </div>
       )}
