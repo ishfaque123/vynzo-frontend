@@ -337,7 +337,7 @@ export default function NewReelPage() {
     setTrimming(true);
     setTrimPlaying(false);
     sourceVideo.pause();
-    let capturedStream: MediaStream | null = null;
+    let capturedStream: MediaStream | null | undefined = null;
     let trimTimeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
