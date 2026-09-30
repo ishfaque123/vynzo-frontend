@@ -516,16 +516,26 @@ export default function NewReelPage() {
             </button>
 
             <div className="pointer-events-none absolute inset-x-0 top-[58px] flex justify-between px-0.5 text-[10px] text-white/50">
-              {Array.from({ length: Math.min(12, Math.floor(videoDuration / (videoDuration > 60 ? 10 : 5)) + 1) }, (_, index) => {
-                const step = videoDuration > 60 ? 10 : 5;
-                const second = Math.min(videoDuration, index * step);
+              {Array.from(
+                { length: Math.floor(videoDuration / 10) + 1 },
+                (_, index) => Math.min(videoDuration, index * 10)
+              ).map((second, index) => {
                 const total = Math.floor(second);
                 const minutes = Math.floor(total / 60);
                 const seconds = total % 60;
-                const label = videoDuration > 60
-                  ? (seconds === 0 ? `${minutes}m` : `${minutes}m ${seconds}s`)
-                  : `${seconds}s`;
-                return <span key={index}>{label}</span>;
+
+                return (
+                  <span key={index} className="flex min-w-0 flex-col items-center leading-tight whitespace-nowrap">
+                    {total <= 60 ? (
+                      `${total}s`
+                    ) : (
+                      <>
+                        <span>{minutes}m</span>
+                        {seconds > 0 && <span>{seconds}s</span>}
+                      </>
+                    )}
+                  </span>
+                );
               })}
             </div>
           </div>
