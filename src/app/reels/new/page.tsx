@@ -58,13 +58,13 @@ export default function NewReelPage() {
     if (trimEnd <= trimStart) return;
     setPosting(true);
     setUploadProgress(0);
+    const trimChanged = trimStart > 0.05 || trimEnd < videoDuration - 0.05;
     const result = await createReelWithProgress(
       {
         video: file,
         caption: caption.trim() || undefined,
         durationSec: selectedDuration,
-        trimStartSec: trimStart,
-        trimEndSec: trimEnd,
+        ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
       },
       setUploadProgress
     );
