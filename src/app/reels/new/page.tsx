@@ -18,6 +18,8 @@ function MusicIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>;
 }
 
+const MIN_TRIM_DURATION = 1;
+
 export default function NewReelPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -72,11 +74,11 @@ export default function NewReelPage() {
       const time = ratio * videoDuration;
 
       if (draggingHandle === 'start') {
-        const next = Math.min(time, trimEnd - 0.1);
+        const next = Math.min(time, trimEnd - MIN_TRIM_DURATION);
         setTrimStart(next);
         if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
       } else {
-        const next = Math.max(time, trimStart + 0.1);
+        const next = Math.max(time, trimStart + MIN_TRIM_DURATION);
         setTrimEnd(next);
         if (videoRef.current) videoRef.current.currentTime = next;
       }
@@ -158,7 +160,7 @@ export default function NewReelPage() {
     };
   }, [previewUrl, videoDuration]);
 
-  const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
+  const selectedDuration = Math.max(MIN_TRIM_DURATION, Math.round(trimEnd - trimStart));
   const playheadTime = Math.max(trimStart, Math.min(currentTime, trimEnd));
   const playheadPercent = videoDuration ? (playheadTime / videoDuration) * 100 : 0; 
 
@@ -192,11 +194,11 @@ export default function NewReelPage() {
     const time = ratio * videoDuration;
 
     if (kind === 'start') {
-      const next = Math.min(time, trimEnd - 0.1);
+      const next = Math.min(time, trimEnd - MIN_TRIM_DURATION);
       setTrimStart(next);
       if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
     } else {
-      const next = Math.max(time, trimStart + 0.1);
+      const next = Math.max(time, trimStart + MIN_TRIM_DURATION);
       setTrimEnd(next);
       if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
     }
@@ -252,8 +254,13 @@ export default function NewReelPage() {
   async function applyTrim() {
     if (!file || trimming) return;
 
-    const start = Math.max(0, Math.min(trimStart, videoDuration - 0.1));
-    const end = Math.max(start + 0.1, Math.min(trimEnd, videoDuration));
+    const start = Math.max(0, Math.min(trimStart, videoDuration - MIN_TRIM_DURATION));
+    const end = Math.max(start + MIN_TRIM_DURATION, Math.min(trimEnd, videoDuration));
+
+    if (end - start < MIN_TRIM_DURATION || videoDuration < MIN_TRIM_DURATION) {
+      alert('Trimmed reel must be at least 1 second long.');
+      return;
+    }
 
     if (start <= 0.05 && end >= videoDuration - 0.05) {
       setTrimStart(0);
@@ -265,13 +272,24 @@ export default function NewReelPage() {
     }
 
     const sourceVideo = videoRef.current;
+    const fallbackToServerTrim = () => {
+      setTrimApplied(true);
+      setCurrentTime(start);
+      if (sourceVideo) {
+        sourceVideo.currentTime = start;
+        sourceVideo.play().catch(() => {});
+      }
+      setTrimOpen(false);
+    };
+
     if (!sourceVideo || !('captureStream' in HTMLVideoElement.prototype) || typeof MediaRecorder === 'undefined') {
-      alert('Trim is not supported on this browser.');
+      fallbackToServerTrim();
       return;
     }
 
     setTrimming(true);
     sourceVideo.pause();
+    let capturedStream: MediaStream | null = null;
 
     try {
       sourceVideo.currentTime = start;
@@ -289,6 +307,7 @@ export default function NewReelPage() {
       const captureStream = (sourceVideo as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream;
       if (typeof captureStream !== 'function') throw new Error('Trim is not supported on this browser.');
       const stream = captureStream.call(sourceVideo);
+      capturedStream = stream;
       const mimeTypes = [
         'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
         'video/webm;codecs=vp8,opus',
@@ -326,6 +345,7 @@ export default function NewReelPage() {
       if (recorder.state === 'recording') recorder.stop();
       const blob = await finished;
       stream.getTracks().forEach((track) => track.stop());
+      capturedStream = null;
 
       const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const trimmedFile = new File(
@@ -335,8 +355,10 @@ export default function NewReelPage() {
       );
 
       const nextUrl = URL.createObjectURL(trimmedFile);
+      const oldPreviewUrl = previewUrl;
       setFile(trimmedFile);
       setPreviewUrl(nextUrl);
+      if (oldPreviewUrl) URL.revokeObjectURL(oldPreviewUrl);
       setVideoDuration(end - start);
       setTrimStart(0);
       setTrimEnd(end - start);
@@ -346,9 +368,12 @@ export default function NewReelPage() {
       setTrimOpen(false);
       thumbnailCacheRef.current = null;
       setTimelineThumbnails([]);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Could not trim video.');
+    } catch {
+      // If client-side recording is unavailable or fails, keep the selected range
+      // and let the backend FFmpeg trim it during Post instead of blocking Done.
+      fallbackToServerTrim();
     } finally {
+      if (capturedStream) capturedStream.getTracks().forEach((track) => track.stop());
       setTrimming(false);
     }
   }
