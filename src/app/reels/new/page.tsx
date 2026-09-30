@@ -39,7 +39,7 @@ export default function NewReelPage() {
   const [trimming, setTrimming] = useState(false);
   const [trimPlaying, setTrimPlaying] = useState(false);
   const trimSnapshotRef = useRef<{ start: number; end: number } | null>(null);
-  const trimFallbackNoticeRef = useRef(false);
+  const [trimFallbackNotice, setTrimFallbackNotice] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
@@ -253,7 +253,7 @@ export default function NewReelPage() {
   function openTrim() {
     if (!videoDuration) return;
     trimSnapshotRef.current = { start: trimStart, end: trimEnd };
-    trimFallbackNoticeRef.current = false;
+    setTrimFallbackNotice(false);
     setTrimOpen(true);
     setTrimPlaying(!videoRef.current?.paused);
   }
@@ -303,7 +303,7 @@ export default function NewReelPage() {
       setDuration(Math.round(videoDuration));
       setTrimApplied(false);
       trimSnapshotRef.current = null;
-      trimFallbackNoticeRef.current = false;
+      setTrimFallbackNotice(false);
       setTrimPlaying(false);
       setTrimOpen(false);
       return;
@@ -311,7 +311,7 @@ export default function NewReelPage() {
 
     const sourceVideo = videoRef.current;
     const fallbackToServerTrim = () => {
-      trimFallbackNoticeRef.current = true;
+      setTrimFallbackNotice(true);
       setTrimApplied(true);
       setCurrentTime(start);
       if (sourceVideo) {
@@ -460,7 +460,7 @@ export default function NewReelPage() {
           ref={videoRef}
           key={previewUrl}
           src={previewUrl}
-          controls
+          controls={!trimOpen}
           className="max-h-full max-w-full rounded-lg bg-black"
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
@@ -614,7 +614,7 @@ export default function NewReelPage() {
 
           </div>
 
-          {trimFallbackNoticeRef.current && !trimming && (
+          {trimFallbackNotice && !trimming && (
             <p className="mt-3 text-center text-[11px] text-white/55">Trim will be applied when you post this reel.</p>
           )}
 
