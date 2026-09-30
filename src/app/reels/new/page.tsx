@@ -32,6 +32,7 @@ export default function NewReelPage() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const pending = takePendingReelVideo();
@@ -66,9 +67,13 @@ export default function NewReelPage() {
       const time = ratio * videoDuration;
 
       if (draggingHandle === 'start') {
-        setTrimStart(Math.min(time, trimEnd - 0.1));
+        const next = Math.min(time, trimEnd - 0.1);
+        setTrimStart(next);
+        if (videoRef.current) videoRef.current.currentTime = next;
       } else {
-        setTrimEnd(Math.max(time, trimStart + 0.1));
+        const next = Math.max(time, trimStart + 0.1);
+        setTrimEnd(next);
+        if (videoRef.current) videoRef.current.currentTime = next;
       }
     }
 
@@ -85,6 +90,26 @@ export default function NewReelPage() {
   }, [draggingHandle, trimStart, trimEnd, videoDuration]);
 
   const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !trimOpen || !videoDuration) return;
+    const target = Math.max(trimStart, Math.min(video.currentTime, trimEnd));
+    if (Math.abs(video.currentTime - target) > 0.05) video.currentTime = target;
+  }, [trimStart, trimEnd, trimOpen, videoDuration]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onTimeUpdate = () => {
+      if (trimOpen && video.currentTime >= trimEnd - 0.03) {
+        video.currentTime = trimStart;
+        video.play().catch(() => {});
+      }
+    };
+    video.addEventListener('timeupdate', onTimeUpdate);
+    return () => video.removeEventListener('timeupdate', onTimeUpdate);
+  }, [trimOpen, trimStart, trimEnd]);
   const startPercent = videoDuration ? (trimStart / videoDuration) * 100 : 0;
   const endPercent = videoDuration ? (trimEnd / videoDuration) * 100 : 100;
 
@@ -156,6 +181,10 @@ export default function NewReelPage() {
     setTrimStart(start);
     setTrimEnd(end);
     setDuration(Math.round(end - start));
+    if (videoRef.current) {
+      videoRef.current.currentTime = start;
+      videoRef.current.pause();
+    }
     setTrimOpen(false);
   }
 
@@ -163,6 +192,7 @@ export default function NewReelPage() {
     setTrimStart(0);
     setTrimEnd(videoDuration);
     setDuration(Math.round(videoDuration));
+    if (videoRef.current) videoRef.current.currentTime = 0;
   }
 
   if (!file || !previewUrl) {
@@ -194,6 +224,7 @@ export default function NewReelPage() {
 
       <div className="flex flex-1 items-center justify-center overflow-hidden px-4">
         <video
+          ref={videoRef}
           key={previewUrl}
           src={previewUrl}
           controls
