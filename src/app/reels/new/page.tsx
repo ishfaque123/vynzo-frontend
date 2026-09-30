@@ -521,7 +521,11 @@ export default function NewReelPage() {
             <button onClick={resetTrim} disabled={trimming} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white disabled:opacity-40">
               Reset
             </button>
-            <button onClick={applyTrim} disabled={trimming} className="flex-1 rounded-lg bg-white py-2 text-sm font-semibold text-black disabled:opacity-50">
+            <button
+              onClick={applyTrim}
+              disabled={trimming}
+              className="flex-1 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+            >
               {trimming ? 'Processing…' : 'Done'}
             </button>
           </div>
