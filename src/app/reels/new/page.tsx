@@ -29,6 +29,7 @@ export default function NewReelPage() {
   const [trimOpen, setTrimOpen] = useState(false);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
+  const [trimApplied, setTrimApplied] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [timelineThumbnails, setTimelineThumbnails] = useState<string[]>([]);
@@ -159,7 +160,7 @@ export default function NewReelPage() {
     if (!video) return;
 
     const onTimeUpdate = () => {
-      if (!trimOpen || trimEnd <= trimStart) return;
+      if (!trimApplied && !trimOpen) return;
       if (video.currentTime >= trimEnd) {
         video.currentTime = trimStart;
         video.play().catch(() => {});
@@ -249,6 +250,7 @@ export default function NewReelPage() {
       videoRef.current.pause();
     }
     setCurrentTime(start);
+    setTrimApplied(true);
     setTrimOpen(false);
   }
 
@@ -256,6 +258,7 @@ export default function NewReelPage() {
     setTrimStart(0);
     setTrimEnd(videoDuration);
     setDuration(Math.round(videoDuration));
+    setTrimApplied(false);
     if (videoRef.current) videoRef.current.currentTime = 0;
   }
 
