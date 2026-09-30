@@ -461,8 +461,13 @@ export default function NewReelPage() {
           key={previewUrl}
           src={previewUrl}
           controls={!trimOpen}
-          className="max-h-full max-w-full rounded-lg bg-black"
-          onPlay={() => setTrimPlaying(true)}
+          playsInline
+          preload="auto"
+          className="max-h-full max-w-full rounded-lg bg-black object-contain"
+          onLoadStart={() => setIsVideoLoading(true)}
+          onLoadedData={() => setIsVideoLoading(false)}
+          onCanPlay={() => setIsVideoLoading(false)}
+          onPlay={() => setTrimPlaying(true)
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onLoadedMetadata={(e) => {
