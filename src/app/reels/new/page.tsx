@@ -433,7 +433,7 @@ export default function NewReelPage() {
                 const minutes = Math.floor(total / 60);
                 const seconds = total % 60;
                 const label = videoDuration > 60
-                  ? `${minutes}:${seconds.toString().padStart(2, '0')}`
+                  ? (seconds === 0 ? `${minutes}m` : `${minutes}m ${seconds}s`)
                   : `${seconds}s`;
                 return <span key={index}>{label}</span>;
               })}
