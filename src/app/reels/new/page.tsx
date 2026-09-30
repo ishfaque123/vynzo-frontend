@@ -30,6 +30,7 @@ export default function NewReelPage() {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -90,6 +91,8 @@ export default function NewReelPage() {
   }, [draggingHandle, trimStart, trimEnd, videoDuration]);
 
   const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
+  const playheadTime = Math.max(trimStart, Math.min(currentTime, trimEnd));
+  const playheadPercent = videoDuration ? (playheadTime / videoDuration) * 100 : 0;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -233,6 +236,7 @@ export default function NewReelPage() {
           src={previewUrl}
           controls
           className="max-h-full max-w-full rounded-lg bg-black"
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onLoadedMetadata={(e) => {
             const d = Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : duration;
             if (d > 0) {
@@ -305,6 +309,14 @@ export default function NewReelPage() {
               style={{ left: `${startPercent}%`, width: `${Math.max(0, endPercent - startPercent)}%` }}
             />
 
+            <div
+              className="pointer-events-none absolute top-1 z-[5] h-14 w-0.5 bg-white shadow-[0_0_5px_rgba(0,0,0,0.8)]"
+              style={{ left: `${playheadPercent}%` }}
+              aria-hidden="true"
+            >
+              <span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-white" />
+            </div>
+
             <button
               type="button"
               data-trim-handle="start"
@@ -335,8 +347,8 @@ export default function NewReelPage() {
               <span className="h-8 w-1 rounded-full bg-white" />
             </button>
 
-            <div className="absolute left-0 top-14 text-[10px] text-white/50">START {trimStart.toFixed(1)}s</div>
-            <div className="absolute right-0 top-14 text-[10px] text-white/50">END {trimEnd.toFixed(1)}s</div>
+            <div className="absolute left-0 top-14 text-[10px] text-white/50">{trimStart.toFixed(1)}s</div>
+            <div className="absolute right-0 top-14 text-[10px] text-white/50">{trimEnd.toFixed(1)}s</div>
           </div>
 
           <div className="mt-5 rounded-lg bg-white/5 px-3 py-2 text-center text-sm text-white">
