@@ -286,7 +286,9 @@ export default function NewReelPage() {
         sourceVideo.addEventListener('error', onError);
       });
 
-      const stream = sourceVideo.captureStream();
+      const captureStream = (sourceVideo as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream;
+      if (typeof captureStream !== 'function') throw new Error('Trim is not supported on this browser.');
+      const stream = captureStream.call(sourceVideo);
       const mimeTypes = [
         'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
         'video/webm;codecs=vp8,opus',
