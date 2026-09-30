@@ -94,22 +94,21 @@ export default function NewReelPage() {
   const playheadTime = Math.max(trimStart, Math.min(currentTime, trimEnd));
   const playheadPercent = videoDuration ? (playheadTime / videoDuration) * 100 : 0;
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !trimOpen || !videoDuration) return;
-    const target = Math.max(trimStart, Math.min(video.currentTime, trimEnd));
-    if (Math.abs(video.currentTime - target) > 0.05) video.currentTime = target;
-  }, [trimStart, trimEnd, trimOpen, videoDuration]);
-
+  // Keep trim preview playback simple: only loop when the selected end is reached.
+  // Do not continuously clamp currentTime in an effect; that fights the native video controls
+  // and causes playback to pause/glitch while the user is dragging the handles.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
     const onTimeUpdate = () => {
-      if (trimOpen && video.currentTime >= trimEnd - 0.03) {
+      if (!trimOpen || trimEnd <= trimStart) return;
+      if (video.currentTime >= trimEnd) {
         video.currentTime = trimStart;
         video.play().catch(() => {});
       }
     };
+
     video.addEventListener('timeupdate', onTimeUpdate);
     return () => video.removeEventListener('timeupdate', onTimeUpdate);
   }, [trimOpen, trimStart, trimEnd]);
