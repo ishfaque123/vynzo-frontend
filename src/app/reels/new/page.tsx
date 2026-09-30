@@ -248,6 +248,7 @@ export default function NewReelPage() {
       videoRef.current.currentTime = start;
       videoRef.current.pause();
     }
+    setCurrentTime(start);
     setTrimOpen(false);
   }
 
