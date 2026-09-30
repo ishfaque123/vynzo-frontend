@@ -432,7 +432,8 @@ export default function NewReelPage() {
       fallbackToServerTrim();
     } finally {
       if (trimTimeout) clearTimeout(trimTimeout);
-      if (capturedStream) capturedStream.getTracks().forEach((track) => track.stop());
+      const streamToStop = capturedStream as MediaStream | null;
+      if (streamToStop) streamToStop.getTracks().forEach((track) => track.stop());
       setTrimming(false);
     }
   }
