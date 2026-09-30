@@ -515,28 +515,45 @@ export default function NewReelPage() {
               <span className="h-8 w-1 rounded-full bg-white" />
             </button>
 
-            <div className="pointer-events-none absolute inset-x-0 top-[58px] flex justify-between px-0.5 text-[10px] text-white/50">
-              {Array.from(
-                { length: Math.floor(videoDuration / 10) + 1 },
-                (_, index) => Math.min(videoDuration, index * 10)
-              ).map((second, index) => {
-                const total = Math.floor(second);
-                const minutes = Math.floor(total / 60);
-                const seconds = total % 60;
+            <div className="pointer-events-none absolute inset-x-0 top-[58px] flex items-start justify-between px-0.5 text-[10px] text-white/50">
+              {(() => {
+                const totalSeconds = Math.max(0, Math.floor(videoDuration));
+                const step = totalSeconds <= 30
+                  ? 5
+                  : totalSeconds <= 60
+                    ? 10
+                    : totalSeconds <= 180
+                      ? 20
+                      : totalSeconds <= 600
+                        ? 60
+                        : Math.ceil(totalSeconds / 6 / 10) * 10;
 
-                return (
-                  <span key={index} className="flex min-w-0 flex-col items-center leading-tight whitespace-nowrap">
-                    {total <= 60 ? (
-                      `${total}s`
-                    ) : (
-                      <>
-                        <span>{minutes}m</span>
-                        {seconds > 0 && <span>{seconds}s</span>}
-                      </>
-                    )}
-                  </span>
-                );
-              })}
+                const labels: number[] = [];
+                for (let second = 0; second <= totalSeconds; second += step) {
+                  labels.push(second);
+                }
+                if (labels[labels.length - 1] !== totalSeconds) labels.push(totalSeconds);
+
+                return labels.map((second, index) => {
+                  const minutes = Math.floor(second / 60);
+                  const seconds = second % 60;
+
+                  return (
+                    <span key={index} className="min-w-0 text-center leading-tight whitespace-nowrap">
+                      {second < 60 ? (
+                        `${second}s`
+                      ) : seconds === 0 ? (
+                        `${minutes}m`
+                      ) : (
+                        <>
+                          <span className="block">{minutes}m</span>
+                          <span className="block">{seconds}s</span>
+                        </>
+                      )}
+                    </span>
+                  );
+                });
+              })()}
             </div>
           </div>
 
