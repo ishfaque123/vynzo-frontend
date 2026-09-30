@@ -34,6 +34,7 @@ export default function NewReelPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [timelineThumbnails, setTimelineThumbnails] = useState<string[]>([]);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
+  const [trimming, setTrimming] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
@@ -248,19 +249,106 @@ export default function NewReelPage() {
     setTrimOpen(true);
   }
 
-  function applyTrim() {
-    const start = Math.max(0, Math.min(trimStart, videoDuration - 1));
-    const end = Math.max(start + 1, Math.min(trimEnd, videoDuration));
-    setTrimStart(start);
-    setTrimEnd(end);
-    setDuration(Math.round(end - start));
-    if (videoRef.current) {
-      videoRef.current.currentTime = start;
-      videoRef.current.pause();
+  async function applyTrim() {
+    if (!file || trimming) return;
+
+    const start = Math.max(0, Math.min(trimStart, videoDuration - 0.1));
+    const end = Math.max(start + 0.1, Math.min(trimEnd, videoDuration));
+
+    if (start <= 0.05 && end >= videoDuration - 0.05) {
+      setTrimStart(0);
+      setTrimEnd(videoDuration);
+      setDuration(Math.round(videoDuration));
+      setTrimApplied(false);
+      setTrimOpen(false);
+      return;
     }
-    setCurrentTime(start);
-    setTrimApplied(true);
-    setTrimOpen(false);
+
+    const sourceVideo = videoRef.current;
+    if (!sourceVideo || !('captureStream' in HTMLVideoElement.prototype) || typeof MediaRecorder === 'undefined') {
+      alert('Trim is not supported on this browser.');
+      return;
+    }
+
+    setTrimming(true);
+    sourceVideo.pause();
+
+    try {
+      sourceVideo.currentTime = start;
+      await new Promise<void>((resolve, reject) => {
+        const onSeeked = () => { cleanup(); resolve(); };
+        const onError = () => { cleanup(); reject(new Error('Could not seek video')); };
+        const cleanup = () => {
+          sourceVideo.removeEventListener('seeked', onSeeked);
+          sourceVideo.removeEventListener('error', onError);
+        };
+        sourceVideo.addEventListener('seeked', onSeeked);
+        sourceVideo.addEventListener('error', onError);
+      });
+
+      const stream = sourceVideo.captureStream();
+      const mimeTypes = [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ];
+      const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+      if (!mimeType) throw new Error('No supported recording format');
+
+      const chunks: Blob[] = [];
+      const recorder = new MediaRecorder(stream, { mimeType });
+
+      const finished = new Promise<Blob>((resolve, reject) => {
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) chunks.push(event.data);
+        };
+        recorder.onerror = () => reject(new Error('Could not create trimmed video'));
+        recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+      });
+
+      recorder.start(250);
+      await sourceVideo.play();
+
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (sourceVideo.currentTime >= end) {
+            sourceVideo.pause();
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      });
+
+      if (recorder.state === 'recording') recorder.stop();
+      const blob = await finished;
+      stream.getTracks().forEach((track) => track.stop());
+
+      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const trimmedFile = new File(
+        [blob],
+        file.name.replace(/\.[^.]+$/, '') + '-trimmed.' + extension,
+        { type: mimeType }
+      );
+
+      const nextUrl = URL.createObjectURL(trimmedFile);
+      setFile(trimmedFile);
+      setPreviewUrl(nextUrl);
+      setVideoDuration(end - start);
+      setTrimStart(0);
+      setTrimEnd(end - start);
+      setDuration(Math.round(end - start));
+      setCurrentTime(0);
+      setTrimApplied(false);
+      setTrimOpen(false);
+      thumbnailCacheRef.current = null;
+      setTimelineThumbnails([]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Could not trim video.');
+    } finally {
+      setTrimming(false);
+    }
   }
 
   function resetTrim() {
@@ -291,7 +379,7 @@ export default function NewReelPage() {
         <p className="text-base font-semibold text-white">New Reel</p>
         <button
           onClick={handlePost}
-          disabled={posting || trimEnd <= trimStart}
+          disabled={posting || trimming || trimEnd <= trimStart}
           className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50"
         >
           {posting ? `${uploadProgress ?? 0}%` : 'Post'}
@@ -333,7 +421,7 @@ export default function NewReelPage() {
         )}
 
         <div className="flex items-center gap-4 border-t border-white/10 pt-3">
-          <button onClick={openTrim} className="flex flex-col items-center gap-1 text-xs text-white">
+          <button onClick={openTrim} disabled={trimming} className="flex flex-col items-center gap-1 text-xs text-white disabled:opacity-50">
             <TrimIcon />
             Trim
           </button>
@@ -355,7 +443,7 @@ export default function NewReelPage() {
             <div>
               <p className="text-sm font-semibold text-white">Trim video</p>
             </div>
-            <button onClick={() => setTrimOpen(false)} className="text-xs text-white/60">Cancel</button>
+            <button onClick={() => setTrimOpen(false)} disabled={trimming} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
           </div>
 
           <div
@@ -402,7 +490,7 @@ export default function NewReelPage() {
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setDraggingHandle('start');
+                if (!trimming) setDraggingHandle('start');
               }}
               className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
               style={{ left: `${startPercent}%` }}
@@ -417,7 +505,7 @@ export default function NewReelPage() {
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setDraggingHandle('end');
+                if (!trimming) setDraggingHandle('end');
               }}
               className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
               style={{ left: `${endPercent}%` }}
@@ -441,11 +529,11 @@ export default function NewReelPage() {
           </div>
 
           <div className="mt-4 flex gap-2">
-            <button onClick={resetTrim} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white">
+            <button onClick={resetTrim} disabled={trimming} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white disabled:opacity-40">
               Reset
             </button>
-            <button onClick={applyTrim} className="flex-1 rounded-lg bg-white py-2 text-sm font-semibold text-black">
-              Done
+            <button onClick={applyTrim} disabled={trimming} className="flex-1 rounded-lg bg-white py-2 text-sm font-semibold text-black disabled:opacity-50">
+              {trimming ? 'Processing…' : 'Done'}
             </button>
           </div>
         </div>
