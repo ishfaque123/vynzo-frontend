@@ -515,46 +515,6 @@ export default function NewReelPage() {
               <span className="h-8 w-1 rounded-full bg-white" />
             </button>
 
-            <div className="pointer-events-none absolute inset-x-0 top-[58px] flex items-start justify-between px-0.5 text-[10px] text-white/50">
-              {(() => {
-                const totalSeconds = Math.max(0, Math.floor(videoDuration));
-                const step = totalSeconds <= 30
-                  ? 5
-                  : totalSeconds <= 60
-                    ? 10
-                    : totalSeconds <= 180
-                      ? 20
-                      : totalSeconds <= 600
-                        ? 60
-                        : Math.ceil(totalSeconds / 6 / 10) * 10;
-
-                const labels: number[] = [];
-                for (let second = 0; second <= totalSeconds; second += step) {
-                  labels.push(second);
-                }
-                if (labels[labels.length - 1] !== totalSeconds) labels.push(totalSeconds);
-
-                return labels.map((second, index) => {
-                  const minutes = Math.floor(second / 60);
-                  const seconds = second % 60;
-
-                  return (
-                    <span key={index} className="min-w-0 text-center leading-tight whitespace-nowrap">
-                      {second < 60 ? (
-                        `${second}s`
-                      ) : seconds === 0 ? (
-                        `${minutes}m`
-                      ) : (
-                        <>
-                          <span className="block">{minutes}m</span>
-                          <span className="block">{seconds}s</span>
-                        </>
-                      )}
-                    </span>
-                  );
-                });
-              })()}
-            </div>
           </div>
 
           <div className="mt-4 flex gap-2">
