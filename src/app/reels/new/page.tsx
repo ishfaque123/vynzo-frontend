@@ -354,7 +354,6 @@ export default function NewReelPage() {
           <div className="mb-4 flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Trim video</p>
-              <p className="mt-1 text-xs text-white/50">Drag the two handles to choose exactly which part of the video to keep.</p>
             </div>
             <button onClick={() => setTrimOpen(false)} className="text-xs text-white/60">Cancel</button>
           </div>
@@ -426,12 +425,13 @@ export default function NewReelPage() {
               <span className="h-8 w-1 rounded-full bg-white" />
             </button>
 
-            <div className="absolute left-0 top-14 text-[10px] text-white/50">{trimStart.toFixed(1)}s</div>
-            <div className="absolute right-0 top-14 text-[10px] text-white/50">{trimEnd.toFixed(1)}s</div>
-          </div>
-
-          <div className="mt-5 rounded-lg bg-white/5 px-3 py-2 text-center text-sm text-white">
-            Keeping <span className="font-semibold text-blue-400">{selectedDuration}s</span> of {Math.round(videoDuration)}s
+            <div className="pointer-events-none absolute inset-x-0 top-[58px] flex justify-between px-0.5 text-[10px] text-white/50">
+              {Array.from({ length: Math.min(16, Math.floor(videoDuration) + 1) }, (_, index) => {
+                const count = Math.min(15, Math.floor(videoDuration));
+                const second = count > 0 ? Math.round((index * videoDuration) / count) : 0;
+                return <span key={index}>{second}s</span>;
+              })}
+            </div>
           </div>
 
           <div className="mt-4 flex gap-2">
