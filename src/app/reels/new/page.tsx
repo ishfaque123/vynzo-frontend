@@ -397,7 +397,7 @@ export default function NewReelPage() {
       });
 
       if (recorder.state === 'recording') recorder.stop();
-      const blob = await Promise.race([finished, fallbackTimer]);
+      const blob = await finished;
       stream.getTracks().forEach((track) => track.stop());
       capturedStream = null;
 
@@ -425,7 +425,7 @@ export default function NewReelPage() {
       trimSnapshotRef.current = null;
       setTrimPlaying(false);
       };
-      await runClientTrim();
+      await Promise.race([runClientTrim(), fallbackTimer]);
     } catch {
       // If client-side recording is unavailable or fails, keep the selected range
       // and let the backend FFmpeg trim it during Post instead of blocking Done.
@@ -482,9 +482,6 @@ export default function NewReelPage() {
           playsInline
           preload="auto"
           className="max-h-full max-w-full rounded-lg bg-black object-contain"
-          onLoadStart={() => setIsVideoLoading(true)}
-          onLoadedData={() => setIsVideoLoading(false)}
-          onCanPlay={() => setIsVideoLoading(false)}
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
