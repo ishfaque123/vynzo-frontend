@@ -37,6 +37,9 @@ export default function NewReelPage() {
   const [timelineThumbnails, setTimelineThumbnails] = useState<string[]>([]);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
   const [trimming, setTrimming] = useState(false);
+  const [trimPlaying, setTrimPlaying] = useState(false);
+  const trimSnapshotRef = useRef<{ start: number; end: number } | null>(null);
+  const trimFallbackNoticeRef = useRef(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
@@ -76,7 +79,7 @@ export default function NewReelPage() {
       if (draggingHandle === 'start') {
         const next = Math.min(time, trimEnd - MIN_TRIM_DURATION);
         setTrimStart(next);
-        if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().catch(() => {}); }
+        if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().then(() => setTrimPlaying(true)).catch(() => {}); }
       } else {
         const next = Math.max(time, trimStart + MIN_TRIM_DURATION);
         setTrimEnd(next);
@@ -175,7 +178,7 @@ export default function NewReelPage() {
       if (!trimApplied && !trimOpen) return;
       if (video.currentTime >= trimEnd) {
         video.currentTime = trimStart;
-        video.play().catch(() => {});
+        video.play().then(() => setTrimPlaying(true)).catch(() => {});
       }
     };
 
@@ -205,19 +208,20 @@ export default function NewReelPage() {
   }
 
   function handleTimelinePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (draggingHandle || !videoDuration) return;
+    if (draggingHandle || !videoDuration || trimming) return;
     const target = event.target as HTMLElement;
     if (target.closest('[data-trim-handle]')) return;
 
     const rect = timelineRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect || !videoRef.current) return;
 
     const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
     const time = ratio * videoDuration;
-    const distanceToStart = Math.abs(time - trimStart);
-    const distanceToEnd = Math.abs(time - trimEnd);
-
-    moveHandleToClientX(distanceToStart <= distanceToEnd ? 'start' : 'end', event.clientX);
+    const nextTime = Math.max(trimStart, Math.min(time, trimEnd));
+    videoRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
+    videoRef.current.play().catch(() => {});
+    setTrimPlaying(true);
   }
 
   async function handlePost() {
@@ -248,7 +252,38 @@ export default function NewReelPage() {
 
   function openTrim() {
     if (!videoDuration) return;
+    trimSnapshotRef.current = { start: trimStart, end: trimEnd };
+    trimFallbackNoticeRef.current = false;
     setTrimOpen(true);
+    setTrimPlaying(!videoRef.current?.paused);
+  }
+
+  function cancelTrim() {
+    if (trimming) return;
+    const snapshot = trimSnapshotRef.current;
+    if (snapshot) {
+      setTrimStart(snapshot.start);
+      setTrimEnd(snapshot.end);
+      setCurrentTime(Math.max(snapshot.start, Math.min(currentTime, snapshot.end)));
+      if (videoRef.current) {
+        videoRef.current.currentTime = Math.max(snapshot.start, Math.min(videoRef.current.currentTime, snapshot.end));
+      }
+    }
+    trimSnapshotRef.current = null;
+    setTrimPlaying(false);
+    setTrimOpen(false);
+  }
+
+  function toggleTrimPlayback() {
+    const video = videoRef.current;
+    if (!video || trimming) return;
+    if (video.paused) {
+      if (video.currentTime < trimStart || video.currentTime >= trimEnd) video.currentTime = trimStart;
+      video.play().then(() => setTrimPlaying(true)).catch(() => {});
+    } else {
+      video.pause();
+      setTrimPlaying(false);
+    }
   }
 
   async function applyTrim() {
@@ -267,12 +302,16 @@ export default function NewReelPage() {
       setTrimEnd(videoDuration);
       setDuration(Math.round(videoDuration));
       setTrimApplied(false);
+      trimSnapshotRef.current = null;
+      trimFallbackNoticeRef.current = false;
+      setTrimPlaying(false);
       setTrimOpen(false);
       return;
     }
 
     const sourceVideo = videoRef.current;
     const fallbackToServerTrim = () => {
+      trimFallbackNoticeRef.current = true;
       setTrimApplied(true);
       setCurrentTime(start);
       if (sourceVideo) {
@@ -288,6 +327,7 @@ export default function NewReelPage() {
     }
 
     setTrimming(true);
+    setTrimPlaying(false);
     sourceVideo.pause();
     let capturedStream: MediaStream | null = null;
 
@@ -368,6 +408,8 @@ export default function NewReelPage() {
       setTrimOpen(false);
       thumbnailCacheRef.current = null;
       setTimelineThumbnails([]);
+      trimSnapshotRef.current = null;
+      setTrimPlaying(false);
     } catch {
       // If client-side recording is unavailable or fails, keep the selected range
       // and let the backend FFmpeg trim it during Post instead of blocking Done.
@@ -406,7 +448,7 @@ export default function NewReelPage() {
         <p className="text-base font-semibold text-white">New Reel</p>
         <button
           onClick={handlePost}
-          disabled={posting || trimming || trimEnd <= trimStart}
+          disabled={posting || trimming || trimOpen || trimEnd <= trimStart}
           className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50"
         >
           {posting ? `${uploadProgress ?? 0}%` : 'Post'}
@@ -420,6 +462,8 @@ export default function NewReelPage() {
           src={previewUrl}
           controls
           className="max-h-full max-w-full rounded-lg bg-black"
+          onPlay={() => setTrimPlaying(true)}
+          onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onLoadedMetadata={(e) => {
             const d = Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : duration;
@@ -464,13 +508,35 @@ export default function NewReelPage() {
         </div>
       </div>
 
+      {trimming && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-[2px]">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-neutral-900 px-6 py-5 shadow-2xl">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <p className="text-sm font-medium text-white">Trimming video…</p>
+            <p className="text-xs text-white/50">Please wait</p>
+          </div>
+        </div>
+      )}
+
       {trimOpen && (
         <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
           <div className="mb-4 flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Trim video</p>
             </div>
-            <button onClick={() => setTrimOpen(false)} disabled={trimming} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
+            <button onClick={cancelTrim} disabled={trimming} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
+          </div>
+
+          <div className="mb-3 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={toggleTrimPlayback}
+              disabled={trimming}
+              aria-label={trimPlaying ? 'Pause trim preview' : 'Play trim preview'}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black disabled:opacity-40"
+            >
+              {trimPlaying ? '❚❚' : '▶'}
+            </button>
           </div>
 
           <div
@@ -517,7 +583,10 @@ export default function NewReelPage() {
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                if (!trimming) setDraggingHandle('start');
+                if (!trimming) {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setDraggingHandle('start');
+                }
               }}
               className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
               style={{ left: `${startPercent}%` }}
@@ -532,7 +601,10 @@ export default function NewReelPage() {
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                if (!trimming) setDraggingHandle('end');
+                if (!trimming) {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setDraggingHandle('end');
+                }
               }}
               className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
               style={{ left: `${endPercent}%` }}
@@ -541,6 +613,10 @@ export default function NewReelPage() {
             </button>
 
           </div>
+
+          {trimFallbackNoticeRef.current && !trimming && (
+            <p className="mt-3 text-center text-[11px] text-white/55">Trim will be applied when you post this reel.</p>
+          )}
 
           <div className="mt-4 flex gap-2">
             <button onClick={resetTrim} disabled={trimming} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white disabled:opacity-40">
