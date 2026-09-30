@@ -484,7 +484,7 @@ export default function NewReelPage() {
           onLoadStart={() => setIsVideoLoading(true)}
           onLoadedData={() => setIsVideoLoading(false)}
           onCanPlay={() => setIsVideoLoading(false)}
-          onPlay={() => setTrimPlaying(true)
+          onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onLoadedMetadata={(e) => {
