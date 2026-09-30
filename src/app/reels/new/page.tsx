@@ -36,6 +36,7 @@ export default function NewReelPage() {
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
 
   useEffect(() => {
     const pending = takePendingReelVideo();
@@ -93,7 +94,13 @@ export default function NewReelPage() {
   }, [draggingHandle, trimStart, trimEnd, videoDuration]);
 
   useEffect(() => {
-    if (!trimOpen || !previewUrl || !videoDuration) return;
+    if (!previewUrl || !videoDuration) return;
+
+    const cached = thumbnailCacheRef.current;
+    if (cached?.url === previewUrl && cached.duration === videoDuration && cached.frames.length) {
+      setTimelineThumbnails(cached.frames);
+      return;
+    }
 
     let cancelled = false;
     const thumbnailCount = 14;
@@ -111,17 +118,15 @@ export default function NewReelPage() {
         });
 
         const canvas = document.createElement('canvas');
-        const width = 96;
-        const height = 64;
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = 96;
+        canvas.height = 64;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
         const frames: string[] = [];
         for (let index = 0; index < thumbnailCount; index += 1) {
           if (cancelled) return;
-          const target = videoDuration * ((index + 0.5) / thumbnailCount);
+          const target = video.duration * ((index + 0.5) / thumbnailCount);
           await new Promise<void>((resolve) => {
             const onSeeked = () => {
               video.removeEventListener('seeked', onSeeked);
@@ -130,13 +135,17 @@ export default function NewReelPage() {
             video.addEventListener('seeked', onSeeked);
             video.currentTime = Math.min(target, Math.max(0, video.duration - 0.01));
           });
-          ctx.drawImage(video, 0, 0, width, height);
-          frames.push(canvas.toDataURL('image/jpeg', 0.72));
+          ctx.drawImage(video, 0, 0, 96, 64);
+          frames.push(canvas.toDataURL('image/jpeg', 0.68));
+          if (!cancelled) setTimelineThumbnails([...frames]);
         }
 
-        if (!cancelled) setTimelineThumbnails(frames);
+        if (!cancelled) {
+          thumbnailCacheRef.current = { url: previewUrl, duration: videoDuration, frames };
+          setTimelineThumbnails(frames);
+        }
       } catch {
-        if (!cancelled) setTimelineThumbnails([]);
+        // Keep any thumbnails already generated.
       }
     };
 
@@ -146,11 +155,19 @@ export default function NewReelPage() {
       video.removeAttribute('src');
       video.load();
     };
-  }, [trimOpen, previewUrl, videoDuration]);
+  }, [previewUrl, videoDuration]);
 
   const selectedDuration = Math.max(1, Math.round(trimEnd - trimStart));
   const playheadTime = Math.max(trimStart, Math.min(currentTime, trimEnd));
   const playheadPercent = videoDuration ? (playheadTime / videoDuration) * 100 : 0;
+  const previewElapsed = trimApplied ? Math.max(0, currentTime - trimStart) : currentTime;
+  const previewTotal = trimApplied ? Math.max(1, trimEnd - trimStart) : videoDuration;
+  const formatTime = (seconds: number) => {
+    const total = Math.max(0, Math.floor(seconds));
+    const minutes = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Keep trim preview playback simple: only loop when the selected end is reached.
   // Do not continuously clamp currentTime in an effect; that fights the native video controls
@@ -289,7 +306,7 @@ export default function NewReelPage() {
         </button>
       </div>
 
-      <div className="flex flex-1 items-center justify-center overflow-hidden px-4">
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4">
         <video
           ref={videoRef}
           key={previewUrl}
@@ -305,6 +322,9 @@ export default function NewReelPage() {
             }
           }}
         />
+        <div className="pointer-events-none absolute bottom-4 rounded-full bg-black/70 px-2.5 py-1 text-xs font-medium text-white">
+          {formatTime(previewElapsed)} / {formatTime(previewTotal)}
+        </div>
       </div>
 
       <div className="space-y-3 p-4">
