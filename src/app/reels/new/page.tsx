@@ -326,12 +326,26 @@ export default function NewReelPage() {
       return;
     }
 
+    // Client-side MediaRecorder trimming can hang on Android/WebView.
+    // Use the already-supported server FFmpeg fallback there instead of blocking Done.
+    const isAndroidWebView = /Android/i.test(navigator.userAgent) && /wv|; wv\)/i.test(navigator.userAgent);
+    if (isAndroidWebView) {
+      fallbackToServerTrim();
+      return;
+    }
+
     setTrimming(true);
     setTrimPlaying(false);
     sourceVideo.pause();
     let capturedStream: MediaStream | null = null;
+    let trimTimeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
+      const fallbackTimer = new Promise<never>((_, reject) => {
+        trimTimeout = setTimeout(() => reject(new Error('Client trim timed out')), 5000);
+      });
+
+      const runClientTrim = async () => {
       sourceVideo.currentTime = start;
       await new Promise<void>((resolve, reject) => {
         const onSeeked = () => { cleanup(); resolve(); };
@@ -383,7 +397,7 @@ export default function NewReelPage() {
       });
 
       if (recorder.state === 'recording') recorder.stop();
-      const blob = await finished;
+      const blob = await Promise.race([finished, fallbackTimer]);
       stream.getTracks().forEach((track) => track.stop());
       capturedStream = null;
 
@@ -410,11 +424,14 @@ export default function NewReelPage() {
       setTimelineThumbnails([]);
       trimSnapshotRef.current = null;
       setTrimPlaying(false);
+      };
+      await runClientTrim();
     } catch {
       // If client-side recording is unavailable or fails, keep the selected range
       // and let the backend FFmpeg trim it during Post instead of blocking Done.
       fallbackToServerTrim();
     } finally {
+      if (trimTimeout) clearTimeout(trimTimeout);
       if (capturedStream) capturedStream.getTracks().forEach((track) => track.stop());
       setTrimming(false);
     }
