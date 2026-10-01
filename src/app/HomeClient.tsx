@@ -14,6 +14,7 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
+import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import StatusBar from '@/components/StatusBar';
 import SkeletonPostCard from '@/components/SkeletonPostCard';
 import FeedReelCard from '@/components/FeedReelCard';
@@ -303,7 +304,6 @@ export default function HomePage() {
               return;
             }
             // Keep the existing Reel creation flow unchanged.
-            const { setPendingReelVideo } = require('@/lib/pendingReelVideo');
             setPendingReelVideo(file, duration);
             router.push('/reels/new');
           };
