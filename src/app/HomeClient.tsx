@@ -14,7 +14,6 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
-import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import StatusBar from '@/components/StatusBar';
 import SkeletonPostCard from '@/components/SkeletonPostCard';
 import FeedReelCard from '@/components/FeedReelCard';
@@ -46,7 +45,6 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [feedOffline, setFeedOffline] = useState(false);
-  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [reelMaxDuration, setReelMaxDuration] = useState(180);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
@@ -56,7 +54,6 @@ export default function HomePage() {
   const commentsSeqRef = useRef<Record<string, number>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const reelInputRef = useRef<HTMLInputElement>(null);
 
   async function loadFeed() {
     if (!user?.id) return;
@@ -276,16 +273,19 @@ export default function HomePage() {
         <button onClick={() => { if (!feedOffline) router.push('/compose'); }} disabled={feedOffline} className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-left text-slate-400 shadow-sm">
           What's on your mind?
         </button>
-        <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) { setPendingComposeImage(file); router.push('/compose'); }
-          e.target.value = '';
-        }} />
-        <input ref={reelInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => {
+        <input ref={galleryInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = '';
           if (!file) return;
+
+          if (file.type.startsWith('image/')) {
+            setPendingComposeImage(file);
+            router.push('/compose');
+            return;
+          }
+
           if (!file.type.startsWith('video/')) return;
+
           const objectUrl = URL.createObjectURL(file);
           const probe = document.createElement('video');
           probe.preload = 'metadata';
@@ -302,8 +302,9 @@ export default function HomePage() {
               alert(`Reels must be ${reelMaxDuration} seconds or shorter.`);
               return;
             }
+            // Keep the existing Reel creation flow unchanged.
+            const { setPendingReelVideo } = require('@/lib/pendingReelVideo');
             setPendingReelVideo(file, duration);
-            setCreateMenuOpen(false);
             router.push('/reels/new');
           };
           probe.onerror = () => {
@@ -314,21 +315,9 @@ export default function HomePage() {
           };
           probe.src = objectUrl;
         }} />
-        <div className="relative">
-          <button onClick={() => { if (!feedOffline) setCreateMenuOpen((open) => !open); }} disabled={feedOffline} aria-label="Create post or reel" aria-expanded={createMenuOpen} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
-            <PlusIcon />
-          </button>
-          {createMenuOpen && !feedOffline && (
-            <div className="absolute right-0 top-11 z-50 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-              <button type="button" onClick={() => { setCreateMenuOpen(false); galleryInputRef.current?.click(); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">
-                Photo
-              </button>
-              <button type="button" onClick={() => { reelInputRef.current?.click(); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">
-                Reel
-              </button>
-            </div>
-          )}
-        </div>
+        <button onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }} disabled={feedOffline} aria-label="Add a photo or reel" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
+          <PlusIcon />
+        </button>
       </div>
 
       <div className="px-4"><StatusBar user={user} offline={feedOffline} /></div>
