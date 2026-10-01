@@ -145,7 +145,6 @@ export default function ComposePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const [videoNotice, setVideoNotice] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [locatingGps, setLocatingGps] = useState(false);
@@ -531,21 +530,6 @@ export default function ComposePage() {
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
           >
             <CameraIcon />
-          </button>
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) handleVideoPicked(file); }}
-          />
-          <button
-            onClick={() => videoInputRef.current?.click()}
-            disabled={submitting}
-            aria-label="Upload video"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-slate-600 disabled:opacity-40"
-          >
-            <VideoIcon />
           </button>
           <button
             onClick={handleUseLocation}
