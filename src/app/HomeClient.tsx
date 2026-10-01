@@ -299,7 +299,7 @@ export default function HomePage() {
               return;
             }
             if (duration > reelMaxDuration) {
-              alert(\`Reels must be \${reelMaxDuration} seconds or shorter.\`);
+              alert(`Reels must be ${reelMaxDuration} seconds or shorter.`);
               return;
             }
             setPendingReelVideo(file, duration);
