@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
-import { fetchReelFeed } from '@/lib/api/reelApi';
+import { fetchReelsConfig, fetchReelFeed } from '@/lib/api/reelApi';
 import { getOfflineFeed, saveOfflineFeed } from '@/lib/offline/feedCache';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { playCommentSound } from '@/lib/sounds';
@@ -14,6 +14,7 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
+import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import StatusBar from '@/components/StatusBar';
 import SkeletonPostCard from '@/components/SkeletonPostCard';
 import FeedReelCard from '@/components/FeedReelCard';
@@ -45,6 +46,8 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [feedOffline, setFeedOffline] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [reelMaxDuration, setReelMaxDuration] = useState(180);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
@@ -53,6 +56,7 @@ export default function HomePage() {
   const commentsSeqRef = useRef<Record<string, number>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const reelInputRef = useRef<HTMLInputElement>(null);
 
   async function loadFeed() {
     if (!user?.id) return;
@@ -131,6 +135,17 @@ export default function HomePage() {
   useEffect(() => {
     if (isAuthenticated) loadFeed();
   }, [isAuthenticated, offline]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    void fetchReelsConfig().then((result) => {
+      if (cancelled) return;
+      const max = Number(result.success && result.data?.maxDurationSec);
+      if (Number.isFinite(max) && max > 0) setReelMaxDuration(max);
+    });
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -266,9 +281,54 @@ export default function HomePage() {
           if (file) { setPendingComposeImage(file); router.push('/compose'); }
           e.target.value = '';
         }} />
-        <button onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }} disabled={feedOffline} aria-label="Add a photo" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
-          <PlusIcon />
-        </button>
+        <input ref={reelInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file) return;
+          if (!file.type.startsWith('video/')) return;
+          const objectUrl = URL.createObjectURL(file);
+          const probe = document.createElement('video');
+          probe.preload = 'metadata';
+          probe.onloadedmetadata = () => {
+            const duration = probe.duration;
+            URL.revokeObjectURL(objectUrl);
+            probe.removeAttribute('src');
+            probe.load();
+            if (!Number.isFinite(duration) || duration <= 0) {
+              alert('Could not read the video duration. Please choose another video.');
+              return;
+            }
+            if (duration > reelMaxDuration) {
+              alert(\`Reels must be \${reelMaxDuration} seconds or shorter.\`);
+              return;
+            }
+            setPendingReelVideo(file, duration);
+            setCreateMenuOpen(false);
+            router.push('/reels/new');
+          };
+          probe.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            probe.removeAttribute('src');
+            probe.load();
+            alert('Could not read this video. Please choose another video.');
+          };
+          probe.src = objectUrl;
+        }} />
+        <div className="relative">
+          <button onClick={() => { if (!feedOffline) setCreateMenuOpen((open) => !open); }} disabled={feedOffline} aria-label="Create post or reel" aria-expanded={createMenuOpen} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
+            <PlusIcon />
+          </button>
+          {createMenuOpen && !feedOffline && (
+            <div className="absolute right-0 top-11 z-50 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+              <button type="button" onClick={() => { setCreateMenuOpen(false); galleryInputRef.current?.click(); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">
+                Photo
+              </button>
+              <button type="button" onClick={() => { reelInputRef.current?.click(); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">
+                Reel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="px-4"><StatusBar user={user} offline={feedOffline} /></div>
