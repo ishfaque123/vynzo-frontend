@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchFeed } from '@/lib/api/postApi';
-import { fetchReelFeed } from '@/lib/api/reelApi';
+import { fetchReelsConfig, fetchReelFeed } from '@/lib/api/reelApi';
 import { getOfflineFeed, saveOfflineFeed } from '@/lib/offline/feedCache';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { playCommentSound } from '@/lib/sounds';
@@ -14,6 +14,7 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
+import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import StatusBar from '@/components/StatusBar';
 import SkeletonPostCard from '@/components/SkeletonPostCard';
 import FeedReelCard from '@/components/FeedReelCard';
@@ -261,12 +262,57 @@ export default function HomePage() {
         <button onClick={() => { if (!feedOffline) router.push('/compose'); }} disabled={feedOffline} className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-left text-slate-400 shadow-sm">
           What's on your mind?
         </button>
-        <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+        <input ref={galleryInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={async (e) => {
           const file = e.target.files?.[0];
-          if (file) { setPendingComposeImage(file); router.push('/compose'); }
           e.target.value = '';
+          if (!file) return;
+
+          if (file.type.startsWith('image/')) {
+            setPendingComposeImage(file);
+            router.push('/compose');
+            return;
+          }
+
+          if (!file.type.startsWith('video/')) {
+            alert('Please select a photo or video.');
+            return;
+          }
+
+          const objectUrl = URL.createObjectURL(file);
+          const probe = document.createElement('video');
+          probe.preload = 'metadata';
+          probe.onloadedmetadata = async () => {
+            const duration = probe.duration;
+            URL.revokeObjectURL(objectUrl);
+            probe.removeAttribute('src');
+            probe.load();
+
+            if (!Number.isFinite(duration) || duration <= 0) {
+              alert('Could not read the video duration. Please choose another video.');
+              return;
+            }
+
+            const config = await fetchReelsConfig();
+            const configuredMax = Number(config.success && config.data?.maxDurationSec);
+            const maxDuration = Number.isFinite(configuredMax) && configuredMax > 0 ? configuredMax : 180;
+
+            if (duration > maxDuration) {
+              alert(`Reels must be ${maxDuration} seconds or shorter.`);
+              return;
+            }
+
+            setPendingReelVideo(file, duration);
+            router.push('/reels/new');
+          };
+          probe.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            probe.removeAttribute('src');
+            probe.load();
+            alert('Could not read this video. Please choose another video.');
+          };
+          probe.src = objectUrl;
         }} />
-        <button onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }} disabled={feedOffline} aria-label="Add a photo" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
+        <button onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }} disabled={feedOffline} aria-label="Add a photo or video" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
           <PlusIcon />
         </button>
       </div>
