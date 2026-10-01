@@ -40,6 +40,8 @@ export default function NewReelPage() {
   const [trimPlaying, setTrimPlaying] = useState(false);
   const trimSnapshotRef = useRef<{ start: number; end: number } | null>(null);
   const [trimFallbackNotice, setTrimFallbackNotice] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [postTrimProcessing, setPostTrimProcessing] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
@@ -55,6 +57,7 @@ export default function NewReelPage() {
     setTrimStart(0);
     setTrimEnd(pending.duration);
     setVideoDuration(pending.duration);
+    setPreviewError(false);
     setPreviewUrl(URL.createObjectURL(pending.file));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -230,6 +233,7 @@ export default function NewReelPage() {
     setUploadProgress(0);
 
     const trimChanged = trimStart > 0.05 || trimEnd < videoDuration - 0.05;
+    setPostTrimProcessing(trimChanged);
     const result = await createReelWithProgress(
       {
         video: file,
@@ -242,6 +246,7 @@ export default function NewReelPage() {
 
     setPosting(false);
     setUploadProgress(null);
+    setPostTrimProcessing(false);
 
     if (result.success) {
       router.replace('/reels');
@@ -339,10 +344,15 @@ export default function NewReelPage() {
     sourceVideo.pause();
     let capturedStream: MediaStream | null | undefined = null;
     let trimTimeout: ReturnType<typeof setTimeout> | null = null;
+    let trimCancelled = false;
 
     try {
       const fallbackTimer = new Promise<never>((_, reject) => {
-        trimTimeout = setTimeout(() => reject(new Error('Client trim timed out')), 5000);
+        trimTimeout = setTimeout(() => {
+          trimCancelled = true;
+          sourceVideo.pause();
+          reject(new Error('Client trim timed out'));
+        }, 5000);
       });
 
       const runClientTrim = async () => {
@@ -357,6 +367,7 @@ export default function NewReelPage() {
         sourceVideo.addEventListener('seeked', onSeeked);
         sourceVideo.addEventListener('error', onError);
       });
+      if (trimCancelled) throw new Error('Client trim cancelled');
 
       const captureStream = (sourceVideo as HTMLVideoElement & { captureStream: () => MediaStream }).captureStream;
       if (typeof captureStream !== 'function') throw new Error('Trim is not supported on this browser.');
@@ -383,6 +394,7 @@ export default function NewReelPage() {
 
       recorder.start(250);
       await sourceVideo.play();
+      if (trimCancelled) throw new Error('Client trim cancelled');
 
       await new Promise<void>((resolve) => {
         const check = () => {
@@ -396,8 +408,13 @@ export default function NewReelPage() {
         requestAnimationFrame(check);
       });
 
+      if (trimCancelled) {
+        if (recorder.state === 'recording') recorder.stop();
+        throw new Error('Client trim cancelled');
+      }
       if (recorder.state === 'recording') recorder.stop();
       const blob = await finished;
+      if (trimCancelled) throw new Error('Client trim cancelled');
       stream.getTracks().forEach((track) => track.stop());
       capturedStream = null;
 
@@ -469,7 +486,7 @@ export default function NewReelPage() {
           disabled={posting || trimming || trimOpen || trimEnd <= trimStart}
           className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50"
         >
-          {posting ? `${uploadProgress ?? 0}%` : 'Post'}
+          {posting ? (postTrimProcessing && uploadProgress === 100 ? 'Processing…' : `${uploadProgress ?? 0}%`) : 'Post'}
         </button>
       </div>
 
@@ -485,6 +502,7 @@ export default function NewReelPage() {
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onError={() => setPreviewError(true)}
           onLoadedMetadata={(e) => {
             const d = Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : duration;
             if (d > 0) {
@@ -496,6 +514,21 @@ export default function NewReelPage() {
       </div>
 
       <div className="space-y-3 p-4">
+        {previewError && (
+          <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
+            Video preview is not supported on this device/browser. HEVC/HDR videos may not play here; MP4 (H.264) is recommended.
+          </div>
+        )}
+        {trimFallbackNotice && !trimming && !posting && (
+          <div className="rounded-lg border border-blue-400/30 bg-blue-400/10 px-3 py-2 text-xs text-blue-100">
+            Trim will be applied when you post this reel. The original video will be uploaded first, then processed on the server.
+          </div>
+        )}
+        {posting && postTrimProcessing && uploadProgress === 100 && (
+          <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/80">
+            Processing trim… Please wait while the server prepares your reel.
+          </div>
+        )}
         <textarea
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
@@ -633,10 +666,6 @@ export default function NewReelPage() {
             </button>
 
           </div>
-
-          {trimFallbackNotice && !trimming && (
-            <p className="mt-3 text-center text-[11px] text-white/55">Trim will be applied when you post this reel.</p>
-          )}
 
           <div className="mt-4 flex gap-2">
             <button onClick={resetTrim} disabled={trimming} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white disabled:opacity-40">
