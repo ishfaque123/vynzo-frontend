@@ -108,6 +108,19 @@ const structuredData = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          // Render-blocking theme init: applies the `dark` class before first
+          // paint so cold starts never flash a white page. Mirrors
+          // ThemeProvider's logic (localStorage `vynzo_theme`, else the OS
+          // color-scheme preference). ThemeProvider's own effect is
+          // idempotent with this.
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('vynzo_theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();",
+          }}
+        />
+      </head>
       <body>
         <OfflineServiceWorker />
         <ThemeProvider>
