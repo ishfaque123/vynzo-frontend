@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { playPostSound } from '@/lib/sounds';
 import { takePendingComposeImage } from '@/lib/pendingComposeImage';
@@ -132,8 +132,9 @@ const AUDIENCE_OPTIONS = [
   { value: 'private' as const, label: 'Only me', desc: 'Only you can see this', icon: <LockIcon /> },
 ];
 
-export default function ComposePage() {
+function ComposeForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [content, setContent] = useState('');
   const [image, setImage] = useState<File | null>(null);
@@ -170,6 +171,39 @@ export default function ComposePage() {
       setImage(pending);
       setImagePreview(URL.createObjectURL(pending));
     }
+  }, []);
+
+  // Content shared from the Android share sheet: the native app stages the
+  // file and serves it at /__share/<token> (?share=<token>&name=<name>), or
+  // passes shared text via ?shared_text=. Attach it using the same flows as
+  // a manually picked file.
+  useEffect(() => {
+    const sharedText = searchParams.get('shared_text');
+    if (sharedText) {
+      setContent((prev) => (prev ? prev : sharedText));
+    }
+    const token = searchParams.get('share');
+    if (!token) return;
+    const name = searchParams.get('name') || 'shared';
+    let cancelled = false;
+    fetch(`/__share/${encodeURIComponent(token)}`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (cancelled || !blob || blob.size === 0) return;
+        const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+        if ((blob.type || '').startsWith('video/')) {
+          handleVideoPicked(file);
+        } else {
+          handlePickImage(file);
+        }
+      })
+      .catch(() => {
+        // If the staged file is gone, just open a blank composer.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -646,5 +680,13 @@ export default function ComposePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ComposePage() {
+  return (
+    <Suspense fallback={null}>
+      <ComposeForm />
+    </Suspense>
   );
 }
