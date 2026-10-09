@@ -13,6 +13,18 @@ function notifyLoggedOut() {
   }
 }
 
+/**
+ * Broadcast that the active account just changed. Every mounted useAuth
+ * instance listens for 'frianzo-account-switched' and reloads the current
+ * user, so a following client-side navigation never renders the previous
+ * account's UI.
+ */
+function notifyAccountSwitched() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('frianzo-account-switched'));
+  }
+}
+
 async function readJson(res: Response) {
   if (res.status === 204 || res.status === 304) return { success: false, error: { message: `Empty server response (HTTP ${res.status}).` } };
   const text = await res.text();
@@ -42,7 +54,10 @@ export async function switchAccountRequest(accountId: string) {
     body: JSON.stringify({ accountId }),
   });
   const result = await readJson(res);
-  await clearOfflineCache();
+  if (result.success) {
+    await clearOfflineCache();
+    notifyAccountSwitched();
+  }
   return result;
 }
 
