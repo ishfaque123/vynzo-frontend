@@ -25,6 +25,14 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     const root = document.documentElement;
     const apply = (isDark: boolean) => {
       root.classList.toggle('dark', isDark);
+      // Tell the Android app which theme is active so its launch colors
+      // (splash / window / WebView background) can match on next cold start.
+      // No-op in browsers where FrianzoNative doesn't exist.
+      try {
+        (window as any).FrianzoNative?.setAppTheme?.(isDark ? 'dark' : 'light');
+      } catch {
+        // Never let theme reporting break theming.
+      }
     };
 
     if (theme === 'system') {
