@@ -244,29 +244,96 @@ export default function SettingsMenuPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const popupTimerRef = useRef<number | null>(null);
 
-  async function openSwitchSheet() {
-    setSwitchSheetOpen(true);
+  async function loadAccounts() {
     setAccountsLoading(true);
-    const [me, list] = await Promise.all([fetchMe(), getSavedAccounts()]);
-    setActiveId(me?.data?.user?.id ?? null);
-    setAccounts(list?.data?.accounts ?? []);
-    setAccountsLoading(false);
+    setAccountsError(null);
+    try {
+      const [me, list] = await Promise.all([fetchMe(), getSavedAccounts()]);
+      setActiveId(me?.data?.user?.id ?? null);
+      setAccounts(list?.data?.accounts ?? []);
+    } catch {
+      setAccountsError('Could not load accounts. Please try again.');
+    } finally {
+      setAccountsLoading(false);
+    }
   }
 
+  function openSwitchSheet() {
+    setSwitchSheetOpen(true);
+    setSwitchError(null);
+    void loadAccounts();
+  }
+
+  // Close the switch sheet on Escape.
+  useEffect(() => {
+    if (!switchSheetOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSwitchSheetOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [switchSheetOpen]);
+
+  // Stop polling the login popup if the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+    };
+  }, []);
+
   async function handleSelectAccount(accountId: string) {
+    if (switchingId) return;
     setSwitchingId(accountId);
+    setSwitchError(null);
     const result = await switchAccountRequest(accountId);
     if (result?.success) {
-      window.location.href = '/';
+      // switchAccountRequest() already broadcast 'frianzo-account-switched',
+      // so every useAuth instance reloads the new user. Client-side
+      // transition (no full page reload) keeps the switch feeling instant.
+      setSwitchSheetOpen(false);
+      setSwitchingId(null);
+      router.push('/');
+      router.refresh();
     } else {
       setSwitchingId(null);
+      setSwitchError('Could not switch account. Please try again.');
     }
   }
 
   function handleAddAccount() {
-    window.location.href = `${API_URL}/api/auth/google/start?switch=1`;
+    const url = `${API_URL}/api/auth/google/start?switch=1`;
+    // Prefer a popup (desktop browsers): the sheet stays put and the new
+    // account appears in the list when the popup closes. The Android
+    // WebView and popup blockers don't support window.open (returns null),
+    // so fall back to a full-page navigation there.
+    let popup: Window | null = null;
+    try {
+      popup = window.open(url, 'frianzo-add-account', 'width=520,height=680,menubar=no,toolbar=no');
+    } catch {
+      popup = null;
+    }
+    if (!popup) {
+      window.location.href = url;
+      return;
+    }
+    setAddingAccount(true);
+    if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+    popupTimerRef.current = window.setInterval(() => {
+      if (popup && popup.closed) {
+        if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+        popupTimerRef.current = null;
+        setAddingAccount(false);
+        // A completed login saves the new account against this device
+        // server-side — refresh the list so it appears right here.
+        void loadAccounts();
+      }
+    }, 600);
   }
 
   async function handleLogout() {
@@ -401,12 +468,17 @@ export default function SettingsMenuPage() {
             <p className="mb-3 text-center text-sm font-semibold text-slate-800">Switch account</p>
             {accountsLoading ? (
               <div className="flex justify-center py-6" role="status" aria-label="Loading accounts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
+            ) : accountsError ? (
+              <div className="mb-3 rounded-lg border px-4 py-6 text-center">
+                <p className="mb-3 text-sm text-red-600">{accountsError}</p>
+                <button onClick={() => void loadAccounts()} className="rounded-full border px-4 py-1.5 text-sm font-medium text-slate-700">Try again</button>
+              </div>
             ) : (
               <div className="mb-3 max-h-[45vh] divide-y overflow-y-auto rounded-lg border">
                 {accounts.map((acc) => {
                   const isActive = acc.id === activeId;
                   return (
-                    <button key={acc.id} onClick={() => !isActive && handleSelectAccount(acc.id)} disabled={isActive || switchingId === acc.id} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60">
+                    <button key={acc.id} onClick={() => !isActive && handleSelectAccount(acc.id)} disabled={isActive || switchingId !== null} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60">
                       <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
                         {acc.profilePictureUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -425,9 +497,10 @@ export default function SettingsMenuPage() {
                 {accounts.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">No saved accounts yet.</p>}
               </div>
             )}
+            {switchError && <p className="mb-2 text-center text-sm text-red-600">{switchError}</p>}
             <div className="flex gap-2">
               <button onClick={() => setSwitchSheetOpen(false)} className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700">Cancel</button>
-              <button onClick={handleAddAccount} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white">+ Add account</button>
+              <button onClick={handleAddAccount} disabled={addingAccount} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-60">{addingAccount ? 'Waiting for login...' : '+ Add account'}</button>
             </div>
           </div>
         </div>
