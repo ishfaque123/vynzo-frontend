@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { BellIcon } from '@/components/icons/UiIcons';
 import { fetchUnreadCount } from '@/lib/api/notificationApi';
+import { logoutRequest } from '@/lib/api/authApi';
 import UsageTracker from '@/components/UsageTracker';
 import PushRegistrar from '@/components/PushRegistrar';
 
@@ -71,6 +72,58 @@ function CloseIcon() {
   );
 }
 
+function SettingsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  );
+}
+
+function ActivityIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15 15" />
+    </svg>
+  );
+}
+
+function DashboardIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
+function FriendsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9 12 2" />
+    </svg>
+  );
+}
+
+function PowerIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18.36 6.64a9 9 0 11-12.73 0" />
+      <line x1="12" y1="2" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+const drawerLinks = [
+  { label: 'Settings', href: '/settings-menu', Icon: SettingsIcon },
+  { label: 'Your Activity', href: '/settings-menu/activity', Icon: ActivityIcon },
+  { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: DashboardIcon },
+  { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: FriendsIcon },
+];
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const currentPath = pathname ?? '';
@@ -78,6 +131,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, offline } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [headerHidden, setHeaderHidden] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -106,6 +160,36 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (currentPath === '/notifications') setUnreadCount(0);
   }, [currentPath]);
 
+  // Close the side drawer whenever the route changes.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [currentPath]);
+
+  // Lock body scroll and allow Escape to close while the drawer is open.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    document.body.style.overflow = 'hidden';
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [drawerOpen]);
+
+  async function handleDrawerLogout() {
+    const result = await logoutRequest();
+    if (result?.success) {
+      // Persist the cleared session in the Android WebView immediately,
+      // then go to login with a client-side transition (no full reload).
+      (window as any).FrianzoNative?.flushCookies?.();
+      setDrawerOpen(false);
+      router.push('/login');
+    }
+  }
+
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
   const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath.startsWith('/s/') || isChatThread;
   const isReels = currentPath === '/reels';
@@ -131,9 +215,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <CloseIcon />
             </button>
           ) : (
-            <Link href="/settings-menu" aria-label="Settings" className="p-2 text-slate-900">
+            <button onClick={() => setDrawerOpen(true)} aria-label="Menu" className="p-2 text-slate-900">
               <MenuIcon />
-            </Link>
+            </button>
           )}
           <Link href="/" className="text-xl font-bold tracking-tight text-blue-600">Frianzo</Link>
         </div>
@@ -170,6 +254,64 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </nav>}
 
       <main className={isReels ? 'relative min-h-0 flex-1' : 'flex-1'}>{children}</main>
+
+      {/* Professional side-drawer menu (replaces the old full-page hamburger menu) */}
+      <div className={`fixed inset-0 z-40 ${drawerOpen ? '' : 'pointer-events-none'}`} aria-hidden={!drawerOpen}>
+        <div
+          onClick={() => setDrawerOpen(false)}
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${drawerOpen ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <aside
+          role="dialog"
+          aria-label="Main menu"
+          className={`absolute left-0 top-0 flex h-full w-[300px] max-w-[85vw] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <span className="text-xl font-bold tracking-tight text-blue-600">Frianzo</span>
+            <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="p-2 text-slate-600 hover:text-slate-900">
+              <CloseIcon />
+            </button>
+          </div>
+
+          <Link href={profileHref} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 border-b px-4 py-4 hover:bg-slate-50">
+            <span className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
+              {user?.profilePictureUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+              ) : null}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold text-slate-900">{user?.displayName || user?.username || 'Your profile'}</span>
+              {user?.username ? <span className="block truncate text-sm text-slate-500">@{user.username}</span> : null}
+              <span className="mt-0.5 block text-xs font-medium text-blue-600">View Profile</span>
+            </span>
+          </Link>
+
+          <nav className="flex-1 divide-y overflow-y-auto">
+            {drawerLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setDrawerOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50"
+              >
+                <span className="text-slate-600"><item.Icon /></span>
+                <span className="text-slate-800">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="border-t p-3">
+            <button
+              onClick={handleDrawerLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-medium text-red-600 hover:bg-red-50"
+            >
+              <PowerIcon />
+              <span>Logout</span>
+            </button>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
