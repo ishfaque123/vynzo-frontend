@@ -63,6 +63,15 @@ function MenuIcon() {
   );
 }
 
+function ArrowLeftIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -211,8 +220,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-xl md:max-w-5xl items-center justify-between">
         <div className="flex items-center gap-1">
           {isInSettingsMenu ? (
-            <button onClick={() => router.back()} aria-label="Close" className="p-2 text-slate-900">
-              <CloseIcon />
+            <button onClick={() => router.back()} aria-label="Back" className="p-2 text-slate-900">
+              <ArrowLeftIcon />
             </button>
           ) : (
             <button onClick={() => setDrawerOpen(true)} aria-label="Menu" className="p-2 text-slate-900">
