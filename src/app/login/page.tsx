@@ -48,14 +48,22 @@ function LoginForm() {
     fetch('/api/location/country', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data?.country) {
-          const code = String(data.country).toUpperCase();
-          const specialNames: Record<string, string> = {
-            US: 'the United States',
-            GB: 'the United Kingdom',
-          };
+        if (cancelled) return;
+        // The API returns a 2-letter ISO code (or null). Validate before use:
+        // display names or placeholder text used to reach Intl.DisplayNames
+        // here and throw, leaving "your country" stuck on the page.
+        const raw = data?.country;
+        const code = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+        if (!/^[A-Z]{2}$/.test(code)) return;
+        const specialNames: Record<string, string> = {
+          US: 'the United States',
+          GB: 'the United Kingdom',
+        };
+        try {
           const displayName = specialNames[code] ?? new Intl.DisplayNames(['en'], { type: 'region' }).of(code);
           if (displayName) setCountry(displayName);
+        } catch {
+          // Keep the generic fallback if the code can't be resolved.
         }
       })
       .catch(() => {
