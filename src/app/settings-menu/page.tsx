@@ -277,9 +277,10 @@ export default function SettingsMenuPage() {
       // so closing the app immediately after logging out can't bring the
       // old session back on next launch.
       (window as any).FrianzoNative?.flushCookies?.();
-      // Full navigation is more reliable in the Android WebView than a
-      // client-side route transition after authentication state changes.
-      window.location.replace('/login');
+      // Client-side transition (no full page reload), so logging out doesn't
+      // look like the app closed and reopened. logoutRequest() already
+      // broadcast 'frianzo-logout' to reset auth state in mounted components.
+      router.push('/login');
       return;
     }
     setLoggingOut(false);

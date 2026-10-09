@@ -60,5 +60,20 @@ export function useAuth() {
     };
   }, []);
 
+  // The app broadcasts 'frianzo-logout' right after a successful logout /
+  // account deletion (see authApi). Every mounted instance must drop its
+  // (now stale) user immediately, so a following client-side navigation
+  // never renders logged-in UI for a logged-out session.
+  useEffect(() => {
+    function onLoggedOut() {
+      setUser(null);
+      setOffline(false);
+      setVerified(true);
+      setLoading(false);
+    }
+    window.addEventListener('frianzo-logout', onLoggedOut);
+    return () => window.removeEventListener('frianzo-logout', onLoggedOut);
+  }, []);
+
   return { user, loading, isAuthenticated: !!user, offline, verified };
 }

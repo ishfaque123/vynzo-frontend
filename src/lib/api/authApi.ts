@@ -2,6 +2,17 @@ import { clearOfflineCache } from '@/lib/offline/feedCache';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/**
+ * Broadcast that the session just ended. Every mounted useAuth instance
+ * listens for 'frianzo-logout' and resets to logged-out immediately, so a
+ * following client-side navigation never renders stale logged-in UI.
+ */
+function notifyLoggedOut() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('frianzo-logout'));
+  }
+}
+
 async function readJson(res: Response) {
   if (res.status === 204 || res.status === 304) return { success: false, error: { message: `Empty server response (HTTP ${res.status}).` } };
   const text = await res.text();
@@ -41,7 +52,10 @@ export async function logoutRequest() {
     credentials: 'include',
   });
   const result = await readJson(res);
-  if (result.success) await clearOfflineCache();
+  if (result.success) {
+    await clearOfflineCache();
+    notifyLoggedOut();
+  }
   return result;
 }
 
@@ -51,7 +65,10 @@ export async function deleteAccountRequest() {
     credentials: 'include',
   });
   const result = await readJson(res);
-  if (result.success) await clearOfflineCache();
+  if (result.success) {
+    await clearOfflineCache();
+    notifyLoggedOut();
+  }
   return result;
 }
 
