@@ -27,5 +27,8 @@
     "tailwindcss": "^3.4.6",
     "typescript": "^5.9.3",
     "wrangler": "4.129.1"
+  },
+  "overrides": {
+    "@aws-sdk/credential-provider-http": "3.972.74"
   }
 }
