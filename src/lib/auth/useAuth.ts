@@ -75,5 +75,29 @@ export function useAuth() {
     return () => window.removeEventListener('frianzo-logout', onLoggedOut);
   }, []);
 
+  // The app broadcasts 'frianzo-account-switched' right after a successful
+  // account switch (see authApi). Every mounted instance must reload the
+  // current user, so a following client-side navigation never renders the
+  // previous account's UI.
+  useEffect(() => {
+    function onAccountSwitched() {
+      setLoading(true);
+      fetchMe()
+        .then((result) => {
+          const u = result.success ? result.data.user : null;
+          setUser(u);
+          setOffline(false);
+          setVerified(true);
+          if (u) {
+            saveOfflineUser(u).catch(() => {});
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    window.addEventListener('frianzo-account-switched', onAccountSwitched);
+    return () => window.removeEventListener('frianzo-account-switched', onAccountSwitched);
+  }, []);
+
   return { user, loading, isAuthenticated: !!user, offline, verified };
 }
