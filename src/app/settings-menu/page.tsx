@@ -187,6 +187,7 @@ export default function SettingsMenuPage() {
   const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
   const [privacySheetOpen, setPrivacySheetOpen] = useState(false);
   const [privacyLoading, setPrivacyLoading] = useState(false);
@@ -194,6 +195,19 @@ export default function SettingsMenuPage() {
   const [tagPermission, setTagPermission] = useState('everyone');
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [isPrivate, setIsPrivate] = useState(false);
+
+  // The Admin menu entry must only be visible to admin users.
+  useEffect(() => {
+    let cancelled = false;
+    fetchMe()
+      .then((me) => {
+        if (!cancelled) setIsAdmin(me?.data?.user?.role === 'admin');
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function openPrivacySheet() {
     setPrivacySheetOpen(true);
@@ -275,7 +289,9 @@ export default function SettingsMenuPage() {
     <div className="mx-auto max-w-xl px-4 py-6">
       <h1 className="mb-4 text-xl font-semibold">Settings</h1>
       <div className="mb-3 divide-y rounded-lg border">
-        {menuItems.map((item) => (
+        {menuItems
+          .filter((item) => item.label !== 'Admin' || isAdmin)
+          .map((item) => (
           <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
             <span className="text-slate-600"><item.Icon /></span>
             <span className="text-slate-800">{item.label}</span>
