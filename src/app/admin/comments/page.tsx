@@ -16,16 +16,20 @@ type Comment = {
 export default function Page() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  async function load() {
+  async function load(targetPage: number = page) {
     setLoading(true);
     setError('');
-    const result = await fetchAdminComments({ search });
+    const result = await fetchAdminComments({ search, page: targetPage });
     if (result?.success) {
       setComments(result.data?.comments || []);
+      setTotal(result.data?.pagination?.total || 0);
+      setPage(result.data?.pagination?.page || targetPage);
     } else {
       setError(result?.error?.message || 'Could not load comments.');
     }
@@ -33,8 +37,13 @@ export default function Page() {
   }
 
   useEffect(() => {
-    load();
+    load(1);
   }, []);
+
+  function doSearch() {
+    setPage(1);
+    load(1);
+  }
 
   async function removeComment(id: string) {
     if (!window.confirm('Delete this comment?')) return;
@@ -60,12 +69,12 @@ export default function Page() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') load();
+            if (event.key === 'Enter') doSearch();
           }}
           placeholder="Search comment, user, or post..."
           className="w-full max-w-md rounded-xl border px-4 py-2 text-sm outline-none"
         />
-        <button onClick={load} className="rounded-xl border px-4 py-2 text-sm font-medium">
+        <button onClick={doSearch} className="rounded-xl border px-4 py-2 text-sm font-medium">
           Search
         </button>
       </div>
@@ -101,6 +110,15 @@ export default function Page() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-slate-500">
+        <span>{total} comments</span>
+        <div className="flex items-center gap-2">
+          <button disabled={page <= 1} onClick={() => load(page - 1)} className="rounded-lg border bg-white px-3 py-1.5 disabled:opacity-40">Previous</button>
+          <span>Page {page}</span>
+          <button disabled={page * 20 >= total} onClick={() => load(page + 1)} className="rounded-lg border bg-white px-3 py-1.5 disabled:opacity-40">Next</button>
+        </div>
       </div>
     </div>
   );
