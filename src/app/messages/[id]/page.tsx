@@ -91,13 +91,10 @@ function CloseIcon() {
 }
 function TypingDots() {
   return (
-    <span className="inline-flex items-center gap-1 text-green-600">
-      Typing
-      <span className="inline-flex gap-0.5">
-        <span className="h-1 w-1 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '0ms' }} />
-        <span className="h-1 w-1 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '150ms' }} />
-        <span className="h-1 w-1 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '300ms' }} />
-      </span>
+    <span className="inline-flex items-center gap-0.5">
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '0ms' }} />
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '150ms' }} />
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-green-600" style={{ animationDelay: '300ms' }} />
     </span>
   );
 }
@@ -1039,6 +1036,17 @@ export default function ChatPage() {
               </div>
             );
           })}
+          {otherTyping && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl rounded-bl-md bg-slate-100 px-4 py-3 shadow-sm" aria-label="Typing">
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-500" style={{ animationDelay: '0ms' }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-500" style={{ animationDelay: '150ms' }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-500" style={{ animationDelay: '300ms' }} />
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         <div ref={bottomRef} />
       </div>
