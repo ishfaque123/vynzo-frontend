@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -357,6 +357,21 @@ function renderMessageText(text: string, isMine: boolean) {
 
 function formatMessageTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateSeparator(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfMsgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dayDiff = Math.round((startOfToday.getTime() - startOfMsgDay.getTime()) / 86400000);
+  if (dayDiff <= 0) return 'Today';
+  if (dayDiff === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' as const }),
+  });
 }
 
 function messageStatus(
@@ -1016,7 +1031,16 @@ export default function ChatPage() {
           </div>
         )}
 
-        {loading && <div className="flex justify-center py-6" role="status" aria-label="Loading messages"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>}
+        {loading && (
+          <div className="animate-pulse" role="status" aria-label="Loading messages">
+            <div className="flex justify-center pb-1 pt-3"><div className="h-6 w-24 rounded-full bg-slate-200" /></div>
+            <div className="mt-2 flex justify-start"><div className="h-12 w-2/3 max-w-[75%] rounded-2xl rounded-bl-md bg-slate-200" /></div>
+            <div className="mt-2 flex justify-end"><div className="h-10 w-1/2 max-w-[75%] rounded-2xl rounded-br-md bg-slate-200" /></div>
+            <div className="mt-0.5 flex justify-end"><div className="h-14 w-3/5 max-w-[75%] rounded-2xl rounded-br-md bg-slate-200" /></div>
+            <div className="mt-2 flex justify-start"><div className="h-10 w-2/5 max-w-[75%] rounded-2xl rounded-bl-md bg-slate-200" /></div>
+            <div className="mt-2 flex justify-end"><div className="h-12 w-1/3 max-w-[75%] rounded-2xl rounded-br-md bg-slate-200" /></div>
+          </div>
+        )}
         {!loading && loadError && (
           <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
             <p className="text-sm font-semibold text-slate-800">Couldn't load messages</p>
@@ -1030,15 +1054,24 @@ export default function ChatPage() {
             <p className="mt-1 text-xs text-slate-500">Say hello to start the conversation.</p>
           </div>
         )}
-        <div className="space-y-2">
-          {messages.map((m) => {
+        <div className="pb-2">
+          {messages.map((m, idx) => {
             const isMine = m.senderId === user?.id;
             const status = isMine ? messageStatus(m, otherLastReadAt, otherLastDeliveredAt) : null;
             const isImage = m.mediaType === 'image' && m.mediaUrl;
             const isVoice = m.mediaType === 'voice' && m.mediaUrl;
             const isSelected = selectedMessageIds.includes(m.id);
+            const prev = messages[idx - 1];
+            const showDateSeparator = !prev || new Date(m.createdAt).toDateString() !== new Date(prev.createdAt).toDateString();
+            const grouped = !!prev && prev.senderId === m.senderId && !showDateSeparator;
             return (
-              <div id={`message-${m.id}`} key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+              <Fragment key={m.id}>
+              {showDateSeparator && (
+                <div className="flex justify-center pb-1 pt-3">
+                  <span className="rounded-full bg-slate-200/90 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">{formatDateSeparator(m.createdAt)}</span>
+                </div>
+              )}
+              <div id={`message-${m.id}`} className={`flex ${isMine ? 'justify-end' : 'justify-start'} ${showDateSeparator ? 'mt-1' : grouped ? 'mt-0.5' : 'mt-2'}`}>
                 <div
                   onTouchStart={(e) => startLongPress(m, e.touches[0]?.clientX, e.touches[0]?.clientY)}
                   onTouchEnd={cancelLongPress}
@@ -1097,6 +1130,7 @@ export default function ChatPage() {
                   )}
                 </div>
               </div>
+              </Fragment>
             );
           })}
           {otherTyping && (

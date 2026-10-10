@@ -19,8 +19,24 @@ function formatConversationTime(dateStr: string) {
   return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function TrashIcon() {
+function Ticks({ status }: { status: 'sent' | 'delivered' | 'read' }) {
+  const color = status === 'read' ? '#4fc3f7' : '#8b9a8f';
+  if (status === 'sent') {
+    return (
+      <svg width="13" height="10" viewBox="0 0 16 11" fill="none" className="inline-flex flex-shrink-0">
+        <path d="M1 5.5L5 9.5L15 1" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
   return (
+    <svg width="17" height="10" viewBox="0 0 20 11" fill="none" className="inline-flex flex-shrink-0">
+      <path d="M1 5.5L5 9.5L15 1" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 5.5L10 9.5L20 1" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TrashIcon() {  return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M3 6h18" />
       <path d="M8 6V4h8v2" />
@@ -33,6 +49,7 @@ interface ConversationItem {
   id: string;
   otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean; isVerified?: boolean } | null;
   lastMessage: { content: string; senderId: string; createdAt: string; mediaType?: 'image' | 'voice' | null; isDeleted?: boolean } | null;
+  lastMessageStatus?: 'sent' | 'delivered' | 'read' | null;
   unread: boolean;
   updatedAt: string;
 }
@@ -325,7 +342,11 @@ export default function MessagesPage() {
                   <span className="truncate">{c.otherUser?.displayName || c.otherUser?.username}</span>
                   {c.otherUser?.isVerified && <VerifiedBadge size="sm" />}
                 </p>
-                <p className={`truncate text-sm ${c.unread ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
+                <p className={`flex items-center gap-1 truncate text-sm ${c.unread ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
+                  {c.lastMessage && !c.lastMessage.isDeleted && c.lastMessage.senderId === user?.id && c.lastMessageStatus && (
+                    <Ticks status={c.lastMessageStatus} />
+                  )}
+                  <span className="truncate">
                   {c.lastMessage && !c.lastMessage.isDeleted && c.lastMessage.senderId === user?.id ? 'You: ' : ''}
                   {c.lastMessage
                     ? c.lastMessage.isDeleted
@@ -338,6 +359,7 @@ export default function MessagesPage() {
                       ? (previews[c.id] || '···')
                       : 'Say hi'
                     : 'Say hi 👋'}
+                  </span>
                 </p>
               </div>
               <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
