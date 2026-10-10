@@ -17,6 +17,9 @@ function EffectsIcon() {
 function MusicIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>;
 }
+function CoverIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M4.5 17.5l4.5-4.5 3 3 3.5-3.5 4 4" /></svg>;
+}
 
 const MIN_TRIM_DURATION = 1;
 
@@ -42,9 +45,25 @@ export default function NewReelPage() {
   const [trimFallbackNotice, setTrimFallbackNotice] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [postTrimProcessing, setPostTrimProcessing] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
+  const [coverIndex, setCoverIndex] = useState(0);
+  const [coverBlob, setCoverBlob] = useState<Blob | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [capturingCover, setCapturingCover] = useState(false);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
+  const coverUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    coverUrlRef.current = coverPreviewUrl;
+  }, [coverPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (coverUrlRef.current) URL.revokeObjectURL(coverUrlRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const pending = takePendingReelVideo();
@@ -237,6 +256,7 @@ export default function NewReelPage() {
     const result = await createReelWithProgress(
       {
         video: file,
+        ...(coverBlob ? { cover: coverBlob } : {}),
         caption: caption.trim() || undefined,
         durationSec: selectedDuration,
         ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
@@ -252,6 +272,58 @@ export default function NewReelPage() {
       router.replace('/reels');
     } else {
       alert(result.error?.message || 'Could not post your reel. Please try again.');
+    }
+  }
+
+  async function captureCover(index: number) {
+    if (!previewUrl || capturingCover) return;
+    setCapturingCover(true);
+    try {
+      const video = document.createElement('video');
+      video.muted = true;
+      video.preload = 'auto';
+      video.src = previewUrl;
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('cover capture failed'));
+      });
+      // Map the frame into the trimmed range so the cover always matches the final video.
+      const trimChanged = trimStart > 0.05 || trimEnd < videoDuration - 0.05;
+      const rangeStart = trimChanged ? trimStart : 0;
+      const rangeEnd = trimChanged ? trimEnd : video.duration;
+      const target = rangeStart + (rangeEnd - rangeStart) * ((index + 0.5) / 14);
+      await new Promise<void>((resolve) => {
+        const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+        video.addEventListener('seeked', onSeeked);
+        video.currentTime = Math.min(target, Math.max(0, video.duration - 0.01));
+      });
+      const outWidth = 540;
+      const scale = outWidth / (video.videoWidth || outWidth);
+      const canvas = document.createElement('canvas');
+      canvas.width = outWidth;
+      canvas.height = Math.max(1, Math.round((video.videoHeight || outWidth) * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('no canvas context');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      if (!blob) throw new Error('toBlob failed');
+      if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+      setCoverBlob(blob);
+      setCoverPreviewUrl(URL.createObjectURL(blob));
+    } catch {
+      const dataUrl = timelineThumbnails[index];
+      if (dataUrl) {
+        try {
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+          setCoverBlob(blob);
+          setCoverPreviewUrl(URL.createObjectURL(blob));
+        } catch { /* keep previous cover */ }
+      }
+    } finally {
+      setCapturingCover(false);
+      setCoverOpen(false);
     }
   }
 
@@ -549,6 +621,11 @@ export default function NewReelPage() {
             <TrimIcon />
             Trim
           </button>
+          <button onClick={() => { setCoverIndex(0); setCoverOpen(true); }} className="relative flex flex-col items-center gap-1 text-xs text-white">
+            <CoverIcon />
+            Cover
+            {coverBlob && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
+          </button>
           <button disabled className="flex flex-col items-center gap-1 text-xs text-white/40">
             <EffectsIcon />
             Effects
@@ -677,6 +754,61 @@ export default function NewReelPage() {
               className="flex-1 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
             >
               {trimming ? 'Processing…' : 'Done'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {coverOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Select cover</p>
+              <p className="mt-0.5 text-xs text-white/50">Pick a frame for your reel thumbnail</p>
+            </div>
+            <button onClick={() => setCoverOpen(false)} disabled={capturingCover} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
+          </div>
+
+          <div className="mb-4 flex justify-center">
+            <div className="relative aspect-[9/16] w-32 overflow-hidden rounded-xl bg-black ring-1 ring-white/15">
+              {timelineThumbnails[coverIndex] ? (
+                <img src={timelineThumbnails[coverIndex]} alt="Cover preview" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-white/40">Loading…</div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5">
+            {timelineThumbnails.map((thumb, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setCoverIndex(i)}
+                className={`relative aspect-[3/4] overflow-hidden rounded-lg ring-2 transition ${i === coverIndex ? 'ring-white' : 'ring-transparent opacity-70'}`}
+              >
+                <img src={thumb} alt={`Frame ${i + 1}`} className="h-full w-full object-cover" />
+                {i === coverIndex && (
+                  <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.5" strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            {coverBlob && (
+              <button onClick={() => { if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl); setCoverBlob(null); setCoverPreviewUrl(null); }} disabled={capturingCover} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white disabled:opacity-40">
+                Remove
+              </button>
+            )}
+            <button
+              onClick={() => captureCover(coverIndex)}
+              disabled={capturingCover || !timelineThumbnails.length}
+              className="flex-1 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+            >
+              {capturingCover ? 'Processing…' : 'Done'}
             </button>
           </div>
         </div>
