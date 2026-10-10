@@ -102,7 +102,7 @@ export async function deleteReel(reelId: string) {
   } catch { return { success: false, error: { message: 'Unable to delete reel.' } }; }
 }
 
-export function createReelWithProgress(data: { video: File; cover?: Blob; caption?: string; durationSec?: number; trimStartSec?: number; trimEndSec?: number }, onProgress: (pct: number) => void): Promise<any> {
+export function createReelWithProgress(data: { video: File; cover?: Blob; caption?: string; durationSec?: number; trimStartSec?: number; trimEndSec?: number; filter?: string }, onProgress: (pct: number) => void): Promise<any> {
   return new Promise((resolve) => {
     if (!API_URL) { resolve({ success: false, error: { message: 'API is not configured.' } }); return; }
     const formData = new FormData();
@@ -112,6 +112,7 @@ export function createReelWithProgress(data: { video: File; cover?: Blob; captio
     if (data.durationSec != null) formData.append('durationSec', String(Math.round(data.durationSec)));
     if (data.trimStartSec != null) formData.append('trimStartSec', String(data.trimStartSec));
     if (data.trimEndSec != null) formData.append('trimEndSec', String(data.trimEndSec));
+    if (data.filter && data.filter !== 'normal') formData.append('filter', data.filter);
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_URL}/api/reels`);
     xhr.withCredentials = true;

@@ -23,6 +23,15 @@ function CoverIcon() {
 
 const MIN_TRIM_DURATION = 1;
 
+const REEL_FILTERS = [
+  { id: 'normal', name: 'Normal', css: '' },
+  { id: 'warm', name: 'Warm', css: 'sepia(0.25) saturate(1.3) contrast(1.05) brightness(1.03)' },
+  { id: 'cool', name: 'Cool', css: 'saturate(1.15) contrast(1.05) brightness(1.02) hue-rotate(-10deg)' },
+  { id: 'bw', name: 'B&W', css: 'grayscale(1) contrast(1.1)' },
+  { id: 'vintage', name: 'Vintage', css: 'sepia(0.4) saturate(0.8) contrast(0.95) brightness(1.02)' },
+  { id: 'vivid', name: 'Vivid', css: 'saturate(1.5) contrast(1.12) brightness(1.01)' },
+];
+
 export default function NewReelPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -50,6 +59,9 @@ export default function NewReelPage() {
   const [coverBlob, setCoverBlob] = useState<Blob | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [capturingCover, setCapturingCover] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filter, setFilter] = useState('normal');
+  const activeFilterCss = (REEL_FILTERS.find((f) => f.id === filter) || REEL_FILTERS[0]).css;
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
@@ -260,6 +272,7 @@ export default function NewReelPage() {
         caption: caption.trim() || undefined,
         durationSec: selectedDuration,
         ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
+        ...(filter !== 'normal' ? { filter } : {}),
       },
       setUploadProgress
     );
@@ -571,6 +584,7 @@ export default function NewReelPage() {
           playsInline
           preload="auto"
           className="max-h-full max-w-full rounded-lg bg-black object-contain"
+          style={activeFilterCss ? { filter: activeFilterCss } : undefined}
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
@@ -626,9 +640,10 @@ export default function NewReelPage() {
             Cover
             {coverBlob && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
           </button>
-          <button disabled className="flex flex-col items-center gap-1 text-xs text-white/40">
+          <button onClick={() => setFilterOpen(true)} className="relative flex flex-col items-center gap-1 text-xs text-white">
             <EffectsIcon />
             Effects
+            {filter !== 'normal' && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
           </button>
           <button disabled className="flex flex-col items-center gap-1 text-xs text-white/40">
             <MusicIcon />
@@ -755,6 +770,39 @@ export default function NewReelPage() {
             >
               {trimming ? 'Processing…' : 'Done'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {filterOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Effects</p>
+              <p className="mt-0.5 text-xs text-white/50">Pick a filter — applied when you post</p>
+            </div>
+            <button onClick={() => setFilterOpen(false)} className="text-xs text-white/60">Done</button>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {REEL_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => { setFilter(f.id); setFilterOpen(false); }}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 ${filter === f.id ? 'border-emerald-400' : 'border-transparent'}`}
+              >
+                <span
+                  className="h-16 w-full rounded-lg"
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 35%, #8b5cf6 65%, #3b82f6 100%)',
+                    filter: f.css || undefined,
+                  }}
+                />
+                <span className="flex items-center gap-1 text-xs font-medium text-white">
+                  {f.name}
+                  {filter === f.id && <span className="text-emerald-400">✓</span>}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       )}
