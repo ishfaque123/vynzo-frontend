@@ -75,6 +75,13 @@ function CopyIcon() {
     </svg>
   );
 }
+function EditIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17 3a2.8 2.8 0 114 4L7.5 20.5 2 22l1.5-5.5z" />
+    </svg>
+  );
+}
 function CloseIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1201,6 +1208,15 @@ export default function ChatPage() {
               >
                 <ReplyIcon />
               </button>
+              {actionMenuFor.senderId === user?.id && actionMenuFor.content && !actionMenuFor.isDeleted && (
+                <button
+                  onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setReplyTo(null); setEditingMessage(m); setText(m.content || ''); }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95"
+                  aria-label="Edit message"
+                >
+                  <EditIcon />
+                </button>
+              )}
               <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Pin message"><PinIcon /></button>
               <button onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Delete message"><DeleteIcon /></button>
               <button onClick={() => enterSelectionMode(actionMenuFor)} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Forward message"><ForwardIcon /></button>
