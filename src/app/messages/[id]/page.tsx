@@ -355,6 +355,15 @@ function renderMessageText(text: string, isMine: boolean) {
   );
 }
 
+const WALLPAPERS = [
+  { id: 'default', name: 'Default', bg: '#f8fafc' },
+  { id: 'beige', name: 'Beige', bg: '#e9dfd0' },
+  { id: 'green', name: 'Mint', bg: '#d8e8d2' },
+  { id: 'blue', name: 'Sky', bg: '#d5e2f2' },
+  { id: 'pink', name: 'Rose', bg: '#f2dde4' },
+  { id: 'dark', name: 'Dark', bg: '#232a33' },
+];
+
 function formatMessageTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -425,7 +434,33 @@ export default function ChatPage() {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [pinnedBannerIndex, setPinnedBannerIndex] = useState(0);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [wallpaper, setWallpaper] = useState<string>('default');
+  const [wallpaperOpen, setWallpaperOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`frianzo_wallpaper_${conversationId}`);
+      if (saved) setWallpaper(saved);
+    } catch { /* ignore */ }
+  }, [conversationId]);
+  function pickWallpaper(id: string) {
+    setWallpaper(id);
+    setWallpaperOpen(false);
+    try {
+      if (id === 'default') localStorage.removeItem(`frianzo_wallpaper_${conversationId}`);
+      else localStorage.setItem(`frianzo_wallpaper_${conversationId}`, id);
+    } catch { /* ignore */ }
+  }
+  useEffect(() => {
+    if (!viewingImage) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setViewingImage(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewingImage]);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swipeStartRef = useRef<{ x: number; y: number; id: string } | null>(null);
+  const [swipeDx, setSwipeDx] = useState<{ id: string; dx: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -770,6 +805,38 @@ export default function ChatPage() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   }
 
+  function handleBubbleTouchStart(m: Message, e: React.TouchEvent) {
+    const t = e.touches[0];
+    if (t) swipeStartRef.current = { x: t.clientX, y: t.clientY, id: m.id };
+    startLongPress(m, t?.clientX, t?.clientY);
+  }
+  function handleBubbleTouchMove(m: Message, e: React.TouchEvent) {
+    const s = swipeStartRef.current;
+    const t = e.touches[0];
+    if (!s || !t || s.id !== m.id) {
+      cancelLongPress();
+      return;
+    }
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (dx > 12 && dx > Math.abs(dy) * 1.5) {
+      cancelLongPress();
+      setSwipeDx({ id: m.id, dx: Math.min(dx, 90) });
+    } else if (Math.abs(dy) > 10 || Math.abs(dx) > 10) {
+      cancelLongPress();
+      setSwipeDx(null);
+    }
+  }
+  function handleBubbleTouchEnd(m: Message) {
+    const s = swipeDx;
+    swipeStartRef.current = null;
+    setSwipeDx(null);
+    cancelLongPress();
+    if (s && s.id === m.id && s.dx > 55 && !m.isDeleted && !selectedMessageIds.length) {
+      setReplyTo(m);
+    }
+  }
+
   function enterSelectionMode(message: Message) {
     if (message.isDeleted) return;
     setActionMenuFor(null);
@@ -976,6 +1043,9 @@ export default function ChatPage() {
               <button onClick={openReportModal} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                 Report
               </button>
+              <button onClick={() => { setMoreOpen(false); setWallpaperOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                Wallpaper
+              </button>
             </div>
           )}
         </div>
@@ -983,7 +1053,7 @@ export default function ChatPage() {
 
       <div
         className="flex-1 overflow-y-auto px-3 py-3"
-        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y' }}
+        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y', background: (WALLPAPERS.find((w) => w.id === wallpaper) || WALLPAPERS[0]).bg }}
       >
         {activePinnedMessage && (
           <button
@@ -1072,16 +1142,21 @@ export default function ChatPage() {
                 </div>
               )}
               <div id={`message-${m.id}`} className={`flex ${isMine ? 'justify-end' : 'justify-start'} ${showDateSeparator ? 'mt-1' : grouped ? 'mt-0.5' : 'mt-2'}`}>
+                {swipeDx?.id === m.id && (
+                  <span className="mr-1 flex h-8 w-8 items-center justify-center self-center rounded-full bg-slate-200 text-slate-600">
+                    <ReplyIcon />
+                  </span>
+                )}
                 <div
-                  onTouchStart={(e) => startLongPress(m, e.touches[0]?.clientX, e.touches[0]?.clientY)}
-                  onTouchEnd={cancelLongPress}
-                  onTouchMove={cancelLongPress}
+                  onTouchStart={(e) => handleBubbleTouchStart(m, e)}
+                  onTouchEnd={() => handleBubbleTouchEnd(m)}
+                  onTouchMove={(e) => handleBubbleTouchMove(m, e)}
                   onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
                   onCopy={(e) => e.preventDefault()}
                   onCut={(e) => e.preventDefault()}
                   onDragStart={(e) => e.preventDefault()}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
-                  style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+                  style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', transform: swipeDx?.id === m.id ? `translateX(${swipeDx.dx}px)` : undefined, transition: swipeDx?.id === m.id ? 'none' : 'transform 0.15s ease' }}
                   className={`max-w-[75%] text-[16px] leading-relaxed shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     isMine ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
                   } ${
@@ -1409,10 +1484,50 @@ export default function ChatPage() {
 
       {viewingImage && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90" onClick={() => setViewingImage(null)}>
-          <button onClick={() => setViewingImage(null)} aria-label="Close" className="absolute right-4 top-4 text-white">
-            <CloseIcon />
-          </button>
+          <div className="absolute right-4 top-4 flex items-center gap-2">
+            <a
+              href={viewingImage}
+              download
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Download image"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </a>
+            <button onClick={() => setViewingImage(null)} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25">
+              <CloseIcon />
+            </button>
+          </div>
           <img src={viewingImage} alt="" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
+      {wallpaperOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40" onClick={() => setWallpaperOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-base font-semibold text-slate-900">Chat wallpaper</p>
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {WALLPAPERS.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => pickWallpaper(w.id)}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 ${wallpaper === w.id ? 'border-green-500' : 'border-transparent'}`}
+                >
+                  <span className="h-16 w-full rounded-lg border border-slate-200" style={{ background: w.bg }} />
+                  <span className="text-xs font-medium text-slate-700">{w.name}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setWallpaperOpen(false)} className="mt-4 w-full rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700">
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
