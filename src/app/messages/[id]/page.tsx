@@ -105,6 +105,14 @@ function ImageIcon() {
     </svg>
   );
 }
+function EmojiIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+const QUICK_EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','😭','😡','👍','👎','🙏','👏','🔥','❤️','💔','✨','🎉','😮','😢','🥺','🤝','👋','💯','✅','❌','⭐','🌙','☀️','🎵','⚽','🚗','🍕','☕','🌹','💡','🙌'];
 function MicIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -140,6 +148,40 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [peaks, setPeaks] = useState<number[]>([]);
+  const BAR_COUNT = 32;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function computePeaks() {
+      try {
+        const res = await fetch(url);
+        const buf = await res.arrayBuffer();
+        const AC = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AC) return;
+        const ctx = new AC();
+        const audioBuf = await ctx.decodeAudioData(buf);
+        const data = audioBuf.getChannelData(0);
+        const block = Math.max(1, Math.floor(data.length / BAR_COUNT));
+        const raw: number[] = [];
+        for (let i = 0; i < BAR_COUNT; i++) {
+          let max = 0;
+          for (let j = 0; j < block; j += 8) {
+            const v = Math.abs(data[i * block + j] || 0);
+            if (v > max) max = v;
+          }
+          raw.push(max);
+        }
+        const top = Math.max(...raw, 0.01);
+        if (!cancelled) setPeaks(raw.map((p) => Math.max(0.18, p / top)));
+        ctx.close().catch(() => {});
+      } catch {
+        if (!cancelled) setPeaks([]);
+      }
+    }
+    computePeaks();
+    return () => { cancelled = true; };
+  }, [url]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -190,10 +232,28 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
       >
         {playing ? <PauseIcon /> : <PlayIcon />}
       </button>
-      <div className="flex-1">
-        <div className={`h-1 w-full overflow-hidden rounded-full ${isMine ? 'bg-green-700/20' : 'bg-slate-300'}`}>
-        <div className={`h-full rounded-full ${isMine ? 'bg-green-700' : 'bg-slate-600'}`} style={{ width: `${progress * 100}%` }} />
-        </div>
+      <div
+        className="flex h-8 flex-1 cursor-pointer items-center gap-[2px]"
+        onClick={(e) => {
+          const audio = audioRef.current;
+          if (!audio || !audio.duration) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+          audio.currentTime = ratio * audio.duration;
+        }}
+        role="slider"
+        aria-label="Seek voice message"
+      >
+        {(peaks.length ? peaks : Array(BAR_COUNT).fill(0.3)).map((p, i) => {
+          const played = i / BAR_COUNT <= progress;
+          return (
+            <span
+              key={i}
+              className={`w-[3px] rounded-full ${played ? (isMine ? 'bg-green-700' : 'bg-slate-700') : (isMine ? 'bg-green-700/25' : 'bg-slate-400/50')}`}
+              style={{ height: `${Math.round(p * 28) + 4}px` }}
+            />
+          );
+        })}
       </div>
       <span className="flex-shrink-0 text-[11px]">{formatDuration(displaySeconds)}</span>
     </div>
@@ -322,6 +382,7 @@ export default function ChatPage() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const sendingRef = useRef(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1014,9 +1075,11 @@ export default function ChatPage() {
                         <VoiceMessagePlayer url={m.mediaUrl!} duration={m.voiceDuration} isMine={isMine} />
                       )}
                       {m.replyTo && (
-                        <div className="mb-1 rounded-lg border-l-2 border-slate-400 bg-black/5 px-2 py-1 text-xs text-slate-500">
-                          <p className="font-medium">{m.replyTo.sender?.displayName || 'Message'}</p>
-                          <p className="truncate">{m.replyTo.content || (m.replyTo.mediaType === 'image' ? 'Photo' : m.replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p>
+                        <div className={`mb-1.5 overflow-hidden rounded-lg ${isMine ? 'bg-green-800/10' : 'bg-slate-500/10'}`}>
+                          <div className={`border-l-4 px-2 py-1 ${isMine ? 'border-green-600' : 'border-slate-400'}`}>
+                            <p className={`text-xs font-semibold ${isMine ? 'text-green-700' : 'text-slate-600'}`}>{m.replyTo.sender?.displayName || 'Message'}</p>
+                            <p className="truncate text-xs text-slate-500">{m.replyTo.content || (m.replyTo.mediaType === 'image' ? 'Photo' : m.replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p>
+                          </div>
                         </div>
                       )}
                       {m.content && (
@@ -1052,10 +1115,14 @@ export default function ChatPage() {
       </div>
 
       {replyTo && !editingMessage && (
-        <div className="border-t bg-slate-50 px-3 py-2 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0"><span className="font-semibold">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</span><p className="truncate text-slate-500">{replyTo.content || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p></div>
-            <button onClick={() => setReplyTo(null)} className="px-2 text-slate-500">✕</button>
+        <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <div className="w-1 self-stretch rounded-full bg-green-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-green-700">Replying to {replyTo.senderId === user?.id ? 'yourself' : (replyTo.sender?.displayName || 'message')}</p>
+              <p className="truncate text-xs text-slate-500">{replyTo.content || (replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'voice' ? 'Voice message' : 'Message')}</p>
+            </div>
+            <button onClick={() => setReplyTo(null)} className="rounded-full p-1.5 text-slate-500 hover:bg-slate-200" aria-label="Cancel reply">✕</button>
           </div>
         </div>
       )}
@@ -1096,6 +1163,31 @@ export default function ChatPage() {
             </>
           ) : (
             <>
+              <div className="relative">
+                <button
+                  onClick={() => setEmojiOpen((v) => !v)}
+                  className="p-2 text-slate-500"
+                  aria-label="Emoji"
+                >
+                  <EmojiIcon />
+                </button>
+                {emojiOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setEmojiOpen(false)} />
+                    <div className="absolute bottom-12 left-0 z-50 grid w-64 grid-cols-8 gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                      {QUICK_EMOJIS.map((e) => (
+                        <button
+                          key={e}
+                          onClick={() => { setText((t) => t + e); setEmojiOpen(false); }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-xl hover:bg-slate-100 active:scale-90"
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
               <button
                 onClick={() => imageInputRef.current?.click()}
                 disabled={uploadingMedia}
