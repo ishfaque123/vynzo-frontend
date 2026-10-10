@@ -436,6 +436,15 @@ export default function ChatPage() {
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [wallpaper, setWallpaper] = useState<string>('default');
   const [wallpaperOpen, setWallpaperOpen] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const update = () => setIsDarkTheme(root.classList.contains('dark'));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`frianzo_wallpaper_${conversationId}`);
@@ -1053,7 +1062,7 @@ export default function ChatPage() {
 
       <div
         className="flex-1 overflow-y-auto px-3 py-3"
-        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y', background: (WALLPAPERS.find((w) => w.id === wallpaper) || WALLPAPERS[0]).bg }}
+        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y', background: wallpaper === 'default' ? (isDarkTheme ? '#1c232e' : '#f8fafc') : (WALLPAPERS.find((w) => w.id === wallpaper) || WALLPAPERS[0]).bg }}
       >
         {activePinnedMessage && (
           <button
@@ -1310,7 +1319,7 @@ export default function ChatPage() {
                 onChange={(e) => handleTyping(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Message..."
-                className="flex-1 rounded-full border px-4 py-2 text-sm"
+                className="min-w-0 flex-1 rounded-full border px-4 py-2 text-sm"
               />              {text.trim() ? (
                 <button onClick={sendMessage} disabled={sending} className="rounded-full bg-slate-900 p-2.5 text-white disabled:opacity-50" aria-label="Send">
                   <SendIcon />
