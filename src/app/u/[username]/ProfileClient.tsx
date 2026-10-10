@@ -303,7 +303,7 @@ export default function ProfileClient() {
       setReplyTo(null);
       setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, commentCount: (p.commentCount || 0) + 1 } : p)));
     } else {
-      alert(result.error.message);
+      return result;
     }
   }
 
