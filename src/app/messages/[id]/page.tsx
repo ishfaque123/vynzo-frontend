@@ -403,7 +403,14 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [text, setText] = useState('');
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  function resetComposerHeight() {
+    if (composerRef.current) composerRef.current.style.height = 'auto';
+  }
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -471,6 +478,9 @@ export default function ChatPage() {
   const swipeStartRef = useRef<{ x: number; y: number; id: string } | null>(null);
   const [swipeDx, setSwipeDx] = useState<{ id: string; dx: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const firstMessageIdRef = useRef<string | null>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -495,6 +505,7 @@ export default function ChatPage() {
     fetchMessages(conversationId).then((result) => {
       if (result.success) {
         setMessages(result.data.messages);
+        setHasMore(result.data.messages.length >= 30);
         setOtherLastReadAt(result.data.otherLastReadAt ? new Date(result.data.otherLastReadAt) : null);
         setOtherLastDeliveredAt(result.data.otherLastDeliveredAt ? new Date(result.data.otherLastDeliveredAt) : null);
       } else {
@@ -504,6 +515,29 @@ export default function ChatPage() {
     }).catch(() => {
       setLoadError(true);
       setLoading(false);
+    });
+  }
+
+  function loadOlderMessages() {
+    if (loadingOlder || !hasMore || !messages.length) return;
+    setLoadingOlder(true);
+    const oldestId = messages[0].id;
+    const prevScrollHeight = scrollContainerRef.current?.scrollHeight || 0;
+    fetchMessages(conversationId, oldestId).then((result) => {
+      if (result.success && result.data.messages.length) {
+        setMessages((prev) => [...result.data.messages, ...prev]);
+        if (result.data.messages.length < 30) setHasMore(false);
+        requestAnimationFrame(() => {
+          const el = scrollContainerRef.current;
+          if (el) el.scrollTop = el.scrollHeight - prevScrollHeight;
+        });
+      } else {
+        setHasMore(false);
+      }
+      setLoadingOlder(false);
+    }).catch(() => {
+      showToast('Could not load older messages.', 'error');
+      setLoadingOlder(false);
     });
   }
 
@@ -581,6 +615,11 @@ export default function ChatPage() {
     socket.on('presence:offline', handlePresenceOffline);
     socket.on('conversation:read', handleConversationRead);
     socket.on('conversation:delivered', handleConversationDelivered);
+    const handleConnect = () => setIsOffline(false);
+    const handleDisconnect = () => setIsOffline(true);
+    setIsOffline(!socket.connected);
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
     socket.emit('conversation:read', { conversationId });
 
     return () => {
@@ -595,12 +634,37 @@ export default function ChatPage() {
       socket.off('presence:offline', handlePresenceOffline);
       socket.off('conversation:read', handleConversationRead);
       socket.off('conversation:delivered', handleConversationDelivered);
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
     };
   }, [conversationId, user?.id]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    };
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!messages.length) {
+      firstMessageIdRef.current = null;
+      return;
+    }
+    const firstId = messages[0].id;
+    const isPrepend = firstMessageIdRef.current !== null && firstMessageIdRef.current !== firstId;
+    firstMessageIdRef.current = firstId;
+    if (isPrepend) return;
+    const lastMsg = messages[messages.length - 1];
+    const isMine = lastMsg?.senderId === user?.id;
+    if (isMine || isNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, user?.id]);
 
   // Stop any in-progress recording  // Stop any in-progress recording (mic + timer) if this page unmounts
   // mid-recording, e.g. the user navigates away with the back button.
@@ -626,9 +690,15 @@ export default function ChatPage() {
     }, 1500);
   }
 
+  const MAX_MESSAGE_LENGTH = 2000;
+
   async function sendMessage() {
     const content = text.trim();
     if (!content || sendingRef.current) return;
+    if (content.length > MAX_MESSAGE_LENGTH) {
+      showToast(`Message is too long (max ${MAX_MESSAGE_LENGTH} characters).`, 'error');
+      return;
+    }
     const socket = getSocket();
     sendingRef.current = true;
     setSending(true);
@@ -640,6 +710,7 @@ export default function ChatPage() {
         if (res.success) {
           setEditingMessage(null);
           setText('');
+          resetComposerHeight();
         } else {
           showToast('Could not edit message.', 'error');
         }
@@ -656,6 +727,7 @@ export default function ChatPage() {
           setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
           if (res.delivered) setOtherLastDeliveredAt(new Date());
           setText('');
+          resetComposerHeight();
           setReplyTo(null);
           socket.emit('typing:stop', { conversationId });
         } else {
@@ -666,7 +738,11 @@ export default function ChatPage() {
                 ? 'This user is not accepting messages.'
                 : res.error === 'MESSAGES_RESTRICTED'
                   ? 'This user only accepts messages from followers.'
-                  : 'Could not send message. Please try again.';
+                  : res.error === 'RATE_LIMITED'
+                    ? 'You are sending too fast. Please slow down.'
+                    : res.error === 'INVALID_MEDIA_URL'
+                      ? 'Invalid media. Please try uploading again.'
+                      : 'Could not send message. Please try again.';
           showToast(errorText, 'error');
         }
         done();
@@ -691,6 +767,11 @@ export default function ChatPage() {
   }
 
   async function handlePickImage(file: File) {
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Photo is too large (max 10 MB).', 'error');
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      return;
+    }
     setUploadingMedia(true);
     const result = await uploadChatMedia(file, file.name);
     setUploadingMedia(false);
@@ -748,7 +829,12 @@ export default function ChatPage() {
       setRecording(true);
       setRecordSeconds(0);
       recordTimerRef.current = setInterval(() => {
-        setRecordSeconds(Math.floor((Date.now() - startedAt) / 1000));
+        const secs = Math.floor((Date.now() - startedAt) / 1000);
+        setRecordSeconds(secs);
+        if (secs >= 120) {
+          showToast('Voice message limit is 2 minutes.', 'error');
+          stopRecording(false);
+        }
       }, 500);
       (recorder as any)._startedAt = startedAt;
     } catch {
@@ -1030,7 +1116,9 @@ export default function ChatPage() {
             <MoreIcon />
           </button>
           {moreOpen && (
-            <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMoreOpen(false)} onTouchStart={() => setMoreOpen(false)} />
+              <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
               {otherUser && (
                 <Link
                   href={`/u/${otherUser.username}`}
@@ -1056,11 +1144,20 @@ export default function ChatPage() {
                 Wallpaper
               </button>
             </div>
+            </>
           )}
         </div>
       </div>
 
+      {isOffline && (
+        <div className="flex items-center justify-center gap-2 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
+          You're offline — messages will send when you reconnect.
+        </div>
+      )}
+
       <div
+        ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-3 py-3"
         style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y', background: wallpaper === 'default' ? (isDarkTheme ? '#1c232e' : '#f8fafc') : (WALLPAPERS.find((w) => w.id === wallpaper) || WALLPAPERS[0]).bg }}
       >
@@ -1134,6 +1231,17 @@ export default function ChatPage() {
           </div>
         )}
         <div className="pb-2">
+          {!loading && hasMore && messages.length > 0 && (
+            <div className="flex justify-center pb-2 pt-1">
+              <button
+                onClick={loadOlderMessages}
+                disabled={loadingOlder}
+                className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+              >
+                {loadingOlder ? 'Loading...' : 'Load older messages'}
+              </button>
+            </div>
+          )}
           {messages.map((m, idx) => {
             const isMine = m.senderId === user?.id;
             const status = isMine ? messageStatus(m, otherLastReadAt, otherLastDeliveredAt) : null;
@@ -1245,7 +1353,7 @@ export default function ChatPage() {
         </div>
       )}
       {editingMessage && (
-        <div className="border-t bg-amber-50 px-3 py-2 text-xs"><div className="flex items-center justify-between"><span className="font-semibold">Editing message</span><button onClick={() => { setEditingMessage(null); setText(''); }}>Cancel</button></div></div>
+        <div className="border-t bg-amber-50 px-3 py-2 text-xs"><div className="flex items-center justify-between"><span className="font-semibold">Editing message</span><button onClick={() => { setEditingMessage(null); setText(''); resetComposerHeight(); }}>Cancel</button></div></div>
       )}
       {isBlocked ? (
         <div className="border-t bg-white p-3">
@@ -1314,13 +1422,24 @@ export default function ChatPage() {
               >
                 <ImageIcon />
               </button>
-              <input
+              <textarea
+                ref={composerRef}
                 value={text}
-                onChange={(e) => handleTyping(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                onChange={(e) => {
+                  const v = e.target.value.slice(0, MAX_MESSAGE_LENGTH);
+                  handleTyping(v);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                 placeholder="Message..."
-                className="min-w-0 flex-1 rounded-full border px-4 py-2 text-sm"
-              />              {text.trim() ? (
+                rows={1}
+                className="min-w-0 flex-1 resize-none rounded-2xl border px-4 py-2 text-sm leading-5 outline-none focus:border-slate-400"
+                style={{ maxHeight: 120 }}
+              />
+              {text.length >= MAX_MESSAGE_LENGTH && (
+                <span className="shrink-0 text-[10px] font-medium text-red-500">{MAX_MESSAGE_LENGTH}/{MAX_MESSAGE_LENGTH}</span>
+              )}              {text.trim() ? (
                 <button onClick={sendMessage} disabled={sending} className="rounded-full bg-slate-900 p-2.5 text-white disabled:opacity-50" aria-label="Send">
                   <SendIcon />
                 </button>

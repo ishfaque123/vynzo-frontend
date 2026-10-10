@@ -51,6 +51,7 @@ interface ConversationItem {
   lastMessage: { content: string; senderId: string; createdAt: string; mediaType?: 'image' | 'voice' | null; isDeleted?: boolean } | null;
   lastMessageStatus?: 'sent' | 'delivered' | 'read' | null;
   unread: boolean;
+  unreadCount?: number;
   updatedAt: string;
 }
 
@@ -59,21 +60,36 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [openActions, setOpenActions] = useState<string | null>(null);
   const [selectedConversationIds, setSelectedConversationIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchMoved = useRef(false);
   const suppressClick = useRef(false);
 
-  useEffect(() => {
+  function loadConversations() {
+    setLoading(true);
+    setLoadError(false);
     fetchConversations().then((result) => {
-      if (result.success) setConversations(result.data);
+      if (result.success) {
+        setConversations(result.data);
+      } else {
+        setLoadError(true);
+      }
+      setLoading(false);
+    }).catch(() => {
+      setLoadError(true);
       setLoading(false);
     });
+  }
+
+  useEffect(() => {
+    loadConversations();
 
     const socket = getSocket();
     function refresh() {
@@ -290,7 +306,15 @@ export default function MessagesPage() {
         </div>
       )}
 
-      {!loading && filteredConversations.length === 0 && (
+      {!loading && loadError && (
+        <div className="flex flex-col items-center px-6 py-10 text-center">
+          <p className="text-sm font-semibold text-slate-800">Couldn't load conversations</p>
+          <p className="mt-1 text-xs text-slate-500">Check your connection and try again.</p>
+          <button onClick={loadConversations} className="mt-3 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white">Retry</button>
+        </div>
+      )}
+
+      {!loading && !loadError && filteredConversations.length === 0 && (
         <p className="px-4 text-slate-500">
           {search.trim() ? 'No conversations found.' : 'No conversations yet. Start one!'}
         </p>
@@ -364,14 +388,19 @@ export default function MessagesPage() {
               </div>
               <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
                 <span className={`text-xs ${c.unread ? 'font-semibold text-blue-600' : 'text-slate-400'}`}>{formatConversationTime(c.updatedAt)}</span>
-                {c.unread && <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
+                {c.unread && (c.unreadCount || 0) > 1 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[11px] font-bold text-white">
+                    {(c.unreadCount || 0) > 99 ? '99+' : c.unreadCount}
+                  </span>
+                )}
+                {c.unread && (c.unreadCount || 0) <= 1 && <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
               </div>
             </Link>
             <button
               type="button"
               aria-label="Delete conversation"
               disabled={deleting === c.id}
-              onClick={() => handleDelete(c.id)}
+              onClick={() => setConfirmDeleteId(c.id)}
               className="absolute right-0 top-0 z-0 flex h-full w-20 items-center justify-center bg-red-600 text-white"
             >
               <TrashIcon />
@@ -379,6 +408,25 @@ export default function MessagesPage() {
           </div>
         ))}
       </div>
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setConfirmDeleteId(null)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-base font-semibold text-slate-900">Delete conversation?</p>
+            <p className="mt-1 text-center text-sm text-slate-500">This will remove the chat from your list. This can't be undone.</p>
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>
+              <button
+                onClick={() => { const id = confirmDeleteId; setConfirmDeleteId(null); handleDelete(id); }}
+                disabled={deleting === confirmDeleteId}
+                className="flex-1 rounded-full bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
