@@ -14,9 +14,6 @@ function TrimIcon() {
 function EffectsIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6l-6.3 4.4 2.3-7.2-6-4.4h7.6z" /></svg>;
 }
-function MusicIcon() {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>;
-}
 function CoverIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M4.5 17.5l4.5-4.5 3 3 3.5-3.5 4 4" /></svg>;
 }
@@ -656,10 +653,6 @@ export default function NewReelPage() {
             <EffectsIcon />
             Effects
             {filter !== 'normal' && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
-          </button>
-          <button disabled className="flex flex-col items-center gap-1 text-xs text-white/40">
-            <MusicIcon />
-            Music
           </button>
           <span className="ml-auto text-[11px] text-white/50">{selectedDuration}s selected</span>
         </div>
