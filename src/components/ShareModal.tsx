@@ -120,8 +120,13 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = prevBodyOverflow;
+      window.removeEventListener('keydown', onKeyDown);
     };
   }, []);
 
