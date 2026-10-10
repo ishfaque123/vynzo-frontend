@@ -1542,14 +1542,35 @@ export default function ChatPage() {
 
       {deleteMenuFor && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setDeleteMenuFor(null)}>
-          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
-            <p className="text-center text-base font-semibold text-slate-900">Delete Message From {deleteMenuFor.senderId === user?.id ? 'you' : (deleteMenuFor.sender?.displayName || otherUser?.displayName || 'sender')}?</p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => setDeleteMenuFor(null)} className="rounded-full border px-5 py-2.5 text-sm font-medium text-slate-700">Cancel</button>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="px-5 pt-5 text-center text-base font-semibold text-slate-900">Delete message?</p>
+            <p className="px-5 pt-1 text-center text-sm text-slate-500">
+              {deleteMenuForEveryoneAllowed ? 'Choose who to delete this message for.' : 'This will only delete the message for you.'}
+            </p>
+            <div className="mt-3">
               {deleteMenuForEveryoneAllowed && (
-                <button onClick={handleDeleteForEveryone} className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600">Delete for everyone</button>
+                <button onClick={handleDeleteForEveryone} className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                    <DeleteIcon />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[15px] font-medium text-slate-900">Delete for everyone</span>
+                    <span className="block truncate text-xs text-slate-500">No one in this chat will see it anymore</span>
+                  </span>
+                </button>
               )}
-              <button onClick={handleDeleteForMe} className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white">Delete</button>
+              <button onClick={handleDeleteForMe} className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <DeleteIcon />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-medium text-slate-900">Delete for me</span>
+                  <span className="block truncate text-xs text-slate-500">Only removed from your chat</span>
+                </span>
+              </button>
+            </div>
+            <div className="px-5 pt-3">
+              <button onClick={() => setDeleteMenuFor(null)} className="w-full rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700 active:bg-slate-200">Cancel</button>
             </div>
           </div>
         </div>
