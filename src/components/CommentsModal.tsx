@@ -104,6 +104,10 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     });
   }
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const authorId = post?.author?.id || post?.userId;
+  const canComment = post?.commentAudience !== 'only_me' || !currentUser || currentUser.id === authorId;
+
   const wrapperStyle: React.CSSProperties = viewport
     ? { position: 'fixed', top: viewport.top, left: 0, right: 0, height: viewport.height }
     : { position: 'fixed', inset: 0 };
@@ -184,16 +188,23 @@ export default function CommentsModal({ post, currentUser, comments, commentText
         </div>
 
         <div className="border-t px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
-              className="flex-1 rounded-lg border px-3 py-2 text-sm"
-            />
-            <button onClick={() => onAddComment(post.id)} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">Send</button>
-          </div>
+          {!canComment ? (
+            <p className="py-1 text-center text-sm text-slate-500">Only the author can comment on this post.</p>
+          ) : (
+            <>
+              {submitError && <p className="mb-2 text-sm text-red-600">{submitError}</p>}
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  value={commentText}
+                  onChange={(e) => { setCommentText(e.target.value); setSubmitError(null); }}
+                  placeholder="Write a comment..."
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                />
+                <button onClick={async () => { setSubmitError(null); const r = await onAddComment(post.id); if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.'); }} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">Send</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
