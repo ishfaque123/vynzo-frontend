@@ -779,7 +779,6 @@ export default function NewReelPage() {
           <div className="mb-4 flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Effects</p>
-              <p className="mt-0.5 text-xs text-white/50">Live preview — filter is saved to your reel on post</p>
             </div>
             <button onClick={() => setFilterOpen(false)} className="text-xs text-white/60">Done</button>
           </div>
