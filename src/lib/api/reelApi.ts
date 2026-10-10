@@ -102,11 +102,12 @@ export async function deleteReel(reelId: string) {
   } catch { return { success: false, error: { message: 'Unable to delete reel.' } }; }
 }
 
-export function createReelWithProgress(data: { video: File; caption?: string; durationSec?: number; trimStartSec?: number; trimEndSec?: number }, onProgress: (pct: number) => void): Promise<any> {
+export function createReelWithProgress(data: { video: File; cover?: Blob; caption?: string; durationSec?: number; trimStartSec?: number; trimEndSec?: number }, onProgress: (pct: number) => void): Promise<any> {
   return new Promise((resolve) => {
     if (!API_URL) { resolve({ success: false, error: { message: 'API is not configured.' } }); return; }
     const formData = new FormData();
     formData.append('video', data.video);
+    if (data.cover) formData.append('cover', data.cover, 'cover.jpg');
     if (data.caption) formData.append('caption', data.caption);
     if (data.durationSec != null) formData.append('durationSec', String(Math.round(data.durationSec)));
     if (data.trimStartSec != null) formData.append('trimStartSec', String(data.trimStartSec));
