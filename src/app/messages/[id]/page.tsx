@@ -1393,16 +1393,16 @@ export default function ChatPage() {
         </div>
       )}
 
-      {actionMenuFor && actionMenuPosition && (
-        <div className="fixed inset-0 z-50" onClick={() => { setActionMenuFor(null); setActionMenuPosition(null); }}>
+      {actionMenuFor && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => { setActionMenuFor(null); setActionMenuPosition(null); }}>
           <div
-            className="absolute w-[290px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            style={{ left: actionMenuPosition.left, top: actionMenuPosition.top, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+            className="w-full max-w-xl overflow-hidden rounded-t-2xl bg-white pb-6"
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
+            style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
           >
             {actionMenuFor.senderId !== user?.id && (
-              <div className="flex items-center justify-between border-b border-slate-100 px-2 py-1.5">
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
                 {['❤️','😂','😮','😢','😡','👍','👎'].map((emoji) => (
                   <button
                     key={emoji}
@@ -1413,31 +1413,56 @@ export default function ChatPage() {
                 ))}
               </div>
             )}
-            <div className="flex items-center justify-center gap-2 px-2 py-2">
-              {actionMenuFor.content && (
-                <button onClick={handleCopyMessage} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Copy message text">
-                  <CopyIcon />
-                </button>
-              )}
+            <div className="pt-2">
               <button
                 onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setReplyTo(m); setEditingMessage(null); }}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95"
-                aria-label="Reply to message"
+                className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100"
               >
-                <ReplyIcon />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"><ReplyIcon /></span>
+                <span className="text-[15px] font-medium text-slate-900">Reply</span>
               </button>
+              {actionMenuFor.content && (
+                <button
+                  onClick={handleCopyMessage}
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"><CopyIcon /></span>
+                  <span className="text-[15px] font-medium text-slate-900">Copy</span>
+                </button>
+              )}
               {actionMenuFor.senderId === user?.id && actionMenuFor.content && !actionMenuFor.isDeleted && (
                 <button
                   onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setReplyTo(null); setEditingMessage(m); setText(m.content || ''); }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95"
-                  aria-label="Edit message"
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100"
                 >
-                  <EditIcon />
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"><EditIcon /></span>
+                  <span className="text-[15px] font-medium text-slate-900">Edit</span>
                 </button>
               )}
-              <button onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Pin message"><PinIcon /></button>
-              <button onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Delete message"><DeleteIcon /></button>
-              <button onClick={() => enterSelectionMode(actionMenuFor)} className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 outline-none transition hover:bg-slate-100 active:scale-95" aria-label="Forward message"><ForwardIcon /></button>
+              <button
+                onClick={() => { getSocket().emit('message:pin', { messageId: actionMenuFor.id }); setActionMenuFor(null); setActionMenuPosition(null); }}
+                className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"><PinIcon /></span>
+                <span className="text-[15px] font-medium text-slate-900">{actionMenuFor.pinnedAt ? 'Unpin' : 'Pin'}</span>
+              </button>
+              <button
+                onClick={() => enterSelectionMode(actionMenuFor)}
+                className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 active:bg-slate-100"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700"><ForwardIcon /></span>
+                <span className="text-[15px] font-medium text-slate-900">Forward</span>
+              </button>
+              <button
+                onClick={() => { const m = actionMenuFor; setActionMenuFor(null); setActionMenuPosition(null); setDeleteMenuFor(m); }}
+                className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-red-50 active:bg-red-100"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600"><DeleteIcon /></span>
+                <span className="text-[15px] font-medium text-red-600">Delete</span>
+              </button>
+            </div>
+            <div className="px-5 pt-3">
+              <button onClick={() => { setActionMenuFor(null); setActionMenuPosition(null); }} className="w-full rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700 active:bg-slate-200">Cancel</button>
             </div>
           </div>
         </div>
