@@ -316,6 +316,8 @@ export default function ChatPage() {
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
@@ -489,16 +491,22 @@ export default function ChatPage() {
 
   async function sendMessage() {
     const content = text.trim();
-    if (!content) return;
+    if (!content || sendingRef.current) return;
     const socket = getSocket();
+    sendingRef.current = true;
+    setSending(true);
+    const done = () => { sendingRef.current = false; setSending(false); };
+    const ackTimer = setTimeout(done, 15000);
     if (editingMessage) {
       socket.emit('message:edit', { messageId: editingMessage.id, content }, (res: { success: boolean; error?: string }) => {
+        clearTimeout(ackTimer);
         if (res.success) {
           setEditingMessage(null);
           setText('');
         } else {
           showToast('Could not edit message.', 'error');
         }
+        done();
       });
       return;
     }
@@ -506,6 +514,7 @@ export default function ChatPage() {
       'message:send',
       { conversationId, content, replyToId: replyTo?.id || undefined },
       (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
+        clearTimeout(ackTimer);
         if (res.success && res.data) {
           setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
           if (res.delivered) setOtherLastDeliveredAt(new Date());
@@ -523,6 +532,7 @@ export default function ChatPage() {
                   : 'Could not send message. Please try again.';
           showToast(errorText, 'error');
         }
+        done();
       }
     );
   }
@@ -1060,7 +1070,7 @@ export default function ChatPage() {
                 placeholder="Message..."
                 className="flex-1 rounded-full border px-4 py-2 text-sm"
               />              {text.trim() ? (
-                <button onClick={sendMessage} className="rounded-full bg-slate-900 p-2.5 text-white" aria-label="Send">
+                <button onClick={sendMessage} disabled={sending} className="rounded-full bg-slate-900 p-2.5 text-white disabled:opacity-50" aria-label="Send">
                   <SendIcon />
                 </button>
               ) : (
