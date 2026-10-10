@@ -32,6 +32,11 @@ const REEL_FILTERS = [
   { id: 'vivid', name: 'Vivid', css: 'saturate(1.5) contrast(1.12) brightness(1.01)' },
 ];
 
+function formatTrimTime(sec: number) {
+  const s = Math.max(0, Math.floor(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 export default function NewReelPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -127,7 +132,7 @@ export default function NewReelPage() {
       if (draggingHandle === 'start') {
         const next = Math.min(time, trimEnd - MIN_TRIM_DURATION);
         setTrimStart(next);
-        if (videoRef.current) { videoRef.current.currentTime = next; videoRef.current.play().then(() => setTrimPlaying(true)).catch(() => {}); }
+        if (videoRef.current) videoRef.current.currentTime = next;
       } else {
         const next = Math.max(time, trimStart + MIN_TRIM_DURATION);
         setTrimEnd(next);
@@ -637,9 +642,10 @@ export default function NewReelPage() {
         )}
 
         <div className="flex items-center gap-4 border-t border-white/10 pt-3">
-          <button onClick={openTrim} disabled={trimming} className="flex flex-col items-center gap-1 text-xs text-white disabled:opacity-50">
+          <button onClick={openTrim} disabled={trimming} className="relative flex flex-col items-center gap-1 text-xs text-white disabled:opacity-50">
             <TrimIcon />
             Trim
+            {(trimStart > 0.05 || (videoDuration > 0 && trimEnd < videoDuration - 0.05)) && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
           </button>
           <button onClick={() => { setCoverIndex(0); setCoverOpen(true); }} className="relative flex flex-col items-center gap-1 text-xs text-white">
             <CoverIcon />
@@ -674,6 +680,7 @@ export default function NewReelPage() {
           <div className="mb-4 flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Trim video</p>
+              <p className="mt-0.5 text-xs text-white/50">{formatTrimTime(trimStart)} – {formatTrimTime(trimEnd)}</p>
             </div>
             <button onClick={cancelTrim} disabled={trimming} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
           </div>
@@ -686,7 +693,11 @@ export default function NewReelPage() {
               aria-label={trimPlaying ? 'Pause trim preview' : 'Play trim preview'}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black disabled:opacity-40"
             >
-              {trimPlaying ? '❚❚' : '▶'}
+              {trimPlaying ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="ml-0.5 h-4 w-4 fill-current"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10.2-6.5a1 1 0 0 0 0-1.7L9.53 4.65A1 1 0 0 0 8 5.5Z" /></svg>
+              )}
             </button>
           </div>
 
@@ -715,9 +726,18 @@ export default function NewReelPage() {
             </div>
 
             <div
-              className="pointer-events-none absolute top-5 h-10 rounded-lg border-2 border-blue-500 bg-blue-500/10"
+              className="pointer-events-none absolute top-5 h-10 rounded-lg border-2 border-emerald-400 bg-emerald-400/10"
               style={{ left: `${startPercent}%`, width: `${Math.max(0, endPercent - startPercent)}%` }}
             />
+
+            {draggingHandle && (
+              <div
+                className="pointer-events-none absolute -top-8 z-20 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/85 px-2 py-1 text-[11px] font-semibold text-white shadow-lg"
+                style={{ left: `${draggingHandle === 'start' ? startPercent : endPercent}%` }}
+              >
+                {formatTrimTime(draggingHandle === 'start' ? trimStart : trimEnd)}
+              </div>
+            )}
 
             <div
               className="pointer-events-none absolute top-1 z-[5] h-14 w-0.5 bg-white shadow-[0_0_5px_rgba(0,0,0,0.8)]"
@@ -736,11 +756,12 @@ export default function NewReelPage() {
                 event.stopPropagation();
                 if (!trimming) {
                   event.currentTarget.setPointerCapture(event.pointerId);
+                  try { navigator.vibrate?.(10); } catch {}
                   setDraggingHandle('start');
                 }
               }}
-              className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
-              style={{ left: `${startPercent}%` }}
+              className="absolute top-2 z-10 flex h-16 w-6 items-center justify-center rounded-md bg-emerald-400 shadow-lg shadow-emerald-400/20"
+              style={{ right: `${100 - startPercent}%` }}
             >
               <span className="h-8 w-1 rounded-full bg-white" />
             </button>
@@ -754,10 +775,11 @@ export default function NewReelPage() {
                 event.stopPropagation();
                 if (!trimming) {
                   event.currentTarget.setPointerCapture(event.pointerId);
+                  try { navigator.vibrate?.(10); } catch {}
                   setDraggingHandle('end');
                 }
               }}
-              className="absolute top-2 z-10 flex h-16 w-7 -translate-x-1/2 items-center justify-center rounded-md bg-blue-500 shadow-lg shadow-blue-500/20"
+              className="absolute top-2 z-10 flex h-16 w-6 items-center justify-center rounded-md bg-emerald-400 shadow-lg shadow-emerald-400/20"
               style={{ left: `${endPercent}%` }}
             >
               <span className="h-8 w-1 rounded-full bg-white" />
@@ -772,7 +794,7 @@ export default function NewReelPage() {
             <button
               onClick={applyTrim}
               disabled={trimming}
-              className="flex-1 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+              className="flex-1 rounded-lg bg-emerald-500 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
             >
               {trimming ? 'Processing…' : 'Done'}
             </button>
