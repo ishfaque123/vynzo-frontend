@@ -317,6 +317,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const sendingRef = useRef(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -364,15 +365,27 @@ export default function ChatPage() {
     if (pending) setText(pending);
   }, []);
 
-  useEffect(() => {
+  function loadMessages() {
+    setLoading(true);
+    setLoadError(false);
     fetchMessages(conversationId).then((result) => {
       if (result.success) {
         setMessages(result.data.messages);
         setOtherLastReadAt(result.data.otherLastReadAt ? new Date(result.data.otherLastReadAt) : null);
         setOtherLastDeliveredAt(result.data.otherLastDeliveredAt ? new Date(result.data.otherLastDeliveredAt) : null);
+      } else {
+        setLoadError(true);
       }
       setLoading(false);
+    }).catch(() => {
+      setLoadError(true);
+      setLoading(false);
     });
+  }
+
+  useEffect(() => {
+    loadMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
     fetchConversations().then((result) => {
       if (result.success) {
@@ -939,6 +952,19 @@ export default function ChatPage() {
         )}
 
         {loading && <div className="flex justify-center py-6" role="status" aria-label="Loading messages"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>}
+        {!loading && loadError && (
+          <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-800">Couldn't load messages</p>
+            <p className="mt-1 text-xs text-slate-500">Check your connection and try again.</p>
+            <button onClick={loadMessages} className="mt-3 rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white">Retry</button>
+          </div>
+        )}
+        {!loading && !loadError && messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-800">No messages yet</p>
+            <p className="mt-1 text-xs text-slate-500">Say hello to start the conversation.</p>
+          </div>
+        )}
         <div className="space-y-2">
           {messages.map((m) => {
             const isMine = m.senderId === user?.id;
