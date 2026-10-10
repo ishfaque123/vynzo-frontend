@@ -25,6 +25,22 @@ export default function CommentsModal({ post, currentUser, comments, commentText
   const startYRef = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [posting, setPosting] = useState(false);
+  const postingRef = useRef(false);
+
+  async function handleSend() {
+    if (postingRef.current || !commentText.trim()) return;
+    postingRef.current = true;
+    setPosting(true);
+    setSubmitError(null);
+    try {
+      const r = await onAddComment(post.id);
+      if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.');
+    } finally {
+      postingRef.current = false;
+      setPosting(false);
+    }
+  }
 
   useEffect(() => {
     const prevBodyOverflow = document.body.style.overflow;
@@ -201,7 +217,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   placeholder="Write a comment..."
                   className="flex-1 rounded-lg border px-3 py-2 text-sm"
                 />
-                <button onClick={async () => { setSubmitError(null); const r = await onAddComment(post.id); if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.'); }} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">Send</button>
+                <button onClick={handleSend} disabled={posting || !commentText.trim()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60">{posting ? 'Sending…' : 'Send'}</button>
               </div>
             </>
           )}
