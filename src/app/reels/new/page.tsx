@@ -61,7 +61,22 @@ export default function NewReelPage() {
   const [capturingCover, setCapturingCover] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filter, setFilter] = useState('normal');
+  const [filterThumb, setFilterThumb] = useState<string | null>(null);
   const activeFilterCss = (REEL_FILTERS.find((f) => f.id === filter) || REEL_FILTERS[0]).css;
+  useEffect(() => {
+    if (!filterOpen || filterThumb) return;
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 120;
+      canvas.height = Math.max(1, Math.round((video.videoHeight / video.videoWidth) * 120));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      setFilterThumb(canvas.toDataURL('image/jpeg', 0.7));
+    } catch { /* ignore */ }
+  }, [filterOpen, filterThumb]);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailCacheRef = useRef<{ url: string; duration: number; frames: string[] } | null>(null);
@@ -776,30 +791,28 @@ export default function NewReelPage() {
 
       {filterOpen && (
         <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
-          <div className="mb-4 flex items-start justify-between">
-            <div>
-              <p className="text-sm font-semibold text-white">Effects</p>
-            </div>
-            <button onClick={() => setFilterOpen(false)} className="text-xs text-white/60">Done</button>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">Effects</p>
+            <button onClick={() => setFilterOpen(false)} className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black">Done</button>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex gap-3 overflow-x-auto pb-1">
             {REEL_FILTERS.map((f) => (
               <button
                 key={f.id}
-                onClick={() => { setFilter(f.id); setFilterOpen(false); }}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 ${filter === f.id ? 'border-emerald-400' : 'border-transparent'}`}
+                onClick={() => setFilter(f.id)}
+                className="flex w-20 shrink-0 flex-col items-center gap-1.5"
               >
-                <span
-                  className="h-16 w-full rounded-lg"
-                  style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 35%, #8b5cf6 65%, #3b82f6 100%)',
-                    filter: f.css || undefined,
-                  }}
-                />
-                <span className="flex items-center gap-1 text-xs font-medium text-white">
-                  {f.name}
-                  {filter === f.id && <span className="text-emerald-400">✓</span>}
+                <span className={`relative block h-28 w-20 overflow-hidden rounded-xl border-2 transition ${filter === f.id ? 'border-emerald-400' : 'border-white/10'}`}>
+                  {filterThumb ? (
+                    <img src={filterThumb} alt={f.name} className="h-full w-full object-cover" style={f.css ? { filter: f.css } : undefined} />
+                  ) : (
+                    <span className="block h-full w-full" style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6,#3b82f6)', filter: f.css || undefined }} />
+                  )}
+                  {filter === f.id && (
+                    <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-bold text-black">✓</span>
+                  )}
                 </span>
+                <span className={`text-[11px] font-medium ${filter === f.id ? 'text-emerald-400' : 'text-white/70'}`}>{f.name}</span>
               </button>
             ))}
           </div>
