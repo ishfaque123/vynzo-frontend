@@ -51,7 +51,6 @@ export default function NewReelPage() {
   const [trimming, setTrimming] = useState(false);
   const [trimPlaying, setTrimPlaying] = useState(false);
   const trimSnapshotRef = useRef<{ start: number; end: number } | null>(null);
-  const [trimFallbackNotice, setTrimFallbackNotice] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [postTrimProcessing, setPostTrimProcessing] = useState(false);
   const [coverOpen, setCoverOpen] = useState(false);
@@ -358,7 +357,6 @@ export default function NewReelPage() {
   function openTrim() {
     if (!videoDuration) return;
     trimSnapshotRef.current = { start: trimStart, end: trimEnd };
-    setTrimFallbackNotice(false);
     setTrimOpen(true);
     setTrimPlaying(!videoRef.current?.paused);
   }
@@ -408,15 +406,13 @@ export default function NewReelPage() {
       setDuration(Math.round(videoDuration));
       setTrimApplied(false);
       trimSnapshotRef.current = null;
-      setTrimFallbackNotice(false);
-      setTrimPlaying(false);
+        setTrimPlaying(false);
       setTrimOpen(false);
       return;
     }
 
     const sourceVideo = videoRef.current;
     const fallbackToServerTrim = () => {
-      setTrimFallbackNotice(true);
       setTrimApplied(true);
       setCurrentTime(start);
       if (sourceVideo) {
@@ -620,14 +616,9 @@ export default function NewReelPage() {
             Video preview is not supported on this device/browser. HEVC/HDR videos may not play here; MP4 (H.264) is recommended.
           </div>
         )}
-        {trimFallbackNotice && !trimming && !posting && (
-          <div className="rounded-lg border border-blue-400/30 bg-blue-400/10 px-3 py-2 text-xs text-blue-100">
-            Trim will be applied when you post this reel. The original video will be uploaded first, then processed on the server.
-          </div>
-        )}
         {posting && postTrimProcessing && uploadProgress === 100 && (
           <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/80">
-            Processing trim… Please wait while the server prepares your reel.
+            Processing… Please wait while the server prepares your reel.
           </div>
         )}
         <textarea
