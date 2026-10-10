@@ -90,7 +90,7 @@ export default function PostDetailClient() {
         setPost((p: any) => ({ ...p, commentCount: (p.commentCount || 0) + 1 }));
       }
     } else {
-      alert(result.error.message);
+      return result;
     }
   }
 
