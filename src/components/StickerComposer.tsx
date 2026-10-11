@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useDraggableStickers, DraggableStickerLayer, DraftSticker } from './useDraggableStickers';
 import StickerSheets, { SheetKind } from './StickerSheets';
+import { StickerFaceIcon } from './StickerIcons';
 
 export type { DraftSticker };
 
@@ -68,10 +69,10 @@ export default function StickerComposer({
       <div className="relative flex items-center justify-center gap-3 p-4">
         <button
           onClick={() => setSheet('types')}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-lg"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg"
           aria-label="Add sticker"
         >
-          🙂
+          <StickerFaceIcon size={26} />
         </button>
         {selected && (
           <>

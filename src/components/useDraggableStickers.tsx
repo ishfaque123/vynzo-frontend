@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { StickerTypeIcon } from './StickerIcons';
 
 export interface DraftSticker {
   localId: string;
@@ -67,10 +68,10 @@ export function useDraggableStickers() {
   }
 
   function stickerLabel(s: DraftSticker) {
-    if (s.type === 'poll') return `📊 ${s.data.question || 'Poll'}`;
-    if (s.type === 'question') return `❓ ${s.data.prompt || 'Question'}`;
-    if (s.type === 'countdown') return `⏳ ${s.data.title || 'Countdown'}`;
-    return `🔗 ${s.data.label || 'Link'}`;
+    if (s.type === 'poll') return s.data.question || 'Poll';
+    if (s.type === 'question') return s.data.prompt || 'Question';
+    if (s.type === 'countdown') return s.data.title || 'Countdown';
+    return s.data.label || 'Link';
   }
 
   return {
@@ -102,11 +103,12 @@ export function DraggableStickerLayer({ api }: { api: StickerApi }) {
             }}
             onTouchStart={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            className={`max-w-[180px] truncate rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg ${
+            className={`flex max-w-[180px] items-center gap-1.5 truncate rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg ${
               api.selectedId === s.localId ? 'bg-slate-900 text-white ring-2 ring-white' : 'bg-white/95 text-slate-900'
             }`}
           >
-            {api.stickerLabel(s)}
+            <span className="shrink-0 opacity-70"><StickerTypeIcon type={s.type} size={14} /></span>
+            <span className="truncate">{api.stickerLabel(s)}</span>
           </button>
         </div>
       ))}

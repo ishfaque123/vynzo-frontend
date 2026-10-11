@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { votePoll, answerQuestion } from '@/lib/api/statusApi';
+import { LinkIcon } from './StickerIcons';
 
 function useCountdown(targetAt: string) {
   const [now, setNow] = useState(Date.now());
@@ -115,7 +116,10 @@ function QuestionSticker({ sticker, isOwner, onOpenResults }: { sticker: any; is
         {isOwner ? (
           <p className="mt-1 text-[10px] text-slate-500">{sticker.answerCount || 0} answers — tap to view</p>
         ) : done ? (
-          <p className="mt-1 text-[10px] text-green-600">✓ Answered</p>
+          <p className="mt-1 flex items-center gap-1 text-[10px] font-medium text-green-600">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            Answered
+          </p>
         ) : (
           <p className="mt-1 text-[10px] text-slate-500">Tap to answer</p>
         )}
@@ -173,7 +177,7 @@ function LinkSticker({ sticker }: { sticker: any }) {
       onMouseDown={(e) => e.stopPropagation()}
       className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-xl"
     >
-      <span>🔗</span>
+      <span className="flex shrink-0"><LinkIcon size={14} /></span>
       <span className="max-w-[140px] truncate">{sticker.data.label}</span>
     </a>
   );

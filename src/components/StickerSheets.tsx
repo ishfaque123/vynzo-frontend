@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PollIcon, QuestionIcon, CountdownIcon, LinkIcon } from './StickerIcons';
 
 export type SheetKind = null | 'types' | 'poll' | 'question' | 'countdown' | 'link';
 
@@ -52,17 +53,17 @@ export default function StickerSheets({
         <p className="mb-3 text-center text-sm font-semibold text-slate-800">Choose a sticker</p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { t: 'poll', icon: '📊', label: 'Poll' },
-            { t: 'question', icon: '❓', label: 'Question' },
-            { t: 'countdown', icon: '⏳', label: 'Countdown' },
-            { t: 'link', icon: '🔗', label: 'Link' },
+            { t: 'poll', Icon: PollIcon, label: 'Poll' },
+            { t: 'question', Icon: QuestionIcon, label: 'Question' },
+            { t: 'countdown', Icon: CountdownIcon, label: 'Countdown' },
+            { t: 'link', Icon: LinkIcon, label: 'Link' },
           ].map((o) => (
             <button
               key={o.t}
               onClick={() => setSheet(o.t as SheetKind)}
-              className="flex items-center gap-3 rounded-xl border px-4 py-3 text-left hover:bg-slate-50"
+              className="flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-slate-700 hover:bg-slate-50"
             >
-              <span className="text-xl">{o.icon}</span>
+              <o.Icon size={22} />
               <span className="text-sm font-medium text-slate-800">{o.label}</span>
             </button>
           ))}
@@ -75,7 +76,7 @@ export default function StickerSheets({
   if (sheet === 'poll') {
     return wrap(
       <>
-        <p className="mb-3 text-center text-sm font-semibold text-slate-800">📊 Poll</p>
+        <p className="mb-3 text-center text-sm font-semibold text-slate-800">Poll</p>
         <input value={pollQ} onChange={(e) => setPollQ(e.target.value)} placeholder="Ask a question..." maxLength={100}
           className="mb-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-slate-400" />
         {pollOpts.map((o, i) => (
@@ -101,7 +102,7 @@ export default function StickerSheets({
   if (sheet === 'question') {
     return wrap(
       <>
-        <p className="mb-3 text-center text-sm font-semibold text-slate-800">❓ Question</p>
+        <p className="mb-3 text-center text-sm font-semibold text-slate-800">Question</p>
         <input value={qPrompt} onChange={(e) => setQPrompt(e.target.value)} placeholder="Ask me anything..." maxLength={100}
           className="mb-3 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-slate-400" />
         <div className="flex gap-2">
@@ -116,7 +117,7 @@ export default function StickerSheets({
   if (sheet === 'countdown') {
     return wrap(
       <>
-        <p className="mb-3 text-center text-sm font-semibold text-slate-800">⏳ Countdown</p>
+        <p className="mb-3 text-center text-sm font-semibold text-slate-800">Countdown</p>
         <input value={cdTitle} onChange={(e) => setCdTitle(e.target.value)} placeholder="Countdown to..." maxLength={60}
           className="mb-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-slate-400" />
         <input type="datetime-local" value={cdDate} onChange={(e) => setCdDate(e.target.value)}
@@ -138,7 +139,7 @@ export default function StickerSheets({
 
   return wrap(
     <>
-      <p className="mb-3 text-center text-sm font-semibold text-slate-800">🔗 Link</p>
+      <p className="mb-3 text-center text-sm font-semibold text-slate-800">Link</p>
       <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." inputMode="url"
         className="mb-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-slate-400" />
       <input value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} placeholder="Label (optional)" maxLength={40}

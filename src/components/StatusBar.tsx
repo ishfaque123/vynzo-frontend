@@ -6,6 +6,7 @@ import StatusViewer from './StatusViewer';
 import StickerComposer, { DraftSticker } from './StickerComposer';
 import { useDraggableStickers, DraggableStickerLayer } from './useDraggableStickers';
 import StickerSheets, { SheetKind } from './StickerSheets';
+import { StickerFaceIcon } from './StickerIcons';
 import Toast from './Toast';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
@@ -249,10 +250,10 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
             </button>
             <button
               onClick={() => setTextSheet('types')}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-xl text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white"
               aria-label="Add sticker"
             >
-              🙂
+              <StickerFaceIcon size={22} />
             </button>
             <button
               onClick={handlePostText}
