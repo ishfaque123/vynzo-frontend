@@ -453,7 +453,11 @@ export default function ProfileClient() {
             <div className="grid grid-cols-3 gap-1 px-1">
               {reels.map((r) => (
                 <Link key={r.id} href={`/reels?id=${r.id}`} className="relative aspect-[9/16] w-full overflow-hidden bg-slate-200">
-                  <video src={`${r.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                  {r.thumbnailUrl ? (
+                    <img src={r.thumbnailUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  ) : (
+                    <video src={`${r.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                  )}
                   <svg className="absolute right-1.5 top-1.5 h-4 w-4 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </Link>
               ))}
