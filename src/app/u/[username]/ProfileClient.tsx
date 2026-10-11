@@ -135,6 +135,7 @@ export default function ProfileClient() {
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmUnfollow, setConfirmUnfollow] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -241,6 +242,24 @@ export default function ProfileClient() {
     if (followBusy) return;
     if (friendStatus === 'following' || friendStatus === 'friends') setConfirmUnfollow(true);
     else handleFollow();
+  }
+
+  async function copyProfileLink() {
+    setMoreOpen(false);
+    const url = `${window.location.origin}/u/${encodeURIComponent(profile.username)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setLinkCopied(true);
+    setToast({ message: 'Profile link copied.', type: 'success' });
+    setTimeout(() => setLinkCopied(false), 2000);
   }
 
   async function handleMessage() {
@@ -396,6 +415,10 @@ export default function ProfileClient() {
                 </button>
                 {moreOpen && (
                   <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
+                    <button onClick={copyProfileLink} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
+                      Copy link
+                    </button>
                     <button disabled={blockBusy} onClick={() => { setMoreOpen(false); if (blockedByMe) handleBlockToggle(); else setConfirmBlock(true); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50 disabled:opacity-50">
                       <BlockIcon /> {blockedByMe ? 'Unblock' : 'Block'}
                     </button>
@@ -411,6 +434,11 @@ export default function ProfileClient() {
             <button onClick={() => setShareProfileOpen(true)} aria-label="Share profile" className="p-2 text-slate-600">
               <ShareIcon />
             </button>
+            {isMe && (
+              <button onClick={copyProfileLink} aria-label="Copy profile link" className="p-2 text-slate-600">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
+              </button>
+            )}
           </div>
         </div>
 
