@@ -197,6 +197,16 @@ export default function SettingsMenuPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
+  useEffect(() => {
+    const native = (window as any).FrianzoNative;
+    if (native?.isBiometricAvailable?.()) {
+      setBiometricAvailable(true);
+      setBiometricEnabled(native.isBiometricEnabled?.() === true);
+    }
+  }, []);
   const [privacySheetOpen, setPrivacySheetOpen] = useState(false);
   const [privacyLoading, setPrivacyLoading] = useState(false);
   const [messagePermission, setMessagePermission] = useState('everyone');
@@ -393,6 +403,28 @@ export default function SettingsMenuPage() {
                   <span className="text-sm text-slate-700">{item.label}</span>
                 </Link>
               ))}
+              {biometricAvailable && (
+                <button
+                  onClick={() => {
+                    const native = (window as any).FrianzoNative;
+                    const next = !biometricEnabled;
+                    native?.setBiometricEnabled?.(next);
+                    setBiometricEnabled(next);
+                  }}
+                  className="flex w-full items-center gap-3 py-2.5 pl-11 pr-4 text-left hover:bg-slate-100"
+                >
+                  <span className="text-slate-500">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 11c0 3.5-2.5 6.5-5.5 8M12 11c0 3.5 2.5 6.5 5.5 8M12 11V7M8.5 8.5C7 10 6 12 6 14.5M15.5 8.5C17 10 18 12 18 14.5M12 7c-1.5 0-2.5 1-2.5 2.5M12 7c1.5 0 2.5 1 2.5 2.5" />
+                      <path d="M7 21v-2.5M17 21v-2.5M12 21v-4" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <span className="flex-1 text-sm text-slate-700">Fingerprint Login</span>
+                  <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${biometricEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${biometricEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </span>
+                </button>
+              )}
               <Link href="/settings-menu/delete-account" className="flex items-center gap-3 py-2.5 pl-11 pr-4 hover:bg-slate-100">
                 <span className="text-red-500"><TrashIcon /></span>
                 <span className="text-sm font-medium text-red-600">Delete Account</span>
