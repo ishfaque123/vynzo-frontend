@@ -15,6 +15,7 @@ import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
 
 function playSubmitSound() {
@@ -130,6 +131,8 @@ export default function ProfileClient() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmBlock, setConfirmBlock] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -138,14 +141,14 @@ export default function ProfileClient() {
     e.target.value = '';
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert('Photo is too large. Maximum size is 5MB.');
+      setToast({ message: 'Photo is too large. Maximum size is 5MB.', type: 'error' });
       return;
     }
     setUploadingAvatar(true);
     const result = await updateAvatar(file);
     setUploadingAvatar(false);
     if (result.success) setProfile((prev: any) => ({ ...prev, profilePictureUrl: result.data.user.profilePictureUrl }));
-    else alert(result.error?.message || 'Could not update photo.');
+    else setToast({ message: result.error?.message || 'Could not update photo.', type: 'error' });
   }
 
   async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -153,14 +156,14 @@ export default function ProfileClient() {
     e.target.value = '';
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert('Cover photo is too large. Maximum size is 5MB.');
+      setToast({ message: 'Cover photo is too large. Maximum size is 5MB.', type: 'error' });
       return;
     }
     setUploadingCover(true);
     const result = await updateCover(file);
     setUploadingCover(false);
     if (result.success) setProfile((prev: any) => ({ ...prev, coverPhotoUrl: result.data.user.coverPhotoUrl }));
-    else alert(result.error?.message || 'Could not update cover photo.');
+    else setToast({ message: result.error?.message || 'Could not update cover photo.', type: 'error' });
   }
 
   useEffect(() => {
@@ -230,10 +233,10 @@ export default function ProfileClient() {
       if (result.success) {
         router.push(`/messages/${result.data.id}`);
       } else {
-        alert(result.error?.message || 'Could not start conversation.');
+        setToast({ message: result.error?.message || 'Could not start conversation.', type: 'error' });
       }
     } catch {
-      alert('Could not start conversation. Please try again.');
+      setToast({ message: 'Could not start conversation. Please try again.', type: 'error' });
     } finally {
       setMessaging(false);
     }
@@ -248,10 +251,6 @@ export default function ProfileClient() {
         const result = await unblockUser(profile.id);
         if (result.success) setBlockedByMe(false);
       } else {
-        if (!confirm(`Block ${profile.displayName || profile.username}? They won't be able to message you or see your posts.`)) {
-          setBlockBusy(false);
-          return;
-        }
         const result = await blockUser(profile.id);
         if (result.success) {
           setBlockedByMe(true);
@@ -259,7 +258,7 @@ export default function ProfileClient() {
         }
       }
     } catch {
-      alert('Could not update block status. Please try again.');
+      setToast({ message: 'Could not update block status. Please try again.', type: 'error' });
     } finally {
       setBlockBusy(false);
     }
@@ -374,7 +373,7 @@ export default function ProfileClient() {
                 </button>
                 {moreOpen && (
                   <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
-                    <button disabled={blockBusy} onClick={handleBlockToggle} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50 disabled:opacity-50">
+                    <button disabled={blockBusy} onClick={() => { setMoreOpen(false); if (blockedByMe) handleBlockToggle(); else setConfirmBlock(true); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50 disabled:opacity-50">
                       <BlockIcon /> {blockedByMe ? 'Unblock' : 'Block'}
                     </button>
                   </div>
@@ -488,6 +487,21 @@ export default function ProfileClient() {
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
       {shareProfileOpen && <ShareModal profileUsername={profile.username} profileId={profile.id} onClose={() => setShareProfileOpen(false)} />}
+
+      {confirmBlock && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-5" onClick={() => setConfirmBlock(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-1 text-base font-semibold text-slate-900">Block {profile.displayName || profile.username}?</p>
+            <p className="mb-4 text-sm leading-6 text-slate-600">They won't be able to message you or see your posts.</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setConfirmBlock(false)} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+              <button type="button" onClick={() => { setConfirmBlock(false); handleBlockToggle(); }} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Block</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {openPost && (
         <CommentsModal
