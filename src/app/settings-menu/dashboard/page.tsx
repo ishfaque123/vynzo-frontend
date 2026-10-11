@@ -193,11 +193,9 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-600">Engagement</p>
           <p className="mt-1 text-xl font-semibold">{stats.engagement.toLocaleString()}</p>
           {stats.engagementBreakdown && (
-            <div className="mt-1.5 space-y-0.5 text-xs text-slate-500">
-              <p>❤️ {stats.engagementBreakdown.likes.toLocaleString()} likes</p>
-              <p>💬 {stats.engagementBreakdown.comments.toLocaleString()} comments</p>
-              <p>🔄 {stats.engagementBreakdown.shares.toLocaleString()} shares</p>
-            </div>
+            <p className="mt-1.5 text-xs text-slate-500">
+              Likes {stats.engagementBreakdown.likes.toLocaleString()} · Comments {stats.engagementBreakdown.comments.toLocaleString()} · Shares {stats.engagementBreakdown.shares.toLocaleString()}
+            </p>
           )}
         </div>
         <StatCard label="New followers" value={stats.newFollowers} />
