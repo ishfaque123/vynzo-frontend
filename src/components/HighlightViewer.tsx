@@ -59,7 +59,7 @@ export default function HighlightViewer({
         }}
       >
         {isVideo ? (
-          <video key={item.id} src={item.mediaUrl} controls autoPlay playsInline className="max-h-full max-w-full" />
+          <video key={item.id} src={item.mediaUrl} poster={item.thumbnailUrl || undefined} controls autoPlay playsInline className="max-h-full max-w-full" />
         ) : (
           <img key={item.id} src={item.mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
         )}

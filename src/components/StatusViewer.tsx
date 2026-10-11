@@ -60,11 +60,13 @@ function UnmuteIcon() {
 // just the progress bar.
 function VideoStatusPlayer({
   src,
+  poster,
   paused,
   onProgress,
   onEnded,
 }: {
   src: string;
+  poster?: string;
   paused: boolean;
   onProgress: (pct: number) => void;
   onEnded: () => void;
@@ -112,6 +114,7 @@ function VideoStatusPlayer({
       <video
         ref={videoRef}
         src={src}
+        poster={poster || undefined}
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onEnded={onEnded}
@@ -329,7 +332,7 @@ export default function StatusViewer({
               {item.textContent}
             </p>
           ) : item.mediaType === 'video' ? (
-            <VideoStatusPlayer key={item.id} src={item.mediaUrl} paused={paused} onProgress={setProgress} onEnded={goNextItem} />
+            <VideoStatusPlayer key={item.id} src={item.mediaUrl} poster={item.thumbnailUrl} paused={paused} onProgress={setProgress} onEnded={goNextItem} />
           ) : (
             <img src={item.mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
           )}

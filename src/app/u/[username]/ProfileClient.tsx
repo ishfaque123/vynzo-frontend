@@ -750,7 +750,7 @@ export default function ProfileClient() {
                   >
                     {s.mediaUrl ? (
                       s.mediaType?.startsWith('video') ? (
-                        <video src={s.mediaUrl} muted playsInline className="h-full w-full object-cover" />
+                        <video src={s.mediaUrl} poster={s.thumbnailUrl || undefined} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                       ) : (
                         <img src={s.mediaUrl} alt="" className="h-full w-full object-cover" />
                       )
