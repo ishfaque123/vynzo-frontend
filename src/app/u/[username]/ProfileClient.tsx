@@ -402,13 +402,13 @@ export default function ProfileClient() {
         )}
 
         <div className="mt-4 flex border-y py-3 text-sm">
-          <span className="flex-1 text-center"><b>{posts.length}</b> <span className="text-slate-500">Posts</span></span>
-          <span className="flex-1 text-center"><b>{reels.length}</b> <span className="text-slate-500">Reels</span></span>
-          <Link href={`/u/${encodeURIComponent(profile.username)}/followers`} className="flex-1 text-center no-underline transition-transform duration-150 active:scale-95 focus:outline-none">
-            <b>{counts.followers}</b> <span className="text-slate-500">Followers</span>
+          <span className="flex flex-1 flex-col items-center"><b>{posts.length}</b> <span className="text-xs text-slate-500">Posts</span></span>
+          <span className="flex flex-1 flex-col items-center"><b>{reels.length}</b> <span className="text-xs text-slate-500">Reels</span></span>
+          <Link href={`/u/${encodeURIComponent(profile.username)}/followers`} className="flex flex-1 flex-col items-center no-underline transition-transform duration-150 active:scale-95 focus:outline-none">
+            <b>{counts.followers}</b> <span className="text-xs text-slate-500">Followers</span>
           </Link>
-          <Link href={`/u/${encodeURIComponent(profile.username)}/following`} className="flex-1 text-center no-underline transition-transform duration-150 active:scale-95 focus:outline-none">
-            <b>{counts.following}</b> <span className="text-slate-500">Following</span>
+          <Link href={`/u/${encodeURIComponent(profile.username)}/following`} className="flex flex-1 flex-col items-center no-underline transition-transform duration-150 active:scale-95 focus:outline-none">
+            <b>{counts.following}</b> <span className="text-xs text-slate-500">Following</span>
           </Link>
         </div>
 
