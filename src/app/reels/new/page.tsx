@@ -49,6 +49,7 @@ export default function NewReelPage() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [timelineThumbnails, setTimelineThumbnails] = useState<string[]>([]);
+  const [coverThumbnails, setCoverThumbnails] = useState<string[]>([]);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
   const [trimming, setTrimming] = useState(false);
   const [trimPlaying, setTrimPlaying] = useState(false);
@@ -304,6 +305,63 @@ export default function NewReelPage() {
     }
   }
 
+  useEffect(() => {
+    if (!coverOpen || !previewUrl) return;
+    let cancelled = false;
+    const video = document.createElement('video');
+    video.src = previewUrl;
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+    const generate = async () => {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          video.onloadedmetadata = () => resolve();
+          video.onerror = () => reject(new Error('cover thumbnails failed'));
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = 96;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const trimChanged = trimStart > 0.05 || trimEnd < videoDuration - 0.05;
+        const rangeStart = trimChanged ? trimStart : 0;
+        const rangeEnd = trimChanged ? trimEnd : video.duration;
+        const vw = video.videoWidth || 96;
+        const vh = video.videoHeight || 128;
+        const targetRatio = 96 / 128;
+        const srcRatio = vw / vh;
+        let sw: number, sh: number, sx: number, sy: number;
+        if (srcRatio > targetRatio) { sh = vh; sw = vh * targetRatio; sx = (vw - sw) / 2; sy = 0; }
+        else { sw = vw; sh = vw / targetRatio; sx = 0; sy = (vh - sh) / 2; }
+        const frames: string[] = [];
+        for (let i = 0; i < 14; i += 1) {
+          if (cancelled) return;
+          const target = rangeStart + (rangeEnd - rangeStart) * ((i + 0.5) / 14);
+          await new Promise<void>((resolve) => {
+            const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+            video.addEventListener('seeked', onSeeked);
+            video.currentTime = Math.min(target, Math.max(0, video.duration - 0.01));
+          });
+          ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 96, 128);
+          frames.push(canvas.toDataURL('image/jpeg', 0.68));
+          if (!cancelled) setCoverThumbnails([...frames]);
+        }
+        if (!cancelled) setCoverThumbnails(frames);
+      } catch {
+        // Fall back to the timeline thumbnails if generation fails.
+        if (!cancelled) setCoverThumbnails(timelineThumbnails);
+      }
+    };
+    generate();
+    return () => {
+      cancelled = true;
+      video.removeAttribute('src');
+      video.load();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coverOpen, previewUrl]);
+
   async function captureCover(index: number) {
     if (!previewUrl || capturingCover) return;
     setCapturingCover(true);
@@ -340,7 +398,7 @@ export default function NewReelPage() {
       setCoverBlob(blob);
       setCoverPreviewUrl(URL.createObjectURL(blob));
     } catch {
-      const dataUrl = timelineThumbnails[index];
+      const dataUrl = coverThumbnails[index] || timelineThumbnails[index];
       if (dataUrl) {
         try {
           const res = await fetch(dataUrl);
@@ -837,8 +895,8 @@ export default function NewReelPage() {
 
           <div className="mb-4 flex justify-center">
             <div className="relative aspect-[9/16] w-32 overflow-hidden rounded-xl bg-black ring-1 ring-white/15">
-              {timelineThumbnails[coverIndex] ? (
-                <img src={timelineThumbnails[coverIndex]} alt="Cover preview" className="h-full w-full object-cover" />
+              {coverThumbnails[coverIndex] ? (
+                <img src={coverThumbnails[coverIndex]} alt="Cover preview" className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-white/40">Loading…</div>
               )}
@@ -846,14 +904,18 @@ export default function NewReelPage() {
           </div>
 
           <div className="grid grid-cols-7 gap-1.5">
-            {timelineThumbnails.map((thumb, i) => (
+            {(coverThumbnails.length ? coverThumbnails : Array.from({ length: 14 }, () => '')).map((thumb, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setCoverIndex(i)}
                 className={`relative aspect-[3/4] overflow-hidden rounded-lg ring-2 transition ${i === coverIndex ? 'ring-white' : 'ring-transparent opacity-70'}`}
               >
-                <img src={thumb} alt={`Frame ${i + 1}`} className="h-full w-full object-cover" />
+{thumb ? (
+                  <img src={thumb} alt={`Frame ${i + 1}`} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full bg-white/10" />
+                )}
                 {i === coverIndex && (
                   <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.5" strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
@@ -871,7 +933,7 @@ export default function NewReelPage() {
             )}
             <button
               onClick={() => captureCover(coverIndex)}
-              disabled={capturingCover || !timelineThumbnails.length}
+              disabled={capturingCover || !coverThumbnails.length}
               className="flex-1 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
             >
               {capturingCover ? 'Processing…' : 'Done'}
