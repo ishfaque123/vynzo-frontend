@@ -369,6 +369,9 @@ export default function ProfileClient() {
                 <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
               )}
             </div>
+            {!isMe && profile.isOnline && (
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" aria-label="Online" />
+            )}
             {isMe && (
               <>
                 <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -413,6 +416,11 @@ export default function ProfileClient() {
 
         <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}</h1>
         <p className="text-slate-500">@{profile.username}</p>
+        {!isMe && profile.isOnline && (
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-600">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" /> Active now
+          </p>
+        )}
         {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
         {profile.website && (
           <a href={profile.website} target="_blank" rel="noopener noreferrer" className="mt-1 block text-sm text-blue-600 hover:underline">{profile.website}</a>
