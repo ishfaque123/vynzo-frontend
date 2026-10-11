@@ -52,6 +52,13 @@ function StarIcon() {
     </svg>
   );
 }
+function MuteIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
+  );
+}
 function BlockIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -174,6 +181,7 @@ const menuItems = [
   { label: 'Verification', href: '/settings-menu/verification', Icon: VerificationIcon },
   { label: 'Your Activity', href: '/settings-menu/activity', Icon: ClockIcon },
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: StarIcon },
+  { label: 'Muted Stories', href: '/settings-menu/muted-stories', Icon: MuteIcon },
 ];
 
 const securityItems = [

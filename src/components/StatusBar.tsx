@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchStatusFeed, createStatus, createStatusWithProgress } from '@/lib/api/statusApi';
 import StatusViewer from './StatusViewer';
+import StickerComposer, { DraftSticker } from './StickerComposer';
 import Toast from './Toast';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
@@ -43,6 +44,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [composerMedia, setComposerMedia] = useState<{ url: string; type: 'image' | 'video'; file: File } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
@@ -75,12 +77,25 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
 
   async function handlePickPhoto(file: File) {
     setPickerOpen(false);
+    // Open the sticker composer instead of uploading immediately.
+    const url = URL.createObjectURL(file);
+    setComposerMedia({ url, type: file.type.startsWith('video/') ? 'video' : 'image', file });
+  }
+
+  async function handleComposerPost(stickers: DraftSticker[]) {
+    if (!composerMedia || posting) return;
+    const payload = stickers.map((s) => ({ type: s.type, posX: s.posX, posY: s.posY, data: s.data }));
     setPosting(true);
     setUploadProgress(0);
-    const result = await createStatusWithProgress({ media: file, visibility }, setUploadProgress);
+    const result = await createStatusWithProgress(
+      { media: composerMedia.file, visibility, stickers: payload },
+      setUploadProgress
+    );
     setPosting(false);
     setUploadProgress(null);
+    URL.revokeObjectURL(composerMedia.url);
     if (result.success) {
+      setComposerMedia(null);
       load();
     } else {
       setToast({ message: result.error?.message || 'Could not post your status. Please try again.', type: 'error' });
@@ -271,6 +286,19 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
+      {composerMedia && (
+        <StickerComposer
+          mediaUrl={composerMedia.url}
+          mediaType={composerMedia.type}
+          posting={posting}
+          onPost={handleComposerPost}
+          onClose={() => {
+            URL.revokeObjectURL(composerMedia.url);
+            setComposerMedia(null);
+          }}
+        />
+      )}
+
       {viewerOpenIndex !== null && (
         <StatusViewer
           groups={groups}
@@ -281,6 +309,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
             load();
           }}
           onDeleted={() => load()}
+          onMuted={() => load()}
         />
       )}
     </>

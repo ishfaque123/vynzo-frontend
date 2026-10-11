@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { viewStatus, fetchStatusViewers, deleteStatus, toggleStatusLike } from '@/lib/api/statusApi';
+import { viewStatus, fetchStatusViewers, deleteStatus, toggleStatusLike, muteStories, unmuteStories } from '@/lib/api/statusApi';
 import { createConversation } from '@/lib/api/messageApi';
 import { setPendingMessageText } from '@/lib/pendingMessageText';
+import StoryStickers from './StoryStickers';
 
 const ITEM_DURATION_MS = 5000; // photo / text statuses only
 
@@ -152,12 +153,14 @@ export default function StatusViewer({
   currentUserId,
   onClose,
   onDeleted,
+  onMuted,
 }: {
   groups: any[];
   startGroupIndex: number;
   currentUserId: string;
   onClose: () => void;
   onDeleted: (statusId: string) => void;
+  onMuted?: (userId: string, muted: boolean) => void;
 }) {
   const [groupIndex, setGroupIndex] = useState(startGroupIndex);
   const [itemIndex, setItemIndex] = useState(0);
@@ -168,6 +171,8 @@ export default function StatusViewer({
   const [sendingReply, setSendingReply] = useState(false);
   const [viewersOpen, setViewersOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [muted, setMuted] = useState(false);
   const [viewers, setViewers] = useState<any[]>([]);
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({});
   const [viewCountOverrides, setViewCountOverrides] = useState<Record<string, number>>({});
@@ -180,6 +185,11 @@ export default function StatusViewer({
   const item = group?.items?.[itemIndex];
   const isMine = group?.userId === currentUserId;
   const isLiked = item ? likedOverrides[item.id] ?? !!item.liked : false;
+
+  useEffect(() => {
+    setMuted(!!group?.muted);
+    setMenuOpen(false);
+  }, [groupIndex]);
   const isVideo = item?.mediaType === 'video';
   const viewCount = item ? viewCountOverrides[item.id] ?? item.viewCount ?? 0 : 0;
 
@@ -274,6 +284,17 @@ export default function StatusViewer({
     }
   }
 
+  async function handleMuteToggle() {
+    if (!group) return;
+    setMenuOpen(false);
+    resume();
+    const result = muted ? await unmuteStories(group.userId) : await muteStories(group.userId);
+    if (result.success) {
+      setMuted(!muted);
+      onMuted?.(group.userId, !muted);
+    }
+  }
+
   async function handleDelete() {
     if (!item) return;
     pause();
@@ -321,6 +342,32 @@ export default function StatusViewer({
                 <TrashIcon />
               </button>
             )}
+            {!isMine && (
+              <div className="relative">
+                <button onClick={() => { pause(); setMenuOpen((v) => !v); }} className="text-white" aria-label="More options">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
+                </button>
+                {menuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => { setMenuOpen(false); resume(); }} />
+                    <div className="absolute right-0 top-8 z-30 w-48 overflow-hidden rounded-xl bg-white shadow-2xl">
+                      <button
+                        onClick={handleMuteToggle}
+                        className="flex w-full items-center px-4 py-3 text-left text-sm text-slate-800 hover:bg-slate-50"
+                      >
+                        {muted ? 'Unmute stories' : 'Mute stories'}
+                      </button>
+                      <button
+                        onClick={() => { setMenuOpen(false); resume(); }}
+                        className="flex w-full items-center px-4 py-3 text-left text-sm text-slate-800 hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <button onClick={onClose} className="text-white" aria-label="Close">
               <CloseIcon />
             </button>
@@ -328,7 +375,7 @@ export default function StatusViewer({
         </div>
 
         <div
-          className="flex flex-1 items-center justify-center"
+          className="relative flex flex-1 items-center justify-center"
           style={{ backgroundColor: item.mediaType === 'text' ? item.bgColor || '#1e293b' : '#000' }}
           onMouseDown={pause}
           onMouseUp={resume}
@@ -350,6 +397,17 @@ export default function StatusViewer({
           ) : (
             <img src={item.mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
           )}
+          <StoryStickers
+            stickers={item.stickers || []}
+            isOwner={isMine}
+            onStickerUpdate={(id, patch) => {
+              const g = groups[groupIndex];
+              if (!g) return;
+              const it = g.items[itemIndex];
+              if (!it || !it.stickers) return;
+              it.stickers = it.stickers.map((s: any) => (s.id === id ? { ...s, ...patch } : s));
+            }}
+          />
         </div>
 
         {!isMine && (
