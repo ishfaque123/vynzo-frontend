@@ -224,6 +224,7 @@ export default function ProfileClient() {
           setFriendStatus((prev) => (prev === 'follow_back' ? 'friends' : 'following'));
         } else {
           setFriendStatus('none');
+          setToast({ message: `Unfollowed @${profile.username}`, type: 'success' });
         }
         setCounts((prev) => ({ ...prev, followers: Math.max(0, prev.followers + (result.data.following ? 1 : -1)) }));
       } else {
@@ -339,6 +340,7 @@ export default function ProfileClient() {
   const isMe = currentUser?.username === profile.username;
   const photoPosts = posts.filter((p) => p.imageUrl);
   const openPost = posts.find((p) => p.id === openComments);
+  const isPrivateView = !!profile.isPrivate && !isMe && friendStatus !== 'following' && friendStatus !== 'friends';
 
   return (
     <div className="mx-auto max-w-xl pb-6">
@@ -448,6 +450,17 @@ export default function ProfileClient() {
         )}
       </div>
 
+      {isPrivateView ? (
+        <div className="mt-4 flex flex-col items-center gap-2 border-y px-6 py-10 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-slate-300 text-slate-500">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            </svg>
+          </span>
+          <p className="text-base font-semibold text-slate-900">This account is private</p>
+          <p className="text-sm text-slate-500">Follow to see their photos and videos.</p>
+        </div>
+      ) : (
       <div className="mt-4 flex border-y">
         {(['all', 'reels', 'photos'] as const).map((tab) => (
           <button
@@ -459,7 +472,9 @@ export default function ProfileClient() {
           </button>
         ))}
       </div>
+      )}
 
+      {!isPrivateView && (
       <div className="mt-2">
         {activeTab === 'reels' ? (
           reelsLoading ? (
@@ -506,6 +521,7 @@ export default function ProfileClient() {
           </div>
         )}
       </div>
+      )}
 
       {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
       {shareProfileOpen && <ShareModal profileUsername={profile.username} profileId={profile.id} onClose={() => setShareProfileOpen(false)} />}
