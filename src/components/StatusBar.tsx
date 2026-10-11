@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchStatusFeed, createStatus, createStatusWithProgress } from '@/lib/api/statusApi';
 import StatusViewer from './StatusViewer';
 import StickerComposer, { DraftSticker } from './StickerComposer';
+import { useDraggableStickers, DraggableStickerLayer } from './useDraggableStickers';
+import StickerSheets, { SheetKind } from './StickerSheets';
 import Toast from './Toast';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
@@ -45,6 +47,8 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [composerMedia, setComposerMedia] = useState<{ url: string; type: 'image' | 'video'; file: File } | null>(null);
+  const [textSheet, setTextSheet] = useState<SheetKind>(null);
+  const textStickers = useDraggableStickers();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
@@ -105,11 +109,14 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
   async function handlePostText() {
     if (!textValue.trim() || posting) return;
     setPosting(true);
-    const result = await createStatus({ textContent: textValue.trim(), bgColor, visibility });
+    const payload = textStickers.stickers.map((s) => ({ type: s.type, posX: s.posX, posY: s.posY, data: s.data }));
+    const result = await createStatus({ textContent: textValue.trim(), bgColor, visibility, stickers: payload });
     setPosting(false);
     if (result.success) {
       setTextComposerOpen(false);
       setTextValue('');
+      textStickers.clearStickers();
+      setTextSheet(null);
       load();
     } else {
       setToast({ message: result.error?.message || 'Could not post your status. Please try again.', type: 'error' });
@@ -235,10 +242,17 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
       {textComposerOpen && (
         <div className="fixed inset-0 z-50 flex flex-col" style={{ backgroundColor: bgColor }}>
           <div className="flex items-center justify-between p-4">
-            <button onClick={() => setTextComposerOpen(false)} className="text-white">
+            <button onClick={() => { setTextComposerOpen(false); textStickers.clearStickers(); setTextSheet(null); }} className="text-white">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
+            </button>
+            <button
+              onClick={() => setTextSheet('types')}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-xl text-white"
+              aria-label="Add sticker"
+            >
+              🙂
             </button>
             <button
               onClick={handlePostText}
@@ -248,9 +262,16 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
               {posting ? 'Posting...' : 'Post'}
             </button>
           </div>
-          <div className="flex flex-1 items-center justify-center px-6">
+          <div
+            ref={textStickers.areaRef}
+            className="relative flex flex-1 items-center justify-center overflow-hidden px-6"
+            onTouchMove={textStickers.onDrag}
+            onTouchEnd={textStickers.endDrag}
+            onMouseMove={(e) => textStickers.onDrag(e)}
+            onMouseUp={textStickers.endDrag}
+            onMouseLeave={textStickers.endDrag}
+          >
             <textarea
-              autoFocus
               value={textValue}
               onChange={(e) => setTextValue(e.target.value)}
               maxLength={500}
@@ -258,8 +279,9 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
               rows={4}
               className="w-full resize-none !bg-transparent text-center text-2xl font-semibold text-white placeholder-white/60 outline-none"
             />
+            <DraggableStickerLayer api={textStickers} />
           </div>
-          <div className="flex justify-center gap-2 p-4">
+          <div className="relative flex justify-center gap-2 p-4">
             {BG_COLORS.map((c) => (
               <button
                 key={c}
@@ -268,6 +290,7 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
                 style={{ backgroundColor: c }}
               />
             ))}
+            <StickerSheets sheet={textSheet} setSheet={setTextSheet} onAdd={textStickers.addSticker} />
           </div>
         </div>
       )}
