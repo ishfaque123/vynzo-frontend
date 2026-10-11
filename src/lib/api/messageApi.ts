@@ -40,3 +40,13 @@ export async function uploadChatMedia(file: File | Blob, filename: string) {
   });
   return res.json();
 }
+
+export async function setDisappearing(conversationId: string, duration: number | null) {
+  const res = await fetch(`${API_URL}/api/messages/conversations/${conversationId}/disappearing`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ duration }),
+  });
+  return res.json();
+}

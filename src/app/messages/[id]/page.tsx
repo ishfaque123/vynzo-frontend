@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
-import { fetchMessages, fetchConversations, uploadChatMedia } from '@/lib/api/messageApi';
+import { fetchMessages, fetchConversations, uploadChatMedia, setDisappearing } from '@/lib/api/messageApi';
 import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 import { takePendingMessageText } from '@/lib/pendingMessageText';
@@ -417,6 +417,9 @@ export default function ChatPage() {
   const sendingRef = useRef(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [disappearing, setDisappearing] = useState<number | null>(null);
+  const [timerSheetOpen, setTimerSheetOpen] = useState(false);
+  const [timerSaving, setTimerSaving] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockActionLoading, setBlockActionLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -554,6 +557,7 @@ export default function ChatPage() {
             if (res.success) setIsBlocked(!!res.data.blockedByMe);
           });
         }
+        if (convo) setDisappearing(convo.disappearingDuration ?? null);
       }
     });
 
@@ -1035,6 +1039,22 @@ export default function ChatPage() {
     else showToast(result.error?.message || 'Could not report this user.', 'error');
   }
 
+  async function handleSetDisappearing(duration: number | null) {
+    setTimerSaving(true);
+    const result = await setDisappearing(conversationId, duration);
+    setTimerSaving(false);
+    if (result?.success) {
+      setDisappearing(result.data.disappearingDuration ?? null);
+      setTimerSheetOpen(false);
+      setToast({
+        message: duration ? 'Disappearing messages turned on.' : 'Disappearing messages turned off.',
+        type: 'success',
+      });
+    } else {
+      setToast({ message: 'Could not update. Please try again.', type: 'error' });
+    }
+  }
+
   async function handleBlock() {
     if (!otherUser || blockActionLoading) return;
     setMoreOpen(false);
@@ -1143,6 +1163,18 @@ export default function ChatPage() {
               <button onClick={() => { setMoreOpen(false); setWallpaperOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                 Wallpaper
               </button>
+              <button
+                onClick={() => { setMoreOpen(false); setTimerSheetOpen(true); }}
+                className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <span>Disappearing messages</span>
+                {disappearing && (
+                  <span className="flex items-center gap-1 text-xs text-amber-600">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                    On
+                  </span>
+                )}
+              </button>
             </div>
             </>
           )}
@@ -1153,6 +1185,13 @@ export default function ChatPage() {
         <div className="flex items-center justify-center gap-2 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">
           <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
           You're offline — messages will send when you reconnect.
+        </div>
+      )}
+
+      {disappearing && (
+        <div className="flex items-center justify-center gap-1.5 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+          Messages disappear after {disappearing === 3600 ? '1 hour' : disappearing === 86400 ? '24 hours' : disappearing === 604800 ? '7 days' : '90 days'}
         </div>
       )}
 
@@ -1313,6 +1352,9 @@ export default function ChatPage() {
                         </p>
                       )}
                       <div className={`flex items-center justify-end gap-1 ${isMine ? 'text-slate-500' : 'text-slate-400'} ${isImage ? 'px-1.5 pb-0.5 pt-1' : 'mt-1'}`}>
+                        {(m as any).expiresAt && (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-amber-500"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                        )}
                         <span className="text-[11px]">{m.editedAt ? 'edited · ' : ''}{formatMessageTime(m.createdAt)}</span>
                         {isMine && status && <Ticks status={status} />}
                       </div>
@@ -1658,6 +1700,38 @@ export default function ChatPage() {
             </button>
           </div>
           <img src={viewingImage} alt="" className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
+      {timerSheetOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40" onClick={() => setTimerSheetOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-base font-semibold text-slate-900">Disappearing messages</p>
+            <p className="mt-1 text-center text-xs text-slate-500">New messages disappear after the selected time.</p>
+            <div className="mt-4 space-y-1">
+              {[
+                { label: 'Off', value: null },
+                { label: '1 hour', value: 3600 },
+                { label: '24 hours', value: 86400 },
+                { label: '7 days', value: 604800 },
+                { label: '90 days', value: 7776000 },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  disabled={timerSaving}
+                  onClick={() => handleSetDisappearing(o.value)}
+                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium ${
+                    disappearing === o.value ? 'bg-amber-50 text-amber-700' : 'text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  {o.label}
+                  {disappearing === o.value && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
