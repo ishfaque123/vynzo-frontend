@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e2a78"/>
+      <stop offset="0.5" stop-color="#2447b8"/>
+      <stop offset="1" stop-color="#1a2456"/>
+    </linearGradient>
+    <linearGradient id="wave1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#93c5fd" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="wave2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3b82f6" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#bfdbfe" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.7" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#93c5fd" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#93c5fd" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#bg)"/>
+  <rect width="1200" height="400" fill="url(#glow)"/>
+  <path d="M-50,280 C200,200 350,340 600,270 C850,200 1000,320 1250,250 L1250,400 L-50,400 Z" fill="url(#wave1)"/>
+  <path d="M-50,320 C180,260 380,380 620,310 C860,240 1020,360 1250,300 L1250,400 L-50,400 Z" fill="url(#wave2)" opacity="0.7"/>
+  <path d="M-50,240 C220,170 400,300 650,230 C900,160 1050,280 1250,210" fill="none" stroke="#dbeafe" stroke-opacity="0.25" stroke-width="2"/>
+  <circle cx="950" cy="90" r="4" fill="#dbeafe" opacity="0.5"/>
+  <circle cx="1020" cy="140" r="2.5" fill="#dbeafe" opacity="0.4"/>
+  <circle cx="880" cy="120" r="3" fill="#dbeafe" opacity="0.35"/>
+  <circle cx="200" cy="80" r="3" fill="#dbeafe" opacity="0.3"/>
+</svg>
