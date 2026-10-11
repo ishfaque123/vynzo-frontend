@@ -126,8 +126,8 @@ export default function DashboardPage() {
   const trend = stats?.viewsTrendPct;
   const trendText =
     trend === null || trend === undefined
-      ? 'No previous data'
-      : `${trend > 0 ? '+' : ''}${trend}% vs previous ${range} days`;
+      ? null
+      : `${trend > 0 ? '+' : ''}${trend}%`;
   const topLink = stats?.topPerforming
     ? stats.topPerforming.type === 'reel'
       ? `/reels?id=${stats.topPerforming.id}`
@@ -187,7 +187,9 @@ export default function DashboardPage() {
         <div className="rounded-lg bg-slate-100 p-4">
           <p className="text-sm text-slate-600">Views</p>
           <p className="mt-1 text-xl font-semibold">{stats.views.toLocaleString()}</p>
-          <p className="mt-1 text-xs text-slate-500">{trendText}</p>
+          {trendText && (
+            <p className={`mt-1 text-sm font-semibold ${trend! >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{trendText}</p>
+          )}
         </div>
         <div className="rounded-lg bg-slate-100 p-4">
           <p className="text-sm text-slate-600">Engagement</p>
