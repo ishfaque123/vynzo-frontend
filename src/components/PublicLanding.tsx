@@ -148,6 +148,8 @@ export default function PublicLanding() {
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-300">
               <Link href="/about" className="transition hover:text-white">About</Link>
+              <Link href="/help" className="transition hover:text-white">Help Center</Link>
+              <Link href="/contact" className="transition hover:text-white">Contact</Link>
               <Link href="/privacy" className="transition hover:text-white">Privacy Policy</Link>
               <Link href="/terms" className="transition hover:text-white">Terms</Link>
               <a href="mailto:support@frianzo.online" className="transition hover:text-white">Support</a>
