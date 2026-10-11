@@ -52,13 +52,17 @@ type DashboardData = {
   stats: {
     views: number;
     engagement: number;
+    engagementBreakdown?: { likes: number; comments: number; shares: number };
     newFollowers: number;
     content: number;
     dailyViews: DailyView[];
     viewsTrendPct: number | null;
     topPerforming: TopPerforming | null;
+    days?: number;
   };
 };
+
+const RANGES = [7, 30, 90] as const;
 
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -66,11 +70,13 @@ export default function DashboardPage() {
   const [error, setError] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [range, setRange] = useState<number>(30);
 
-  function load() {
+  function load(days: number) {
     setLoading(true);
     setError(false);
-    fetchDashboard()
+    setSelectedDay(null);
+    fetchDashboard(days)
       .then((result) => {
         if (result.success) setDashboard(result.data);
         else setError(true);
@@ -80,8 +86,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    load(range);
+  }, [range]);
 
   function copyReferralLink() {
     const link = dashboard?.monetization?.referralLink;
@@ -97,7 +103,7 @@ export default function DashboardPage() {
     return (
       <div className="mx-auto flex max-w-xl flex-col items-center gap-3 px-4 py-16 text-center">
         <p className="text-slate-500">Could not load dashboard. Please try again.</p>
-        <button onClick={load} className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white">
+        <button onClick={() => load(range)} className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white">
           Try again
         </button>
       </div>
@@ -121,7 +127,7 @@ export default function DashboardPage() {
   const trendText =
     trend === null || trend === undefined
       ? 'No previous data'
-      : `${trend > 0 ? '+' : ''}${trend}% vs previous 30 days`;
+      : `${trend > 0 ? '+' : ''}${trend}% vs previous ${range} days`;
   const topLink = stats?.topPerforming
     ? stats.topPerforming.type === 'reel'
       ? `/reels?id=${stats.topPerforming.id}`
@@ -130,7 +136,20 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <h1 className="mb-4 text-xl font-semibold">Dashboard</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <div className="flex rounded-lg bg-slate-100 p-0.5">
+          {RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${range === r ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >
+              {r}d
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mb-3 rounded-lg border bg-white p-4">
         <p className="text-sm text-slate-600">Earnings</p>
@@ -170,7 +189,17 @@ export default function DashboardPage() {
           <p className="mt-1 text-xl font-semibold">{stats.views.toLocaleString()}</p>
           <p className="mt-1 text-xs text-slate-500">{trendText}</p>
         </div>
-        <StatCard label="Engagement" value={stats.engagement} />
+        <div className="rounded-lg bg-slate-100 p-4">
+          <p className="text-sm text-slate-600">Engagement</p>
+          <p className="mt-1 text-xl font-semibold">{stats.engagement.toLocaleString()}</p>
+          {stats.engagementBreakdown && (
+            <div className="mt-1.5 space-y-0.5 text-xs text-slate-500">
+              <p>❤️ {stats.engagementBreakdown.likes.toLocaleString()} likes</p>
+              <p>💬 {stats.engagementBreakdown.comments.toLocaleString()} comments</p>
+              <p>🔄 {stats.engagementBreakdown.shares.toLocaleString()} shares</p>
+            </div>
+          )}
+        </div>
         <StatCard label="New followers" value={stats.newFollowers} />
         <StatCard label="Content" value={stats.content} />
       </div>
@@ -211,7 +240,7 @@ export default function DashboardPage() {
 
       <div className="rounded-lg bg-slate-100 p-4">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm text-slate-600">Views, last 30 days</p>
+          <p className="text-sm text-slate-600">Views, last {range} days</p>
           <p className="text-xs text-slate-400">{totalViews30d.toLocaleString()} total views</p>
         </div>
         {dailyViews.length > 1 ? (
@@ -223,7 +252,7 @@ export default function DashboardPage() {
                 style={{ height: 90 }}
                 onClick={() => setSelectedDay(null)}
                 role="img"
-                aria-label="Views over the last 30 days. Tap a point to see that day's views."
+                aria-label={`Views over the last ${range} days. Tap a point to see that day's views.`}
               >
                 <polyline points={points} fill="none" stroke="#0f172a" strokeWidth="2" />
                 {dailyViews.map((d, i) => {
@@ -262,8 +291,8 @@ export default function DashboardPage() {
           <div className="flex h-[90px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
         )}
         <div className="mt-1 flex justify-between text-[10px] text-slate-400">
-          <span>30 days ago</span>
-          <span>15 days ago</span>
+          <span>{range} days ago</span>
+          <span>{Math.floor(range / 2)} days ago</span>
           <span>today</span>
         </div>
       </div>
