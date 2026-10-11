@@ -102,8 +102,9 @@ export async function deleteReel(reelId: string) {
   } catch { return { success: false, error: { message: 'Unable to delete reel.' } }; }
 }
 
-export function createReelWithProgress(data: { video: File; cover?: Blob; caption?: string; durationSec?: number; trimStartSec?: number; trimEndSec?: number; filter?: string }, onProgress: (pct: number) => void): Promise<any> {
-  return new Promise((resolve) => {
+export function createReelWithProgress(data: { video: File; cover?: Blob; caption?: string; durationSec?: number; trimStartSec?: number; trimEndSec?: number; filter?: string }, onProgress: (pct: number) => void): { promise: Promise<any>; abort: () => void } {
+  let xhr: XMLHttpRequest | null = null;
+  const promise = new Promise((resolve) => {
     if (!API_URL) { resolve({ success: false, error: { message: 'API is not configured.' } }); return; }
     const formData = new FormData();
     formData.append('video', data.video);
@@ -113,22 +114,26 @@ export function createReelWithProgress(data: { video: File; cover?: Blob; captio
     if (data.trimStartSec != null) formData.append('trimStartSec', String(data.trimStartSec));
     if (data.trimEndSec != null) formData.append('trimEndSec', String(data.trimEndSec));
     if (data.filter && data.filter !== 'normal') formData.append('filter', data.filter);
-    const xhr = new XMLHttpRequest();
+    xhr = new XMLHttpRequest();
     xhr.open('POST', `${API_URL}/api/reels`);
     xhr.withCredentials = true;
     xhr.timeout = 120000;
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
       let data: any = {};
-      try { data = xhr.responseText ? JSON.parse(xhr.responseText) : {}; } catch { data = {}; }
-      if (xhr.status < 200 || xhr.status >= 300) { resolve({ success: false, error: { message: data?.error?.message || `Upload failed (${xhr.status}).`, code: data?.error?.code } }); return; }
+      try { data = xhr!.responseText ? JSON.parse(xhr!.responseText) : {}; } catch { data = {}; }
+      if (xhr!.status < 200 || xhr!.status >= 300) { resolve({ success: false, error: { message: data?.error?.message || `Upload failed (${xhr!.status}).`, code: data?.error?.code } }); return; }
       resolve(data);
     };
     xhr.onerror = () => resolve({ success: false, error: { message: 'Network error during upload.' } });
     xhr.ontimeout = () => resolve({ success: false, error: { message: 'Upload timed out. Please try again.' } });
-    xhr.onabort = () => resolve({ success: false, error: { message: 'Upload cancelled.' } });
+    xhr.onabort = () => resolve({ success: false, error: { message: 'Upload cancelled.', code: 'ABORTED' } });
     try { xhr.send(formData); } catch { resolve({ success: false, error: { message: 'Upload failed.' } }); }
   });
+  return {
+    promise,
+    abort: () => { try { xhr?.abort(); } catch {} },
+  };
 }
 
 export async function fetchReelById(reelId: string) {

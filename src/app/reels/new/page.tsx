@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { takePendingReelVideo } from '@/lib/pendingReelVideo';
 import { createReelWithProgress } from '@/lib/api/reelApi';
+import Toast from '@/components/Toast';
 
 function CloseIcon() {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
@@ -42,6 +43,9 @@ export default function NewReelPage() {
   const [caption, setCaption] = useState('');
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const uploadAbortRef = useRef<(() => void) | null>(null);
   const [trimOpen, setTrimOpen] = useState(false);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
@@ -282,7 +286,7 @@ export default function NewReelPage() {
 
     const trimChanged = trimStart > 0.05 || trimEnd < videoDuration - 0.05;
     setPostTrimProcessing(trimChanged);
-    const result = await createReelWithProgress(
+    const { promise, abort } = createReelWithProgress(
       {
         video: file,
         ...(coverBlob ? { cover: coverBlob } : {}),
@@ -293,6 +297,9 @@ export default function NewReelPage() {
       },
       setUploadProgress
     );
+    uploadAbortRef.current = abort;
+    const result = await promise;
+    uploadAbortRef.current = null;
 
     setPosting(false);
     setUploadProgress(null);
@@ -300,8 +307,24 @@ export default function NewReelPage() {
 
     if (result.success) {
       router.replace('/reels');
+    } else if (result.error?.code !== 'ABORTED') {
+      setToast({ message: result.error?.message || 'Could not post your reel. Please try again.', type: 'error' });
+    }
+  }
+
+  function handleCancel() {
+    if (posting) {
+      uploadAbortRef.current?.();
+      setPosting(false);
+      setUploadProgress(null);
+      setPostTrimProcessing(false);
+      setToast({ message: 'Upload cancelled.', type: 'success' });
+      return;
+    }
+    if (file) {
+      setConfirmDiscard(true);
     } else {
-      alert(result.error?.message || 'Could not post your reel. Please try again.');
+      router.replace('/reels');
     }
   }
 
@@ -456,7 +479,7 @@ export default function NewReelPage() {
     const end = Math.max(start + MIN_TRIM_DURATION, Math.min(trimEnd, videoDuration));
 
     if (end - start < MIN_TRIM_DURATION || videoDuration < MIN_TRIM_DURATION) {
-      alert('Trimmed reel must be at least 1 second long.');
+      setToast({ message: 'Trimmed reel must be at least 1 second long.', type: 'error' });
       return;
     }
 
@@ -633,7 +656,7 @@ export default function NewReelPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="flex items-center justify-between p-4">
-        <button onClick={() => router.replace('/reels')} className="text-white" aria-label="Cancel">
+        <button onClick={handleCancel} className="text-white" aria-label="Cancel">
           <CloseIcon />
         </button>
         <p className="text-base font-semibold text-white">New Reel</p>
@@ -941,6 +964,21 @@ export default function NewReelPage() {
           </div>
         </div>
       )}
+
+      {confirmDiscard && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-5" onClick={() => setConfirmDiscard(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-1 text-base font-semibold text-slate-900">Discard this reel?</p>
+            <p className="mb-4 text-sm leading-6 text-slate-600">Your video and edits will be lost.</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setConfirmDiscard(false)} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Keep editing</button>
+              <button type="button" onClick={() => { setConfirmDiscard(false); router.replace('/reels'); }} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Discard</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
