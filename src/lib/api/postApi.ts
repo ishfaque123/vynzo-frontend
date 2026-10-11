@@ -87,3 +87,10 @@ export async function hidePost(postId: string) {
   });
   return readJson(res);
 }
+
+export async function togglePinPost(postId: string) {
+  const res = await fetch(`${API_URL}/api/posts/${postId}/pin`, {
+    method: 'POST', credentials: 'include',
+  });
+  return readJson(res);
+}

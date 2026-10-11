@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { updatePost, deletePost, reportPost, hidePost } from '@/lib/api/postApi';
+import { updatePost, deletePost, reportPost, hidePost, togglePinPost } from '@/lib/api/postApi';
 import { toggleFollow } from '@/lib/api/userApi';
 import { createShareLink } from '@/lib/api/shareApi';
 import Toast from './Toast';
@@ -62,6 +62,13 @@ function NotInterestedIcon() {
     </svg>
   );
 }
+function PinIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 17v5" /><path d="M9 3h6l1 7 3 3H5l3-3z" />
+    </svg>
+  );
+}
 
 const CLOSE_THRESHOLD_PX = 100;
 
@@ -72,8 +79,10 @@ export default function PostMenu({
   content,
   commentAudience,
   friendStatus,
+  isPinned,
   onUpdated,
   onDeleted,
+  onPinToggle,
 }: {
   postId: string;
   authorId: string;
@@ -81,8 +90,10 @@ export default function PostMenu({
   content: string;
   commentAudience: string;
   friendStatus?: string;
+  isPinned?: boolean;
   onUpdated: (content: string, commentAudience: string) => void;
   onDeleted: () => void;
+  onPinToggle?: (pinned: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [dragY, setDragY] = useState(0);
@@ -207,6 +218,25 @@ export default function PostMenu({
     }
   }
 
+  async function handlePinToggle() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await togglePinPost(postId);
+      if (result.success) {
+        onPinToggle?.(!!result.data.post.isPinned);
+        setToast({ message: result.data.post.isPinned ? 'Post pinned to your profile.' : 'Post unpinned.', type: 'success' });
+      } else {
+        setToast({ message: result.error?.message || 'Could not pin this post.', type: 'error' });
+      }
+    } catch {
+      setToast({ message: 'Could not pin this post. Please try again.', type: 'error' });
+    } finally {
+      setBusy(false);
+      closeMenu();
+    }
+  }
+
   return (
     <div className="relative">
       <button onClick={() => setOpen(true)} className="rounded-full p-1 text-slate-500 hover:bg-slate-100">
@@ -249,6 +279,9 @@ export default function PostMenu({
                 </button>
                 <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                   <LinkIcon /> Copy link
+                </button>
+                <button disabled={busy} onClick={handlePinToggle} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
+                  <PinIcon /> {isPinned ? 'Unpin from profile' : 'Pin to profile'}
                 </button>
                 <button onClick={() => setAudienceOpen(!audienceOpen)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                   <CommentSettingIcon /> Who can comment

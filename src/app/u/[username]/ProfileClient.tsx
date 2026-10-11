@@ -8,6 +8,9 @@ import { useRef } from 'react';
 import { fetchUserProfile, fetchFollowCounts, fetchFollowStatus, toggleFollow, blockUser, unblockUser, updateAvatar, updateCover } from '@/lib/api/userApi';
 import { fetchUserPosts } from '@/lib/api/postApi';
 import { fetchUserReels } from '@/lib/api/reelApi';
+import { fetchHighlights, createHighlight, deleteHighlight } from '@/lib/api/highlightApi';
+import { fetchStatusFeed } from '@/lib/api/statusApi';
+import HighlightViewer from '@/components/HighlightViewer';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { createConversation } from '@/lib/api/messageApi';
 import ShareModal from '@/components/ShareModal';
@@ -136,6 +139,13 @@ export default function ProfileClient() {
   const [confirmUnfollow, setConfirmUnfollow] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [highlights, setHighlights] = useState<any[]>([]);
+  const [viewHighlight, setViewHighlight] = useState<any | null>(null);
+  const [createHlOpen, setCreateHlOpen] = useState(false);
+  const [myStatuses, setMyStatuses] = useState<any[]>([]);
+  const [hlSelected, setHlSelected] = useState<string[]>([]);
+  const [hlTitle, setHlTitle] = useState('');
+  const [hlSaving, setHlSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -212,6 +222,10 @@ export default function ProfileClient() {
       if (!cancelled) setReelsLoading(false);
     });
 
+    fetchHighlights(username).then((result) => {
+      if (result.success && !cancelled) setHighlights(result.data.highlights || []);
+    }).catch(() => {});
+
     return () => { cancelled = true; };
   }, [username]);
 
@@ -260,6 +274,47 @@ export default function ProfileClient() {
     setLinkCopied(true);
     setToast({ message: 'Profile link copied.', type: 'success' });
     setTimeout(() => setLinkCopied(false), 2000);
+  }
+
+  async function openCreateHighlight() {
+    setCreateHlOpen(true);
+    setHlSelected([]);
+    setHlTitle('');
+    try {
+      const result = await fetchStatusFeed();
+      if (result.success) {
+        const mine = (result.data.statuses || []).filter((s: any) => s.userId === currentUser?.id || s.author?.id === currentUser?.id);
+        setMyStatuses(mine);
+      }
+    } catch {}
+  }
+
+  async function handleCreateHighlight() {
+    if (!hlTitle.trim() || hlSelected.length === 0 || hlSaving) return;
+    setHlSaving(true);
+    try {
+      const result = await createHighlight(hlTitle.trim(), hlSelected);
+      if (result.success) {
+        setHighlights((prev) => [...prev, result.data.highlight]);
+        setCreateHlOpen(false);
+        setToast({ message: 'Highlight created.', type: 'success' });
+      } else {
+        setToast({ message: result.error?.message || 'Could not create highlight.', type: 'error' });
+      }
+    } catch {
+      setToast({ message: 'Could not create highlight.', type: 'error' });
+    } finally {
+      setHlSaving(false);
+    }
+  }
+
+  async function handleDeleteHighlight(id: string) {
+    const result = await deleteHighlight(id);
+    if (result.success) {
+      setHighlights((prev) => prev.filter((h) => h.id !== id));
+      setViewHighlight(null);
+      setToast({ message: 'Highlight deleted.', type: 'success' });
+    }
   }
 
   async function handleMessage() {
@@ -315,8 +370,12 @@ export default function ProfileClient() {
       return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
     }));
   }
-  function handlePostUpdated(postId: string, content: string, commentAudience: string) {
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
+  function handlePostUpdated(postId: string, content: string, commentAudience: string, isPinned?: boolean) {
+    setPosts((prev) => {
+      const updated = prev.map((p) => (p.id === postId ? { ...p, content, commentAudience, ...(isPinned !== undefined ? { isPinned } : {}) } : p));
+      // Keep pinned posts at the top
+      return [...updated].sort((a, b) => Number(b.isPinned || false) - Number(a.isPinned || false) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    });
   }
   function handlePostDeleted(postId: string) {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
@@ -449,6 +508,20 @@ export default function ProfileClient() {
             <span className="h-2 w-2 rounded-full bg-emerald-500" /> Active now
           </p>
         )}
+        {!isMe && profile.mutualCount > 0 && (
+          <p className="mt-1 text-sm text-slate-500">
+            Followed by{' '}
+            {profile.mutualFollowers.slice(0, 2).map((m: any, i: number) => (
+              <span key={i}>
+                {i > 0 && ', '}
+                <Link href={`/u/${encodeURIComponent(m.username)}`} className="font-medium text-slate-700 hover:underline">
+                  {m.displayName || `@${m.username}`}
+                </Link>
+              </span>
+            ))}
+            {profile.mutualCount > 2 && ` and ${profile.mutualCount - 2} other${profile.mutualCount - 2 > 1 ? 's' : ''}`}
+          </p>
+        )}
         {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
         {profile.website && (
           <a href={profile.website} target="_blank" rel="noopener noreferrer" className="mt-1 block text-sm text-blue-600 hover:underline">{profile.website}</a>
@@ -489,6 +562,29 @@ export default function ProfileClient() {
           </button>
         )}
       </div>
+
+      {!isBlockedView && (highlights.length > 0 || isMe) && (
+        <div className="mt-4 flex gap-4 overflow-x-auto px-4 pb-1">
+          {isMe && (
+            <button onClick={openCreateHighlight} className="flex w-16 shrink-0 flex-col items-center gap-1">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-slate-300 text-2xl text-slate-400">+</span>
+              <span className="max-w-full truncate text-xs text-slate-600">New</span>
+            </button>
+          )}
+          {highlights.map((h) => (
+            <button key={h.id} onClick={() => setViewHighlight(h)} className="flex w-16 shrink-0 flex-col items-center gap-1">
+              <span className="h-16 w-16 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100">
+                {h.coverUrl ? (
+                  <img src={h.coverUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-lg text-slate-400">✦</span>
+                )}
+              </span>
+              <span className="max-w-full truncate text-xs text-slate-600">{h.title}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {isBlockedView ? (
         <div className="mt-4 flex flex-col items-center gap-2 border-y px-6 py-10 text-center">
@@ -560,7 +656,7 @@ export default function ProfileClient() {
         ) : (
           <div>
             {[...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
-              .sort((a, b) => new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime())
+              .sort((a, b) => Number(b.item.isPinned || false) - Number(a.item.isPinned || false) || new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime())
               .map((entry) => entry.kind === 'post' ? (
                 <PostCard key={`post-${entry.item.id}`} post={entry.item} currentUser={currentUser}
                   onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
@@ -612,6 +708,67 @@ export default function ProfileClient() {
           onAddComment={handleAddComment} onCommentsChanged={loadComments}
           onClose={() => setOpenComments(null)}
         />
+      )}
+
+      {viewHighlight && (
+        <HighlightViewer highlight={viewHighlight} onClose={() => setViewHighlight(null)} />
+      )}
+      {viewHighlight && isMe && (
+        <button
+          onClick={() => handleDeleteHighlight(viewHighlight.id)}
+          className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-lg"
+        >
+          Delete highlight
+        </button>
+      )}
+
+      {createHlOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50" onClick={() => setCreateHlOpen(false)}>
+          <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 text-base font-semibold text-slate-900">New Highlight</h3>
+            <input
+              value={hlTitle}
+              onChange={(e) => setHlTitle(e.target.value)}
+              maxLength={30}
+              placeholder="Highlight title"
+              className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+            />
+            <p className="mb-2 text-sm font-medium text-slate-700">Select stories</p>
+            {myStatuses.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-500">No active stories. Post a story first.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {myStatuses.map((s: any) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setHlSelected((prev) => prev.includes(s.id) ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
+                    className={`relative aspect-[9/16] overflow-hidden rounded-lg bg-slate-100 ${hlSelected.includes(s.id) ? 'ring-2 ring-slate-900' : ''}`}
+                  >
+                    {s.mediaUrl ? (
+                      s.mediaType?.startsWith('video') ? (
+                        <video src={s.mediaUrl} muted playsInline className="h-full w-full object-cover" />
+                      ) : (
+                        <img src={s.mediaUrl} alt="" className="h-full w-full object-cover" />
+                      )
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center p-2 text-xs text-slate-600" style={{ background: s.bgColor || '#eee' }}>{s.textContent}</span>
+                    )}
+                    {hlSelected.includes(s.id) && (
+                      <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-xs text-white">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={handleCreateHighlight}
+              disabled={hlSaving || !hlTitle.trim() || hlSelected.length === 0}
+              className="mt-4 w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {hlSaving ? 'Creating...' : `Create (${hlSelected.length} selected)`}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
