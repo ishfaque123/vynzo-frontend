@@ -18,6 +18,7 @@ import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { AchievementIcon, StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
 
@@ -112,6 +113,7 @@ export default function ProfileClient() {
   const username = params.username as string;
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [achievements, setAchievements] = useState<any[]>([]);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [friendStatus, setFriendStatus] = useState<string>('none');
   const [loading, setLoading] = useState(true);
@@ -196,6 +198,11 @@ export default function ProfileClient() {
           setBlockedByOther(!!result.data.user.blockedByOther);
           fetchFollowCounts(result.data.user.id).then((c) => { if (c.success && !cancelled) setCounts(c.data); });
           setFriendStatus(result.data.user.friendStatus || 'none');
+          // Load achievements.
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${encodeURIComponent(username)}/achievements`, { credentials: 'include' })
+            .then((r) => r.json())
+            .then((a) => { if (a.success && !cancelled) setAchievements(a.data.achievements); })
+            .catch(() => {});
         } else if (result.error?.code === 'USER_NOT_FOUND') {
           setProfile(null);
         } else {
@@ -505,7 +512,7 @@ export default function ProfileClient() {
           </div>
         </div>
 
-        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}</h1>
+        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.storyStreak > 0 && <StreakBadge streak={profile.storyStreak} />}</h1>
         <p className="text-slate-500">@{profile.username}</p>
         {!isMe && profile.isOnline && (
           <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-600">
@@ -532,6 +539,24 @@ export default function ProfileClient() {
         )}
         {(profile.city || profile.province) && (
           <p className="mt-1 text-sm text-slate-500">{[profile.city, profile.province].filter(Boolean).join(', ')}</p>
+        )}
+
+        {achievements.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Achievements</p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {achievements.map((a) => (
+                <div
+                  key={a.key}
+                  title={`${a.name} — ${a.description}`}
+                  className="flex shrink-0 flex-col items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2"
+                >
+                  <span className="text-amber-600"><AchievementIcon icon={a.icon} size={24} /></span>
+                  <span className="max-w-[72px] truncate text-[10px] font-semibold text-amber-800">{a.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         <div className="mt-4 flex border-y py-3 text-sm">
