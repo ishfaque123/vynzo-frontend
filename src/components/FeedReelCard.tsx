@@ -114,6 +114,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
         <video
           ref={videoRef}
           src={`${reel.videoUrl}#t=0.1`}
+          poster={reel.thumbnailUrl || undefined}
           muted={isMuted}
           loop
           playsInline
