@@ -284,8 +284,8 @@ export default function ProfileClient() {
     try {
       const result = await fetchStatusFeed();
       if (result.success) {
-        const mine = (result.data.statuses || []).filter((s: any) => s.userId === currentUser?.id || s.author?.id === currentUser?.id);
-        setMyStatuses(mine);
+        const myGroup = (result.data.feed || []).find((g: any) => g.userId === currentUser?.id);
+        setMyStatuses(myGroup?.items || []);
       }
     } catch {}
   }
