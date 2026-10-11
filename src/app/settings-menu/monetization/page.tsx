@@ -39,12 +39,6 @@ type PayoutMethod = {
 
 type Earning = { id: string; amount: number; type: string; createdAt: string };
 
-const COUNTRIES = [
-  { code: 'PK', label: 'Pakistan' },
-  { code: 'IN', label: 'India' },
-  { code: 'US', label: 'United States' },
-];
-
 export default function MonetizationPage() {
   const [data, setData] = useState<ReferralData | null>(null);
   const [earnings, setEarnings] = useState<{ earnings: Earning[]; total: number } | null>(null);
@@ -54,8 +48,10 @@ export default function MonetizationPage() {
   const [error, setError] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ country: 'PK', methodType: '', accountName: '', accountNumber: '', extra: '' });
+  const [form, setForm] = useState({ methodType: '', accountName: '', accountNumber: '', extra: '' });
   const [saving, setSaving] = useState(false);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [countryName, setCountryName] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -67,6 +63,8 @@ export default function MonetizationPage() {
         if (mResult.success) {
           setMethods(mResult.data.methods || []);
           setAllowed(mResult.data.allowed || {});
+          setUserCountry(mResult.data.country || null);
+          setCountryName(mResult.data.countryName || null);
         }
         if (eResult.success) setEarnings(eResult.data);
       })
@@ -89,7 +87,6 @@ export default function MonetizationPage() {
     setSaving(true);
     try {
       const result = await addPayoutMethod({
-        country: form.country,
         methodType: form.methodType,
         accountName: form.accountName.trim(),
         accountNumber: form.accountNumber.trim(),
@@ -98,7 +95,7 @@ export default function MonetizationPage() {
       if (result.success) {
         setMethods((prev) => [result.data.method, ...prev.map((m) => ({ ...m, isDefault: result.data.method.isDefault ? false : m.isDefault }))]);
         setShowAdd(false);
-        setForm({ country: 'PK', methodType: '', accountName: '', accountNumber: '', extra: '' });
+        setForm({ methodType: '', accountName: '', accountNumber: '', extra: '' });
         setToast({ message: 'Payout method added.', type: 'success' });
       } else {
         setToast({ message: result.error?.message || 'Could not add payout method.', type: 'error' });
@@ -154,7 +151,7 @@ export default function MonetizationPage() {
   const progress = data?.progress ?? 0;
   const eligible = data?.status === 'eligible';
   const earningRate = data?.earningPerReferral ?? 0.1;
-  const countryMethods = allowed[form.country] || [];
+  const countryMethods = userCountry ? (allowed[userCountry] || []) : [];
   const selectedMethod = countryMethods.find((m) => m.code === form.methodType);
 
   return (
@@ -242,7 +239,7 @@ export default function MonetizationPage() {
                     {m.methodLabel} {m.isDefault && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Default</span>}
                   </p>
                   <p className="truncate text-xs text-slate-500">{m.accountName} · {m.accountNumber}{m.extra ? ` · ${m.extra}` : ''}</p>
-                  <p className="text-[10px] text-slate-400">{COUNTRIES.find((c) => c.code === m.country)?.label}</p>
+                  <p className="text-[10px] text-slate-400">{countryName || m.country}</p>
                 </div>
                 {!m.isDefault && (
                   <button onClick={() => handleSetDefault(m.id)} className="text-xs text-blue-600">Set default</button>
@@ -258,18 +255,15 @@ export default function MonetizationPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setShowAdd(false)}>
           <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-3 text-base font-semibold">Add payout method</h3>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Country</label>
-            <div className="mb-3 flex gap-2">
-              {COUNTRIES.map((c) => (
-                <button
-                  key={c.code}
-                  onClick={() => setForm((f) => ({ ...f, country: c.code, methodType: '' }))}
-                  className={`flex-1 rounded-lg border py-2 text-sm font-medium ${form.country === c.code ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
+            {countryName ? (
+              <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Showing methods for <span className="font-semibold text-slate-900">{countryName}</span> (from your profile)
+              </p>
+            ) : (
+              <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Please set your country in your profile first.
+              </p>
+            )}
             <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
             <div className="mb-3 flex gap-2">
               {countryMethods.map((m) => (
@@ -309,7 +303,7 @@ export default function MonetizationPage() {
             )}
             <button
               onClick={handleAddMethod}
-              disabled={saving || !form.methodType || !form.accountName.trim() || !form.accountNumber.trim()}
+              disabled={saving || !userCountry || !form.methodType || !form.accountName.trim() || !form.accountNumber.trim()}
               className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {saving ? 'Adding...' : 'Add payout method'}

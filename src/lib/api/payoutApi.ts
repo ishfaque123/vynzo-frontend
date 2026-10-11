@@ -10,7 +10,7 @@ export async function fetchPayoutMethods() {
 }
 
 export async function addPayoutMethod(data: {
-  country: string; methodType: string; accountName: string; accountNumber: string; extra?: string;
+  methodType: string; accountName: string; accountNumber: string; extra?: string;
 }) {
   const res = await fetch(`${API_URL}/api/payout/methods`, {
     method: 'POST', credentials: 'include',
