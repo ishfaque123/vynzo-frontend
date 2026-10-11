@@ -341,6 +341,7 @@ export default function ProfileClient() {
   const photoPosts = posts.filter((p) => p.imageUrl);
   const openPost = posts.find((p) => p.id === openComments);
   const isPrivateView = !!profile.isPrivate && !isMe && friendStatus !== 'following' && friendStatus !== 'friends';
+  const isBlockedView = blockedByMe || blockedByOther;
 
   return (
     <div className="mx-auto max-w-xl pb-6">
@@ -450,7 +451,17 @@ export default function ProfileClient() {
         )}
       </div>
 
-      {isPrivateView ? (
+      {isBlockedView ? (
+        <div className="mt-4 flex flex-col items-center gap-2 border-y px-6 py-10 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-slate-300 text-slate-500">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="4.9" y1="4.9" x2="19.1" y2="19.1" />
+            </svg>
+          </span>
+          <p className="text-base font-semibold text-slate-900">{blockedByMe ? 'You blocked this user' : 'This user is unavailable'}</p>
+          <p className="text-sm text-slate-500">{blockedByMe ? 'Unblock them to see their posts and videos.' : ''}</p>
+        </div>
+      ) : isPrivateView ? (
         <div className="mt-4 flex flex-col items-center gap-2 border-y px-6 py-10 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-slate-300 text-slate-500">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -474,7 +485,7 @@ export default function ProfileClient() {
       </div>
       )}
 
-      {!isPrivateView && (
+      {!isBlockedView && !isPrivateView && (
       <div className="mt-2">
         {activeTab === 'reels' ? (
           reelsLoading ? (
