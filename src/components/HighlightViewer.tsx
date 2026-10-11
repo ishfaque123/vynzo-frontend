@@ -6,7 +6,7 @@ export default function HighlightViewer({
   highlight,
   onClose,
 }: {
-  highlight: { title: string; items: { id: string; mediaUrl: string; mediaType?: string | null }[] };
+  highlight: { title: string; items: { id: string; mediaUrl: string; mediaType?: string | null; thumbnailUrl?: string | null }[] };
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
