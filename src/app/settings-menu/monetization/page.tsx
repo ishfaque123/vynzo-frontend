@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { fetchDashboard } from '@/lib/api/userApi';
+import { fetchPayoutMethods, addPayoutMethod, deletePayoutMethod, setDefaultPayoutMethod, fetchEarnings } from '@/lib/api/payoutApi';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
 
@@ -21,29 +22,59 @@ type ReferralData = {
   requiredReferrals: number;
   progress: number;
   referralLink: string | null;
+  earningPerReferral?: number;
+  freeReferrals?: number;
 };
+
+type PayoutMethod = {
+  id: string;
+  country: string;
+  methodType: string;
+  methodLabel: string;
+  accountName: string;
+  accountNumber: string;
+  extra?: string | null;
+  isDefault: boolean;
+};
+
+type Earning = { id: string; amount: number; type: string; createdAt: string };
+
+const COUNTRIES = [
+  { code: 'PK', label: 'Pakistan' },
+  { code: 'IN', label: 'India' },
+  { code: 'US', label: 'United States' },
+];
 
 export default function MonetizationPage() {
   const [data, setData] = useState<ReferralData | null>(null);
+  const [earnings, setEarnings] = useState<{ earnings: Earning[]; total: number } | null>(null);
+  const [methods, setMethods] = useState<PayoutMethod[]>([]);
+  const [allowed, setAllowed] = useState<Record<string, { code: string; label: string; fields: any }[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ country: 'PK', methodType: '', accountName: '', accountNumber: '', extra: '' });
+  const [saving, setSaving] = useState(false);
 
   function load() {
     setLoading(true);
     setError(false);
-    fetchDashboard()
-      .then((result) => {
-        if (result.success) setData(result.data?.monetization ?? null);
-        else setError(true);
+    Promise.all([fetchDashboard(), fetchPayoutMethods(), fetchEarnings()])
+      .then(([dResult, mResult, eResult]) => {
+        if (dResult.success) setData(dResult.data?.monetization ?? null);
+        else { setError(true); return; }
+        if (mResult.success) {
+          setMethods(mResult.data.methods || []);
+          setAllowed(mResult.data.allowed || {});
+        }
+        if (eResult.success) setEarnings(eResult.data);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   function handleCopy() {
     if (!data?.referralLink) return;
@@ -51,6 +82,47 @@ export default function MonetizationPage() {
       () => setToast({ message: 'Referral link copied.', type: 'success' }),
       () => setToast({ message: 'Could not copy link.', type: 'error' }),
     );
+  }
+
+  async function handleAddMethod() {
+    if (!form.methodType || !form.accountName.trim() || !form.accountNumber.trim() || saving) return;
+    setSaving(true);
+    try {
+      const result = await addPayoutMethod({
+        country: form.country,
+        methodType: form.methodType,
+        accountName: form.accountName.trim(),
+        accountNumber: form.accountNumber.trim(),
+        extra: form.extra.trim() || undefined,
+      });
+      if (result.success) {
+        setMethods((prev) => [result.data.method, ...prev.map((m) => ({ ...m, isDefault: result.data.method.isDefault ? false : m.isDefault }))]);
+        setShowAdd(false);
+        setForm({ country: 'PK', methodType: '', accountName: '', accountNumber: '', extra: '' });
+        setToast({ message: 'Payout method added.', type: 'success' });
+      } else {
+        setToast({ message: result.error?.message || 'Could not add payout method.', type: 'error' });
+      }
+    } catch {
+      setToast({ message: 'Could not add payout method.', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    const result = await deletePayoutMethod(id);
+    if (result.success) {
+      setMethods((prev) => prev.filter((m) => m.id !== id));
+      setToast({ message: 'Payout method removed.', type: 'success' });
+    }
+  }
+
+  async function handleSetDefault(id: string) {
+    const result = await setDefaultPayoutMethod(id);
+    if (result.success) {
+      setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
+    }
   }
 
   if (loading) {
@@ -81,6 +153,9 @@ export default function MonetizationPage() {
   const referrals = data?.referrals ?? 0;
   const progress = data?.progress ?? 0;
   const eligible = data?.status === 'eligible';
+  const earningRate = data?.earningPerReferral ?? 0.1;
+  const countryMethods = allowed[form.country] || [];
+  const selectedMethod = countryMethods.find((m) => m.code === form.methodType);
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
@@ -92,12 +167,9 @@ export default function MonetizationPage() {
       <div className="mb-3 rounded-lg border bg-white p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Monetization eligibility</p>
-            <p className="mt-1 text-xs text-slate-500">
-              {eligible
-                ? 'You have completed the referral requirement. Payout setup is coming soon.'
-                : `Complete ${requiredReferrals} valid referrals to become eligible.`}
-            </p>
+            <p className="text-sm font-semibold text-slate-900">Earnings</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900">${(earnings?.total ?? 0).toFixed(2)}</p>
+            <p className="mt-1 text-xs text-slate-500">${earningRate.toFixed(2)} per referral after the first {requiredReferrals}</p>
           </div>
           <span className={eligible
             ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700'
@@ -116,17 +188,25 @@ export default function MonetizationPage() {
           </div>
         </div>
 
-        {eligible && (
-          <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-            You're eligible! We'll notify you when payouts open.
-          </p>
+        {earnings && earnings.earnings.length > 0 && (
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <p className="mb-2 text-xs font-medium text-slate-500">Recent earnings</p>
+            <div className="space-y-1.5">
+              {earnings.earnings.slice(0, 5).map((e) => (
+                <div key={e.id} className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Referral · {new Date(e.createdAt).toLocaleDateString()}</span>
+                  <span className="font-semibold text-emerald-600">+${e.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="rounded-lg border bg-white p-4">
+      <div className="mb-3 rounded-lg border bg-white p-4">
         <p className="text-sm font-semibold text-slate-900">Your referral link</p>
         <p className="mt-1 text-xs text-slate-500">
-          Share this link. Each new user who joins through it counts toward your {requiredReferrals}-referral goal.
+          Share this link. First {requiredReferrals} referrals unlock payouts, then you earn ${earningRate.toFixed(2)} per referral.
         </p>
         <div className="mt-3 flex gap-2">
           <input
@@ -145,6 +225,98 @@ export default function MonetizationPage() {
           </button>
         </div>
       </div>
+
+      <div className="rounded-lg border bg-white p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-900">Payout methods</p>
+          <button onClick={() => setShowAdd(true)} className="text-xs font-medium text-blue-600">+ Add</button>
+        </div>
+        {methods.length === 0 ? (
+          <p className="mt-2 text-xs text-slate-500">No payout method added yet. Add one to receive your earnings.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {methods.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-900">
+                    {m.methodLabel} {m.isDefault && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Default</span>}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">{m.accountName} · {m.accountNumber}{m.extra ? ` · ${m.extra}` : ''}</p>
+                  <p className="text-[10px] text-slate-400">{COUNTRIES.find((c) => c.code === m.country)?.label}</p>
+                </div>
+                {!m.isDefault && (
+                  <button onClick={() => handleSetDefault(m.id)} className="text-xs text-blue-600">Set default</button>
+                )}
+                <button onClick={() => handleDelete(m.id)} className="text-xs text-red-600">Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setShowAdd(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 text-base font-semibold">Add payout method</h3>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Country</label>
+            <div className="mb-3 flex gap-2">
+              {COUNTRIES.map((c) => (
+                <button
+                  key={c.code}
+                  onClick={() => setForm((f) => ({ ...f, country: c.code, methodType: '' }))}
+                  className={`flex-1 rounded-lg border py-2 text-sm font-medium ${form.country === c.code ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
+            <div className="mb-3 flex gap-2">
+              {countryMethods.map((m) => (
+                <button
+                  key={m.code}
+                  onClick={() => setForm((f) => ({ ...f, methodType: m.code }))}
+                  className={`flex-1 rounded-lg border py-2 text-sm font-medium ${form.methodType === m.code ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-200 text-slate-600'}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Account holder name</label>
+            <input
+              value={form.accountName}
+              onChange={(e) => setForm((f) => ({ ...f, accountName: e.target.value }))}
+              placeholder="Full name"
+              className="mb-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            />
+            <label className="mb-1 block text-xs font-medium text-slate-600">{selectedMethod?.fields.accountNumber || 'Account number'}</label>
+            <input
+              value={form.accountNumber}
+              onChange={(e) => setForm((f) => ({ ...f, accountNumber: e.target.value }))}
+              placeholder={selectedMethod?.fields.accountNumber || 'Account number'}
+              className="mb-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            />
+            {selectedMethod?.fields.extra && (
+              <>
+                <label className="mb-1 block text-xs font-medium text-slate-600">{selectedMethod.fields.extra}</label>
+                <input
+                  value={form.extra}
+                  onChange={(e) => setForm((f) => ({ ...f, extra: e.target.value }))}
+                  placeholder={selectedMethod.fields.extra}
+                  className="mb-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                />
+              </>
+            )}
+            <button
+              onClick={handleAddMethod}
+              disabled={saving || !form.methodType || !form.accountName.trim() || !form.accountNumber.trim()}
+              className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {saving ? 'Adding...' : 'Add payout method'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
