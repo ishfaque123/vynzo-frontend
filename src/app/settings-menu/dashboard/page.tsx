@@ -53,6 +53,7 @@ type DashboardData = {
     views: number;
     engagement: number;
     engagementBreakdown?: { likes: number; comments: number; shares: number };
+    engagementTrendPct?: number | null;
     newFollowers: number;
     content: number;
     dailyViews: DailyView[];
@@ -128,6 +129,11 @@ export default function DashboardPage() {
     trend === null || trend === undefined
       ? null
       : `${trend > 0 ? '+' : ''}${trend}%`;
+  const engTrend = stats?.engagementTrendPct;
+  const engTrendText =
+    engTrend === null || engTrend === undefined
+      ? null
+      : `${engTrend > 0 ? '+' : ''}${engTrend}%`;
   const topLink = stats?.topPerforming
     ? stats.topPerforming.type === 'reel'
       ? `/reels?id=${stats.topPerforming.id}`
@@ -194,6 +200,9 @@ export default function DashboardPage() {
         <div className="rounded-lg bg-slate-100 p-4">
           <p className="text-sm text-slate-600">Engagement</p>
           <p className="mt-1 text-xl font-semibold">{stats.engagement.toLocaleString()}</p>
+          {engTrendText && (
+            <p className={`mt-1 text-sm font-semibold ${engTrend! >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{engTrendText}</p>
+          )}
           {stats.engagementBreakdown && (
             <div className="mt-2 divide-y divide-slate-200 border-t border-slate-200 text-xs">
               <div className="flex items-center justify-between py-1.5">
