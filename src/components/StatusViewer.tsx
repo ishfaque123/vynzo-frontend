@@ -36,8 +36,14 @@ function HeartIcon({ filled }: { filled: boolean }) {
     </svg>
   );
 }
-function MuteIcon() {
+function SendIcon() {
   return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+function MuteIcon() {  return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
     </svg>
@@ -161,6 +167,7 @@ export default function StatusViewer({
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [viewersOpen, setViewersOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [viewers, setViewers] = useState<any[]>([]);
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({});
   const [viewCountOverrides, setViewCountOverrides] = useState<Record<string, number>>({});
@@ -268,7 +275,14 @@ export default function StatusViewer({
   }
 
   async function handleDelete() {
-    if (!item || !confirm('Delete this status?')) return;
+    if (!item) return;
+    pause();
+    setConfirmDelete(true);
+  }
+
+  async function confirmDeleteStatus() {
+    if (!item) return;
+    setConfirmDelete(false);
     const result = await deleteStatus(item.id);
     if (result.success) {
       onDeleted(item.id);
@@ -349,12 +363,19 @@ export default function StatusViewer({
               className="flex-1 rounded-full border border-white/40 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/60 outline-none"
             />
             <button
-              onClick={handleSendReply}
-              disabled={sendingReply || !replyText.trim()}
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-black/30 disabled:opacity-40"
-              aria-label="Send reply"
+              onClick={handleLike}
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-black/30 text-white"
+              aria-label="Like story"
             >
               <HeartIcon filled={isLiked} />
+            </button>
+            <button
+              onClick={handleSendReply}
+              disabled={sendingReply || !replyText.trim()}
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-black/30 text-white disabled:opacity-40"
+              aria-label="Send reply"
+            >
+              <SendIcon />
             </button>
           </div>
         )}
@@ -402,6 +423,19 @@ export default function StatusViewer({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {confirmDelete && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50 px-8" onClick={() => { setConfirmDelete(false); resume(); }}>
+            <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <p className="mb-1 text-base font-semibold text-slate-900">Delete this status?</p>
+              <p className="mb-4 text-sm leading-6 text-slate-600">It will be removed for everyone.</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setConfirmDelete(false); resume(); }} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                <button type="button" onClick={confirmDeleteStatus} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Delete</button>
+              </div>
             </div>
           </div>
         )}
