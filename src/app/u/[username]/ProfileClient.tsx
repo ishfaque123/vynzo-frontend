@@ -345,7 +345,7 @@ export default function ProfileClient() {
   return (
     <div className="mx-auto max-w-xl pb-6">
       <div className="relative">
-        <div className="h-32 bg-slate-200 bg-cover bg-center" style={profile.coverPhotoUrl ? { backgroundImage: `url(${profile.coverPhotoUrl})` } : {}} />
+        <div className="h-32 bg-cover bg-center bg-slate-200" style={{ backgroundImage: `url(${profile.coverPhotoUrl || '/images/default-cover.svg'})` }} />
         {isMe && (
           <>
             <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
