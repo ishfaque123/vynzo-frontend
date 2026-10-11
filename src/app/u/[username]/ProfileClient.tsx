@@ -116,6 +116,7 @@ export default function ProfileClient() {
   const [friendStatus, setFriendStatus] = useState<string>('none');
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [reels, setReels] = useState<any[]>([]);
@@ -227,7 +228,7 @@ export default function ProfileClient() {
     }).catch(() => {});
 
     return () => { cancelled = true; };
-  }, [username]);
+  }, [username, retryKey]);
 
   async function handleFollow() {
     if (!profile || followBusy) return;
@@ -407,7 +408,7 @@ export default function ProfileClient() {
     return (
       <div className="flex flex-col items-center gap-3 p-8 text-center">
         <p className="text-slate-500">Could not load this profile. Please try again.</p>
-        <button onClick={() => window.location.reload()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <button onClick={() => setRetryKey((k) => k + 1)} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
           Try again
         </button>
       </div>
@@ -457,7 +458,7 @@ export default function ProfileClient() {
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploadingAvatar}
                   aria-label="Change profile photo"
-                  className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white disabled:opacity-50"
+                  className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white disabled:opacity-50"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <path d="M12 5v14M5 12h14" />
@@ -473,7 +474,9 @@ export default function ProfileClient() {
                   <MoreIcon />
                 </button>
                 {moreOpen && (
-                  <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg" onMouseLeave={() => setMoreOpen(false)}>
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setMoreOpen(false)} onTouchStart={() => setMoreOpen(false)} />
+                    <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border bg-white py-1 shadow-lg">
                     <button onClick={copyProfileLink} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
                       Copy link
@@ -481,7 +484,8 @@ export default function ProfileClient() {
                     <button disabled={blockBusy} onClick={() => { setMoreOpen(false); if (blockedByMe) handleBlockToggle(); else setConfirmBlock(true); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50 disabled:opacity-50">
                       <BlockIcon /> {blockedByMe ? 'Unblock' : 'Block'}
                     </button>
-                  </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
