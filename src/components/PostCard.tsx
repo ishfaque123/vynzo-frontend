@@ -135,7 +135,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
   }
 
   return (
-    <div ref={cardRef} className="w-full overflow-hidden border-b-[8px] border-slate-100 bg-white">
+    <div ref={cardRef} className="w-full overflow-hidden border-b-[8px] border-slate-100 bg-white" onContextMenu={(e) => e.preventDefault()}>
       <div className="flex items-start justify-between p-3 pb-2">
         {post.originalPost ? (
           <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">
