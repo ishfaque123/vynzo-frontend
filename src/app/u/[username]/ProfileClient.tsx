@@ -133,6 +133,8 @@ export default function ProfileClient() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmBlock, setConfirmBlock] = useState(false);
+  const [confirmUnfollow, setConfirmUnfollow] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -213,16 +215,31 @@ export default function ProfileClient() {
   }, [username]);
 
   async function handleFollow() {
-    if (!profile) return;
-    const result = await toggleFollow(profile.id);
-    if (result.success) {
-      if (result.data.following) {
-        setFriendStatus((prev) => (prev === 'follow_back' ? 'friends' : 'following'));
+    if (!profile || followBusy) return;
+    setFollowBusy(true);
+    try {
+      const result = await toggleFollow(profile.id);
+      if (result.success) {
+        if (result.data.following) {
+          setFriendStatus((prev) => (prev === 'follow_back' ? 'friends' : 'following'));
+        } else {
+          setFriendStatus('none');
+        }
+        setCounts((prev) => ({ ...prev, followers: Math.max(0, prev.followers + (result.data.following ? 1 : -1)) }));
       } else {
-        setFriendStatus('none');
+        setToast({ message: result.error?.message || 'Could not update follow status.', type: 'error' });
       }
-      setCounts((prev) => ({ ...prev, followers: prev.followers + (result.data.following ? 1 : -1) }));
+    } catch {
+      setToast({ message: 'Could not update follow status. Please try again.', type: 'error' });
+    } finally {
+      setFollowBusy(false);
     }
+  }
+
+  function handleFollowClick() {
+    if (followBusy) return;
+    if (friendStatus === 'following' || friendStatus === 'friends') setConfirmUnfollow(true);
+    else handleFollow();
   }
 
   async function handleMessage() {
@@ -421,11 +438,11 @@ export default function ProfileClient() {
             Unblock
           </button>
         ) : friendStatus === 'friends' ? (
-          <button onClick={handleFollow} className="mt-4 w-full rounded-lg bg-slate-100 py-2 font-medium text-slate-700">
-            • Friends
+          <button onClick={handleFollowClick} disabled={followBusy} className="mt-4 w-full rounded-lg bg-slate-100 py-2 font-medium text-slate-700 disabled:opacity-50">
+            Friends
           </button>
         ) : (
-          <button onClick={handleFollow} className={`mt-4 w-full rounded-lg py-2 font-medium ${friendStatus === 'following' ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
+          <button onClick={handleFollowClick} disabled={followBusy} className={`mt-4 w-full rounded-lg py-2 font-medium disabled:opacity-50 ${friendStatus === 'following' ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'}`}>
             {friendStatus === 'following' ? 'Following' : friendStatus === 'follow_back' ? 'Follow Back' : 'Follow'}
           </button>
         )}
@@ -501,6 +518,19 @@ export default function ProfileClient() {
             <div className="flex gap-2">
               <button type="button" onClick={() => setConfirmBlock(false)} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
               <button type="button" onClick={() => { setConfirmBlock(false); handleBlockToggle(); }} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Block</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmUnfollow && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-5" onClick={() => setConfirmUnfollow(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-1 text-base font-semibold text-slate-900">Unfollow @{profile.username}?</p>
+            <p className="mb-4 text-sm leading-6 text-slate-600">You won't see their posts in your feed anymore.</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setConfirmUnfollow(false)} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+              <button type="button" onClick={() => { setConfirmUnfollow(false); handleFollow(); }} className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white">Unfollow</button>
             </div>
           </div>
         </div>
