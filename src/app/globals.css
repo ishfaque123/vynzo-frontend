@@ -168,3 +168,8 @@ input, textarea, [contenteditable="true"] {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* Prevent long-press image popup (Save image / Open link) in feed */
+img {
+  -webkit-touch-callout: none;
+}
