@@ -55,7 +55,9 @@ type DashboardData = {
     engagementBreakdown?: { likes: number; comments: number; shares: number };
     engagementTrendPct?: number | null;
     newFollowers: number;
+    followersTrendPct?: number | null;
     content: number;
+    contentTrendPct?: number | null;
     dailyViews: DailyView[];
     viewsTrendPct: number | null;
     topPerforming: TopPerforming | null;
@@ -134,6 +136,13 @@ export default function DashboardPage() {
     engTrend === null || engTrend === undefined
       ? null
       : `${engTrend > 0 ? '+' : ''}${engTrend}%`;
+  function trendClass(v: number) {
+    return `mt-1 text-sm font-semibold ${v >= 0 ? 'text-blue-600' : 'text-red-500'}`;
+  }
+  function trendLabel(v: number | null | undefined) {
+    if (v === null || v === undefined) return null;
+    return `${v > 0 ? '+' : ''}${v}%`;
+  }
   const topLink = stats?.topPerforming
     ? stats.topPerforming.type === 'reel'
       ? `/reels?id=${stats.topPerforming.id}`
@@ -220,8 +229,20 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-        <StatCard label="New followers" value={stats.newFollowers} />
-        <StatCard label="Content" value={stats.content} />
+        <div className="rounded-lg bg-slate-100 p-4">
+          <p className="text-sm text-slate-600">New followers</p>
+          <p className="mt-1 text-xl font-semibold">{stats.newFollowers.toLocaleString()}</p>
+          {trendLabel(stats.followersTrendPct) && (
+            <p className={trendClass(stats.followersTrendPct!)}>{trendLabel(stats.followersTrendPct)}</p>
+          )}
+        </div>
+        <div className="rounded-lg bg-slate-100 p-4">
+          <p className="text-sm text-slate-600">Content</p>
+          <p className="mt-1 text-xl font-semibold">{stats.content.toLocaleString()}</p>
+          {trendLabel(stats.contentTrendPct) && (
+            <p className={trendClass(stats.contentTrendPct!)}>{trendLabel(stats.contentTrendPct)}</p>
+          )}
+        </div>
       </div>
 
       <div className="mb-3 rounded-lg border bg-white p-4">
@@ -258,11 +279,12 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="rounded-lg bg-slate-100 p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm text-slate-600">Views, last {range} days</p>
-          <p className="text-xs text-slate-400">{totalViews30d.toLocaleString()} total views</p>
+      <div className="rounded-lg border bg-white p-4">
+        <div className="mb-1 flex items-baseline justify-between">
+          <p className="text-sm font-medium text-slate-700">Content views</p>
+          <p className="text-xs text-slate-400">Last {range} days</p>
         </div>
+        <p className="mb-3 text-2xl font-semibold text-slate-900">{totalViews30d.toLocaleString()}</p>
         {dailyViews.length > 1 ? (
           <>
             <div className="relative">
@@ -274,7 +296,7 @@ export default function DashboardPage() {
                 role="img"
                 aria-label={`Views over the last ${range} days. Tap a point to see that day's views.`}
               >
-                <polyline points={points} fill="none" stroke="#0f172a" strokeWidth="2" />
+                <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
                 {dailyViews.map((d, i) => {
                   const x = dailyViews.length > 1 ? (i / (dailyViews.length - 1)) * 320 : 0;
                   const y = 85 - (d.views / maxViews) * 75;
@@ -284,8 +306,10 @@ export default function DashboardPage() {
                       key={d.date}
                       cx={x}
                       cy={y}
-                      r={selected ? 6 : 4.5}
-                      fill="#0f172a"
+                      r={selected ? 6 : 4}
+                      fill={selected ? '#2563eb' : '#fff'}
+                      stroke="#2563eb"
+                      strokeWidth="2"
                       className="cursor-pointer"
                       style={{ touchAction: 'manipulation' }}
                       onClick={(event) => {
@@ -297,23 +321,23 @@ export default function DashboardPage() {
                 })}
               </svg>
             </div>
-            {selectedView ? (
-              <div className="mt-2 rounded-md border bg-white px-3 py-2 text-xs text-slate-600">
-                <span className="font-medium">{selectedView.date}</span>
-                <span className="mx-1">·</span>
-                <span>{selectedView.views.toLocaleString()} views</span>
-              </div>
-            ) : (
-              <p className="mt-2 text-center text-[11px] text-slate-400">Tap a point to see that day's views</p>
-            )}
+            <div className="mt-2 flex h-8 items-center justify-center">
+              {selectedView ? (
+                <p className="text-xs text-slate-600">
+                  <span className="font-semibold text-slate-900">{selectedView.views.toLocaleString()}</span>
+                  {' '}views on <span className="font-medium">{selectedView.date}</span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-slate-400">Tap a point for daily breakdown</p>
+              )}
+            </div>
           </>
         ) : (
           <div className="flex h-[90px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
         )}
-        <div className="mt-1 flex justify-between text-[10px] text-slate-400">
-          <span>{range} days ago</span>
-          <span>{Math.floor(range / 2)} days ago</span>
-          <span>today</span>
+        <div className="mt-1 flex justify-between border-t border-slate-100 pt-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          <span>{range}d ago</span>
+          <span>Today</span>
         </div>
       </div>
 
