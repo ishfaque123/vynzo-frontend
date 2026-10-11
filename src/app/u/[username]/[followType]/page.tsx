@@ -31,6 +31,7 @@ export default function FollowListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -135,8 +136,26 @@ export default function FollowListPage() {
       {users.length === 0 ? (
         <p className="px-4 py-12 text-center text-slate-500">No {title.toLowerCase()} yet.</p>
       ) : (
-        <div className="divide-y">
-          {users.map((user) => (
+        <>
+          <div className="border-b border-slate-200 bg-white px-4 py-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${title.toLowerCase()}...`}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400"
+            />
+          </div>
+          <div className="divide-y">
+          {users
+            .filter((user) => {
+              const q = search.trim().toLowerCase();
+              if (!q) return true;
+              return (
+                user.displayName?.toLowerCase().includes(q) ||
+                user.username?.toLowerCase().includes(q)
+              );
+            })
+            .map((user) => (
             <div key={user.id} className="flex items-center gap-3 bg-white px-4 py-3 text-slate-900 transition-colors hover:bg-slate-50">
               <Link href={user.username ? `/u/${encodeURIComponent(user.username)}` : '#'} className="shrink-0">
                 <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
@@ -167,7 +186,8 @@ export default function FollowListPage() {
               )}
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {pagination.pages > 1 && (
