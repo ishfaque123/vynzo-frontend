@@ -146,3 +146,25 @@ html.dark .skeleton-shimmer::after {
 .app-logo-pulse {
   animation: app-logo-pulse 1.4s ease-in-out infinite;
 }
+
+/* Disable text selection app-wide (like Facebook/Instagram).
+   Long-press should trigger app actions, not the native Copy/Select popup.
+   Text remains selectable inside inputs, textareas, and editable areas. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+/* Opt-in class for areas where selection is useful (e.g. message text) */
+.allow-select {
+  -webkit-user-select: text;
+  user-select: text;
+}
