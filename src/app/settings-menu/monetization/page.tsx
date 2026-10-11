@@ -51,7 +51,6 @@ export default function MonetizationPage() {
   const [form, setForm] = useState({ methodType: '', accountName: '', accountNumber: '', extra: '' });
   const [saving, setSaving] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
-  const [countryName, setCountryName] = useState<string | null>(null);
 
   function load() {
     setLoading(true);
@@ -64,7 +63,6 @@ export default function MonetizationPage() {
           setMethods(mResult.data.methods || []);
           setAllowed(mResult.data.allowed || {});
           setUserCountry(mResult.data.country || null);
-          setCountryName(mResult.data.countryName || null);
         }
         if (eResult.success) setEarnings(eResult.data);
       })
@@ -239,7 +237,6 @@ export default function MonetizationPage() {
                     {m.methodLabel} {m.isDefault && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Default</span>}
                   </p>
                   <p className="truncate text-xs text-slate-500">{m.accountName} · {m.accountNumber}{m.extra ? ` · ${m.extra}` : ''}</p>
-                  <p className="text-[10px] text-slate-400">{countryName || m.country}</p>
                 </div>
                 {!m.isDefault && (
                   <button onClick={() => handleSetDefault(m.id)} className="text-xs text-blue-600">Set default</button>
@@ -255,11 +252,7 @@ export default function MonetizationPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setShowAdd(false)}>
           <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-3 text-base font-semibold">Add payout method</h3>
-            {countryName ? (
-              <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                Showing methods for <span className="font-semibold text-slate-900">{countryName}</span> (from your profile)
-              </p>
-            ) : (
+            {!userCountry && (
               <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 Please set your country in your profile first.
               </p>
