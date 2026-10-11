@@ -512,7 +512,7 @@ export default function ProfileClient() {
           </div>
         </div>
 
-        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.storyStreak > 0 && <StreakBadge streak={profile.storyStreak} />}</h1>
+        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.loginStreak > 0 && <StreakBadge streak={profile.loginStreak} />}</h1>
         <p className="text-slate-500">@{profile.username}</p>
         {!isMe && profile.isOnline && (
           <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-600">
