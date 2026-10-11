@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
-import { fetchMessages, fetchConversations, uploadChatMedia, setDisappearing } from '@/lib/api/messageApi';
+import { fetchMessages, fetchConversations, uploadChatMedia, setDisappearing as apiSetDisappearing } from '@/lib/api/messageApi';
 import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 import { takePendingMessageText } from '@/lib/pendingMessageText';
@@ -1041,7 +1041,7 @@ export default function ChatPage() {
 
   async function handleSetDisappearing(duration: number | null) {
     setTimerSaving(true);
-    const result = await setDisappearing(conversationId, duration);
+    const result = await apiSetDisappearing(conversationId, duration);
     setTimerSaving(false);
     if (result?.success) {
       setDisappearing(result.data.disappearingDuration ?? null);
