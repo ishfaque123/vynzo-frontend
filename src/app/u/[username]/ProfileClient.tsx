@@ -433,7 +433,10 @@ export default function ProfileClient() {
         </div>
 
         {isMe ? (
-          <Link href="/settings-menu/dashboard" className="mt-4 block rounded-lg border py-2 text-center font-medium text-slate-700">Dashboard</Link>
+          <div className="mt-4 flex gap-2">
+            <Link href="/edit-profile" className="flex-1 rounded-lg bg-slate-900 py-2 text-center text-sm font-semibold text-white">Edit Profile</Link>
+            <Link href="/settings-menu/dashboard" className="flex-1 rounded-lg border py-2 text-center text-sm font-medium text-slate-700">Dashboard</Link>
+          </div>
         ) : blockedByOther ? (
           <p className="mt-4 rounded-lg bg-slate-100 py-2.5 text-center text-sm text-slate-500">This user is unavailable.</p>
         ) : blockedByMe ? (
