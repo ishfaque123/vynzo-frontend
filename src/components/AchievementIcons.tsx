@@ -81,7 +81,7 @@ export function AchievementIcon({ icon, size = 28 }: { icon: string; size?: numb
 }
 
 export function StreakBadge({ streak }: { streak: number }) {
-  if (!streak || streak < 2) return null;
+  if (!streak || streak < 1) return null;
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-600">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
