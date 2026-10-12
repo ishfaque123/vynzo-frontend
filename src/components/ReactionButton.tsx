@@ -15,9 +15,9 @@ export const REACTIONS: Record<string, { emoji: string; color: string; label: st
 
 const HOLD_TO_OPEN_MS = 400;
 
-function ThumbIcon() {
+function ThumbIcon({ filled = false }: { filled?: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? "0" : "2.2"} strokeLinecap="round" strokeLinejoin="round">
       <path d="M7 22h2a2 2 0 002-2v-8a2 2 0 00-2-2H7v12z" />
       <path d="M9 10l3-7a2 2 0 012 2v5h5a2 2 0 012 2l-1.5 7a2 2 0 01-2 1.5H9" />
     </svg>
@@ -142,12 +142,20 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         className={`flex w-full select-none items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? (
-          <span
-            className="text-[20px] leading-none"
-            style={justReacted ? { animation: 'fz-reaction-select 0.6s ease', display: 'inline-block' } : { animation: 'fz-reaction-float 2.5s ease-in-out infinite', display: 'inline-block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
-          >
-            {current.emoji}
-          </span>
+          myReaction === 'like' ? (
+            <span
+              style={justReacted ? { animation: 'fz-reaction-select 0.6s ease', display: 'inline-block' } : { display: 'inline-block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+            >
+              <ThumbIcon filled />
+            </span>
+          ) : (
+            <span
+              className="text-[22px] leading-none"
+              style={justReacted ? { animation: 'fz-reaction-select 0.6s ease', display: 'inline-block' } : { animation: 'fz-reaction-float 2.5s ease-in-out infinite', display: 'inline-block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+            >
+              {current.emoji}
+            </span>
+          )
         ) : (
           <ThumbIcon />
         )}

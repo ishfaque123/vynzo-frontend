@@ -19,14 +19,14 @@ function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: 
 }
 function CommentIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
     </svg>
   );
 }
 function ShareIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" />
       <line x1="8.3" y1="10.7" x2="15.7" y2="6.3" /><line x1="8.3" y1="13.3" x2="15.7" y2="17.7" />
     </svg>
@@ -140,7 +140,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
             <Link href={`/u/${post.author.username}`} className="max-w-[45%] truncate font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
-            <span className="shrink-0 whitespace-nowrap">reposted Â· {timeAgo(post.createdAt)}</span>
+            <span className="shrink-0 whitespace-nowrap">reposted ÃÂ· {timeAgo(post.createdAt)}</span>
           </div>
         ) : (
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -166,8 +166,8 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
                   ))}
                 </span>
               )}
-              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> Â· ð {post.location}</>}
-                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">ð Pinned</span>}
+              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> ÃÂ· Ã°ÂÂÂ {post.location}</>}
+                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">Ã°ÂÂÂ Pinned</span>}
               </span>
             </div>
           </div>
