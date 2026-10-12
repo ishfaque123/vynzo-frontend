@@ -5,12 +5,12 @@ import { setReaction } from '@/lib/api/postApi';
 import { playReactionSound } from '@/lib/sounds';
 
 export const REACTIONS: Record<string, { emoji: string; color: string; label: string }> = {
-  like: { emoji: '👍', color: 'text-blue-600', label: 'Like' },
-  love: { emoji: '❤️', color: 'text-red-600', label: 'Love' },
-  haha: { emoji: '😆', color: 'text-yellow-600', label: 'Haha' },
-  wow: { emoji: '😮', color: 'text-yellow-600', label: 'Wow' },
-  sad: { emoji: '😢', color: 'text-yellow-600', label: 'Sad' },
-  angry: { emoji: '😠', color: 'text-orange-600', label: 'Angry' },
+  like: { emoji: 'ð', color: 'text-blue-600', label: 'Like' },
+  love: { emoji: 'â¤ï¸', color: 'text-red-600', label: 'Love' },
+  haha: { emoji: 'ð', color: 'text-yellow-600', label: 'Haha' },
+  wow: { emoji: 'ð®', color: 'text-yellow-600', label: 'Wow' },
+  sad: { emoji: 'ð¢', color: 'text-yellow-600', label: 'Sad' },
+  angry: { emoji: 'ð ', color: 'text-orange-600', label: 'Angry' },
 };
 
 const HOLD_TO_OPEN_MS = 400;
@@ -139,7 +139,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onMouseUp={endPress}
         onMouseLeave={endPress}
         style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
-        className={`flex w-full select-none items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
+        className={`flex w-full select-none items-center justify-center rounded-lg py-1.5 transition-transform duration-100 active:scale-90 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? (
           myReaction === 'like' ? (

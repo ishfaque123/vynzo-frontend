@@ -90,8 +90,8 @@ function ReactionSummary({ post }: { post: any }) {
         {topReactions.map((type, i) => (
           <span
             key={type}
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-white bg-slate-50 text-[11px]"
-            style={{ marginLeft: i === 0 ? 0 : -6, zIndex: topReactions.length - i }}
+            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-slate-50 text-[13px] shadow-sm"
+            style={{ marginLeft: i === 0 ? 0 : -7, zIndex: topReactions.length - i }}
           >
             {REACTIONS[type]?.emoji}
           </span>
@@ -100,7 +100,7 @@ function ReactionSummary({ post }: { post: any }) {
       </div>
       <div className="flex gap-3">
         {post.commentCount > 0 && <span>{post.commentCount} comments</span>}
-        {post.shareCount > 0 && <span>{post.shareCount} shares</span>}
+        {post.shareCount > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium">{post.shareCount} shares</span>}
       </div>
     </div>
   );
@@ -140,7 +140,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">
             <RepostIcon />
             <Link href={`/u/${post.author.username}`} className="max-w-[45%] truncate font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
-            <span className="shrink-0 whitespace-nowrap">reposted ÃÂ· {timeAgo(post.createdAt)}</span>
+            <span className="shrink-0 whitespace-nowrap">reposted ÃÂÃÂ· {timeAgo(post.createdAt)}</span>
           </div>
         ) : (
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -166,8 +166,8 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
                   ))}
                 </span>
               )}
-              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> ÃÂ· Ã°ÂÂÂ {post.location}</>}
-                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">Ã°ÂÂÂ Pinned</span>}
+              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> ÃÂÃÂ· ÃÂ°ÃÂÃÂÃÂ {post.location}</>}
+                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">ÃÂ°ÃÂÃÂÃÂ Pinned</span>}
               </span>
             </div>
           </div>
@@ -228,10 +228,10 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       <div className={`flex items-center border-t border-slate-100 px-2 py-1 ${offline ? 'pointer-events-none opacity-50' : ''}`}>
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
-        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 active:bg-slate-100">
+        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
           <CommentIcon />
         </button>
-        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 active:bg-slate-100">
+        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
           <ShareIcon />
         </button>
       </div>
