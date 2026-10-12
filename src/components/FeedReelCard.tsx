@@ -247,7 +247,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
         </button>
       </div>
     </div>
-    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
+    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />}
     </>
   );
 }
