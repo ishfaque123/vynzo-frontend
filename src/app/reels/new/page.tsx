@@ -38,18 +38,9 @@ const REEL_FILTERS = [
 ];
 
 const REEL_TEMPLATES = [
-  { id: 'cinematic', name: 'Cinematic', gradient: 'linear-gradient(135deg,#2c2c2c,#000)', filter: 'vintage', speed: '1', letterbox: true, desc: 'Movie-style bars' },
-  { id: 'glow', name: 'Glow Up', gradient: 'linear-gradient(135deg,#ffd9a0,#ff9a9e)', filter: 'beauty', speed: '1', letterbox: false, desc: 'Smooth + warm' },
-  { id: 'retro', name: 'Retro', gradient: 'linear-gradient(135deg,#8e8e8e,#3a3a3a)', filter: 'bw', speed: '1', letterbox: false, desc: 'Classic B&W' },
-  { id: 'golden', name: 'Golden Hour', gradient: 'linear-gradient(135deg,#f6d365,#fda085)', filter: 'warm', speed: '1', letterbox: false, desc: 'Warm sunset glow' },
-  { id: 'dreamy', name: 'Dreamy', gradient: 'linear-gradient(135deg,#a8edea,#fed6e3)', filter: 'cool', speed: '0.5', letterbox: false, desc: 'Slow + cool tones' },
-  { id: 'bold', name: 'Bold', gradient: 'linear-gradient(135deg,#ff0844,#ffb199)', filter: 'vivid', speed: '1', letterbox: false, desc: 'Punchy colors' },
-];
-
-const TEXT_TEMPLATES = [
-  { id: 'pov', name: 'POV', text: 'POV:', position: 'top' },
-  { id: 'wait', name: 'Wait for it', text: 'Wait for it...', position: 'middle' },
-  { id: 'lower', name: 'Lower Third', text: 'Your Name', position: 'bottom' },
+  { id: 'cinematic', name: 'Cinematic', gradient: 'linear-gradient(135deg,#1a1a2e,#0f0f0f)', filter: 'vintage', speed: '1', letterbox: true, desc: 'Movie-style bars' },
+  { id: 'glow', name: 'Glow', gradient: 'linear-gradient(135deg,#ffd9a0,#ff9a9e)', filter: 'beauty', speed: '1', letterbox: false, desc: 'Smooth skin glow' },
+  { id: 'slowmo', name: 'Slow Mo', gradient: 'linear-gradient(135deg,#a8edea,#7fb8e8)', filter: 'cool', speed: '0.5', letterbox: false, desc: 'Smooth slow motion' },
 ];
 
 function formatTrimTime(sec: number) {
@@ -107,12 +98,6 @@ export default function NewReelPage() {
     setActiveTemplate(t.id);
     setTemplateOpen(false);
     setToast({ message: t.name + ' applied', type: 'success' });
-  }
-
-  function applyTextTemplate(t: { name: string; text: string; position: string }) {
-    setTextOverlay(t.text);
-    setTextPosition(t.position as 'top' | 'middle' | 'bottom');
-    setToast({ message: t.name + ' text added', type: 'success' });
   }
 
   function clearTemplate() {
@@ -996,50 +981,43 @@ export default function NewReelPage() {
         </div>
       )}
 
-      {templateOpen && (
-        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Templates</p>
+            {templateOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+          <div className="mb-5 flex items-center justify-between">
+            <p className="text-base font-bold text-white">Templates</p>
             <div className="flex gap-2">
               {activeTemplate && (
                 <button onClick={clearTemplate} className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-semibold text-white">Clear</button>
               )}
-              <button onClick={() => setTemplateOpen(false)} className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black">Done</button>
+              <button onClick={() => setTemplateOpen(false)} className="rounded-full bg-white px-5 py-1.5 text-xs font-bold text-black">Done</button>
             </div>
           </div>
-          <p className="mb-2 text-xs text-white/50">Style presets</p>
-          <div className="mb-4 grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-4">
             {REEL_TEMPLATES.map((t) => (
-              <button key={t.id} onClick={() => applyTemplate(t)} className="flex flex-col items-center gap-1.5">
-                <span className={"relative block h-20 w-full overflow-hidden rounded-xl border-2 transition " + (activeTemplate === t.id ? "border-emerald-400" : "border-white/10")} style={{ background: t.gradient }}>
+              <button key={t.id} onClick={() => applyTemplate(t)} className="group flex flex-col items-center">
+                <span className={"relative block aspect-[3/4] w-full overflow-hidden rounded-2xl transition-all duration-200 " + (activeTemplate === t.id ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-neutral-950 scale-[1.02]" : "ring-1 ring-white/10 group-active:scale-95")} style={{ background: t.gradient }}>
                   {t.letterbox && (
                     <>
-                      <span className="absolute inset-x-0 top-0 h-[18%] bg-black" />
-                      <span className="absolute inset-x-0 bottom-0 h-[18%] bg-black" />
+                      <span className="absolute inset-x-0 top-0 h-[16%] bg-black" />
+                      <span className="absolute inset-x-0 bottom-0 h-[16%] bg-black" />
                     </>
                   )}
                   {activeTemplate === t.id && (
-                    <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-bold text-black">&#10003;</span>
+                    <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 shadow-lg">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
                   )}
                 </span>
-                <span className={"text-[11px] font-medium " + (activeTemplate === t.id ? "text-emerald-400" : "text-white/70")}>{t.name}</span>
-                <span className="text-[10px] text-white/40">{t.desc}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mb-2 text-xs text-white/50">Text presets</p>
-          <div className="flex gap-2">
-            {TEXT_TEMPLATES.map((t) => (
-              <button key={t.id} onClick={() => applyTextTemplate(t)} className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-center transition active:scale-95">
-                <p className="text-sm font-bold text-white">{t.name}</p>
-                <p className="mt-0.5 text-[10px] text-white/40">Tap to add</p>
+                <span className={"mt-2.5 text-[13px] font-semibold " + (activeTemplate === t.id ? "text-emerald-400" : "text-white")}>{t.name}</span>
+                <span className="mt-0.5 text-center text-[11px] leading-tight text-white/45">{t.desc}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {textOpen && (
+{textOpen && (
         <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-semibold text-white">Add text</p>
