@@ -74,7 +74,7 @@ export function timeAgo(dateStr: string) {
   return `${Math.floor(days / 365)}y`;
 }
 
-function ReactionSummary({ post }: { post: any }) {
+function ReactionSummary({ post, countDelta = 0 }: { post: any; countDelta?: number }) {
   const topReactions = post.reactionCounts
     ? Object.entries(post.reactionCounts as Record<string, number>)
         .sort((a, b) => b[1] - a[1])
@@ -82,7 +82,8 @@ function ReactionSummary({ post }: { post: any }) {
         .map(([type]) => type)
     : [];
 
-  const hasAny = (post.likeCount > 0) || (post.commentCount > 0) || (post.shareCount > 0);
+  const liveCommentCount = Math.max(0, (post.commentCount || 0) + countDelta);
+  const hasAny = (post.likeCount > 0) || (liveCommentCount > 0) || (post.shareCount > 0);
   if (!hasAny) return null;
 
   return (
@@ -100,7 +101,7 @@ function ReactionSummary({ post }: { post: any }) {
         {post.likeCount > 0 && <span className="ml-1.5">{post.likeCount}</span>}
       </div>
       <div className="flex gap-3">
-        {post.commentCount > 0 && <span>{post.commentCount} comments</span>}
+        {liveCommentCount > 0 && <span>{liveCommentCount} comments</span>}
         {post.shareCount > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium">{post.shareCount} shares</span>}
       </div>
     </div>
@@ -110,6 +111,18 @@ function ReactionSummary({ post }: { post: any }) {
 export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted, offline = false }: any) {
   const isOwner = currentUser?.username === post.author.username;
   const [hiding, setHiding] = useState(false);
+  const [countDelta, setCountDelta] = useState(0);
+
+  // Live comment count updates (add/delete) without parent refetch
+  useEffect(() => {
+    function onCountChange(e: any) {
+      if (e.detail?.postId === post.id && typeof e.detail?.delta === 'number') {
+        setCountDelta((d) => d + e.detail.delta);
+      }
+    }
+    window.addEventListener('frianzo-comment-count', onCountChange);
+    return () => window.removeEventListener('frianzo-comment-count', onCountChange);
+  }, [post.id]);
   const cardRef = useRef<HTMLDivElement>(null);
   const viewedRef = useRef(false);
 
@@ -225,7 +238,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         </div>
       )}
 
-      <ReactionSummary post={post} />
+      <ReactionSummary post={post} countDelta={countDelta} />
 
       <div className={`flex items-center border-t border-slate-100 px-2 py-1 ${offline ? 'pointer-events-none opacity-50' : ''}`}>
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />

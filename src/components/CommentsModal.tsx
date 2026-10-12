@@ -36,7 +36,10 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     try {
       const r = await onAddComment(post.id);
       if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.');
-      else setReplyTo(null);
+      else {
+        setReplyTo(null);
+        window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
+      }
     } finally {
       postingRef.current = false;
       setPosting(false);
@@ -188,7 +191,10 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                 <div key={c.id} className="mb-3">
                   <CommentItem comment={c} currentUser={currentUser} postOwnerId={post.author.id}
                     onReplyClick={startReply}
-                    onChanged={() => onCommentsChanged(post.id)} depth={0} />
+                    onChanged={(action: string) => {
+                      if (action === 'delete') window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: -1 } }));
+                      onCommentsChanged(post.id);
+                    }} depth={0} />
 
                   {flatReplies.length > 0 && (
                     <div className="ml-8 mt-1 pl-4">
@@ -201,7 +207,10 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                           {flatReplies.map((r: any) => (
                             <CommentItem key={r.id} comment={r} currentUser={currentUser} postOwnerId={post.author.id}
                               onReplyClick={startReply}
-                              onChanged={() => onCommentsChanged(post.id)} depth={1} parentAuthor={r.parentAuthor} />
+                              onChanged={(action: string) => {
+                                if (action === 'delete') window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: -1 } }));
+                                onCommentsChanged(post.id);
+                              }} depth={1} parentAuthor={r.parentAuthor} />
                           ))}
                           <button onClick={() => toggleExpand(c.id)} className="mt-1 text-xs font-semibold text-slate-500 hover:underline">
                             Hide replies

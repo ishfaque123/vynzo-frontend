@@ -104,7 +104,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     setDeleting(true);
     try {
       const result = await deleteComment(comment.id);
-      if (result.success) onChanged();
+      if (result.success) onChanged('delete');
       else setToast({ message: 'Could not delete comment.', type: 'error' });
     } catch {
       setToast({ message: 'Could not delete comment.', type: 'error' });
@@ -115,7 +115,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   }
   async function saveEdit() {
     const result = await editComment(comment.id, editText);
-    if (result.success) { onChanged(); setEditing(false); }
+    if (result.success) { onChanged('edit'); setEditing(false); }
   }
   function copyComment() {
     navigator.clipboard.writeText(comment.content);
@@ -205,6 +205,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
             <button onClick={() => onReplyClick(comment.id, comment.author.displayName)}>Reply</button>
             {localCount > 0 && <span>{formatCount(localCount)}</span>}
             <span>{timeAgo(comment.createdAt)}</span>
+            {comment.updatedAt && new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 60000 && (
+              <span className="italic">· edited</span>
+            )}
 
             <div className="relative ml-auto">
               <button onClick={() => setMenuOpen(!menuOpen)}><DotsIcon /></button>
