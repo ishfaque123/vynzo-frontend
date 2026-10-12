@@ -220,7 +220,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   placeholder="Write a comment..."
                   className="flex-1 rounded-lg border px-3 py-2 text-sm"
                 />
-                <button onClick={handleSend} disabled={posting || !commentText.trim()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60">{posting ? 'Sending…' : 'Send'}</button>
+                <button onClick={handleSend} disabled={posting || !commentText.trim()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60">{posting ? {posting ? 'Sending\u2026' : 'Send'}}</button>
               </div>
             </>
           )}

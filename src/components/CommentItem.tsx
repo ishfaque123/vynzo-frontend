@@ -6,8 +6,10 @@ import { setCommentReaction, deleteComment, editComment, reportComment } from '@
 import FollowButton from './FollowButton';
 import Toast from './Toast';
 import VerifiedBadge from './VerifiedBadge';
+import ReactionIcon from './ReactionIcon';
 
-const REACTIONS: Record<string, string> = { like: 'ð', love: 'â¤ï¸', haha: 'ð', wow: 'ð®', sad: 'ð¢', angry: 'ð ' };
+const REACTION_KEYS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
+const REACTION_LABELS: Record<string, string> = { like: 'Like', love: 'Love', haha: 'Haha', wow: 'Wow', sad: 'Sad', angry: 'Angry' };
 
 function Avatar({ url, name }: { url?: string; name?: string }) {
   return (
@@ -129,6 +131,22 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
 
   return (
     <div className={isReply ? 'relative ml-8 mt-2 pl-4' : 'mb-3'}>
+      <style>{`
+        @keyframes fz-reaction-pop {
+          0% { transform: scale(0) translateY(10px); opacity: 0; }
+          60% { transform: scale(1.25) translateY(-4px); opacity: 1; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .fz-reaction-item {
+          animation: fz-reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+          transition: transform 0.15s ease;
+        }
+        .fz-reaction-item:hover {
+          transform: scale(1.45) translateY(-6px) !important;
+          z-index: 10;
+        }
+      `}</style>
       {isReply && <span aria-hidden="true" className="absolute left-0 top-3 h-px w-4 bg-slate-200" />}
       <div className="flex items-start gap-2">
         <Link href={`/u/${comment.author.username}`}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
@@ -160,12 +178,17 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
 
           <div className="mt-1 flex items-center gap-3 px-2 text-xs text-slate-500">
             <div className="relative">
-              <button onClick={() => (showPicker ? setShowPicker(false) : openPicker())} className={localReaction ? 'font-semibold text-blue-600' : ''}>
-                {localReaction ? REACTIONS[localReaction] : 'Like'}
+              <button onClick={() => (showPicker ? setShowPicker(false) : openPicker())} className={`flex items-center gap-1 ${localReaction ? 'font-semibold text-blue-600' : ''}`}>
+                {localReaction ? <ReactionIcon type={localReaction} size={18} /> : 'Like'}
               </button>
               {showPicker && (
-                <div className="absolute bottom-full left-0 mb-1 flex gap-1 rounded-full border bg-white p-1 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
-                  {Object.entries(REACTIONS).map(([key, emoji]) => (<button key={key} onClick={() => react(key)} className="text-lg hover:scale-125">{emoji}</button>))}
+                <div className="absolute bottom-full left-0 z-50 mb-1 flex gap-1 rounded-full border border-black/5 bg-white p-1.5 shadow-xl" onMouseLeave={() => setShowPicker(false)}>
+                  {REACTION_KEYS.map((key, idx) => (
+                    <button key={key} onClick={() => react(key)} aria-label={REACTION_LABELS[key]}
+                      className="fz-reaction-item" style={{ animationDelay: `${idx * 45}ms` }}>
+                      <ReactionIcon type={key} size={32} />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
