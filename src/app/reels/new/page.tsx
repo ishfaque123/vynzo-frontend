@@ -218,7 +218,7 @@ export default function NewReelPage() {
     }
 
     let cancelled = false;
-    const thumbnailCount = 14;
+    const thumbnailCount = 7;
     const video = document.createElement('video');
     video.src = previewUrl;
     video.preload = 'auto';
@@ -417,9 +417,9 @@ export default function NewReelPage() {
         if (srcRatio > targetRatio) { sh = vh; sw = vh * targetRatio; sx = (vw - sw) / 2; sy = 0; }
         else { sw = vw; sh = vw / targetRatio; sx = 0; sy = (vh - sh) / 2; }
         const frames: string[] = [];
-        for (let i = 0; i < 14; i += 1) {
+        for (let i = 0; i < 7; i += 1) {
           if (cancelled) return;
-          const target = rangeStart + (rangeEnd - rangeStart) * ((i + 0.5) / 14);
+          const target = rangeStart + (rangeEnd - rangeStart) * ((i + 0.5) / 7);
           await new Promise<void>((resolve) => {
             const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
             video.addEventListener('seeked', onSeeked);
@@ -1130,12 +1130,10 @@ export default function NewReelPage() {
       )}
 
       {coverOpen && (
-        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
           <div className="mb-4 flex items-start justify-between">
-            <div>
-              <p className="text-sm font-semibold text-white">Select cover</p>
-              <p className="mt-0.5 text-xs text-white/50">Pick a frame for your reel thumbnail</p>
-            </div>
+            <p className="text-base font-bold text-white">Select cover</p>
             <button onClick={() => setCoverOpen(false)} disabled={capturingCover} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
           </div>
 
@@ -1152,7 +1150,7 @@ export default function NewReelPage() {
           </div>
 
           <div className="grid grid-cols-7 gap-1.5">
-            {(coverThumbnails.length ? coverThumbnails : Array.from({ length: 14 }, () => '')).map((thumb, i) => (
+            {(coverThumbnails.length ? coverThumbnails : Array.from({ length: 7 }, () => '')).map((thumb, i) => (
               <button
                 key={i}
                 type="button"
