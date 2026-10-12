@@ -18,6 +18,12 @@ function EffectsIcon() {
 function CoverIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M4.5 17.5l4.5-4.5 3 3 3.5-3.5 4 4" /></svg>;
 }
+function TextIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V5h16v2M9 20h6M12 5v15" /></svg>;
+}
+function SpeedIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M9 2h6" /></svg>;
+}
 
 const MIN_TRIM_DURATION = 1;
 
@@ -28,6 +34,7 @@ const REEL_FILTERS = [
   { id: 'bw', name: 'B&W', css: 'grayscale(1) contrast(1.1)' },
   { id: 'vintage', name: 'Vintage', css: 'sepia(0.4) saturate(0.8) contrast(0.95) brightness(1.02)' },
   { id: 'vivid', name: 'Vivid', css: 'saturate(1.5) contrast(1.12) brightness(1.01)' },
+  { id: 'beauty', name: 'Beauty', css: 'brightness(1.04) saturate(1.18) contrast(1.02)' },
 ];
 
 function formatTrimTime(sec: number) {
@@ -67,8 +74,20 @@ export default function NewReelPage() {
   const [capturingCover, setCapturingCover] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filter, setFilter] = useState('normal');
+  const [textOpen, setTextOpen] = useState(false);
+  const [textOverlay, setTextOverlay] = useState('');
+  const [textPosition, setTextPosition] = useState<'top' | 'middle' | 'bottom'>('top');
+  const [speedOpen, setSpeedOpen] = useState(false);
+  const [speed, setSpeed] = useState('1');
   const [filterThumb, setFilterThumb] = useState<string | null>(null);
   const activeFilterCss = (REEL_FILTERS.find((f) => f.id === filter) || REEL_FILTERS[0]).css;
+
+  // Apply selected playback speed to the preview video
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = parseFloat(speed) || 1;
+    }
+  }, [speed, previewUrl]);
   useEffect(() => {
     if (!filterOpen || filterThumb) return;
     const video = videoRef.current;
@@ -294,6 +313,8 @@ export default function NewReelPage() {
         durationSec: selectedDuration,
         ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
         ...(filter !== 'normal' ? { filter } : {}),
+        ...(textOverlay.trim() ? { textOverlay: textOverlay.trim().slice(0, 100), textPosition } : {}),
+        ...(speed !== '1' ? { speed } : {}),
       },
       setUploadProgress
     );
@@ -665,11 +686,12 @@ export default function NewReelPage() {
           disabled={posting || trimming || trimOpen || trimEnd <= trimStart}
           className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 disabled:opacity-50"
         >
-          {posting ? (postTrimProcessing && uploadProgress === 100 ? 'Processing…' : `${uploadProgress ?? 0}%`) : 'Post'}
+          {posting ? (postTrimProcessing && uploadProgress === 100 ? 'Processingâ¦' : `${uploadProgress ?? 0}%`) : 'Post'}
         </button>
       </div>
 
       <div className="flex flex-1 items-center justify-center overflow-hidden px-4">
+        <div className="relative flex max-h-full max-w-full items-center justify-center">
         <video
           ref={videoRef}
           key={previewUrl}
@@ -691,6 +713,12 @@ export default function NewReelPage() {
             }
           }}
         />
+        {textOverlay.trim() && (
+          <div className={`pointer-events-none absolute inset-x-0 flex justify-center px-6 ${textPosition === 'top' ? 'top-6' : textPosition === 'bottom' ? 'bottom-6' : 'top-1/2 -translate-y-1/2'}`}>
+            <span className="text-center text-2xl font-bold text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.7)' }}>{textOverlay.trim()}</span>
+          </div>
+        )}
+        </div>
       </div>
 
       <div className="space-y-3 p-4">
@@ -701,7 +729,7 @@ export default function NewReelPage() {
         )}
         {posting && postTrimProcessing && uploadProgress === 100 && (
           <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs text-white/80">
-            Processing… Please wait while the server prepares your reel.
+            Processingâ¦ Please wait while the server prepares your reel.
           </div>
         )}
         <textarea
@@ -735,6 +763,16 @@ export default function NewReelPage() {
             Effects
             {filter !== 'normal' && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
           </button>
+          <button onClick={() => setTextOpen(true)} className="relative flex flex-col items-center gap-1 text-xs text-white">
+            <TextIcon />
+            Text
+            {textOverlay.trim() && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
+          </button>
+          <button onClick={() => setSpeedOpen(true)} className="relative flex flex-col items-center gap-1 text-xs text-white">
+            <SpeedIcon />
+            Speed
+            {speed !== '1' && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
+          </button>
           <span className="ml-auto text-[11px] text-white/50">{selectedDuration}s selected</span>
         </div>
       </div>
@@ -743,7 +781,7 @@ export default function NewReelPage() {
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-[2px]">
           <div className="flex flex-col items-center gap-3 rounded-2xl bg-neutral-900 px-6 py-5 shadow-2xl">
             <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-            <p className="text-sm font-medium text-white">Trimming video…</p>
+            <p className="text-sm font-medium text-white">Trimming videoâ¦</p>
             <p className="text-xs text-white/50">Please wait</p>
           </div>
         </div>
@@ -754,7 +792,7 @@ export default function NewReelPage() {
           <div className="mb-4 flex items-start justify-between">
             <div>
               <p className="text-sm font-semibold text-white">Trim video</p>
-              <p className="mt-0.5 text-xs text-white/50">{formatTrimTime(trimStart)} – {formatTrimTime(trimEnd)}</p>
+              <p className="mt-0.5 text-xs text-white/50">{formatTrimTime(trimStart)} â {formatTrimTime(trimEnd)}</p>
             </div>
             <button onClick={cancelTrim} disabled={trimming} className="text-xs text-white/60 disabled:opacity-40">Cancel</button>
           </div>
@@ -870,7 +908,7 @@ export default function NewReelPage() {
               disabled={trimming}
               className="flex-1 rounded-lg bg-emerald-500 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
             >
-              {trimming ? 'Processing…' : 'Done'}
+              {trimming ? 'Processingâ¦' : 'Done'}
             </button>
           </div>
         </div>
@@ -896,13 +934,65 @@ export default function NewReelPage() {
                     <span className="block h-full w-full" style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6,#3b82f6)', filter: f.css || undefined }} />
                   )}
                   {filter === f.id && (
-                    <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-bold text-black">✓</span>
+                    <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-bold text-black">â</span>
                   )}
                 </span>
                 <span className={`text-[11px] font-medium ${filter === f.id ? 'text-emerald-400' : 'text-white/70'}`}>{f.name}</span>
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {textOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">Add text</p>
+            <button onClick={() => setTextOpen(false)} className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black">Done</button>
+          </div>
+          <input
+            value={textOverlay}
+            onChange={(e) => setTextOverlay(e.target.value.slice(0, 100))}
+            placeholder="Write something..."
+            maxLength={100}
+            className="mb-3 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white placeholder-white/50 outline-none"
+          />
+          <p className="mb-2 text-xs text-white/60">Position</p>
+          <div className="flex gap-2">
+            {(['top', 'middle', 'bottom'] as const).map((pos) => (
+              <button
+                key={pos}
+                onClick={() => setTextPosition(pos)}
+                className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium capitalize transition ${textPosition === pos ? 'bg-emerald-400 text-black' : 'bg-white/10 text-white/70'}`}
+              >
+                {pos}
+              </button>
+            ))}
+          </div>
+          {textOverlay.trim() && (
+            <button onClick={() => setTextOverlay('')} className="mt-3 text-xs text-red-400">Remove text</button>
+          )}
+        </div>
+      )}
+
+      {speedOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">Playback speed</p>
+            <button onClick={() => setSpeedOpen(false)} className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black">Done</button>
+          </div>
+          <div className="flex gap-2">
+            {(['0.5', '1', '1.5', '2'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSpeed(s)}
+                className={`flex-1 rounded-lg px-3 py-3 text-sm font-semibold transition ${speed === s ? 'bg-emerald-400 text-black' : 'bg-white/10 text-white/70'}`}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-white/50">Preview plays at this speed. The posted reel keeps it too.</p>
         </div>
       )}
 
@@ -921,7 +1011,7 @@ export default function NewReelPage() {
               {coverThumbnails[coverIndex] ? (
                 <img src={coverThumbnails[coverIndex]} alt="Cover preview" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full items-center justify-center text-xs text-white/40">Loading…</div>
+                <div className="flex h-full items-center justify-center text-xs text-white/40">Loadingâ¦</div>
               )}
             </div>
           </div>
@@ -959,7 +1049,7 @@ export default function NewReelPage() {
               disabled={capturingCover || !coverThumbnails.length}
               className="flex-1 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-400 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
             >
-              {capturingCover ? 'Processing…' : 'Done'}
+              {capturingCover ? 'Processingâ¦' : 'Done'}
             </button>
           </div>
         </div>
