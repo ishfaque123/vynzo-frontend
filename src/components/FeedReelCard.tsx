@@ -27,6 +27,104 @@ function UnmuteIcon() {
   );
 }
 
+// Professional caption row: sits below the author header and above the video
+// (same convention as post cards), with selectable text, long-press-to-copy,
+// clickable @mentions, highlighted #hashtags, and a smart more/less expander
+// for long captions.
+function ReelCaption({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const pRef = useRef<HTMLParagraphElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const copiedRef = useRef(false);
+
+  const handleCopy = async () => {
+    if (copiedRef.current) return;
+    copiedRef.current = true;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    // Reset guard after a short delay so a new long-press can copy again
+    setTimeout(() => { copiedRef.current = false; }, 1000);
+  };
+
+  const startPress = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    copiedRef.current = false;
+    timerRef.current = setTimeout(handleCopy, 500);
+  };
+
+  const endPress = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  // Detect whether the caption is actually being truncated, so the
+  // more/less toggle only appears when it is needed.
+  useEffect(() => {
+    const el = pRef.current;
+    if (el && !expanded) {
+      setClamped(el.scrollHeight > el.clientHeight + 1);
+    } else {
+      setClamped(false);
+    }
+  }, [text, expanded]);
+
+  const parts = text.split(/(#[a-zA-Z0-9_]+|@[a-zA-Z0-9_.]+)/g);
+
+  return (
+    <div className="px-3 pb-2">
+      <p
+        ref={pRef}
+        className={`select-text whitespace-pre-wrap text-[15px] leading-snug text-slate-900 ${expanded ? '' : 'line-clamp-3'}`}
+        onTouchStart={startPress}
+        onTouchEnd={endPress}
+        onTouchMove={endPress}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {parts.map((part, i) => {
+          if (/^#[a-zA-Z0-9_]+$/.test(part)) {
+            return <span key={i} className="font-medium text-blue-600">{part}</span>;
+          }
+          if (/^@[a-zA-Z0-9_.]+$/.test(part)) {
+            const username = part.slice(1);
+            return (
+              <Link
+                key={i}
+                href={`/u/${username}`}
+                className="font-medium text-blue-600"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {part}
+              </Link>
+            );
+          }
+          return <span key={i}>{part}</span>;
+        })}
+      </p>
+      {(clamped || expanded) && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-0.5 text-sm font-semibold text-slate-500"
+        >
+          {expanded ? 'less' : 'more'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function FeedReelCard({ reel }: { reel: any }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,6 +208,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
         <Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} />
         <span className="text-sm font-semibold text-slate-800">{reel.author?.displayName}</span>
       </div>
+      {reel.caption && <ReelCaption text={reel.caption} />}
       <div ref={containerRef} className="relative aspect-[9/16] max-h-[420px] w-full bg-black">
         <video
           ref={videoRef}
@@ -121,10 +220,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
           preload="metadata"
           className="h-full w-full object-cover"
         />
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between bg-gradient-to-b from-black/70 via-black/25 to-transparent px-3 pb-8 pt-2">
-          {reel.caption ? (
-            <p className="max-w-[80%] text-sm text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">{reel.caption}</p>
-          ) : <span />}
+        <div className="absolute right-3 top-2">
           <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
         </div>
         <button
