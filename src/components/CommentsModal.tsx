@@ -28,6 +28,53 @@ export default function CommentsModal({ post, currentUser, comments, commentText
   const [posting, setPosting] = useState(false);
   const postingRef = useRef(false);
 
+  async function searchMentions(q: string) {
+    if (mentionTimer.current) clearTimeout(mentionTimer.current);
+    if (!q.trim()) { setMentionResults([]); setMentionQuery(null); return; }
+    mentionTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}&limit=5`);
+        const data = await res.json();
+        setMentionResults(data.data?.users || data.users || []);
+        setMentionIndex(0);
+      } catch { setMentionResults([]); }
+    }, 300);
+  }
+
+  function applyMention(user: any) {
+    if (mentionQuery === null) return;
+    // Replace @query with @username
+    const before = commentText.slice(0, commentText.lastIndexOf('@' + mentionQuery));
+    const after = commentText.slice(commentText.lastIndexOf('@' + mentionQuery) + mentionQuery.length + 1);
+    const next = before + '@' + user.username + ' ' + after;
+    setCommentText(next);
+    setMentionQuery(null);
+    setMentionResults([]);
+    // Resize textarea
+    if (inputRef.current) {
+      const el = inputRef.current as any;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+      el.focus();
+    }
+  }
+
+  function handleMentionInput(value: string) {
+    setCommentText(value);
+    setSubmitError(null);
+    // Detect @query at cursor
+    const cursorPos = (inputRef.current as any)?.selectionStart ?? value.length;
+    const textBefore = value.slice(0, cursorPos);
+    const match = textBefore.match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1]);
+      searchMentions(match[1]);
+    } else {
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  }
+
   async function handleSend() {
     if (postingRef.current || !commentText.trim()) return;
     postingRef.current = true;
@@ -136,6 +183,11 @@ export default function CommentsModal({ post, currentUser, comments, commentText
   }
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'top' | 'newest'>('top');
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<any[]>([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const mentionTimer = useRef<any>(null);
   const authorId = post?.author?.id || post?.userId;
   const canComment = post?.commentAudience !== 'only_me' || !currentUser || currentUser.id === authorId;
 
@@ -171,6 +223,16 @@ export default function CommentsModal({ post, currentUser, comments, commentText
         </div>
         <div className="relative flex items-center justify-center border-b px-4 py-2">
           <p className="font-semibold">Comments</p>
+          <div className="absolute left-3 flex rounded-full bg-slate-100 p-0.5 text-xs">
+            <button
+              onClick={() => setSortBy('top')}
+              className={`rounded-full px-2.5 py-1 font-medium transition-colors ${sortBy === 'top' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >Top</button>
+            <button
+              onClick={() => setSortBy('newest')}
+              className={`rounded-full px-2.5 py-1 font-medium transition-colors ${sortBy === 'newest' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            >Newest</button>
+          </div>
           <button onClick={onClose} aria-label="Close comments" className="absolute right-3 rounded-full p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
@@ -186,7 +248,11 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           {(comments || []).length === 0 ? (
             <p className="pt-6 text-center text-sm text-slate-400">No comments yet. Be the first to comment.</p>
           ) : (
-            (comments || []).map((c: any) => {
+            [...(comments || [])].sort((a: any, b: any) =>
+              sortBy === 'top'
+                ? (b.reactionCount || 0) - (a.reactionCount || 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            ).map((c: any) => {
               const flatReplies = flattenReplies(c.replies, c.author);
               const isExpanded = expandedIds.has(c.id);
               return (
@@ -241,17 +307,44 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   </button>
                 </div>
               )}
+              {mentionQuery !== null && mentionResults.length > 0 && (
+                <div className="mb-2 overflow-hidden rounded-xl border bg-white shadow-lg">
+                  {mentionResults.map((u: any, i: number) => (
+                    <button
+                      key={u.id}
+                      onClick={() => applyMention(u)}
+                      onMouseEnter={() => setMentionIndex(i)}
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 ${i === mentionIndex ? 'bg-blue-50' : ''}`}
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center text-xs font-semibold text-slate-600" style={u.profilePictureUrl ? { backgroundImage: `url(${u.profilePictureUrl})` } : {}}>
+                        {!u.profilePictureUrl && (u.displayName?.[0]?.toUpperCase() || '?')}
+                      </div>
+                      <div>
+                        <p className="font-semibold leading-tight">{u.displayName}</p>
+                        <p className="text-xs text-slate-500 leading-tight">@{u.username}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex items-end gap-2">
                 <textarea
                   ref={inputRef as any}
                   value={commentText}
                   rows={1}
                   onChange={(e) => {
-                    setCommentText(e.target.value);
-                    setSubmitError(null);
+                    handleMentionInput(e.target.value);
                     // Auto-grow
                     e.target.style.height = 'auto';
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (mentionQuery !== null && mentionResults.length > 0) {
+                      if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex((i) => (i + 1) % mentionResults.length); return; }
+                      if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIndex((i) => (i - 1 + mentionResults.length) % mentionResults.length); return; }
+                      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); applyMention(mentionResults[mentionIndex]); return; }
+                      if (e.key === 'Escape') { setMentionQuery(null); setMentionResults([]); return; }
+                    }
                   }}
 
                   placeholder="Write a comment..."
