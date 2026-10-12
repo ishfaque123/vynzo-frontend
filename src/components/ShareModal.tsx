@@ -99,16 +99,19 @@ interface ShareModalProps {
   reelId?: string;
   profileUsername?: string;
   profileId?: string;
+  // Permanent share code supplied with the feed data (generated once on first
+  // share, reused forever). When present, no share-link API call is made.
+  initialShareCode?: string | null;
 }
 
 const CLOSE_THRESHOLD_PX = 100;
 
-export default function ShareModal({ postId, reelId, profileUsername, profileId, onClose }: ShareModalProps) {
+export default function ShareModal({ postId, reelId, profileUsername, profileId, initialShareCode, onClose }: ShareModalProps) {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState('');
-  const [shareCode, setShareCode] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(true);
+  const [shareCode, setShareCode] = useState<string | null>(initialShareCode ?? null);
+  const [generating, setGenerating] = useState(!initialShareCode);
   const [dragY, setDragY] = useState(0);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
@@ -141,6 +144,12 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
   const url = shareCode ? `${origin}/s/${shareCode}` : fallbackUrl;
 
   useEffect(() => {
+    // Code already supplied with the feed data — nothing to generate.
+    if (initialShareCode) {
+      setShareCode(initialShareCode);
+      setGenerating(false);
+      return;
+    }
     let cancelled = false;
     const targetType = profileUsername ? 'profile' : reelId ? 'reel' : 'post';
     const targetId = profileUsername ? profileId : reelId || postId;
@@ -161,7 +170,7 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
     return () => {
       cancelled = true;
     };
-  }, [profileUsername, profileId, reelId, postId]);
+  }, [profileUsername, profileId, reelId, postId, initialShareCode]);
 
   function copyLink() {
     navigator.clipboard.writeText(url);
