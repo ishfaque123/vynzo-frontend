@@ -13,7 +13,7 @@ export const REACTIONS: Record<string, { emoji: string; color: string; label: st
   angry: { emoji: '😠', color: 'text-orange-600', label: 'Angry' },
 };
 
-const HOLD_TO_OPEN_MS = 400; // 400ms — press and hold to open reaction picker
+const HOLD_TO_OPEN_MS = 400;
 
 function ThumbIcon() {
   return (
@@ -26,6 +26,8 @@ function ThumbIcon() {
 
 export default function ReactionButton({ postId, myReaction, likeCount, onChange }: { postId: string; myReaction: string | null; likeCount: number; onChange: (reaction: string | null, count: number) => void; }) {
   const [showPicker, setShowPicker] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [justReacted, setJustReacted] = useState(false);
   const pressTimer = useRef<any>(null);
   const openedByHold = useRef(false);
 
@@ -37,6 +39,14 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
     return () => window.removeEventListener('reaction-picker-open', onOtherOpen);
   }, [postId]);
 
+  // Selection bounce animation trigger
+  useEffect(() => {
+    if (justReacted) {
+      const t = setTimeout(() => setJustReacted(false), 600);
+      return () => clearTimeout(t);
+    }
+  }, [justReacted]);
+
   function openPicker() {
     window.dispatchEvent(new CustomEvent('reaction-picker-open', { detail: postId }));
     setShowPicker(true);
@@ -45,6 +55,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   async function apply(type: string) {
     playReactionSound();
     setShowPicker(false);
+    setJustReacted(true);
     const result = await setReaction(postId, type);
     if (result.success) onChange(result.data.reaction, result.data.likeCount);
   }
@@ -60,14 +71,61 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   function endPress() { clearTimeout(pressTimer.current); }
 
   const current = myReaction ? REACTIONS[myReaction] : null;
+  const reactionKeys = Object.keys(REACTIONS);
 
   return (
     <div className="relative flex-1">
+      <style>{`
+        @keyframes fz-reaction-pop {
+          0% { transform: scale(0) translateY(10px); opacity: 0; }
+          60% { transform: scale(1.25) translateY(-4px); opacity: 1; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes fz-reaction-select {
+          0% { transform: scale(1); }
+          40% { transform: scale(1.5) rotate(-8deg); }
+          70% { transform: scale(0.9) rotate(4deg); }
+          100% { transform: scale(1) rotate(0); }
+        }
+        @keyframes fz-reaction-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        .fz-reaction-item {
+          animation: fz-reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+          transition: transform 0.15s ease;
+        }
+        .fz-reaction-item:hover {
+          transform: scale(1.45) translateY(-6px) !important;
+          filter: drop-shadow(0 6px 10px rgba(0,0,0,0.3));
+          z-index: 10;
+        }
+      `}</style>
       {showPicker && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 flex gap-1 rounded-full border bg-white p-1.5 shadow-lg" onMouseLeave={() => setShowPicker(false)}>
-          {Object.entries(REACTIONS).map(([key, r]) => (
-            <button key={key} onClick={() => apply(key)} className="text-2xl transition-transform hover:scale-125">{r.emoji}</button>
-          ))}
+        <div className="absolute bottom-full left-0 z-50 mb-2 flex gap-1.5 rounded-full border border-black/5 bg-white px-2.5 py-2 shadow-xl" onMouseLeave={() => { setShowPicker(false); setHovered(null); }}>
+          {reactionKeys.map((key, idx) => {
+            const r = REACTIONS[key];
+            return (
+              <div key={key} className="relative flex flex-col items-center">
+                {hovered === key && (
+                  <span className="absolute -top-8 whitespace-nowrap rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-medium text-white">
+                    {r.label}
+                  </span>
+                )}
+                <button
+                  onClick={() => apply(key)}
+                  onMouseEnter={() => setHovered(key)}
+                  onMouseLeave={() => setHovered(null)}
+                  aria-label={r.label}
+                  className="fz-reaction-item text-[32px] leading-none"
+                  style={{ animationDelay: `${idx * 45}ms` }}
+                >
+                  {r.emoji}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
       <button
@@ -83,7 +141,16 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
         className={`flex w-full select-none items-center justify-center py-1.5 ${current ? current.color : 'text-slate-600'}`}
       >
-        {current ? <span className="text-[20px] leading-none">{current.emoji}</span> : <ThumbIcon />}
+        {current ? (
+          <span
+            className="text-[20px] leading-none"
+            style={justReacted ? { animation: 'fz-reaction-select 0.6s ease', display: 'inline-block' } : { animation: 'fz-reaction-float 2.5s ease-in-out infinite', display: 'inline-block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+          >
+            {current.emoji}
+          </span>
+        ) : (
+          <ThumbIcon />
+        )}
       </button>
     </div>
   );
