@@ -36,6 +36,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     try {
       const r = await onAddComment(post.id);
       if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.');
+      else setReplyTo(null);
     } finally {
       postingRef.current = false;
       setPosting(false);
@@ -73,6 +74,15 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     setReplyTo({ postId: post.id, commentId: id, name });
     setCommentText(`@${name} `);
     inputRef.current?.focus();
+  }
+
+  function cancelReply() {
+    if (replyTo) {
+      // Remove the @mention prefill when cancelling
+      setCommentText((t: string) => t.replace(new RegExp(`^@${replyTo.name}\\s*`), ''));
+    }
+    setReplyTo(null);
+    setSubmitError(null);
   }
 
   function dragStart(clientY: number) {
@@ -212,6 +222,14 @@ export default function CommentsModal({ post, currentUser, comments, commentText
           ) : (
             <>
               {submitError && <p className="mb-2 text-sm text-red-600">{submitError}</p>}
+              {replyTo && (
+                <div className="mb-2 flex items-center justify-between rounded-lg bg-blue-50 px-3 py-1.5 text-sm">
+                  <span className="text-slate-600">Replying to <span className="font-semibold text-blue-600">@{replyTo.name}</span></span>
+                  <button onClick={cancelReply} aria-label="Cancel reply" className="rounded-full p-1 text-slate-400 hover:bg-blue-100 hover:text-slate-600">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                  </button>
+                </div>
+              )}
               <div className="flex gap-2">
                 <input
                   ref={inputRef}
