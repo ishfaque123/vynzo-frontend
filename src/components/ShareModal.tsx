@@ -108,6 +108,7 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState('');
   const [shareCode, setShareCode] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(true);
   const [dragY, setDragY] = useState(0);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
@@ -130,20 +131,36 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
     };
   }, []);
 
+  // All fallbacks are valid, working URLs (the old /s/reel-<id> fallback was a
+  // dead link that 404'd, since /s/ only resolves real short codes).
   const fallbackUrl = profileUsername
     ? `${origin}/u/${profileUsername}`
     : reelId
-    ? `${origin}/s/reel-${reelId}`
+    ? `${origin}/reels?id=${reelId}`
     : `${origin}/post/${postId}`;
   const url = shareCode ? `${origin}/s/${shareCode}` : fallbackUrl;
 
   useEffect(() => {
+    let cancelled = false;
     const targetType = profileUsername ? 'profile' : reelId ? 'reel' : 'post';
     const targetId = profileUsername ? profileId : reelId || postId;
-    if (!targetId) return;
-    createShareLink(targetType, targetId).then((result) => {
-      if (result.success) setShareCode(result.data.code);
-    });
+    if (!targetId) {
+      setGenerating(false);
+      return;
+    }
+    setGenerating(true);
+    createShareLink(targetType, targetId)
+      .then((result) => {
+        if (cancelled) return;
+        if (result.success) setShareCode(result.data.code);
+        setGenerating(false);
+      })
+      .catch(() => {
+        if (!cancelled) setGenerating(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [profileUsername, profileId, reelId, postId]);
 
   function copyLink() {
@@ -268,8 +285,15 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
           <p className="px-1 py-2 font-semibold">{profileUsername ? 'Share profile' : 'Share'}</p>
 
           <div className="mb-4 rounded-lg border p-2.5">
-            <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
-            <button onClick={copyLink} className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white">
+            {generating ? (
+              <p className="flex items-center gap-2 py-1 text-sm text-slate-500">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+                Generating link…
+              </p>
+            ) : (
+              <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
+            )}
+            <button onClick={copyLink} disabled={generating} className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
               <LinkIcon /> {copied ? 'Copied!' : 'Copy link'}
             </button>
           </div>
