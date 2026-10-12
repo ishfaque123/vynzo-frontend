@@ -39,6 +39,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
       else {
         setReplyTo(null);
         window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
+        if (inputRef.current) (inputRef.current as any).style.height = 'auto';
       }
     } finally {
       postingRef.current = false;
@@ -86,6 +87,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     }
     setReplyTo(null);
     setSubmitError(null);
+    if (inputRef.current) (inputRef.current as any).style.height = 'auto';
   }
 
   function dragStart(clientY: number) {
@@ -239,16 +241,30 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   </button>
                 </div>
               )}
-              <div className="flex gap-2">
-                <input
-                  ref={inputRef}
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={inputRef as any}
                   value={commentText}
-                  onChange={(e) => { setCommentText(e.target.value); setSubmitError(null); }}
+                  rows={1}
+                  onChange={(e) => {
+                    setCommentText(e.target.value);
+                    setSubmitError(null);
+                    // Auto-grow
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
                   placeholder="Write a comment..."
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm"
+                  className="max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border px-3 py-2 text-sm"
                 />
                 <button onClick={handleSend} disabled={posting || !commentText.trim()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60">{posting ? 'Sending\u2026' : 'Send'}</button>
               </div>
+              <p className="mt-1 text-[11px] text-slate-400">Enter to send · Shift+Enter for new line</p>
             </>
           )}
         </div>

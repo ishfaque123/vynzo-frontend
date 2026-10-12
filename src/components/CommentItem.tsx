@@ -70,6 +70,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const reactSeqRef = useRef(0);
+  const [swipeX, setSwipeX] = useState(0);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const isOwner = currentUser?.id === comment.author.id;
   const canDelete = isOwner || currentUser?.id === postOwnerId;
   const isReply = depth > 0;
@@ -139,8 +142,29 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     }
   }
 
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+    // Only horizontal right swipe, not vertical scroll
+    if (dx > 0 && dx < 100 && dy < 30) setSwipeX(dx);
+  }
+  function onTouchEnd() {
+    if (swipeX > 60) onReplyClick(comment.id, comment.author.displayName);
+    setSwipeX(0);
+  }
+
   return (
-    <div className={isReply ? 'relative ml-8 mt-2 pl-4' : 'mb-3'}>
+    <div
+      className={isReply ? 'relative ml-8 mt-2 pl-4' : 'mb-3'}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={swipeX > 0 ? { transform: `translateX(${swipeX * 0.5}px)`, transition: 'none' } : { transition: 'transform 0.2s ease' }}
+    >
       <style>{`
         @keyframes fz-reaction-pop {
           0% { transform: scale(0) translateY(10px); opacity: 0; }
