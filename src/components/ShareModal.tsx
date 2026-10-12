@@ -161,7 +161,7 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
     openAndClose(`https://wa.me/?text=${encodeURIComponent(url)}`);
   }
   // WhatsApp/Facebook don't expose a public web link that posts directly
-  // to Status/Stories — that's only possible from inside their own apps
+  // to Status/Stories â that's only possible from inside their own apps
   // via native SDKs. This opens the app (where installed) with the link
   // ready to share; the user still has to tap "Add to status" themselves.
   function shareWhatsAppStatus() {
@@ -275,7 +275,7 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
           </div>
 
           <div className="mb-4 grid grid-cols-4 gap-y-4">
-            <GridTile label="Friendzo DM" onClick={shareInternally}><VynzoLogo /></GridTile>
+            <GridTile label="Frianzo DM" onClick={shareInternally}><VynzoLogo /></GridTile>
             <GridTile label="WhatsApp" onClick={shareWhatsApp}><WhatsAppLogo /></GridTile>
             <GridTile label="WhatsApp Status" onClick={shareWhatsAppStatus}><WhatsAppLogo /></GridTile>
             <GridTile label="Messenger" onClick={shareMessenger}><MessengerLogo /></GridTile>
