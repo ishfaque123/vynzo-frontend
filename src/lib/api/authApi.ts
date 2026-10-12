@@ -99,6 +99,16 @@ export async function submitProfileSetup(data: {
   return readJson(res);
 }
 
+export async function checkUsernameAvailability(username: string): Promise<boolean> {
+  const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(username)}`, {
+    credentials: 'include',
+  });
+  // 404 = not found = available; 200 = taken; other errors = throw
+  if (res.status === 404) return true;
+  if (res.ok) return false;
+  throw new Error('Check failed');
+}
+
 export async function savePublicKeyRequest(publicKey: string) {
   const res = await fetch(`${API_URL}/api/auth/public-key`, {
     method: 'POST',

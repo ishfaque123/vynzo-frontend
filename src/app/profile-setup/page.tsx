@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { submitProfileSetup } from '@/lib/api/authApi';
+import { submitProfileSetup, checkUsernameAvailability } from '@/lib/api/authApi';
 import { useAuth } from '@/lib/auth/useAuth';
 import Toast from '@/components/Toast';
 
@@ -25,10 +25,12 @@ export default function ProfileSetupPage() {
     if (!clean) { setUsernameStatus('idle'); return; }
     if (!USERNAME_REGEX.test(clean)) { setUsernameStatus('invalid'); return; }
     setUsernameStatus('checking');
+    const checkName = clean;
     usernameTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/users/${encodeURIComponent(clean)}`, { credentials: 'include' });
-        setUsernameStatus(res.ok ? 'taken' : 'available');
+        const available = await checkUsernameAvailability(checkName);
+        // Only update if user hasn't typed something new
+        setUsernameStatus((prev) => prev === 'checking' ? (available ? 'available' : 'taken') : prev);
       } catch {
         setUsernameStatus('idle');
       }
@@ -87,7 +89,7 @@ export default function ProfileSetupPage() {
         <div>
           <label className="mb-1 block text-sm text-slate-600">Name</label>
           <input
-            placeholder="e.g. ali_khan123"
+            placeholder="e.g. johnsmith"
             value={form.username}
             onChange={(e) => handleUsernameChange(e.target.value)}
             className={`w-full rounded-lg border px-4 py-2 ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-400' : usernameStatus === 'available' ? 'border-green-400' : ''}`}
@@ -102,7 +104,7 @@ export default function ProfileSetupPage() {
         <div>
           <label className="mb-1 block text-sm text-slate-600">Full Name</label>
           <input
-            placeholder="e.g. Ali Khan"
+            placeholder="e.g. John Smith"
             value={form.displayName}
             onChange={(e) => setForm({ ...form, displayName: e.target.value })}
             className="w-full rounded-lg border px-4 py-2"
