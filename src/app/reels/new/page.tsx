@@ -738,7 +738,7 @@ export default function NewReelPage() {
           playsInline
           preload="auto"
           className="max-h-full max-w-full rounded-lg bg-black object-contain"
-          style={{ ...(activeFilterCss ? { filter: activeFilterCss } : {}), ...(flip ? { transform: 'scaleX(-1)' } : {}) }}
+          style={{ ...(activeFilterCss ? { filter: activeFilterCss } : {}), transform: `${rotation ? `rotate(${rotation}deg) ` : ''}${rotation === 90 || rotation === 270 ? 'scale(0.5625) ' : ''}${flip ? 'scaleX(-1)' : ''}`.trim() || undefined }}
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
@@ -1141,10 +1141,12 @@ export default function NewReelPage() {
 
           <div className="mb-4 flex justify-center">
             <div className="relative aspect-[9/16] w-32 overflow-hidden rounded-xl bg-black ring-1 ring-white/15">
-              {coverThumbnails[coverIndex] ? (
+              {coverPreviewUrl ? (
+                <img src={coverPreviewUrl} alt="Custom cover" className="h-full w-full object-cover" />
+              ) : coverThumbnails[coverIndex] ? (
                 <img src={coverThumbnails[coverIndex]} alt="Cover preview" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full items-center justify-center text-xs text-white/40">Loadingâ¦</div>
+                <div className="flex h-full items-center justify-center text-xs text-white/40">Loading...</div>
               )}
             </div>
           </div>
@@ -1172,6 +1174,30 @@ export default function NewReelPage() {
           </div>
 
           <div className="mt-4 flex gap-2">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="custom-cover-input"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+                  const url = URL.createObjectURL(f);
+                  setCoverBlob(f);
+                  setCoverPreviewUrl(url);
+                  setToast({ message: 'Custom cover added', type: 'success' });
+                }
+                e.target.value = '';
+              }}
+            />
+            <button
+              onClick={() => document.getElementById('custom-cover-input')?.click()}
+              disabled={capturingCover}
+              className="flex-1 rounded-lg border border-white/15 py-2 text-sm font-medium text-white transition active:scale-95 disabled:opacity-40"
+            >
+              Upload custom
+            </button>
             {coverBlob && (
               <button onClick={() => { if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl); setCoverBlob(null); setCoverPreviewUrl(null); }} disabled={capturingCover} className="flex-1 rounded-lg border border-white/15 py-2 text-sm text-white disabled:opacity-40">
                 Remove
