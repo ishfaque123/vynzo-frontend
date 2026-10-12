@@ -94,6 +94,8 @@ export default function NewReelPage() {
   const [speed, setSpeed] = useState('1');
   const [templateOpen, setTemplateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [flip, setFlip] = useState(false);
+  const [rotation, setRotation] = useState(0);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [letterbox, setLetterbox] = useState(false);
   const [filterThumb, setFilterThumb] = useState<string | null>(null);
@@ -349,6 +351,8 @@ export default function NewReelPage() {
         ...(textOverlay.trim() ? { textOverlay: textOverlay.trim().slice(0, 100), textPosition } : {}),
         ...(speed !== '1' ? { speed } : {}),
         ...(letterbox ? { letterbox: 'true' } : {}),
+        ...(flip ? { flip: 'true' } : {}),
+        ...(rotation !== 0 ? { rotate: String(rotation) } : {}),
       },
       setUploadProgress
     );
@@ -734,7 +738,7 @@ export default function NewReelPage() {
           playsInline
           preload="auto"
           className="max-h-full max-w-full rounded-lg bg-black object-contain"
-          style={activeFilterCss ? { filter: activeFilterCss } : undefined}
+          style={{ ...(activeFilterCss ? { filter: activeFilterCss } : {}), ...(flip ? { transform: 'scaleX(-1)' } : {}) }}
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
@@ -793,7 +797,7 @@ export default function NewReelPage() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </span>
             <span className="text-[11px] font-medium">Edit</span>
-            {(trimStart > 0.05 || (videoDuration > 0 && trimEnd < videoDuration - 0.05) || coverBlob) && <span className="absolute right-2 top-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
+            {(trimStart > 0.05 || (videoDuration > 0 && trimEnd < videoDuration - 0.05) || coverBlob || flip || rotation !== 0) && <span className="absolute right-2 top-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
           </button>
           <button onClick={() => setFilterOpen(true)} className="relative flex w-16 flex-col items-center gap-1.5 text-white">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90 active:bg-white/20">
@@ -996,6 +1000,43 @@ export default function NewReelPage() {
                 <span className={"text-[11px] font-medium " + (filter === f.id ? "text-emerald-400" : "text-white/70")}>{f.name}</span>
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {editOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+          <div className="mb-5 flex items-center justify-between">
+            <p className="text-base font-bold text-white">Edit</p>
+            <button onClick={() => setEditOpen(false)} className="rounded-full bg-white px-5 py-1.5 text-xs font-bold text-black">Done</button>
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            <button onClick={() => { setEditOpen(false); openTrim(); }} disabled={trimming} className="flex flex-col items-center gap-2 disabled:opacity-50">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90">
+                <TrimIcon />
+              </span>
+              <span className="text-[12px] font-medium text-white">Trim</span>
+            </button>
+            <button onClick={() => { setEditOpen(false); setCoverIndex(0); setCoverOpen(true); }} className="flex flex-col items-center gap-2">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90">
+                <CoverIcon />
+              </span>
+              <span className="text-[12px] font-medium text-white">Cover</span>
+            </button>
+            <button onClick={() => { setFlip(!flip); setEditOpen(false); setToast({ message: flip ? "Flip off" : "Flipped", type: "success" }); }} className="flex flex-col items-center gap-2">
+              <span className={"flex h-14 w-14 items-center justify-center rounded-2xl transition active:scale-90 " + (flip ? "bg-emerald-500/20 ring-2 ring-emerald-400" : "bg-white/10")}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 2v20"/></svg>
+              </span>
+              <span className="text-[12px] font-medium text-white">Flip</span>
+            </button>
+            <button onClick={() => { const r = (rotation + 90) % 360; setRotation(r); setToast({ message: r === 0 ? "Rotation reset" : "Rotated " + r + "\u00B0", type: "success" }); }} className="flex flex-col items-center gap-2">
+              <span className={"relative flex h-14 w-14 items-center justify-center rounded-2xl transition active:scale-90 " + (rotation !== 0 ? "bg-emerald-500/20 ring-2 ring-emerald-400" : "bg-white/10")}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+                {rotation !== 0 && <span className="absolute -bottom-1 rounded-full bg-emerald-400 px-1.5 text-[9px] font-bold text-black">{rotation}\u00B0</span>}
+              </span>
+              <span className="text-[12px] font-medium text-white">Rotate</span>
+            </button>
           </div>
         </div>
       )}
