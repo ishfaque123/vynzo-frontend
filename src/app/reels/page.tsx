@@ -360,7 +360,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
       onReport={() => { setMoreOpen(false); setReportOpen(true); }}
       onClose={() => setMoreOpen(false)}
     />}
-    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} />}
+    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} />}
     {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
     {downloadState.active && downloadState.status === 'downloading' && <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[60] h-[3px] bg-white/20">
