@@ -219,9 +219,18 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
   useEffect(() => { function refresh(e: Event) { const detail = (e as CustomEvent).detail; if (detail === reel.id && commentsOpen) void openComments(); } window.addEventListener('reel-comments-refresh', refresh); return () => window.removeEventListener('reel-comments-refresh', refresh); }, [reel.id, commentsOpen]);
   useEffect(() => {
     if (!active) return;
-    void recordReelView(reel.id).then((result) => {
+    const startTime = Date.now();
+    // Record initial view
+    void recordReelView(reel.id, 0).then((result) => {
       if (result.success) setViewCount(Number(result.data?.viewCount || 0));
     });
+    // On unmount/deactivate, send watch duration
+    return () => {
+      const watchSec = (Date.now() - startTime) / 1000;
+      if (watchSec >= 1) {
+        void recordReelView(reel.id, watchSec);
+      }
+    };
   }, [active, reel.id]);
   useEffect(() => {
     if (!active || !cacheUserId || !reel.videoUrl || reel.videoUrl.startsWith('blob:')) return;
