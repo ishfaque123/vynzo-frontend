@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitProfileSetup } from '@/lib/api/authApi';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -9,10 +9,32 @@ import Toast from '@/components/Toast';
 
 export default function ProfileSetupPage() {
   const { user, loading: authLoading, verified } = useAuth();
-  const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', phone: '', country: '' });
+  const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', customGender: '', phone: '', country: '' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
+  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
+
+  const USERNAME_REGEX = /^[a-zA-Z0-9_.]{3,30}$/;
+
+  // Live username validation + availability (debounced)
+  function handleUsernameChange(value: string) {
+    const clean = value.toLowerCase().replace(/\s/g, '');
+    setForm({ ...form, username: clean });
+    if (usernameTimer.current) clearTimeout(usernameTimer.current);
+    if (!clean) { setUsernameStatus('idle'); return; }
+    if (!USERNAME_REGEX.test(clean)) { setUsernameStatus('invalid'); return; }
+    setUsernameStatus('checking');
+    usernameTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/users/${encodeURIComponent(clean)}`, { credentials: 'include' });
+        setUsernameStatus(res.ok ? 'taken' : 'available');
+      } catch {
+        setUsernameStatus('idle');
+      }
+    }, 500);
+  }
 
   useEffect(() => {
     if (verified && user?.profileCompleted) {
@@ -31,6 +53,14 @@ export default function ProfileSetupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!USERNAME_REGEX.test(form.username)) {
+      setToast({ message: 'Username must be 3-30 characters: letters, numbers, underscore, or period.', type: 'error' });
+      return;
+    }
+    if (usernameStatus === 'taken') {
+      setToast({ message: 'This username is taken. Please choose another.', type: 'error' });
+      return;
+    }
     if (!isAtLeast13(form.dateOfBirth)) {
       setToast({ message: 'You must be at least 13 years old to use Frianzo.', type: 'error' });
       return;
@@ -60,10 +90,14 @@ export default function ProfileSetupPage() {
           <input
             placeholder="Username"
             value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className="w-full rounded-lg border px-4 py-2"
+            onChange={(e) => handleUsernameChange(e.target.value)}
+            className={`w-full rounded-lg border px-4 py-2 ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-400' : usernameStatus === 'available' ? 'border-green-400' : ''}`}
             required
           />
+          {usernameStatus === 'checking' && <p className="mt-1 text-xs text-slate-400">Checking availability...</p>}
+          {usernameStatus === 'available' && <p className="mt-1 text-xs text-green-600">✓ Username available</p>}
+          {usernameStatus === 'taken' && <p className="mt-1 text-xs text-red-500">✗ Username taken, try another</p>}
+          {usernameStatus === 'invalid' && form.username && <p className="mt-1 text-xs text-red-500">3-30 chars: letters, numbers, _ or .</p>}
         </div>
 
         <div>
@@ -87,7 +121,7 @@ export default function ProfileSetupPage() {
           >
             <option value="">Select your country</option>
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.name}>{c.name}</option>
+              <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
             ))}
           </select>
         </div>
@@ -98,7 +132,7 @@ export default function ProfileSetupPage() {
             type="date"
             value={form.dateOfBirth}
             onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
-            max={new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
+            max={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 13); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()}
             className="w-full rounded-lg border px-4 py-2"
             required
           />
@@ -117,6 +151,15 @@ export default function ProfileSetupPage() {
             <option value="female">Female</option>
             <option value="custom">Custom</option>
           </select>
+          {form.gender === 'custom' && (
+            <input
+              placeholder="Describe your gender"
+              value={form.customGender}
+              onChange={(e) => setForm({ ...form, customGender: e.target.value })}
+              maxLength={30}
+              className="mt-2 w-full rounded-lg border px-4 py-2"
+            />
+          )}
         </div>
 
         <div>
@@ -125,7 +168,7 @@ export default function ProfileSetupPage() {
             type="tel"
             placeholder="e.g. 03xxxxxxxxx"
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/[^0-9+\-\s]/g, "") })}
             className="w-full rounded-lg border px-4 py-2"
           />
         </div>
@@ -139,6 +182,7 @@ export default function ProfileSetupPage() {
             maxLength={300}
             className="w-full rounded-lg border px-4 py-2"
           />
+          <p className="mt-1 text-right text-xs text-slate-400">{form.bio.length}/300</p>
         </div>
 
         <button
