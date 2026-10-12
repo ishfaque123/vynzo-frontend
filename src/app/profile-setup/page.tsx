@@ -85,9 +85,9 @@ export default function ProfileSetupPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm text-slate-600">Username</label>
+          <label className="mb-1 block text-sm text-slate-600">Name</label>
           <input
-            placeholder="Username"
+            placeholder="e.g. ali_khan123"
             value={form.username}
             onChange={(e) => handleUsernameChange(e.target.value)}
             className={`w-full rounded-lg border px-4 py-2 ${usernameStatus === 'taken' || usernameStatus === 'invalid' ? 'border-red-400' : usernameStatus === 'available' ? 'border-green-400' : ''}`}
@@ -100,9 +100,9 @@ export default function ProfileSetupPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-slate-600">Display name</label>
+          <label className="mb-1 block text-sm text-slate-600">Full Name</label>
           <input
-            placeholder="Display name"
+            placeholder="e.g. Ali Khan"
             value={form.displayName}
             onChange={(e) => setForm({ ...form, displayName: e.target.value })}
             className="w-full rounded-lg border px-4 py-2"
