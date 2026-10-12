@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ReactionButton, { REACTIONS } from './ReactionButton';
+import ReactionIcon from './ReactionIcon';
 import PostMenu from './PostMenu';
 import FollowButton from './FollowButton';
 import PostContent from './PostContent';
@@ -90,10 +91,10 @@ function ReactionSummary({ post }: { post: any }) {
         {topReactions.map((type, i) => (
           <span
             key={type}
-            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-slate-50 text-[13px] shadow-sm"
+            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white shadow-sm"
             style={{ marginLeft: i === 0 ? 0 : -7, zIndex: topReactions.length - i }}
           >
-            {REACTIONS[type]?.emoji}
+            <ReactionIcon type={type} size={22} />
           </span>
         ))}
         {post.likeCount > 0 && <span className="ml-1.5">{post.likeCount}</span>}

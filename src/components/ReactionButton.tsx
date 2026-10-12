@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { setReaction } from '@/lib/api/postApi';
 import { playReactionSound } from '@/lib/sounds';
+import ReactionIcon from './ReactionIcon';
 
 export const REACTIONS: Record<string, { emoji: string; color: string; label: string }> = {
-  like: { emoji: 'ð', color: 'text-blue-600', label: 'Like' },
-  love: { emoji: 'â¤ï¸', color: 'text-red-600', label: 'Love' },
-  haha: { emoji: 'ð', color: 'text-yellow-600', label: 'Haha' },
-  wow: { emoji: 'ð®', color: 'text-yellow-600', label: 'Wow' },
-  sad: { emoji: 'ð¢', color: 'text-yellow-600', label: 'Sad' },
-  angry: { emoji: 'ð ', color: 'text-orange-600', label: 'Angry' },
+  like: { emoji: 'Ã°ÂÂÂ', color: 'text-blue-600', label: 'Like' },
+  love: { emoji: 'Ã¢ÂÂ¤Ã¯Â¸Â', color: 'text-red-600', label: 'Love' },
+  haha: { emoji: 'Ã°ÂÂÂ', color: 'text-yellow-600', label: 'Haha' },
+  wow: { emoji: 'Ã°ÂÂÂ®', color: 'text-yellow-600', label: 'Wow' },
+  sad: { emoji: 'Ã°ÂÂÂ¢', color: 'text-yellow-600', label: 'Sad' },
+  angry: { emoji: 'Ã°ÂÂÂ ', color: 'text-orange-600', label: 'Angry' },
 };
 
 const HOLD_TO_OPEN_MS = 400;
@@ -118,10 +119,10 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
                   onMouseEnter={() => setHovered(key)}
                   onMouseLeave={() => setHovered(null)}
                   aria-label={r.label}
-                  className="fz-reaction-item text-[32px] leading-none"
+                  className="fz-reaction-item"
                   style={{ animationDelay: `${idx * 45}ms` }}
                 >
-                  {r.emoji}
+                  <ReactionIcon type={key} size={40} />
                 </button>
               </div>
             );
@@ -150,10 +151,9 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
             </span>
           ) : (
             <span
-              className="text-[22px] leading-none"
               style={justReacted ? { animation: 'fz-reaction-select 0.6s ease', display: 'inline-block' } : { animation: 'fz-reaction-float 2.5s ease-in-out infinite', display: 'inline-block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
             >
-              {current.emoji}
+              <ReactionIcon type={myReaction!} size={24} />
             </span>
           )
         ) : (
