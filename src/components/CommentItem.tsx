@@ -66,6 +66,8 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   const [localReaction, setLocalReaction] = useState<string | null>(comment.myReaction ?? null);
   const [localCount, setLocalCount] = useState<number>(comment.reactionCount || 0);
   const [reporting, setReporting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const reactSeqRef = useRef(0);
   const isOwner = currentUser?.id === comment.author.id;
@@ -98,10 +100,18 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     }
   }
   async function handleDelete() {
-    if (!confirm('Delete this comment?')) return;
-    const result = await deleteComment(comment.id);
-    if (result.success) onChanged();
-    setMenuOpen(false);
+    setConfirmDelete(false);
+    setDeleting(true);
+    try {
+      const result = await deleteComment(comment.id);
+      if (result.success) onChanged();
+      else setToast({ message: 'Could not delete comment.', type: 'error' });
+    } catch {
+      setToast({ message: 'Could not delete comment.', type: 'error' });
+    } finally {
+      setDeleting(false);
+      setMenuOpen(false);
+    }
   }
   async function saveEdit() {
     const result = await editComment(comment.id, editText);
@@ -201,7 +211,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               {menuOpen && (
                 <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-lg border bg-white py-1 text-sm shadow-lg" onMouseLeave={() => setMenuOpen(false)}>
                   {isOwner && <button onClick={() => { setEditing(true); setMenuOpen(false); }} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Edit</button>}
-                  {canDelete && <button onClick={handleDelete} className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-slate-50">Delete</button>}
+                  {canDelete && <button onClick={() => { setConfirmDelete(true); setMenuOpen(false); }} className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-slate-50">Delete</button>}
                   <button onClick={copyComment} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Copy</button>
                   <button disabled={reporting} onClick={handleReport} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50 disabled:opacity-50">Report</button>
                 </div>
@@ -211,6 +221,18 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
         </div>
       </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDelete(false)}>
+          <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-slate-900">Delete comment?</h3>
+            <p className="mt-1 text-sm text-slate-500">This can't be undone.</p>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-700 active:scale-95">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white active:scale-95 disabled:opacity-60">{deleting ? 'Deleting…' : 'Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
