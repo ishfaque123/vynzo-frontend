@@ -253,18 +253,13 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                     e.target.style.height = 'auto';
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
+
                   placeholder="Write a comment..."
                   className="max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border px-3 py-2 text-sm"
                 />
                 <button onClick={handleSend} disabled={posting || !commentText.trim()} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60">{posting ? 'Sending\u2026' : 'Send'}</button>
               </div>
-              <p className="mt-1 text-[11px] text-slate-400">Enter to send · Shift+Enter for new line</p>
+
             </>
           )}
         </div>
