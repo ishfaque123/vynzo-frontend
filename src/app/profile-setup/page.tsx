@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitProfileSetup } from '@/lib/api/authApi';
 import { useAuth } from '@/lib/auth/useAuth';
-import { COUNTRIES } from '@/lib/countries';
 import Toast from '@/components/Toast';
 
 export default function ProfileSetupPage() {
   const { user, loading: authLoading, verified } = useAuth();
-  const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', customGender: '', phone: '', country: '' });
+  const [form, setForm] = useState({ username: '', displayName: '', dateOfBirth: '', bio: '', gender: '', customGender: '', phone: '' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
@@ -111,20 +110,6 @@ export default function ProfileSetupPage() {
           />
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm text-slate-600">Country</label>
-          <select
-            value={form.country}
-            onChange={(e) => setForm({ ...form, country: e.target.value })}
-            className="w-full rounded-lg border px-4 py-2"
-            required
-          >
-            <option value="">Select your country</option>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
-            ))}
-          </select>
-        </div>
 
         <div>
           <label className="mb-1 block text-sm text-slate-600">Birthday</label>
