@@ -353,7 +353,7 @@ export default function HomePage() {
         </>
       )}
 
-      {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
+      {shareModalPost && <ShareModal postId={shareModalPost} initialShareCode={posts.find((p) => p.id === shareModalPost)?.shareCode ?? null} onClose={() => setShareModalPost(null)} />}
 
       {openPost && (
         <CommentsModal
