@@ -81,9 +81,14 @@ export async function reportReel(reelId: string, reason: string = 'other', detai
   } catch { return { success: false, error: { message: 'Unable to report reel.' } }; }
 }
 
-export async function recordReelView(reelId: string) {
+export async function recordReelView(reelId: string, watchSec = 0) {
   try {
-    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/view`), { method: 'POST', credentials: 'include' });
+    const res = await fetch(apiUrl(`/api/reels/${encodeURIComponent(reelId)}/view`), {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ watchSec: Math.floor(watchSec) }),
+    });
     return await readResponse(res);
   } catch { return { success: false, error: { message: 'Unable to record reel view.' } }; }
 }
