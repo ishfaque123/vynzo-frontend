@@ -28,13 +28,19 @@ function SpeedIcon() {
 const MIN_TRIM_DURATION = 1;
 
 const REEL_FILTERS = [
-  { id: 'normal', name: 'Normal', css: '' },
-  { id: 'warm', name: 'Warm', css: 'sepia(0.25) saturate(1.3) contrast(1.05) brightness(1.03)' },
-  { id: 'cool', name: 'Cool', css: 'saturate(1.15) contrast(1.05) brightness(1.02) hue-rotate(-10deg)' },
-  { id: 'bw', name: 'B&W', css: 'grayscale(1) contrast(1.1)' },
-  { id: 'vintage', name: 'Vintage', css: 'sepia(0.4) saturate(0.8) contrast(0.95) brightness(1.02)' },
-  { id: 'vivid', name: 'Vivid', css: 'saturate(1.5) contrast(1.12) brightness(1.01)' },
-  { id: 'beauty', name: 'Beauty', css: 'brightness(1.04) saturate(1.18) contrast(1.02)' },
+  { id: 'normal', name: 'Normal', css: '', cat: 'trending' },
+  { id: 'vivid', name: 'Vivid', css: 'saturate(1.5) contrast(1.12) brightness(1.01)', cat: 'trending' },
+  { id: 'warm', name: 'Warm', css: 'sepia(0.25) saturate(1.3) contrast(1.05) brightness(1.03)', cat: 'trending' },
+  { id: 'cool', name: 'Cool', css: 'saturate(1.15) contrast(1.05) brightness(1.02) hue-rotate(-10deg)', cat: 'trending' },
+  { id: 'beauty', name: 'Beauty', css: 'brightness(1.04) saturate(1.18) contrast(1.02)', cat: 'portrait' },
+  { id: 'bw', name: 'B&W', css: 'grayscale(1) contrast(1.1)', cat: 'mono' },
+  { id: 'vintage', name: 'Vintage', css: 'sepia(0.4) saturate(0.8) contrast(0.95) brightness(1.02)', cat: 'mono' },
+];
+
+const FILTER_CATS = [
+  { id: 'trending', name: 'Trending' },
+  { id: 'portrait', name: 'Portrait' },
+  { id: 'mono', name: 'B&W' },
 ];
 
 const REEL_TEMPLATES = [
@@ -79,6 +85,7 @@ export default function NewReelPage() {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [capturingCover, setCapturingCover] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterCat, setFilterCat] = useState('trending');
   const [filter, setFilter] = useState('normal');
   const [textOpen, setTextOpen] = useState(false);
   const [textOverlay, setTextOverlay] = useState('');
@@ -956,61 +963,44 @@ export default function NewReelPage() {
         </div>
       )}
 
-      {filterOpen && (
-        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-2xl border-t border-white/10 bg-neutral-950 p-4 pb-6 shadow-2xl">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Effects</p>
-            <button onClick={() => setFilterOpen(false)} className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black">Done</button>
+            {filterOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-base font-bold text-white">Filters</p>
+            <button onClick={() => setFilterOpen(false)} className="rounded-full bg-white px-5 py-1.5 text-xs font-bold text-black">Done</button>
+          </div>
+          <div className="mb-4 flex gap-6 border-b border-white/10">
+            {FILTER_CATS.map((cat) => (
+              <button key={cat.id} onClick={() => setFilterCat(cat.id)} className={"relative pb-2.5 text-[13px] font-semibold transition " + (filterCat === cat.id ? "text-white" : "text-white/40")}>
+                {cat.name}
+                {filterCat === cat.id && <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-emerald-400" />}
+              </button>
+            ))}
           </div>
           <div className="flex gap-3 overflow-x-auto pb-1">
-            {REEL_FILTERS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className="flex w-20 shrink-0 flex-col items-center gap-1.5"
-              >
-                <span className={`relative block h-28 w-20 overflow-hidden rounded-xl border-2 transition ${filter === f.id ? 'border-emerald-400' : 'border-white/10'}`}>
+            {REEL_FILTERS.filter((f) => f.cat === filterCat).map((f) => (
+              <button key={f.id} onClick={() => setFilter(f.id)} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
+                <span className={"relative block h-28 w-20 overflow-hidden rounded-2xl transition-all " + (filter === f.id ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-neutral-950" : "ring-1 ring-white/10")}>
                   {filterThumb ? (
                     <img src={filterThumb} alt={f.name} className="h-full w-full object-cover" style={f.css ? { filter: f.css } : undefined} />
                   ) : (
-                    <span className="block h-full w-full" style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6,#3b82f6)', filter: f.css || undefined }} />
+                    <span className="block h-full w-full" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6,#3b82f6)", filter: f.css || undefined }} />
                   )}
                   {filter === f.id && (
-                    <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 text-[11px] font-bold text-black">â</span>
+                    <span className="absolute bottom-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400 shadow">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
                   )}
                 </span>
-                <span className={`text-[11px] font-medium ${filter === f.id ? 'text-emerald-400' : 'text-white/70'}`}>{f.name}</span>
+                <span className={"text-[11px] font-medium " + (filter === f.id ? "text-emerald-400" : "text-white/70")}>{f.name}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-            {editOpen && (
-        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
-          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
-          <div className="mb-5 flex items-center justify-between">
-            <p className="text-base font-bold text-white">Edit</p>
-            <button onClick={() => setEditOpen(false)} className="rounded-full bg-white px-5 py-1.5 text-xs font-bold text-black">Done</button>
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            <button onClick={() => { setEditOpen(false); openTrim(); }} disabled={trimming} className="flex flex-col items-center gap-2 disabled:opacity-50">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90 active:bg-white/20">
-                <TrimIcon />
-              </span>
-              <span className="text-[12px] font-medium text-white">Trim</span>
-            </button>
-            <button onClick={() => { setEditOpen(false); setCoverIndex(0); setCoverOpen(true); }} className="flex flex-col items-center gap-2">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90 active:bg-white/20">
-                <CoverIcon />
-              </span>
-              <span className="text-[12px] font-medium text-white">Cover</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {templateOpen && (
+{templateOpen && (
         <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
           <div className="mb-5 flex items-center justify-between">
