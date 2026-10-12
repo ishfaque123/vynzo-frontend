@@ -95,6 +95,8 @@ export default function NewReelPage() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [flip, setFlip] = useState(false);
+  const [crop, setCrop] = useState<'original' | 'square' | 'portrait'>('original');
+  const [cropOpen, setCropOpen] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [letterbox, setLetterbox] = useState(false);
@@ -353,6 +355,7 @@ export default function NewReelPage() {
         ...(letterbox ? { letterbox: 'true' } : {}),
         ...(flip ? { flip: 'true' } : {}),
         ...(rotation !== 0 ? { rotate: String(rotation) } : {}),
+        ...(crop !== 'original' ? { crop } : {}),
       },
       setUploadProgress
     );
@@ -729,7 +732,10 @@ export default function NewReelPage() {
       </div>
 
       <div className="flex flex-1 items-center justify-center overflow-hidden px-4">
-        <div className="relative flex max-h-full max-w-full items-center justify-center">
+        <div
+          className="relative flex max-h-full max-w-full items-center justify-center overflow-hidden"
+          style={crop !== 'original' ? { aspectRatio: crop === 'square' ? '1 / 1' : '4 / 5', maxHeight: '70%' } : undefined}
+        >
         <video
           ref={videoRef}
           key={previewUrl}
@@ -737,7 +743,7 @@ export default function NewReelPage() {
           controls={!trimOpen}
           playsInline
           preload="auto"
-          className="max-h-full max-w-full rounded-lg bg-black object-contain"
+          className={"max-h-full max-w-full rounded-lg bg-black " + (crop !== "original" ? "object-cover h-full w-full" : "object-contain")}
           style={{ ...(activeFilterCss ? { filter: activeFilterCss } : {}), transform: `${rotation ? `rotate(${rotation}deg) ` : ''}${rotation === 90 || rotation === 270 ? 'scale(0.5625) ' : ''}${flip ? 'scaleX(-1)' : ''}`.trim() || undefined }}
           onPlay={() => setTrimPlaying(true)}
           onPause={() => setTrimPlaying(false)}
@@ -797,7 +803,7 @@ export default function NewReelPage() {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </span>
             <span className="text-[11px] font-medium">Edit</span>
-            {(trimStart > 0.05 || (videoDuration > 0 && trimEnd < videoDuration - 0.05) || coverBlob || flip || rotation !== 0) && <span className="absolute right-2 top-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
+            {(trimStart > 0.05 || (videoDuration > 0 && trimEnd < videoDuration - 0.05) || coverBlob || flip || rotation !== 0 || crop !== 'original') && <span className="absolute right-2 top-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />}
           </button>
           <button onClick={() => setFilterOpen(true)} className="relative flex w-16 flex-col items-center gap-1.5 text-white">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90 active:bg-white/20">
@@ -1011,7 +1017,7 @@ export default function NewReelPage() {
             <p className="text-base font-bold text-white">Edit</p>
             <button onClick={() => setEditOpen(false)} className="rounded-full bg-white px-5 py-1.5 text-xs font-bold text-black">Done</button>
           </div>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-3">
             <button onClick={() => { setEditOpen(false); openTrim(); }} disabled={trimming} className="flex flex-col items-center gap-2 disabled:opacity-50">
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 transition active:scale-90">
                 <TrimIcon />
@@ -1036,6 +1042,42 @@ export default function NewReelPage() {
                 {rotation !== 0 && <span className="absolute -bottom-1 rounded-full bg-emerald-400 px-1.5 text-[9px] font-bold text-black">{rotation}\u00B0</span>}
               </span>
               <span className="text-[12px] font-medium text-white">Rotate</span>
+            </button>
+            <button onClick={() => { setEditOpen(false); setCropOpen(true); }} className="flex flex-col items-center gap-2">
+              <span className={"flex h-14 w-14 items-center justify-center rounded-2xl transition active:scale-90 " + (crop !== 'original' ? "bg-emerald-500/20 ring-2 ring-emerald-400" : "bg-white/10")}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+              </span>
+              <span className="text-[12px] font-medium text-white">Crop</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cropOpen && (
+        <div className="absolute inset-x-0 bottom-0 z-20 rounded-t-3xl border-t border-white/10 bg-neutral-950 px-5 pb-8 pt-4 shadow-2xl">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+          <div className="mb-5 flex items-center justify-between">
+            <p className="text-base font-bold text-white">Crop</p>
+            <button onClick={() => setCropOpen(false)} className="rounded-full bg-white px-5 py-1.5 text-xs font-bold text-black">Done</button>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <button onClick={() => { setCrop("original"); setCropOpen(false); }} className="flex flex-col items-center gap-2">
+              <span className={"flex aspect-[9/16] w-16 items-center justify-center rounded-xl border-2 transition active:scale-95 " + (crop === "original" ? "border-emerald-400 bg-emerald-500/10" : "border-white/15 bg-white/5")}>
+                <span className="text-[10px] font-bold text-white">9:16</span>
+              </span>
+              <span className="text-[12px] font-medium text-white">Original</span>
+            </button>
+            <button onClick={() => { setCrop("square"); setCropOpen(false); setToast({ message: "Square crop applied", type: "success" }); }} className="flex flex-col items-center gap-2">
+              <span className={"flex aspect-square w-16 items-center justify-center rounded-xl border-2 transition active:scale-95 " + (crop === "square" ? "border-emerald-400 bg-emerald-500/10" : "border-white/15 bg-white/5")}>
+                <span className="text-[10px] font-bold text-white">1:1</span>
+              </span>
+              <span className="text-[12px] font-medium text-white">Square</span>
+            </button>
+            <button onClick={() => { setCrop("portrait"); setCropOpen(false); setToast({ message: "4:5 crop applied", type: "success" }); }} className="flex flex-col items-center gap-2">
+              <span className={"flex aspect-[4/5] w-16 items-center justify-center rounded-xl border-2 transition active:scale-95 " + (crop === "portrait" ? "border-emerald-400 bg-emerald-500/10" : "border-white/15 bg-white/5")}>
+                <span className="text-[10px] font-bold text-white">4:5</span>
+              </span>
+              <span className="text-[12px] font-medium text-white">Portrait</span>
             </button>
           </div>
         </div>
