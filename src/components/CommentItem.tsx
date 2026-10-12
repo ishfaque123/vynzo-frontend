@@ -191,6 +191,11 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               {comment.author.isVerified && <VerifiedBadge />}
               {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} />}
             </div>
+            {comment.mediaUrl && (
+              <div className="mt-2">
+                <img src={comment.mediaUrl} alt="Comment image" className="max-h-48 rounded-xl border cursor-pointer hover:opacity-95" onClick={() => window.open(comment.mediaUrl, '_blank')} />
+              </div>
+            )}
             {editing ? (
               <div className="mt-1 flex gap-1">
                 <input value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 rounded border px-2 py-1 text-sm" />

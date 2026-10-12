@@ -5,12 +5,16 @@ export async function fetchComments(postId: string) {
   return res.json();
 }
 
-export async function addComment(postId: string, content: string, parentCommentId?: string, taggedUserIds: string[] = []) {
+export async function addComment(postId: string, content: string, parentCommentId?: string, taggedUserIds: string[] = [], image?: File | null) {
+  const formData = new FormData();
+  formData.append('content', content);
+  if (parentCommentId) formData.append('parentCommentId', parentCommentId);
+  formData.append('taggedUserIds', JSON.stringify(taggedUserIds));
+  if (image) formData.append('image', image);
   const res = await fetch(`${API_URL}/api/comments/${postId}`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content, parentCommentId, taggedUserIds }),
+    body: formData,
   });
   return res.json();
 }
