@@ -698,7 +698,7 @@ export default function ProfileClient() {
       </div>
       )}
 
-      {shareModalPost && <ShareModal postId={shareModalPost} onClose={() => setShareModalPost(null)} />}
+      {shareModalPost && <ShareModal postId={shareModalPost} initialShareCode={posts.find((p) => p.id === shareModalPost)?.shareCode ?? null} onClose={() => setShareModalPost(null)} />}
       {shareProfileOpen && <ShareModal profileUsername={profile.username} profileId={profile.id} onClose={() => setShareProfileOpen(false)} />}
 
       {confirmBlock && (
