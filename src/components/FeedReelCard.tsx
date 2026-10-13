@@ -94,7 +94,17 @@ function ReelCaption({ text }: { text: string }) {
       >
         {parts.map((part, i) => {
           if (/^#[a-zA-Z0-9_]+$/.test(part)) {
-            return <span key={i} className="font-medium text-blue-600">{part}</span>;
+            const tag = part.slice(1);
+            return (
+              <Link
+                key={i}
+                href={`/tag/${tag}`}
+                className="font-medium text-blue-600"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                {part}
+              </Link>
+            );
           }
           if (/^@[a-zA-Z0-9_.]+$/.test(part)) {
             const username = part.slice(1);
@@ -103,7 +113,7 @@ function ReelCaption({ text }: { text: string }) {
                 key={i}
                 href={`/u/${username}`}
                 className="font-medium text-blue-600"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
                 {part}
               </Link>
