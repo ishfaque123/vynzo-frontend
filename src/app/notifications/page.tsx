@@ -504,12 +504,14 @@ export default function NotificationsPage() {
 
   async function handleDeleteAll() {
     if (deleting || notifications.length === 0) return;
+    const backup = notifications;
+    setNotifications([]);
+    exitSelectMode();
     setDeleting(true);
     const result = await deleteAllNotifications();
     setDeleting(false);
-    if (result.success) {
-      setNotifications([]);
-      exitSelectMode();
+    if (!result.success) {
+      setNotifications(backup);
     }
   }
 
@@ -576,18 +578,6 @@ export default function NotificationsPage() {
             {filter === 'all' ? "You're all caught up. New activity will show up here." : `No ${filter} notifications yet.`}
           </p>
         </div>
-      </div>
-    );
-  }
-
-  if (notifications.length === 0 && !pendingUndo) {
-    return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <div className="text-slate-300">
-          <BellEmptyIcon />
-        </div>
-        <h1 className="mt-4 text-xl font-semibold">Notifications</h1>
-        <p className="mt-2 text-slate-500">You're all caught up. New activity will show up here.</p>
       </div>
     );
   }
