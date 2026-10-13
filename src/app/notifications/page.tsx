@@ -27,6 +27,62 @@ interface Notification {
   actor: Actor | null;
 }
 
+interface GroupedNotification {
+  key: string;
+  type: string;
+  actor: Actor | null;
+  items: Notification[];
+  latest: Notification;
+  hasUnread: boolean;
+}
+
+// Group consecutive same-actor + same-type notifications (e.g. 9 reel likes
+// from one person become a single "liked 9 of your reels" row).
+function groupNotifications(list: Notification[]): GroupedNotification[] {
+  const groups: GroupedNotification[] = [];
+  for (const n of list) {
+    const actorId = n.actor?.id || 'none';
+    const key = `${n.type}:${actorId}`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.items.push(n);
+      if (!n.read) last.hasUnread = true;
+      if (new Date(n.createdAt).getTime() > new Date(last.latest.createdAt).getTime()) {
+        last.latest = n;
+      }
+    } else {
+      groups.push({ key, type: n.type, actor: n.actor, items: [n], latest: n, hasUnread: !n.read });
+    }
+  }
+  return groups;
+}
+
+function groupMessage(g: GroupedNotification): string {
+  const count = g.items.length;
+  if (count === 1) return messageFor(g.latest);
+  const name = g.actor?.displayName || g.actor?.username || 'Someone';
+  switch (g.type) {
+    case 'post_like':
+      return `${name} liked ${count} of your posts`;
+    case 'reel_like':
+      return `${name} liked ${count} of your reels`;
+    case 'post_comment':
+      return `${name} commented on ${count} of your posts`;
+    case 'reel_comment':
+      return `${name} commented on ${count} of your reels`;
+    case 'comment_like':
+      return `${name} liked ${count} of your comments`;
+    case 'comment_reply':
+      return `${name} replied ${count} times to your comments`;
+    case 'post_share':
+      return `${name} shared ${count} of your posts`;
+    case 'follow':
+      return `${name} and ${count - 1} others started following you`;
+    default:
+      return `${name} sent you ${count} notifications`;
+  }
+}
+
 function FollowIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -202,7 +258,7 @@ const noCalloutStyle: React.CSSProperties = {
 };
 
 function NotificationRow({
-  n,
+  g,
   href,
   selectMode,
   isSelected,
@@ -210,14 +266,16 @@ function NotificationRow({
   onToggleSelected,
   onSwipeDelete,
 }: {
-  n: Notification;
+  g: GroupedNotification;
   href: string | null;
   selectMode: boolean;
   isSelected: boolean;
-  onEnterSelectMode: (id: string) => void;
-  onToggleSelected: (id: string) => void;
-  onSwipeDelete: (n: Notification) => void;
+  onEnterSelectMode: (ids: string[]) => void;
+  onToggleSelected: (ids: string[]) => void;
+  onSwipeDelete: (g: GroupedNotification) => void;
 }) {
+  const n = g.latest;
+  const ids = g.items.map((x) => x.id);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startX = useRef(0);
@@ -239,7 +297,7 @@ function NotificationRow({
     clearLongPress();
     longPressTimer.current = setTimeout(() => {
       gestureHandled.current = true;
-      onEnterSelectMode(n.id);
+      onEnterSelectMode(ids);
     }, LONG_PRESS_MS);
   }
 
@@ -267,7 +325,7 @@ function NotificationRow({
       if (dragX <= SWIPE_THRESHOLD) {
         gestureHandled.current = true;
         setDragX(-500);
-        setTimeout(() => onSwipeDelete(n), 160);
+        setTimeout(() => onSwipeDelete(g), 160);
       } else {
         setDragX(0);
       }
@@ -281,7 +339,7 @@ function NotificationRow({
     clearLongPress();
     longPressTimer.current = setTimeout(() => {
       gestureHandled.current = true;
-      onEnterSelectMode(n.id);
+      onEnterSelectMode(ids);
     }, LONG_PRESS_MS);
   }
   function handleMouseUpOrLeave() {
@@ -304,7 +362,7 @@ function NotificationRow({
   const content = (
     <div
       className={`flex items-start gap-3 rounded-lg px-3 py-3 ${
-        isSelected ? 'bg-blue-100' : !n.read ? 'bg-blue-50' : 'bg-white'
+        isSelected ? 'bg-blue-100' : g.hasUnread ? 'bg-blue-50' : 'bg-white'
       }`}
     >
       {selectMode && (
@@ -316,14 +374,22 @@ function NotificationRow({
           {isSelected && <CheckIcon />}
         </span>
       )}
-      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}>
-        {icon}
-      </div>
+      {n.actor?.profilePictureUrl ? (
+        <img
+          src={n.actor.profilePictureUrl}
+          alt={n.actor.displayName || n.actor.username || ''}
+          className="h-9 w-9 flex-shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}>
+          {icon}
+        </div>
+      )}
       <div className="flex-1">
-        <p className="text-sm text-slate-800">{messageFor(n)}</p>
+        <p className="text-sm text-slate-800">{groupMessage(g)}</p>
         <p className="mt-0.5 text-xs text-slate-400">{formatTime(n.createdAt)}</p>
       </div>
-      {!n.read && !selectMode && (
+      {g.hasUnread && !selectMode && (
         <span className="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-blue-600" aria-label="Unread" />
       )}
     </div>
@@ -361,7 +427,7 @@ export default function NotificationsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  const [pendingUndo, setPendingUndo] = useState<{ item: Notification; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const [pendingUndo, setPendingUndo] = useState<{ key: string; ids: string[]; items: Notification[]; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   useEffect(() => {
     fetchNotifications().then((result) => {
@@ -371,16 +437,17 @@ export default function NotificationsPage() {
     });
   }, []);
 
-  function enterSelectMode(id: string) {
+  function enterSelectMode(ids: string[]) {
     setSelectMode(true);
-    setSelectedIds(new Set([id]));
+    setSelectedIds(new Set(ids));
   }
 
-  function toggleSelected(id: string) {
+  function toggleSelected(ids: string[]) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const allSelected = ids.every((id) => next.has(id));
+      if (allSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
       return next;
     });
   }
@@ -423,24 +490,25 @@ export default function NotificationsPage() {
 
   // Swipe-to-delete: remove instantly from the list, but only call the API
   // after the undo window closes so "Undo" can put it back for free.
-  function handleSwipeDelete(n: Notification) {
+  function handleSwipeDelete(g: GroupedNotification) {
+    const ids = g.items.map((x) => x.id);
     if (pendingUndo) {
       clearTimeout(pendingUndo.timer);
-      deleteNotifications([pendingUndo.item.id]);
+      deleteNotifications(pendingUndo.ids);
     }
-    setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    setNotifications((prev) => prev.filter((x) => !ids.includes(x.id)));
     const timer = setTimeout(() => {
-      deleteNotifications([n.id]);
-      setPendingUndo((cur) => (cur?.item.id === n.id ? null : cur));
+      deleteNotifications(ids);
+      setPendingUndo((cur) => (cur && cur.key === g.key ? null : cur));
     }, UNDO_WINDOW_MS);
-    setPendingUndo({ item: n, timer });
+    setPendingUndo({ key: g.key, ids, items: g.items, timer });
   }
 
   function handleUndo() {
     if (!pendingUndo) return;
     clearTimeout(pendingUndo.timer);
-    const restored = pendingUndo.item;
-    setNotifications((prev) => [restored, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    const restored = pendingUndo.items;
+    setNotifications((prev) => [...restored, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     setPendingUndo(null);
   }
 
@@ -492,18 +560,22 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        {notifications.map((n) => (
-          <NotificationRow
-            key={n.id}
-            n={n}
-            href={hrefFor(n)}
-            selectMode={selectMode}
-            isSelected={selectedIds.has(n.id)}
-            onEnterSelectMode={enterSelectMode}
-            onToggleSelected={toggleSelected}
-            onSwipeDelete={handleSwipeDelete}
-          />
-        ))}
+        {groupNotifications(notifications).map((g) => {
+          const ids = g.items.map((x) => x.id);
+          const allSelected = ids.every((id) => selectedIds.has(id));
+          return (
+            <NotificationRow
+              key={g.key}
+              g={g}
+              href={hrefFor(g.latest)}
+              selectMode={selectMode}
+              isSelected={allSelected}
+              onEnterSelectMode={enterSelectMode}
+              onToggleSelected={toggleSelected}
+              onSwipeDelete={handleSwipeDelete}
+            />
+          );
+        })}
       </div>
 
       {selectMode && (
