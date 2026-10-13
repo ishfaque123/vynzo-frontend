@@ -215,7 +215,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
       ) : (
         <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
       ))}
-      {post.imageUrl && <img src={post.imageUrl} alt="" className="w-full" draggable={false} onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
+      {post.imageUrl && <img src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} className="w-full" draggable={false} onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
 
       {post.originalPost && (
         <div className="mx-3 mb-2 rounded-lg border p-3">
@@ -238,7 +238,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           ) : (
             <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
           ))}
-          {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt="" className="mt-2 w-full rounded-lg" draggable={false} onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
+          {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 w-full rounded-lg" draggable={false} onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
         </div>
       )}
 
