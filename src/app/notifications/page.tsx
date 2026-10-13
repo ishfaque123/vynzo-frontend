@@ -26,6 +26,7 @@ interface Notification {
   postId?: string | null;
   commentId?: string | null;
   reelId?: string | null;
+  detail?: string | null;
   actor: Actor | null;
 }
 
@@ -176,6 +177,8 @@ function iconFor(type: string) {
       return { icon: <ShareIcon />, bg: 'bg-green-100', color: 'text-green-600' };
     case 'new_device_login':
       return { icon: <DeviceIcon />, bg: 'bg-amber-100', color: 'text-amber-600' };
+    case 'comment_removed':
+      return { icon: <BellEmptyIcon />, bg: 'bg-red-100', color: 'text-red-600' };
     default:
       return { icon: <BellEmptyIcon />, bg: 'bg-slate-100', color: 'text-slate-600' };
   }
@@ -206,6 +209,8 @@ function messageFor(n: Notification): string {
       return n.commentId ? `${name} mentioned you in a comment` : `${name} tagged you in a post`;
     case 'new_device_login':
       return 'New login detected on your account';
+    case 'comment_removed':
+      return `Your comment was removed${n.detail ? ` for ${n.detail}` : ''}`;
     default:
       return 'New notification';
   }
