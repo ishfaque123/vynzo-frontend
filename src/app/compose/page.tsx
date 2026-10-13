@@ -11,7 +11,7 @@ import { fetchReelsConfig, fetchMyReelStatus } from '@/lib/api/reelApi';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_LENGTH = 2000;
 const MAX_TAGS = 2;
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const BACKGROUND_OPTIONS = [
   { value: 'sunset' as const, label: 'Sunset', className: 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600' },
@@ -175,7 +175,7 @@ function ComposeForm() {
     const pending = takePendingComposeImage();
     if (pending) {
       if (pending.size > MAX_IMAGE_SIZE) {
-        setVideoNotice('Photo is too large. Please choose a photo smaller than 10 MB.');
+        setVideoNotice('Photo is too large. Please choose a photo smaller than 5 MB.');
         return;
       }
       setImage(pending);
@@ -225,7 +225,7 @@ function ComposeForm() {
 
   function handlePickImage(file: File) {
     if (file.size > MAX_IMAGE_SIZE) {
-      setVideoNotice('Photo is too large. Please choose a photo smaller than 10 MB.');
+      setVideoNotice('Photo is too large. Please choose a photo smaller than 5 MB.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
