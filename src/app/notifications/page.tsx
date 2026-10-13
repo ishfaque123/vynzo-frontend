@@ -9,7 +9,7 @@ import {
   deleteAllNotifications,
 } from '@/lib/api/notificationApi';
 import SkeletonNotificationRow from '@/components/SkeletonNotificationRow';
-import { useAuth } from '@/components/AuthProvider';
+import { useAuth } from '@/lib/auth/useAuth';
 import { saveOfflineNotifications, getOfflineNotifications } from '@/lib/offline/feedCache';
 
 interface Actor {
