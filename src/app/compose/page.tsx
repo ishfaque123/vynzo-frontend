@@ -144,6 +144,7 @@ function ComposeForm() {
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -369,8 +370,8 @@ function ComposeForm() {
   function handleClose() {
     if (submitting) return;
     if (content.trim() || image || taggedUsers.length > 0) {
-      const discard = window.confirm('Discard post? Your photo and caption will be lost.');
-      if (!discard) return;
+      setDiscardConfirmOpen(true);
+      return;
     }
     router.back();
   }
@@ -506,9 +507,9 @@ function ComposeForm() {
 
         {location && (
           <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
-            <span>📍</span>
+            <span className="text-slate-500"><LocationIcon /></span>
             <span className="font-medium text-slate-700">{location}</span>
-            <button type="button" onClick={removeLocation} className="ml-0.5 text-slate-400">×</button>
+            <button type="button" onClick={removeLocation} aria-label="Remove location" className="ml-0.5 text-slate-400">×</button>
           </p>
         )}
 
@@ -629,6 +630,17 @@ function ComposeForm() {
               ))}
             </div>
             <button type="button" onClick={() => { setBackgroundStyle(null); setBackgroundPickerOpen(false); }} className="mt-3 w-full rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">No background</button>
+          </div>
+        </div>
+      )}
+
+      {discardConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setDiscardConfirmOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-1 text-center text-base font-semibold text-slate-900">Discard post?</p>
+            <p className="mb-4 text-center text-sm text-slate-500">Your photo and caption will be lost.</p>
+            <button type="button" onClick={() => { setDiscardConfirmOpen(false); router.back(); }} className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white">Discard</button>
+            <button type="button" onClick={() => setDiscardConfirmOpen(false)} className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">Keep editing</button>
           </div>
         </div>
       )}
