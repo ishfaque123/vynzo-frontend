@@ -143,6 +143,7 @@ function ComposeForm() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -379,6 +380,7 @@ function ComposeForm() {
 
     setSubmitting(true);
     setProgress(0);
+    setSubmitError(null);
 
     const formData = new FormData();
     formData.append('content', content.trim());
@@ -407,14 +409,14 @@ function ComposeForm() {
         playPostSound();
         setTimeout(() => router.push('/'), 400);
       } else {
-        alert(result?.error?.message || 'Failed to create post');
+        setSubmitError(result?.error?.message || 'Failed to create post');
         setSubmitting(false);
         setProgress(0);
       }
     };
 
     xhr.onerror = () => {
-      alert('Network error. Please try again.');
+      setSubmitError('Network error. Please try again.');
       setSubmitting(false);
       setProgress(0);
     };
@@ -444,6 +446,20 @@ function ComposeForm() {
       {submitting && (
         <div className="h-1 w-full bg-slate-100">
           <div className="h-full bg-blue-600 transition-all duration-150" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+
+      {submitError && (
+        <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 shrink-0">
+            <circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span className="flex-1">{submitError}</span>
+          <button type="button" onClick={() => setSubmitError(null)} aria-label="Dismiss error" className="shrink-0 text-red-400 hover:text-red-600">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
+            </svg>
+          </button>
         </div>
       )}
 
