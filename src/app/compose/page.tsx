@@ -160,6 +160,15 @@ function ComposeForm() {
   const [tagQuery, setTagQuery] = useState('');
   const [tagResults, setTagResults] = useState<any[]>([]);
   const [tagSearching, setTagSearching] = useState(false);
+  const tagSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tagSearchAbort = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (tagSearchTimer.current) clearTimeout(tagSearchTimer.current);
+      if (tagSearchAbort.current) tagSearchAbort.current.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const pending = takePendingComposeImage();
@@ -316,17 +325,32 @@ function ComposeForm() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  async function handleTagSearch(q: string) {
+  function handleTagSearch(q: string) {
     setTagQuery(q);
+    if (tagSearchTimer.current) clearTimeout(tagSearchTimer.current);
+    if (tagSearchAbort.current) tagSearchAbort.current.abort();
     if (!q.trim()) {
       setTagResults([]);
+      setTagSearching(false);
       return;
     }
     setTagSearching(true);
-    const res = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(q)}`, { credentials: 'include' });
-    const result = await res.json();
-    setTagSearching(false);
-    if (result.success) setTagResults(result.data.users);
+    tagSearchTimer.current = setTimeout(async () => {
+      const controller = new AbortController();
+      tagSearchAbort.current = controller;
+      try {
+        const res = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(q)}`, { credentials: 'include', signal: controller.signal });
+        const result = await res.json();
+        if (result.success) setTagResults(result.data.users);
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') console.error('tag search failed', err);
+      } finally {
+        if (tagSearchAbort.current === controller) {
+          setTagSearching(false);
+          tagSearchAbort.current = null;
+        }
+      }
+    }, 300);
   }
   function addTag(u: any) {
     if (taggedUsers.length >= MAX_TAGS || taggedUsers.some((t) => t.id === u.id) || u.id === user?.id) return;
