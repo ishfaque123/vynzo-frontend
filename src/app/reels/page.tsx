@@ -331,7 +331,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
   }
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
-    <video ref={videoRef} playsInline controls={false} muted={isMuted} preload={preload ? 'auto' : 'none'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); }} onError={(e) => { setIsVideoLoading(false); setIsPlaying(false); setVideoError(e.currentTarget.error?.code || 4); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible') { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); }} />
+    <video ref={videoRef} poster={reel.thumbnailUrl || undefined} playsInline controls={false} muted={isMuted} preload={preload ? 'auto' : 'none'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); }} onError={(e) => { setIsVideoLoading(false); setIsPlaying(false); setVideoError(e.currentTarget.error?.code || 4); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible') { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); }} />
     {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-[spin_0.8s_linear_infinite] rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
     {active && videoError && <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 px-6 text-center text-white"><p className="text-sm font-medium [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">This video can&apos;t be played right now.</p><button type="button" onClick={(e) => { e.stopPropagation(); const v = videoRef.current; if (!v) return; setVideoError(null); setIsVideoLoading(true); v.load(); void v.play().catch(() => {}); }} className="pointer-events-auto rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Try again</button><span className="text-[10px] text-white/60">Error code {videoError}</span></div>}
     {offlineMode && <div className="pointer-events-none absolute left-3 top-20 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm">Offline</div>}
@@ -380,6 +380,10 @@ export default function ReelsPage() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const activeTabRef = useRef<'foryou' | 'following'>('foryou');
+  // Per-tab feed cache: switching back to a visited tab is instant, no reload
+  const feedCacheRef = useRef<Record<'foryou' | 'following', { reels: Reel[]; hasMore: boolean; activeIndex: number } | null>>({ foryou: null, following: null });
+  // Subtle spinner for tab switches (full-screen 3-dots only on first page load)
+  const [tabSwitching, setTabSwitching] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -391,24 +395,58 @@ export default function ReelsPage() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [forcePause] = useState(false);
   function switchTab(tab: 'foryou' | 'following') {
-    if (tab === activeTabRef.current || loading) return;
+    if (tab === activeTabRef.current || tabSwitching) return;
+    const prevTab = activeTabRef.current;
+    // Remember scroll position of the tab we're leaving
+    const prevCached = feedCacheRef.current[prevTab];
+    if (prevCached) prevCached.activeIndex = activeIndex;
+    else if (reels.length > 0) feedCacheRef.current[prevTab] = { reels, hasMore, activeIndex };
+
     activeTabRef.current = tab;
     setActiveTab(tab);
-    setActiveIndex(0);
-    setReels([]);
-    setHasMore(false);
-    setFeedError(false);
-    setOfflineMode(false);
-    setLoading(true);
-    const root = document.getElementById('reels-feed');
-    if (root) root.scrollTo({ top: 0 });
+
+    const cached = feedCacheRef.current[tab];
+    if (cached) {
+      // Instant switch from cache — no loading screen at all
+      setReels(cached.reels);
+      setHasMore(cached.hasMore);
+      setActiveIndex(cached.activeIndex);
+      setFeedError(false);
+      setOfflineMode(false);
+      requestAnimationFrame(() => {
+        const root = document.getElementById('reels-feed');
+        if (root && root.clientHeight) root.scrollTo({ top: cached.activeIndex * root.clientHeight });
+      });
+    } else {
+      // First visit to this tab: clear and let the feed effect fetch it
+      // with a subtle spinner (tab bar stays visible)
+      setReels([]);
+      setActiveIndex(0);
+      setHasMore(false);
+      setFeedError(false);
+      setOfflineMode(false);
+    }
   }
 
+  // Keep the current tab's cache fresh (infinite scroll appends, likes, etc.)
   useEffect(() => {
+    const tab = activeTabRef.current;
+    if (feedCacheRef.current[tab] && reels.length > 0) {
+      feedCacheRef.current[tab] = { reels, hasMore, activeIndex };
+    }
+  }, [reels, hasMore, activeIndex]);
+
+  useEffect(() => {
+    const tab = activeTabRef.current;
+    // Cached tab → switchTab already restored it, nothing to fetch
+    if (feedCacheRef.current[tab]) return;
+
     let cancelled = false;
+    // First-ever load uses the full-screen loader; tab switches use a subtle spinner
+    const isFirstLoad = !feedCacheRef.current.foryou && !feedCacheRef.current.following;
+    if (!isFirstLoad) setTabSwitching(true);
 
     (async () => {
-      const tab = activeTabRef.current;
       const targetId = tab === 'foryou' ? new URLSearchParams(window.location.search).get('id') : null;
 
       // Offline-first: read IndexedDB before waiting for any network request.
@@ -474,8 +512,11 @@ export default function ReelsPage() {
         if (item && typeof item[0] === 'string' && typeof item[1] === 'string') statusMap.set(item[0], item[1]);
       });
 
-      setReels(combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item));
-      setHasMore(!usingOfflineReels && !!feed.data?.hasMore);
+      const finalReels = combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item);
+      const finalHasMore = !usingOfflineReels && !!feed.data?.hasMore;
+      setReels(finalReels);
+      setHasMore(finalHasMore);
+      if (!cancelled) feedCacheRef.current[tab] = { reels: finalReels, hasMore: finalHasMore, activeIndex: 0 };
 
       const enabled = !!(config.success && config.data?.enabled);
       const remaining = status.success ? Number(status.data?.remaining) : 0;
@@ -483,6 +524,7 @@ export default function ReelsPage() {
       setUploadMaxDuration(Number(config.data?.maxDurationSec) > 0 ? Number(config.data.maxDurationSec) : 60);
       setUploadReady(enabled && status.success && Number.isFinite(remaining) && remaining > 0);
       setLoading(false);
+      setTabSwitching(false);
     })();
 
     return () => { cancelled = true; };
@@ -551,5 +593,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
 }
