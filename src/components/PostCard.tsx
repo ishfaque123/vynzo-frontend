@@ -175,8 +175,12 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               </div>
               {post.taggedUsers?.length > 0 && (
                 <span className="block text-xs text-slate-500">
-                  with {post.taggedUsers.map((t: any, i: number) => (
-                    <span key={t.id} className="font-medium text-slate-700">{t.displayName}{i < post.taggedUsers.length - 1 ? ', ' : ''}</span>
+                  with{' '}
+                  {post.taggedUsers.map((t: any, i: number) => (
+                    <span key={t.id}>
+                      {i > 0 && ', '}
+                      <span className="font-medium text-slate-700">{t.displayName}</span>
+                    </span>
                   ))}
                 </span>
               )}
