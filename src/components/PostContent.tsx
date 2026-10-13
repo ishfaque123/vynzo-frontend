@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Link from 'next/link';
 
 export default function PostContent({ text, className }: { text: string; className?: string }) {
   const parts = text.split(/(#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/g);
@@ -46,11 +47,24 @@ export default function PostContent({ text, className }: { text: string; classNa
       onTouchMove={endPress}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {parts.map((part, i) =>
-        /^[#@][a-zA-Z0-9_]+$/.test(part)
+      {parts.map((part, i) => {
+        if (/^#[a-zA-Z0-9_]+$/.test(part)) {
+          const tag = part.slice(1);
+          return (
+            <Link
+              key={i}
+              href={`/tag/${tag}`}
+              className="font-medium text-blue-600"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              {part}
+            </Link>
+          );
+        }
+        return /^[#@][a-zA-Z0-9_]+$/.test(part)
           ? <span key={i} className="font-medium text-blue-600">{part}</span>
-          : <span key={i}>{part}</span>
-      )}
+          : <span key={i}>{part}</span>;
+      })}
     </p>
   );
 }
