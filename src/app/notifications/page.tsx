@@ -354,7 +354,7 @@ function NotificationRow({
     }
     if (selectMode) {
       e.preventDefault();
-      onToggleSelected(n.id);
+      onToggleSelected(ids);
     }
   }
 
