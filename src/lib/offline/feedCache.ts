@@ -77,6 +77,26 @@ export async function getOfflineFeed<T = any>(userId: string): Promise<{ posts: 
   return getValue<{ posts: T[]; hasMore: boolean }>(`feed:${userId}`);
 }
 
+export async function saveOfflineNotifications(userId: string, notifications: any[]) {
+  if (!userId || !Array.isArray(notifications)) return;
+  await putValue(`notifications:${userId}`, notifications);
+}
+
+export async function getOfflineNotifications<T = any>(userId: string): Promise<T[] | null> {
+  if (!userId) return null;
+  return getValue<T[]>(`notifications:${userId}`);
+}
+
+export async function saveOfflineProfile(username: string, profile: any) {
+  if (!username || !profile) return;
+  await putValue(`profile:${username.toLowerCase()}`, profile);
+}
+
+export async function getOfflineProfile<T = any>(username: string): Promise<T | null> {
+  if (!username) return null;
+  return getValue<T>(`profile:${username.toLowerCase()}`);
+}
+
 export async function clearOfflineCache() {
   try {
     const db = await openOfflineDb();

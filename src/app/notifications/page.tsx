@@ -9,6 +9,8 @@ import {
   deleteAllNotifications,
 } from '@/lib/api/notificationApi';
 import SkeletonNotificationRow from '@/components/SkeletonNotificationRow';
+import { useAuth } from '@/components/AuthProvider';
+import { saveOfflineNotifications, getOfflineNotifications } from '@/lib/offline/feedCache';
 
 interface Actor {
   id: string;
@@ -422,8 +424,10 @@ function NotificationRow({
 }
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offlineMode, setOfflineMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [filter, setFilter] = useState<'all' | 'likes' | 'comments' | 'follows'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -431,11 +435,34 @@ export default function NotificationsPage() {
   const [pendingUndo, setPendingUndo] = useState<{ key: string; ids: string[]; items: Notification[]; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   useEffect(() => {
-    fetchNotifications().then((result) => {
-      if (result.success) setNotifications(result.data.notifications);
-      setLoading(false);
-    });
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await fetchNotifications();
+        if (cancelled) return;
+        if (result.success) {
+          setNotifications(result.data.notifications);
+          setOfflineMode(false);
+          if (user?.id) saveOfflineNotifications(user.id, result.data.notifications).catch(() => {});
+        } else {
+          throw new Error('fetch failed');
+        }
+      } catch {
+        if (cancelled) return;
+        // Offline: show cached notifications like Facebook does
+        if (user?.id) {
+          const cached = await getOfflineNotifications<Notification>(user.id);
+          if (cached && cached.length > 0) {
+            setNotifications(cached);
+            setOfflineMode(true);
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   async function handleMarkAllRead() {
     const result = await markAllNotificationsRead();
@@ -611,6 +638,12 @@ export default function NotificationsPage() {
           </>
         )}
       </div>
+
+      {offlineMode && (
+        <div className="mx-2 mb-1 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-700">
+          You're offline — showing saved notifications
+        </div>
+      )}
 
       <div className="flex gap-2 overflow-x-auto px-2 py-1">
         {FILTERS.map((f) => (
