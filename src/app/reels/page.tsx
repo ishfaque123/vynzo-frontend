@@ -378,6 +378,8 @@ export default function ReelsPage() {
   const gestureLockedRef = useRef(false);
   const wheelLockRef = useRef(false);
   const [reels, setReels] = useState<Reel[]>([]);
+  const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
+  const activeTabRef = useRef<'foryou' | 'following'>('foryou');
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -388,11 +390,26 @@ export default function ReelsPage() {
   const [feedError, setFeedError] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [forcePause] = useState(false);
+  function switchTab(tab: 'foryou' | 'following') {
+    if (tab === activeTabRef.current || loading) return;
+    activeTabRef.current = tab;
+    setActiveTab(tab);
+    setActiveIndex(0);
+    setReels([]);
+    setHasMore(false);
+    setFeedError(false);
+    setOfflineMode(false);
+    setLoading(true);
+    const root = document.getElementById('reels-feed');
+    if (root) root.scrollTo({ top: 0 });
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      const targetId = new URLSearchParams(window.location.search).get('id');
+      const tab = activeTabRef.current;
+      const targetId = tab === 'foryou' ? new URLSearchParams(window.location.search).get('id') : null;
 
       // Offline-first: read IndexedDB before waiting for any network request.
       // This makes previously cached reels usable even when Wi-Fi/mobile data is off.
@@ -411,7 +428,7 @@ export default function ReelsPage() {
 
       const [targetResult, feed, status, config] = await Promise.all([
         targetId ? fetchReelById(targetId) : Promise.resolve(null),
-        fetchReelFeed(),
+        fetchReelFeed(0, tab),
         fetchMyReelStatus(),
         fetchReelsConfig(),
       ]);
@@ -469,8 +486,8 @@ export default function ReelsPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id]);
-  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length).then((result) => { if (result.success) { setReels((items) => { const existingIds = new Set(items.map((item) => item.id)); const notInterested = getNotInterestedIds(); const newOnes = (result.data.reels || []).filter((item: Reel) => !existingIds.has(item.id) && !notInterested.has(item.id)); return [...items, ...newOnes]; }); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
+  }, [user?.id, activeTab]);
+  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length, activeTabRef.current).then((result) => { if (result.success) { setReels((items) => { const existingIds = new Set(items.map((item) => item.id)); const notInterested = getNotInterestedIds(); const newOnes = (result.data.reels || []).filter((item: Reel) => !existingIds.has(item.id) && !notInterested.has(item.id)); return [...items, ...newOnes]; }); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
   function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
@@ -534,5 +551,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 bg-black"><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full items-center justify-center text-white">No reels yet. Be the first to post one.</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl transition hover:scale-105 active:scale-95"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl transition hover:scale-105 active:scale-95"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
 }

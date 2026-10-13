@@ -35,9 +35,9 @@ export async function fetchReelsConfig() {
   } catch { return { success: false, error: { message: 'Unable to connect to the server.' } }; }
 }
 
-export async function fetchReelFeed(offset = 0) {
+export async function fetchReelFeed(offset = 0, feed: 'foryou' | 'following' = 'foryou') {
   try {
-    const res = await fetch(apiUrl(`/api/reels?offset=${Math.max(0, Math.floor(offset))}`), { credentials: 'include' });
+    const res = await fetch(apiUrl(`/api/reels?offset=${Math.max(0, Math.floor(offset))}&feed=${feed}`), { credentials: 'include' });
     return await readResponse(res);
   } catch { return { success: false, error: { message: 'Unable to load reels.' } }; }
 }
