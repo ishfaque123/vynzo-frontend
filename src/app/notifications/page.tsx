@@ -166,7 +166,7 @@ function hrefFor(n: Notification): string | null {
     case 'reel_like':
     case 'reel_comment':
     case 'reel_reply':
-      return '/reels';
+      return n.reelId ? `/reels?id=${n.reelId}` : '/reels';
     case 'comment_mention':
       return n.postId ? `/post/${n.postId}` : null;
     default:
@@ -303,8 +303,8 @@ function NotificationRow({
   const { icon, bg, color } = iconFor(n.type);
   const content = (
     <div
-      className={`flex items-start gap-3 rounded-lg bg-white px-3 py-3 ${
-        isSelected ? 'bg-blue-100' : !n.read ? 'bg-blue-50' : ''
+      className={`flex items-start gap-3 rounded-lg px-3 py-3 ${
+        isSelected ? 'bg-blue-100' : !n.read ? 'bg-blue-50' : 'bg-white'
       }`}
     >
       {selectMode && (
@@ -323,6 +323,9 @@ function NotificationRow({
         <p className="text-sm text-slate-800">{messageFor(n)}</p>
         <p className="mt-0.5 text-xs text-slate-400">{formatTime(n.createdAt)}</p>
       </div>
+      {!n.read && !selectMode && (
+        <span className="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-blue-600" aria-label="Unread" />
+      )}
     </div>
   );
 
