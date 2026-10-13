@@ -178,6 +178,7 @@ function iconFor(type: string) {
     case 'new_device_login':
       return { icon: <DeviceIcon />, bg: 'bg-amber-100', color: 'text-amber-600' };
     case 'comment_removed':
+    case 'post_removed':
       return { icon: <BellEmptyIcon />, bg: 'bg-red-100', color: 'text-red-600' };
     default:
       return { icon: <BellEmptyIcon />, bg: 'bg-slate-100', color: 'text-slate-600' };
@@ -211,6 +212,8 @@ function messageFor(n: Notification): string {
       return 'New login detected on your account';
     case 'comment_removed':
       return `Your comment was removed${n.detail ? ` for ${n.detail}` : ''}`;
+    case 'post_removed':
+      return `Your post was removed${n.detail ? ` for ${n.detail}` : ''}`;
     default:
       return 'New notification';
   }
