@@ -425,6 +425,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectMode, setSelectMode] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'likes' | 'comments' | 'follows'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [pendingUndo, setPendingUndo] = useState<{ key: string; ids: string[]; items: Notification[]; timer: ReturnType<typeof setTimeout> } | null>(null);
@@ -433,9 +434,33 @@ export default function NotificationsPage() {
     fetchNotifications().then((result) => {
       if (result.success) setNotifications(result.data.notifications);
       setLoading(false);
-      markAllNotificationsRead();
     });
   }, []);
+
+  async function handleMarkAllRead() {
+    const result = await markAllNotificationsRead();
+    if (result.success) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  }
+
+  const FILTERS = [
+    { value: 'all', label: 'All' },
+    { value: 'likes', label: 'Likes' },
+    { value: 'comments', label: 'Comments' },
+    { value: 'follows', label: 'Follows' },
+  ] as const;
+
+  function matchesFilter(g: GroupedNotification): boolean {
+    if (filter === 'all') return true;
+    if (filter === 'likes') return g.type.endsWith('_like');
+    if (filter === 'comments') return g.type.includes('comment') || g.type.includes('reply') || g.type.includes('mention');
+    if (filter === 'follows') return g.type === 'follow';
+    return true;
+  }
+
+  const visibleGroups = groupNotifications(notifications).filter(matchesFilter);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   function enterSelectMode(ids: string[]) {
     setSelectMode(true);
@@ -524,6 +549,37 @@ export default function NotificationsPage() {
     );
   }
 
+  if (visibleGroups.length === 0 && !pendingUndo && !loading) {
+    return (
+      <div className="mx-auto max-w-xl px-2 py-2 pb-20">
+        <div className="flex items-center justify-between px-2 py-2">
+          <h1 className="text-lg font-semibold">Notifications</h1>
+        </div>
+        <div className="flex gap-2 overflow-x-auto px-2 py-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                filter === f.value ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
+          <div className="text-slate-300">
+            <BellEmptyIcon />
+          </div>
+          <p className="mt-2 text-slate-500">
+            {filter === 'all' ? "You're all caught up. New activity will show up here." : `No ${filter} notifications yet.`}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (notifications.length === 0 && !pendingUndo) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
@@ -552,15 +608,36 @@ export default function NotificationsPage() {
         ) : (
           <>
             <h1 className="text-lg font-semibold">Notifications</h1>
-            <button onClick={handleDeleteAll} className="text-sm font-medium text-red-600">
-              Clear all
-            </button>
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button onClick={handleMarkAllRead} className="text-sm font-medium text-blue-600">
+                  Mark all read
+                </button>
+              )}
+              <button onClick={handleDeleteAll} className="text-sm font-medium text-red-600">
+                Clear all
+              </button>
+            </div>
           </>
         )}
       </div>
 
+      <div className="flex gap-2 overflow-x-auto px-2 py-1">
+        {FILTERS.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setFilter(f.value)}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+              filter === f.value ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-col gap-0.5">
-        {groupNotifications(notifications).map((g) => {
+        {visibleGroups.map((g) => {
           const ids = g.items.map((x) => x.id);
           const allSelected = ids.every((id) => selectedIds.has(id));
           return (

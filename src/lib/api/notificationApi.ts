@@ -66,3 +66,20 @@ export async function removePushToken(token: string) {
   });
   return readJson(res);
 }
+
+export async function fetchNotificationPreferences() {
+  const res = await fetch(`${API_URL}/api/notifications/preferences`, {
+    credentials: 'include',
+  });
+  return readJson(res);
+}
+
+export async function setNotificationPreference(category: string, enabled: boolean) {
+  const res = await fetch(`${API_URL}/api/notifications/preferences`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ category, enabled }),
+  });
+  return readJson(res);
+}

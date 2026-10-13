@@ -111,6 +111,14 @@ function DataSaverIcon() {
     </svg>
   );
 }
+function BellIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 003.4 0" />
+    </svg>
+  );
+}
 function ClockIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -198,6 +206,7 @@ const securityItems = [
   { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
   { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
   { label: 'Data Saver', href: '/settings-menu/data-saver', Icon: DataSaverIcon },
+  { label: 'Notifications', href: '/settings-menu/notifications', Icon: BellIcon },
 ];
 
 export default function SettingsMenuPage() {
