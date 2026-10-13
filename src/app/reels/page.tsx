@@ -9,6 +9,7 @@ import ShareModal from '@/components/ShareModal';
 import ReelCommentsModal from '@/components/ReelCommentsModal';
 import ReelReportModal from '@/components/ReelReportModal';
 import { fetchReelsConfig, fetchReelFeed, fetchMyReelStatus, toggleReelLike, toggleReelFavorite, deleteReel, recordReelView, fetchReelById, getReelDownloadUrl } from '@/lib/api/reelApi';
+import { useDataSaver, isDataSaver } from '@/lib/dataSaver';
 import { fetchReelComments } from '@/lib/api/reelCommentApi';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import { cacheReelVideo, getOfflineReels } from '@/lib/offline/reelCache';
@@ -162,6 +163,8 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const dataSaver = useDataSaver();
+  const manualPlayRef = useRef(false);
   const [progress, setProgress] = useState(0);
   const [liking, setLiking] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -245,7 +248,7 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
   async function handleFollow(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); if (following) return; setFollowing(true); const result = await toggleFollow(reel.author.id); setFollowing(false); if (result.success && result.data.following) onFollowed(reel.author.id); }
   useEffect(() => { const video = videoRef.current; if (!video) return; if (preload) { if (video.getAttribute('src') !== reel.videoUrl) video.setAttribute('src', reel.videoUrl); } else if (video.getAttribute('src')) { video.pause(); video.removeAttribute('src'); video.load(); setIsPlaying(false); } }, [preload, reel.videoUrl]);
-  useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); setProgress(0); return; } video.currentTime = 0; userPausedRef.current = false; setVideoError(null); setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 3); setProgress(0); let cancelled = false; (async () => { for (let attempt = 0; attempt < 4 && !cancelled; attempt++) { try { video.muted = true; setIsMuted(true); await video.play(); if (cancelled) return; video.muted = false; setIsMuted(false); if (video.paused) { video.muted = true; setIsMuted(true); await video.play(); } setIsPlaying(true); return; } catch { if (video.error) return; await new Promise((resolve) => setTimeout(resolve, 250)); } } })(); return () => { cancelled = true; }; }, [active]);
+  useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); setProgress(0); manualPlayRef.current = false; return; } if (isDataSaver() && !manualPlayRef.current) { setIsPlaying(false); setIsVideoLoading(false); return; } video.currentTime = 0; userPausedRef.current = false; setVideoError(null); setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 3); setProgress(0); let cancelled = false; (async () => { for (let attempt = 0; attempt < 4 && !cancelled; attempt++) { try { video.muted = true; setIsMuted(true); await video.play(); if (cancelled) return; video.muted = false; setIsMuted(false); if (video.paused) { video.muted = true; setIsMuted(true); await video.play(); } setIsPlaying(true); return; } catch { if (video.error) return; await new Promise((resolve) => setTimeout(resolve, 250)); } } })(); return () => { cancelled = true; }; }, [active, dataSaver]);
   useEffect(() => { const video = videoRef.current; if (!video || !active) return; if (forcePause) { video.pause(); setIsPlaying(false); } else if (video.paused) { video.play().then(() => setIsPlaying(true)).catch(() => {}); } }, [forcePause]);
   function toggleMute(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); const video = videoRef.current; if (!video) return; video.muted = !video.muted; setIsMuted(video.muted); }
   function togglePlayback(e?: React.MouseEvent) { e?.preventDefault(); e?.stopPropagation(); const video = videoRef.current; if (!video) return; if (video.paused) { userPausedRef.current = false; video.play().then(() => setIsPlaying(true)).catch(() => {}); } else { userPausedRef.current = true; video.pause(); setIsPlaying(false); } revealControls(); }
@@ -330,8 +333,26 @@ function ReelItem({ reel, active, forcePause, preload, cacheUserId, offlineMode,
     }
   }
 
+  function handleManualPlay() {
+    const video = videoRef.current;
+    if (!video) return;
+    manualPlayRef.current = true;
+    setIsVideoLoading(true);
+    video.muted = true;
+    setIsMuted(true);
+    video.play().then(() => { setIsPlaying(true); setIsVideoLoading(false); video.muted = false; setIsMuted(false); }).catch(() => setIsVideoLoading(false));
+  }
+
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center bg-black">
-    <video ref={videoRef} poster={reel.thumbnailUrl || undefined} playsInline controls={false} muted={isMuted} preload={preload ? 'auto' : 'none'} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); }} onError={(e) => { setIsVideoLoading(false); setIsPlaying(false); setVideoError(e.currentTarget.error?.code || 4); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible') { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); }} />
+    <video ref={videoRef} poster={reel.thumbnailUrl || undefined} playsInline controls={false} muted={isMuted} preload={dataSaver && !manualPlayRef.current ? 'none' : (preload ? 'auto' : 'none')} className="h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused && !(isDataSaver() && !manualPlayRef.current)) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); }} onError={(e) => { setIsVideoLoading(false); setIsPlaying(false); setVideoError(e.currentTarget.error?.code || 4); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible' && !(isDataSaver() && !manualPlayRef.current)) { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); }} />
+    {active && dataSaver && !isPlaying && !manualPlayRef.current && (
+      <button type="button" onClick={handleManualPlay} aria-label="Play video" className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/30">
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#0f172a"><path d="M8 5v14l11-7z" /></svg>
+        </span>
+        <span className="rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">Tap to play</span>
+      </button>
+    )}
     {active && isVideoLoading && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-[spin_0.8s_linear_infinite] rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
     {active && videoError && <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 px-6 text-center text-white"><p className="text-sm font-medium [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">This video can&apos;t be played right now.</p><button type="button" onClick={(e) => { e.stopPropagation(); const v = videoRef.current; if (!v) return; setVideoError(null); setIsVideoLoading(true); v.load(); void v.play().catch(() => {}); }} className="pointer-events-auto rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Try again</button><span className="text-[10px] text-white/60">Error code {videoError}</span></div>}
     {offlineMode && <div className="pointer-events-none absolute left-3 top-20 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm">Offline</div>}

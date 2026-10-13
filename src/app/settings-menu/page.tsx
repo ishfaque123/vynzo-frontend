@@ -103,6 +103,14 @@ function ThemeIcon() {
     </svg>
   );
 }
+function DataSaverIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  );
+}
 function ClockIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -189,6 +197,7 @@ const securityItems = [
   { label: 'Blocked Accounts', href: '/settings-menu/blocked', Icon: BlockIcon },
   { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
   { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
+  { label: 'Data Saver', href: '/settings-menu/data-saver', Icon: DataSaverIcon },
 ];
 
 export default function SettingsMenuPage() {
