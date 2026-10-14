@@ -51,6 +51,28 @@ function EffectsIcon() {
 function SaveIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" /></svg>;
 }
+function TimerIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5" /><path d="M9 2h6" /></svg>;
+}
+function SpeedIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>;
+}
+function CameraModeIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>;
+}
+
+const SPEEDS = [
+  { label: '0.5x', value: 0.5 },
+  { label: '1x', value: 1 },
+  { label: '1.5x', value: 1.5 },
+  { label: '2x', value: 2 },
+];
+
+const TIMER_OPTIONS = [
+  { label: 'Off', value: 0 },
+  { label: '3s', value: 3 },
+  { label: '10s', value: 10 },
+];
 
 export default function ReelCameraPage() {
   const router = useRouter();
@@ -68,6 +90,13 @@ export default function ReelCameraPage() {
   const [effectId, setEffectId] = useState('normal');
   const [effectsOpen, setEffectsOpen] = useState(false);
   const [effectCat, setEffectCat] = useState('trending');
+  const [timerSecs, setTimerSecs] = useState(0);
+  const [countdown, setCountdown] = useState(0);
+  const [speed, setSpeed] = useState(1);
+  const [speedOpen, setSpeedOpen] = useState(false);
+  const [timerOpen, setTimerOpen] = useState(false);
+  const [photoMode, setPhotoMode] = useState(false);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const activeEffect = CAMERA_EFFECTS.find((e) => e.id === effectId) || CAMERA_EFFECTS[0];
   const [error, setError] = useState('');
@@ -126,6 +155,27 @@ export default function ReelCameraPage() {
   };
 
   const startRecording = () => {
+    if (!streamRef.current || recording) return;
+    // If timer is set, start countdown first
+    if (timerSecs > 0 && countdown === 0) {
+      setCountdown(timerSecs);
+      let remaining = timerSecs;
+      countdownRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          setCountdown(0);
+          doStartRecording();
+        } else {
+          setCountdown(remaining);
+        }
+      }, 1000);
+      return;
+    }
+    doStartRecording();
+  };
+
+  const doStartRecording = () => {
     if (!streamRef.current || recording) return;
     try {
       const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
@@ -191,7 +241,38 @@ export default function ReelCameraPage() {
     }
   };
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) {
+      setToast({ message: 'Camera not ready.', type: 'error' });
+      return;
+    }
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      // Apply active effect filter to the captured photo
+      if (activeEffect.css) ctx.filter = activeEffect.css;
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setPendingReelVideo(file, 0);
+        router.push('/reels/new');
+      }, 'image/jpeg', 0.92);
+    } catch {
+      setToast({ message: 'Photo capture failed.', type: 'error' });
+    }
+  };
+
+  // Apply speed to live preview
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+  }, [speed]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
@@ -296,6 +377,61 @@ export default function ReelCameraPage() {
         </div>
       )}
 
+      {/* Right side toolbar — TikTok style (timer, speed, photo mode) */}
+      {!recording && countdown === 0 && (
+        <div className="absolute right-3 top-1/3 flex flex-col items-center gap-5">
+          <button onClick={() => setTimerOpen(!timerOpen)} aria-label="Timer" className="flex flex-col items-center gap-1">
+            <TimerIcon />
+            <span className="text-[10px] text-white/80">{timerSecs > 0 ? `${timerSecs}s` : 'Timer'}</span>
+          </button>
+          <button onClick={() => setSpeedOpen(!speedOpen)} aria-label="Speed" className="flex flex-col items-center gap-1">
+            <SpeedIcon />
+            <span className="text-[10px] text-white/80">{speed}x</span>
+          </button>
+          <button onClick={() => setPhotoMode(!photoMode)} aria-label="Photo mode" className="flex flex-col items-center gap-1">
+            <CameraModeIcon />
+            <span className="text-[10px] text-white/80">{photoMode ? 'Photo' : 'Video'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Timer options popup */}
+      {timerOpen && !recording && (
+        <div className="absolute right-16 top-1/3 rounded-2xl bg-black/70 p-2 backdrop-blur">
+          {TIMER_OPTIONS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => { setTimerSecs(t.value); setTimerOpen(false); }}
+              className={`block w-full rounded-xl px-4 py-2 text-sm font-semibold ${timerSecs === t.value ? 'bg-white text-black' : 'text-white'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Speed options popup */}
+      {speedOpen && !recording && (
+        <div className="absolute right-16 top-1/3 rounded-2xl bg-black/70 p-2 backdrop-blur">
+          {SPEEDS.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => { setSpeed(s.value); setSpeedOpen(false); }}
+              className={`block w-full rounded-xl px-4 py-2 text-sm font-semibold ${speed === s.value ? 'bg-white text-black' : 'text-white'}`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Countdown overlay */}
+      {countdown > 0 && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40">
+          <span className="text-8xl font-bold text-white drop-shadow-lg">{countdown}</span>
+        </div>
+      )}
+
       {/* Bottom controls — clean centered layout */}
       <div className="absolute bottom-0 left-0 right-0 pb-8 pt-4">
         <div className="flex items-center justify-center gap-10">
@@ -319,13 +455,17 @@ export default function ReelCameraPage() {
             }}
           />
 
-          {/* Record button */}
+          {/* Record / Capture button */}
           <button
-            onClick={recording ? stopRecording : startRecording}
-            aria-label={recording ? 'Stop recording' : 'Start recording'}
+            onClick={photoMode ? capturePhoto : (recording ? stopRecording : startRecording)}
+            aria-label={photoMode ? 'Take photo' : (recording ? 'Stop recording' : 'Start recording')}
             className="flex h-[76px] w-[76px] items-center justify-center rounded-full border-[5px] border-white/90"
           >
-            <span className={`bg-red-500 transition-all duration-200 ${recording ? 'h-7 w-7 rounded-lg' : 'h-[60px] w-[60px] rounded-full'}`} />
+            {photoMode ? (
+              <span className="h-[60px] w-[60px] rounded-full bg-white" />
+            ) : (
+              <span className={`bg-red-500 transition-all duration-200 ${recording ? 'h-7 w-7 rounded-lg' : 'h-[60px] w-[60px] rounded-full'}`} />
+            )}
           </button>
 
           {/* Flip camera — moved here for symmetry */}
