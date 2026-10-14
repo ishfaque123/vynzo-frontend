@@ -183,9 +183,9 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
       `}</style>
       {isReply && <span aria-hidden="true" className="absolute left-0 top-3 h-px w-4 bg-slate-200" />}
       <div className="flex items-start gap-2">
-        <Link href={`/u/${comment.author.username}`}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
+        <Link href={`/u/${comment.author.username}`} className={isReply ? "scale-90 origin-top" : ""}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
         <div className="flex-1">
-          <div className="rounded-2xl bg-slate-100 px-3 py-2">
+          <div className={`rounded-2xl px-3 py-2 ${isReply ? "bg-slate-50 border border-slate-100" : "bg-slate-100"}`}>
             <div className="flex items-center gap-2">
               <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold">{comment.author.displayName}</Link>
               {comment.author.isVerified && <VerifiedBadge />}

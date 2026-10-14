@@ -227,9 +227,13 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
           </div>
         </div>
 
-        {showReplies && depth === 0 && replies.map((reply) => (
-          <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId} reelOwner={reelOwner} onReply={onReply} onChanged={onChanged} depth={1} />
-        ))}
+        {showReplies && depth === 0 && (
+          <div className="ml-5 mt-1 border-l-2 border-slate-200/60 pl-3">
+            {replies.map((reply) => (
+              <CommentRow key={reply.id} comment={reply} currentUserId={currentUserId} reelOwner={reelOwner} onReply={onReply} onChanged={onChanged} depth={1} />
+            ))}
+          </div>
+        )}
       </div>
 
       {confirmDelete && (

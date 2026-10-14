@@ -302,7 +302,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                     }} depth={0} />
 
                   {flatReplies.length > 0 && (
-                    <div className="ml-8 mt-1 pl-4">
+                    <div className="ml-5 mt-1 border-l-2 border-slate-200/60 pl-3">
                       {!isExpanded ? (
                         <button onClick={() => toggleExpand(c.id)} className="text-xs font-semibold text-slate-500 hover:underline">
                           View {flatReplies.length} {flatReplies.length === 1 ? 'reply' : 'replies'}
