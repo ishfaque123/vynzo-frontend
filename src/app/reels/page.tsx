@@ -328,21 +328,23 @@ function ReelItem({ reel, index, active, forcePause, preload, cacheUserId, offli
     } catch {}
     setMoreOpen(false);
     // Send to backend for feed personalization
+    const feedbackValue = reel.category || reel.author?.id || '';
+    if (feedbackValue) {
+      const feedbackType = !interested
+        ? (reel.category ? 'category' : 'creator')
+        : (reel.category ? 'interested_category' : 'interested_category');
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/not-interested`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ type: feedbackType, value: feedbackValue }),
+      }).catch(() => {});
+    }
     if (!interested) {
-      const feedbackType = reel.category ? 'category' : 'creator';
-      const feedbackValue = reel.category || reel.author?.id || '';
-      if (feedbackValue) {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/not-interested`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ type: feedbackType, value: feedbackValue }),
-        }).catch(() => {});
-      }
       setNotice({ message: "We'll show you less like this.", confirm: false });
       onDeleted(reel.id);
     } else {
-      setNotice({ message: 'Your preference has been saved.', confirm: false });
+      setNotice({ message: "We'll show you more like this.", confirm: false });
     }
   }
 
