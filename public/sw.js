@@ -1,4 +1,4 @@
-const CACHE_NAME = 'frianzo-shell-v1';
+const CACHE_NAME = 'frianzo-shell-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,7 +37,14 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+        .catch(() => caches.match(request).then((cached) => {
+          // Only serve cached page for its exact URL - never serve '/' for other pages
+          // (that caused feed HTML to show on dashboard URL)
+          if (cached) return cached;
+          // For root, serve cached shell; for other pages, let browser show offline
+          if (url.pathname === '/') return caches.match('/');
+          throw new Error('offline');
+        }))
     );
     return;
   }
