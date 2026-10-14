@@ -465,6 +465,17 @@ export default function SettingsMenuPage() {
         </button>
       </div>
 
+      <div className="mb-3 divide-y rounded-lg border">
+        <Link href="/privacy" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-slate-600"><ShieldIcon /></span>
+          <span className="text-slate-800">Privacy Policy</span>
+        </Link>
+        <Link href="/terms" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+          <span className="text-slate-600"><ShieldIcon /></span>
+          <span className="text-slate-800">Terms of Service</span>
+        </Link>
+      </div>
+
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowLogoutConfirm(false)}>
           <div className="w-full max-w-xs rounded-xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
