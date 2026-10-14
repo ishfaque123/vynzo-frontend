@@ -60,6 +60,8 @@ export default function NewReelPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [caption, setCaption] = useState('');
+  const [category, setCategory] = useState('');
+  const INTERESTS = ['comedy', 'music', 'dance', 'sports', 'food', 'travel', 'fashion', 'tech', 'education', 'gaming', 'pets', 'art'];
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -347,6 +349,7 @@ export default function NewReelPage() {
         video: file,
         ...(coverBlob ? { cover: coverBlob } : {}),
         caption: caption.trim() || undefined,
+        ...(category ? { category } : {}),
         durationSec: selectedDuration,
         ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
         ...(filter !== 'normal' ? { filter } : {}),
@@ -790,6 +793,26 @@ export default function NewReelPage() {
           maxLength={500}
           className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 outline-none"
         />
+
+        <div className="mt-2">
+          <p className="mb-1 text-xs font-medium text-white/70">Category</p>
+          <div className="flex flex-wrap gap-1.5">
+            {INTERESTS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(category === c ? '' : c)}
+                className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
+                  category === c
+                    ? 'bg-white text-black'
+                    : 'border border-white/20 bg-white/10 text-white/70'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {uploadProgress !== null && (
           <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
