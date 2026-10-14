@@ -276,14 +276,16 @@ export default function ReelCameraPage() {
                 className="flex shrink-0 flex-col items-center gap-1"
               >
                 <span
-                  className={`flex h-14 w-14 items-center justify-center rounded-full transition ${
+                  className={`h-14 w-14 overflow-hidden rounded-full transition ${
                     effectId === ef.id ? 'ring-[3px] ring-white' : 'ring-1 ring-white/30'
                   }`}
-                  style={{ backgroundColor: ef.swatch }}
                 >
-                  <span className="text-[10px] font-bold text-white drop-shadow">
-                    {ef.name.slice(0, 2).toUpperCase()}
-                  </span>
+                  <img
+                    src="/images/effect-preview-face.webp"
+                    alt={ef.name}
+                    className="h-full w-full object-cover"
+                    style={ef.css ? { filter: ef.css } : undefined}
+                  />
                 </span>
                 <span className={`max-w-16 truncate text-[10px] ${effectId === ef.id ? 'font-semibold text-white' : 'text-white/60'}`}>
                   {ef.name}
@@ -392,14 +394,16 @@ export default function ReelCameraPage() {
                   className="flex flex-col items-center gap-1.5"
                 >
                   <span
-                    className={`flex h-16 w-16 items-center justify-center rounded-2xl transition ${
+                    className={`h-16 w-16 overflow-hidden rounded-2xl transition ${
                       effectId === ef.id ? 'ring-[3px] ring-white' : ''
                     }`}
-                    style={{ backgroundColor: ef.swatch }}
                   >
-                    <span className="text-xs font-bold text-white drop-shadow">
-                      {ef.name.slice(0, 2).toUpperCase()}
-                    </span>
+                    <img
+                      src="/images/effect-preview-face.webp"
+                      alt={ef.name}
+                      className="h-full w-full object-cover"
+                      style={ef.css ? { filter: ef.css } : undefined}
+                    />
                   </span>
                   <span className={`max-w-20 truncate text-[11px] ${effectId === ef.id ? 'font-semibold text-white' : 'text-white/60'}`}>
                     {ef.name}
