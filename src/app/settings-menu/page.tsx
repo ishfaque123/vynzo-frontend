@@ -206,6 +206,7 @@ const securityItems = [
   { label: 'Devices', href: '/settings-menu/devices', Icon: DeviceIcon },
   { label: 'Theme', href: '/settings-menu/theme', Icon: ThemeIcon },
   { label: 'Data Saver', href: '/settings-menu/data-saver', Icon: DataSaverIcon },
+  { label: 'My Interests', href: '/settings-menu/interests', Icon: ThemeIcon },
   { label: 'Notifications', href: '/settings-menu/notifications', Icon: BellIcon },
 ];
 
