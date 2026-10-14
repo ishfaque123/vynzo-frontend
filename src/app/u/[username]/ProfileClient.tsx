@@ -526,7 +526,15 @@ export default function ProfileClient() {
         </div>
 
         <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.loginStreak > 0 && <StreakBadge streak={profile.loginStreak} />}</h1>
-        <p className="text-slate-500">@{profile.username}</p>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(`@${profile.username}`).catch(() => {});
+          }}
+          className="cursor-pointer text-slate-500 transition-colors hover:text-slate-700 active:text-slate-900"
+          title="Tap to copy username"
+        >
+          @{profile.username}
+        </button>
         {!isMe && profile.isOnline && (
           <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500" /> Active now
@@ -538,7 +546,7 @@ export default function ProfileClient() {
             {profile.mutualFollowers.slice(0, 2).map((m: any, i: number) => (
               <span key={i}>
                 {i > 0 && ', '}
-                <Link href={`/u/${encodeURIComponent(m.username)}`} className="font-medium text-slate-700 hover:underline">
+                <Link href={`/u/${encodeURIComponent(m.username)}`} className="font-medium text-slate-700 no-underline">
                   {m.displayName || `@${m.username}`}
                 </Link>
               </span>
