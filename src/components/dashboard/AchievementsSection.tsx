@@ -26,37 +26,23 @@ export default function AchievementsSection() {
   }, []);
 
   if (loading) {
-    return <div className="mb-3 h-32 animate-pulse rounded-lg bg-slate-100" />;
+    return <div className="mb-3 h-24 animate-pulse rounded-lg bg-slate-100" />;
   }
+  if (achievements.length === 0) return null;
 
   return (
     <div className="mb-3 rounded-lg border bg-white p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-800">Achievements</p>
-        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-          {achievements.length} unlocked
-        </span>
-      </div>
-
-      {achievements.length === 0 ? (
-        <p className="py-4 text-center text-sm text-slate-400">
-          No achievements yet. Keep posting to unlock badges!
-        </p>
-      ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {achievements.map((a) => (
-            <div
-              key={a.key}
-              title={`${a.name} — ${a.description}`}
-              className="flex flex-col items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2 py-3"
-            >
-              <span className="text-amber-600"><AchievementIcon icon={a.icon} size={28} /></span>
-              <span className="text-center text-[11px] font-semibold text-amber-800">{a.name}</span>
-              <span className="line-clamp-2 text-center text-[10px] text-amber-600">{a.description}</span>
+      <p className="mb-3 text-sm font-semibold text-slate-800">Achievements</p>
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {achievements.map((a) => (
+          <div key={a.key} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900">
+              <span className="text-white"><AchievementIcon icon={a.icon} size={26} /></span>
             </div>
-          ))}
-        </div>
-      )}
+            <span className="text-center text-[11px] font-medium leading-tight text-slate-700">{a.name}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

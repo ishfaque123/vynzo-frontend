@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fetchDashboard } from '@/lib/api/userApi';
 import Toast from '@/components/Toast';
-import BlueTickTracker from '@/components/dashboard/BlueTickTracker';
 import AchievementsSection from '@/components/dashboard/AchievementsSection';
 import StrikesSection from '@/components/dashboard/StrikesSection';
 
@@ -170,7 +169,6 @@ export default function DashboardPage() {
       </div>
 
       <StrikesSection />
-      <BlueTickTracker />
       <AchievementsSection />
 
       <div className="mb-3 rounded-lg border bg-white p-4">
