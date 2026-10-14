@@ -32,14 +32,20 @@ export default function AchievementsSection() {
 
   return (
     <div className="mb-3 rounded-lg border bg-white p-4">
-      <p className="mb-3 text-sm font-semibold text-slate-800">Achievements</p>
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-800">Achievements</p>
+        <span className="text-xs font-medium text-slate-400">{achievements.length} earned</span>
+      </div>
+      <div className="space-y-2">
         {achievements.map((a) => (
-          <div key={a.key} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900">
-              <span className="text-white"><AchievementIcon icon={a.icon} size={26} /></span>
+          <div key={a.key} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900">
+              <span className="text-white"><AchievementIcon icon={a.icon} size={20} /></span>
             </div>
-            <span className="text-center text-[11px] font-medium leading-tight text-slate-700">{a.name}</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-800">{a.name}</p>
+              <p className="truncate text-xs text-slate-500">{a.description}</p>
+            </div>
           </div>
         ))}
       </div>
