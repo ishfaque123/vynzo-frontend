@@ -32,17 +32,36 @@ function Ring({ current, target, label, icon }: { current: number; target: numbe
   );
 }
 
-export default function WeeklyGoals({ goals }: { goals?: { posts: Goal; reels: Goal; stories: Goal } }) {
+export default function WeeklyGoals({ goals, allGoalsMet, newAchievement }: {
+  goals?: { posts: Goal; reels: Goal; stories: Goal };
+  allGoalsMet?: boolean;
+  newAchievement?: { key: string; name: string } | null;
+}) {
   if (!goals) return null;
 
   return (
     <div className="mb-3 rounded-lg border bg-white p-4">
-      <p className="mb-3 text-sm font-semibold text-slate-800">Weekly goals</p>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-800">Weekly goals</p>
+        {allGoalsMet && (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            🏆 Complete!
+          </span>
+        )}
+      </div>
+      {newAchievement && (
+        <div className="mb-3 rounded-lg bg-amber-50 p-3 text-center">
+          <p className="text-sm font-semibold text-amber-800">🎉 New achievement: {newAchievement.name}!</p>
+        </div>
+      )}
       <div className="flex justify-around">
         <Ring current={goals.posts.current} target={goals.posts.target} label="Posts" icon="📝" />
         <Ring current={goals.reels.current} target={goals.reels.target} label="Reels" icon="🎬" />
         <Ring current={goals.stories.current} target={goals.stories.target} label="Stories" icon="📖" />
       </div>
+      {allGoalsMet && (
+        <p className="mt-3 text-center text-xs text-slate-400">Fresh goals start Monday</p>
+      )}
     </div>
   );
 }

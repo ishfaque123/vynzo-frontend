@@ -170,7 +170,7 @@ export default function DashboardPage() {
       </div>
 
       <StrikesSection />
-      <WeeklyGoals goals={(dashboard as any).goals} />
+      <WeeklyGoals goals={(dashboard as any).goals} allGoalsMet={(dashboard as any).allGoalsMet} newAchievement={(dashboard as any).newAchievement} />
       <AchievementsSection />
 
       <div className="mb-3 rounded-lg border bg-white p-4">
