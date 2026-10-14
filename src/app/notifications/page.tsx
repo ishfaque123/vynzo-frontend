@@ -39,13 +39,26 @@ interface GroupedNotification {
   hasUnread: boolean;
 }
 
+// System notifications are never grouped — each one carries its own message
+// (e.g. the moderation reason) that must stay visible.
+const NEVER_GROUP = new Set([
+  'comment_removed',
+  'post_removed',
+  'new_device_login',
+  'account_restricted',
+  'account_banned',
+  'verification_approved',
+  'verification_rejected',
+]);
+
 // Group consecutive same-actor + same-type notifications (e.g. 9 reel likes
 // from one person become a single "liked 9 of your reels" row).
 function groupNotifications(list: Notification[]): GroupedNotification[] {
   const groups: GroupedNotification[] = [];
   for (const n of list) {
     const actorId = n.actor?.id || 'none';
-    const key = `${n.type}:${actorId}`;
+    // System types get a unique key so they never merge with anything
+    const key = NEVER_GROUP.has(n.type) ? `${n.type}:${actorId}:${n.id}` : `${n.type}:${actorId}`;
     const last = groups[groups.length - 1];
     if (last && last.key === key) {
       last.items.push(n);
