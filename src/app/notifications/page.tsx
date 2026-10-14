@@ -248,6 +248,10 @@ function hrefFor(n: Notification): string | null {
       return n.reelId ? `/reels?id=${n.reelId}` : '/reels';
     case 'comment_mention':
       return n.postId ? `/post/${n.postId}` : null;
+    case 'comment_removed':
+      return n.postId ? `/post/${n.postId}` : null; // the post still exists — shows context
+    case 'post_removed':
+      return '/community-guidelines'; // post is gone — show the rules instead
     default:
       return null;
   }
