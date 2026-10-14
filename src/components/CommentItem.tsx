@@ -153,7 +153,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     if (dx > 0 && dx < 100 && dy < 30) setSwipeX(dx);
   }
   function onTouchEnd() {
-    if (swipeX > 60) onReplyClick(comment.id, comment.author.displayName);
+    if (swipeX > 60) onReplyClick(comment.id, comment.author.username);
     setSwipeX(0);
   }
 
@@ -228,7 +228,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
                 </div>
               )}
             </div>
-            <button onClick={() => onReplyClick(comment.id, comment.author.displayName)}>Reply</button>
+            <button onClick={() => onReplyClick(comment.id, comment.author.username)}>Reply</button>
             {localCount > 0 && <span>{formatCount(localCount)}</span>}
             <span>{timeAgo(comment.createdAt)}</span>
             {comment.updatedAt && new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 60000 && (
