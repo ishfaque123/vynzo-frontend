@@ -78,7 +78,20 @@ export default function VerificationPage() {
     return <div className="flex justify-center py-10" role="status" aria-label="Loading verification"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
   }
 
-  if (!eligibility) return null;
+  if (!eligibility) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-10 text-center">
+        <p className="text-sm text-slate-500">Could not load verification status.</p>
+        <button
+          type="button"
+          onClick={load}
+          className="mt-3 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   if (eligibility.isVerified) {
     return (

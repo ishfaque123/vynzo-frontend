@@ -9,6 +9,7 @@ import {
   deleteAllNotifications,
 } from '@/lib/api/notificationApi';
 import SkeletonNotificationRow from '@/components/SkeletonNotificationRow';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { useAuth } from '@/lib/auth/useAuth';
 import { saveOfflineNotifications, getOfflineNotifications } from '@/lib/offline/feedCache';
 
@@ -17,6 +18,7 @@ interface Actor {
   username: string;
   displayName: string;
   profilePictureUrl?: string;
+  isVerified?: boolean;
 }
 interface Notification {
   id: string;
@@ -410,11 +412,18 @@ function NotificationRow({
         </span>
       )}
       {n.actor?.profilePictureUrl ? (
-        <img
-          src={n.actor.profilePictureUrl}
-          alt={n.actor.displayName || n.actor.username || ''}
-          className="h-9 w-9 flex-shrink-0 rounded-full object-cover"
-        />
+        <span className="relative flex-shrink-0">
+          <img
+            src={n.actor.profilePictureUrl}
+            alt={n.actor.displayName || n.actor.username || ''}
+            className="h-9 w-9 rounded-full object-cover"
+          />
+          {n.actor.isVerified && (
+            <span className="absolute -bottom-0.5 -right-0.5">
+              <VerifiedBadge size="sm" />
+            </span>
+          )}
+        </span>
       ) : (
         <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}>
           {icon}
