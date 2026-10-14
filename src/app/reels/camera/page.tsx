@@ -243,9 +243,9 @@ export default function ReelCameraPage() {
         </div>
       )}
 
-      {/* Duration selector — TikTok style, clean pill row above controls */}
-      {!recording && (
-        <div className="absolute bottom-28 left-0 right-0 flex justify-center">
+      {/* Duration selector — TikTok style, clean pill row above effects */}
+      {!recording && !effectsOpen && (
+        <div className="absolute bottom-[236px] left-0 right-0 flex justify-center">
           <div className="flex items-center gap-1 rounded-full bg-black/40 p-1 backdrop-blur">
             {DURATIONS.map((d) => (
               <button
@@ -266,7 +266,7 @@ export default function ReelCameraPage() {
 
       {/* Effects row — TikTok style horizontal circular thumbnails */}
       {!recording && !effectsOpen && (
-        <div className="absolute bottom-44 left-0 right-0">
+        <div className="absolute bottom-[152px] left-0 right-0">
           <div className="flex items-center gap-3 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
             {CAMERA_EFFECTS.map((ef) => (
               <button
