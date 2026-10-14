@@ -744,6 +744,10 @@ export default function ChatPage() {
                   ? 'This user only accepts messages from followers.'
                   : res.error === 'RATE_LIMITED'
                     ? 'You are sending too fast. Please slow down.'
+                    : res.error === 'LINK_SPAM_RESTRICTED'
+                      ? 'Too many links. Messaging restricted for 1 hour due to spam.'
+                      : res.error === 'MESSAGING_RESTRICTED'
+                        ? 'Messaging temporarily restricted due to spam.'
                     : res.error === 'INVALID_MEDIA_URL'
                       ? 'Invalid media. Please try uploading again.'
                       : 'Could not send message. Please try again.';

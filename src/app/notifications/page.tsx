@@ -44,6 +44,7 @@ interface GroupedNotification {
 const NEVER_GROUP = new Set([
   'comment_removed',
   'post_removed',
+  'reel_removed',
   'new_device_login',
   'account_restricted',
   'account_banned',
@@ -227,6 +228,8 @@ function messageFor(n: Notification): string {
       return `Your comment was removed${n.detail ? ` for ${n.detail}` : ''}`;
     case 'post_removed':
       return `Your post was removed${n.detail ? ` for ${n.detail}` : ''}`;
+    case 'reel_removed':
+      return `Your reel was removed${n.detail ? ` for ${n.detail}` : ''}`;
     default:
       return 'New notification';
   }
@@ -251,7 +254,8 @@ function hrefFor(n: Notification): string | null {
     case 'comment_removed':
       return n.postId ? `/post/${n.postId}` : null; // the post still exists — shows context
     case 'post_removed':
-      return '/community-guidelines'; // post is gone — show the rules instead
+    case 'reel_removed':
+      return '/community-guidelines'; // content is gone — show the rules instead
     default:
       return null;
   }
