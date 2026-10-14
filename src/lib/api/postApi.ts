@@ -11,9 +11,15 @@ async function readJson(res: Response) {
   }
 }
 
-export async function fetchFeed(offset = 0) {
-  const res = await fetch(`${API_URL}/api/posts?offset=${offset}`, { credentials: 'include', cache: 'no-store' });
-  return readJson(res);
+export async function fetchFeed(offset = 0, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_URL}/api/posts?offset=${offset}`, { credentials: 'include', cache: 'no-store', signal: controller.signal });
+    return readJson(res);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function fetchUserPosts(username: string) {
