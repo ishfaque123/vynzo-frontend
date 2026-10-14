@@ -204,7 +204,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               </div>
             ) : (
               <p className="text-sm">
-                {isReply && parentAuthor && (
+                {isReply && parentAuthor && !comment.content.trim().toLowerCase().startsWith(`@${parentAuthor.username.toLowerCase()}`) && (
                   <Link href={`/u/${parentAuthor.username}`} className="mr-1 font-semibold text-blue-600">@{parentAuthor.username}</Link>
                 )}
                 {comment.content}
