@@ -210,7 +210,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }
 
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
-  const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath.startsWith('/s/') || isChatThread;
+  const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath === '/reels/camera' || currentPath.startsWith('/s/') || isChatThread;
   const isReels = currentPath === '/reels';
   const isMessagesList = currentPath === '/messages' || currentPath === '/messages/new';
   const hideHeader = hideChrome || isReels || isMessagesList;

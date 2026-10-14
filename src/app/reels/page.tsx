@@ -624,7 +624,7 @@ export default function ReelsPage() {
     if (!status.success) { setNotice(status.error?.message || 'Unable to check reel upload limit. Please try again.'); return; }
     const remaining = Number(status.data?.remaining);
     if (!Number.isFinite(remaining) || remaining <= 0) { setUploadReady(false); setNotice("You've reached your reel limit for the last 24 hours. Please try again later."); return; }
-    fileInputRef.current?.click();
+    router.push('/reels/camera');
   }
   function handleFilePicked(file: File) {
     if (!file.type.startsWith('video/')) { setNotice('Please select a video file.'); return; }
