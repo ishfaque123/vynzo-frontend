@@ -9,10 +9,10 @@ function CloseIcon() {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
 }
 function FlipIcon() {
-  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 2l4 4-4 4" /><path d="M3 11v-1a4 4 0 014-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v1a4 4 0 01-4 4H3" /></svg>;
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 2l4 4-4 4" /><path d="M3 11v-1a4 4 0 014-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v1a4 4 0 01-4 4H3" /></svg>;
 }
 function GalleryIcon() {
-  return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="M21 15l-5-5L5 21" /></svg>;
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="M21 15l-5-5L5 21" /></svg>;
 }
 function FlashIcon({ on }: { on: boolean }) {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill={on ? 'white' : 'none'} stroke="white" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />{!on && <line x1="2" y1="2" x2="22" y2="22" />}</svg>;
@@ -169,14 +169,9 @@ export default function ReelCameraPage() {
         <button onClick={() => router.back()} aria-label="Close" className="p-2">
           <CloseIcon />
         </button>
-        <div className="flex items-center gap-4">
-          <button onClick={toggleFlash} aria-label="Flash" className="p-2">
-            <FlashIcon on={flashOn} />
-          </button>
-          <button onClick={toggleCamera} aria-label="Flip camera" className="p-2">
-            <FlipIcon />
-          </button>
-        </div>
+        <button onClick={toggleFlash} aria-label="Flash" className="p-2">
+          <FlashIcon on={flashOn} />
+        </button>
       </div>
 
       {/* Recording timer + progress */}
@@ -201,33 +196,35 @@ export default function ReelCameraPage() {
         </div>
       )}
 
-      {/* Duration selector — TikTok style */}
+      {/* Duration selector — TikTok style, clean pill row above controls */}
       {!recording && (
-        <div className="absolute bottom-32 left-0 right-0 flex justify-center gap-2">
-          {DURATIONS.map((d) => (
-            <button
-              key={d.seconds}
-              onClick={() => setMaxDuration(d.seconds)}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-                maxDuration === d.seconds
-                  ? 'bg-white text-black'
-                  : 'bg-white/20 text-white backdrop-blur'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
+        <div className="absolute bottom-28 left-0 right-0 flex justify-center">
+          <div className="flex items-center gap-1 rounded-full bg-black/40 p-1 backdrop-blur">
+            {DURATIONS.map((d) => (
+              <button
+                key={d.seconds}
+                onClick={() => setMaxDuration(d.seconds)}
+                className={`rounded-full px-4 py-1 text-[13px] font-semibold transition ${
+                  maxDuration === d.seconds
+                    ? 'bg-white text-black'
+                    : 'text-white/70'
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 p-6">
-        <div className="flex items-center justify-between">
+      {/* Bottom controls — clean centered layout */}
+      <div className="absolute bottom-0 left-0 right-0 pb-8 pt-4">
+        <div className="flex items-center justify-center gap-10">
           {/* Gallery picker */}
           <button
             onClick={() => galleryInputRef.current?.click()}
             aria-label="Pick from gallery"
-            className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/10 backdrop-blur"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur"
           >
             <GalleryIcon />
           </button>
@@ -247,17 +244,20 @@ export default function ReelCameraPage() {
           <button
             onClick={recording ? stopRecording : startRecording}
             aria-label={recording ? 'Stop recording' : 'Start recording'}
-            className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white"
+            className="flex h-[76px] w-[76px] items-center justify-center rounded-full border-[5px] border-white/90"
           >
-            <span className={`rounded-full bg-red-500 transition-all ${recording ? 'h-8 w-8' : 'h-16 w-16'}`} />
+            <span className={`bg-red-500 transition-all duration-200 ${recording ? 'h-7 w-7 rounded-lg' : 'h-[60px] w-[60px] rounded-full'}`} />
           </button>
 
-          {/* Spacer for symmetry */}
-          <div className="h-14 w-14" />
+          {/* Flip camera — moved here for symmetry */}
+          <button
+            onClick={toggleCamera}
+            aria-label="Flip camera"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur"
+          >
+            <FlipIcon />
+          </button>
         </div>
-        <p className="mt-3 text-center text-xs text-white/70">
-          Tap to record • Gallery for existing photos/videos
-        </p>
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
