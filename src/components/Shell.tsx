@@ -246,7 +246,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </header>}
 
-      {!hideChrome && <nav className="sticky bottom-0 z-10 shrink-0 border-t border-b bg-white">
+      {!hideChrome && <nav className="sticky top-0 z-10 shrink-0 border-t border-b bg-white">
         <div className="mx-auto flex max-w-xl md:max-w-5xl items-center justify-around py-2">
           <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
