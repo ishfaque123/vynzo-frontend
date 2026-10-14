@@ -6,6 +6,7 @@ import { fetchDashboard } from '@/lib/api/userApi';
 import Toast from '@/components/Toast';
 import AchievementsSection from '@/components/dashboard/AchievementsSection';
 import StrikesSection from '@/components/dashboard/StrikesSection';
+import WeeklyGoals from '@/components/dashboard/WeeklyGoals';
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
@@ -169,6 +170,7 @@ export default function DashboardPage() {
       </div>
 
       <StrikesSection />
+      <WeeklyGoals goals={(dashboard as any).goals} />
       <AchievementsSection />
 
       <div className="mb-3 rounded-lg border bg-white p-4">
