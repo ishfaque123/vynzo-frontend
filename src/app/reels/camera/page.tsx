@@ -74,6 +74,10 @@ const TIMER_OPTIONS = [
   { label: '10s', value: 10 },
 ];
 
+function formatTime(s: number) {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 export default function ReelCameraPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
