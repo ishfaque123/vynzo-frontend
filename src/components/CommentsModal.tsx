@@ -157,15 +157,11 @@ export default function CommentsModal({ post, currentUser, comments, commentText
 
   function startReply(id: string, name: string) {
     setReplyTo({ postId: post.id, commentId: id, name });
-    setCommentText(`@${name} `);
+    setCommentText('');
     inputRef.current?.focus();
   }
 
   function cancelReply() {
-    if (replyTo) {
-      // Remove the @mention prefill when cancelling
-      setCommentText((t: string) => t.replace(new RegExp(`^@${replyTo.name}\\s*`), ''));
-    }
     setReplyTo(null);
     setSubmitError(null);
     if (inputRef.current) (inputRef.current as any).style.height = 'auto';
