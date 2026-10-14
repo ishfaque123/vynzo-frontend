@@ -69,7 +69,8 @@ export default function AiVideoPage() {
     const start = await startVideoGeneration(p, aspectRatio, durationSeconds);
     if (!start?.success || !start.data?.operationName) {
       setPhase('error');
-      setErrorMsg(start?.error?.message || 'Failed to start generation.');
+      const rawError = start?.error?.message || 'Failed to start generation.';
+      setErrorMsg(rawError === 'PREMIUM_REQUIRED' ? 'PREMIUM_REQUIRED' : rawError);
       return;
     }
 
@@ -224,7 +225,19 @@ export default function AiVideoPage() {
           </div>
 
           {phase === 'error' && (
-            <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{errorMsg}</div>
+            errorMsg === 'PREMIUM_REQUIRED' ? (
+              <div className="mt-3 rounded-xl bg-violet-50 p-4 text-center">
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+                  <SparklesIcon />
+                </div>
+                <p className="font-semibold text-violet-900">Premium Feature</p>
+                <p className="mt-1 text-sm text-violet-700">
+                  This feature is only available for Premium users.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{errorMsg}</div>
+            )
           )}
 
           <button
