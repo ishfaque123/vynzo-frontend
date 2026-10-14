@@ -18,6 +18,12 @@ function FlashIcon({ on }: { on: boolean }) {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill={on ? 'white' : 'none'} stroke="white" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />{!on && <line x1="2" y1="2" x2="22" y2="22" />}</svg>;
 }
 
+const DURATIONS = [
+  { label: '15s', seconds: 15 },
+  { label: '60s', seconds: 60 },
+  { label: '3m', seconds: 180 },
+];
+
 export default function ReelCameraPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -29,6 +35,7 @@ export default function ReelCameraPage() {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
+  const [maxDuration, setMaxDuration] = useState(60);
   const [flashOn, setFlashOn] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -109,7 +116,16 @@ export default function ReelCameraPage() {
       recorder.start(200);
       setRecording(true);
       setRecordTime(0);
-      timerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
+      timerRef.current = setInterval(() => {
+        setRecordTime((t) => {
+          const next = t + 1;
+          if (next >= maxDuration) {
+            // Auto-stop at max duration
+            setTimeout(() => stopRecording(), 0);
+          }
+          return next;
+        });
+      }, 1000);
     } catch {
       setToast({ message: 'Recording failed to start.', type: 'error' });
     }
@@ -163,12 +179,18 @@ export default function ReelCameraPage() {
         </div>
       </div>
 
-      {/* Recording timer */}
+      {/* Recording timer + progress */}
       {recording && (
-        <div className="absolute left-0 right-0 top-16 flex justify-center">
+        <div className="absolute left-0 right-0 top-16 flex flex-col items-center gap-2">
           <div className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-1.5">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-            <span className="font-mono text-sm font-semibold text-white">{formatTime(recordTime)}</span>
+            <span className="font-mono text-sm font-semibold text-white">{formatTime(recordTime)} / {formatTime(maxDuration)}</span>
+          </div>
+          <div className="h-1 w-48 overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-red-500 transition-all"
+              style={{ width: `${Math.min(100, (recordTime / maxDuration) * 100)}%` }}
+            />
           </div>
         </div>
       )}
@@ -176,6 +198,25 @@ export default function ReelCameraPage() {
       {error && (
         <div className="absolute left-4 right-4 top-20 rounded-xl bg-red-500/90 p-3 text-center text-sm text-white">
           {error}
+        </div>
+      )}
+
+      {/* Duration selector — TikTok style */}
+      {!recording && (
+        <div className="absolute bottom-32 left-0 right-0 flex justify-center gap-2">
+          {DURATIONS.map((d) => (
+            <button
+              key={d.seconds}
+              onClick={() => setMaxDuration(d.seconds)}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                maxDuration === d.seconds
+                  ? 'bg-white text-black'
+                  : 'bg-white/20 text-white backdrop-blur'
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
       )}
 
