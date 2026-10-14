@@ -113,6 +113,7 @@ export default function ProfileClient() {
   const router = useRouter();
   const username = params.username as string;
   const { user: currentUser } = useAuth();
+  const [hasStrikes, setHasStrikes] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [friendStatus, setFriendStatus] = useState<string>('none');
@@ -431,6 +432,16 @@ export default function ProfileClient() {
   if (!profile) return <p className="p-8 text-center text-slate-500">User not found.</p>;
 
   const isMe = currentUser?.username === profile.username;
+
+  useEffect(() => {
+    if (!isMe) return;
+    let cancelled = false;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/strikes`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled && d.success && d.data.total > 0) setHasStrikes(true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isMe]);
   const photoPosts = posts.filter((p) => p.imageUrl);
   const openPost = posts.find((p) => p.id === openComments);
   const isPrivateView = !!profile.isPrivate && !isMe && friendStatus !== 'following' && friendStatus !== 'friends';
@@ -551,6 +562,13 @@ export default function ProfileClient() {
         )}
         {(profile.city || profile.province) && (
           <p className="mt-1 text-sm text-slate-500">{[profile.city, profile.province].filter(Boolean).join(', ')}</p>
+        )}
+
+        {isMe && hasStrikes && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2">
+            <span className="text-amber-500">⚠️</span>
+            <p className="text-xs font-medium text-amber-700">Warning: guideline violation on your account</p>
+          </div>
         )}
 
         <div className="mt-4 flex border-y py-3 text-sm">
