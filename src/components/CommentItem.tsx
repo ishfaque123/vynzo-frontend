@@ -208,9 +208,6 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
                   <Link href={`/u/${parentAuthor.username}`} className="mr-1 font-semibold text-blue-600">@{parentAuthor.username}</Link>
                 )}
                 {comment.content}
-                {comment.taggedUsers?.length > 0 && (
-                  <span className="text-slate-500"> with {comment.taggedUsers.map((t: any) => t.displayName).join(', ')}</span>
-                )}
               </p>
             )}
           </div>
