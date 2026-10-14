@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { playPostSound } from '@/lib/sounds';
 import { takePendingComposeImage } from '@/lib/pendingComposeImage';
+import { setPendingNewPost } from '@/lib/pendingNewPost';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import { fetchReelsConfig, fetchMyReelStatus } from '@/lib/api/reelApi';
 
@@ -408,6 +409,8 @@ function ComposeForm() {
       if (xhr.status >= 200 && xhr.status < 300 && result?.success) {
         setProgress(100);
         playPostSound();
+        // Save for optimistic prepend on home feed
+        if (result.data?.post) setPendingNewPost(result.data.post);
         setTimeout(() => router.push('/'), 400);
       } else {
         setSubmitError(result?.error?.message || 'Failed to create post');

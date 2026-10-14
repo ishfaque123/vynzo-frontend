@@ -14,6 +14,7 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
+import { takePendingNewPost } from '@/lib/pendingNewPost';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import StatusBar from '@/components/StatusBar';
 import SkeletonPostCard from '@/components/SkeletonPostCard';
@@ -56,6 +57,14 @@ export default function HomePage() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   async function loadFeed() {
+    // Optimistically prepend just-created post (Facebook/Instagram behavior)
+    const pendingPost = takePendingNewPost();
+    if (pendingPost) {
+      setPosts((prev: any[]) => {
+        if (prev.some((p: any) => p.id === pendingPost.id)) return prev;
+        return [pendingPost, ...prev];
+      });
+    }
     if (!user?.id) return;
     setFeedError(false);
 
