@@ -1,5 +1,5 @@
 const DB_NAME = 'frianzo-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = 'data';
 
 type StoredValue = {
@@ -18,9 +18,10 @@ function openOfflineDb(): Promise<IDBDatabase> {
     const request = window.indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: 'key' });
+      if (db.objectStoreNames.contains(STORE)) {
+        db.deleteObjectStore(STORE);
       }
+      db.createObjectStore(STORE, { keyPath: 'key' });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error || new Error('Failed to open offline database'));
