@@ -186,6 +186,11 @@ export default function ProfileClient() {
 
   useEffect(() => {
     let cancelled = false;
+    // Check own strikes for profile warning (only if viewing own profile)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/strikes`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => { if (d.success && d.data.total > 0) setHasStrikes(true); })
+      .catch(() => {});
 
     async function loadProfile() {
       setLoading(true);
@@ -431,17 +436,7 @@ export default function ProfileClient() {
   }
   if (!profile) return <p className="p-8 text-center text-slate-500">User not found.</p>;
 
-  const isMe = currentUser?.username === profile.username;
-
-  useEffect(() => {
-    if (!isMe) return;
-    let cancelled = false;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/strikes`, { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled && d.success && d.data.total > 0) setHasStrikes(true); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [isMe]);
+  const isMe = profile ? currentUser?.username === profile.username : false;
   const photoPosts = posts.filter((p) => p.imageUrl);
   const openPost = posts.find((p) => p.id === openComments);
   const isPrivateView = !!profile.isPrivate && !isMe && friendStatus !== 'following' && friendStatus !== 'friends';
