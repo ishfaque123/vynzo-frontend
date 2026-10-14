@@ -154,6 +154,15 @@ export default function VerificationPage() {
           </div>
         </div>
 
+        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+          <p className="text-sm font-semibold text-slate-900">Blue Tick perks</p>
+          <ul className="mt-2 space-y-1.5 text-sm text-slate-600">
+            <li className="flex items-start gap-2"><span className="text-blue-600">✓</span> Your reels and posts get a reach boost in feeds</li>
+            <li className="flex items-start gap-2"><span className="text-blue-600">✓</span> Your profile appears first in search results</li>
+            <li className="flex items-start gap-2"><span className="text-blue-600">✓</span> Verified badge on your profile, posts and comments</li>
+          </ul>
+        </div>
+
         <div className="mt-4 divide-y rounded-2xl border px-4">
           {requirementItems.map(({ label, item, suffix, icon }) => (
             <RequirementRow key={label} label={label} item={item} suffix={suffix} icon={icon} />
