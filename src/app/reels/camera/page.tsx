@@ -24,6 +24,34 @@ const DURATIONS = [
   { label: '3m', seconds: 180 },
 ];
 
+// TikTok-style camera effects (color filters applied live to preview)
+const CAMERA_EFFECTS = [
+  { id: 'normal', name: 'Normal', creator: 'Frianzo', css: '', cat: 'trending', swatch: '#888888' },
+  { id: 'vivid', name: 'Vivid', creator: 'Frianzo', css: 'saturate(1.5) contrast(1.12)', cat: 'trending', swatch: '#ff6b6b' },
+  { id: 'warm', name: 'Warm Glow', creator: 'Frianzo', css: 'sepia(0.3) saturate(1.4)', cat: 'trending', swatch: '#ffa502' },
+  { id: 'cool', name: 'Cool Tone', creator: 'Frianzo', css: 'saturate(1.1) hue-rotate(-15deg)', cat: 'trending', swatch: '#70a1ff' },
+  { id: 'beauty', name: 'Beauty', creator: 'Frianzo', css: 'brightness(1.08) saturate(1.2) contrast(1.02)', cat: 'trending', swatch: '#ffb8b8' },
+  { id: 'bw', name: 'Mono', creator: 'Frianzo', css: 'grayscale(1) contrast(1.15)', cat: 'trending', swatch: '#57606f' },
+  { id: 'vintage', name: 'Vintage', creator: 'Frianzo', css: 'sepia(0.5) saturate(0.8) contrast(0.95)', cat: 'trending', swatch: '#a0785a' },
+  { id: 'sunset', name: 'Sunset', creator: 'Frianzo', css: 'sepia(0.4) saturate(1.6) hue-rotate(-20deg)', cat: 'trending', swatch: '#ff7f50' },
+  { id: 'neon', name: 'Neon Pop', creator: 'Frianzo', css: 'saturate(2) contrast(1.3)', cat: 'games', swatch: '#eccc68' },
+  { id: 'dreamy', name: 'Dreamy', creator: 'Frianzo', css: 'brightness(1.15) saturate(0.9) contrast(0.9)', cat: 'games', swatch: '#dfe4ea' },
+  { id: 'noir', name: 'Noir', creator: 'Frianzo', css: 'grayscale(1) contrast(1.4) brightness(0.9)', cat: 'games', swatch: '#2f3542' },
+  { id: 'golden', name: 'Golden', creator: 'Frianzo', css: 'sepia(0.6) saturate(1.3) brightness(1.05)', cat: 'games', swatch: '#e1b12c' },
+];
+
+const EFFECT_CATS = [
+  { id: 'trending', name: 'Trending' },
+  { id: 'games', name: 'Games' },
+];
+
+function EffectsIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" /><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" /></svg>;
+}
+function SaveIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" /></svg>;
+}
+
 export default function ReelCameraPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -37,6 +65,11 @@ export default function ReelCameraPage() {
   const [recordTime, setRecordTime] = useState(0);
   const [maxDuration, setMaxDuration] = useState(60);
   const [flashOn, setFlashOn] = useState(false);
+  const [effectId, setEffectId] = useState('normal');
+  const [effectsOpen, setEffectsOpen] = useState(false);
+  const [effectCat, setEffectCat] = useState('trending');
+
+  const activeEffect = CAMERA_EFFECTS.find((e) => e.id === effectId) || CAMERA_EFFECTS[0];
   const [error, setError] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -162,7 +195,13 @@ export default function ReelCameraPage() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
-      <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
+      <video
+        ref={videoRef}
+        playsInline
+        muted
+        className="h-full w-full object-cover"
+        style={activeEffect.css ? { filter: activeEffect.css } : undefined}
+      />
 
       {/* Top bar */}
       <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-4">
@@ -196,6 +235,14 @@ export default function ReelCameraPage() {
         </div>
       )}
 
+      {/* Selected effect name — TikTok style top display */}
+      {effectId !== 'normal' && !recording && (
+        <div className="absolute left-0 right-0 top-16 flex flex-col items-center">
+          <p className="text-lg font-semibold text-white drop-shadow">{activeEffect.name}</p>
+          <p className="text-xs text-white/70">Created by: {activeEffect.creator}</p>
+        </div>
+      )}
+
       {/* Duration selector — TikTok style, clean pill row above controls */}
       {!recording && (
         <div className="absolute bottom-28 left-0 right-0 flex justify-center">
@@ -211,6 +258,36 @@ export default function ReelCameraPage() {
                 }`}
               >
                 {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Effects row — TikTok style horizontal circular thumbnails */}
+      {!recording && !effectsOpen && (
+        <div className="absolute bottom-44 left-0 right-0">
+          <div className="flex items-center gap-3 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
+            {CAMERA_EFFECTS.map((ef) => (
+              <button
+                key={ef.id}
+                onClick={() => setEffectId(ef.id)}
+                aria-label={ef.name}
+                className="flex shrink-0 flex-col items-center gap-1"
+              >
+                <span
+                  className={`flex h-14 w-14 items-center justify-center rounded-full transition ${
+                    effectId === ef.id ? 'ring-[3px] ring-white' : 'ring-1 ring-white/30'
+                  }`}
+                  style={{ backgroundColor: ef.swatch }}
+                >
+                  <span className="text-[10px] font-bold text-white drop-shadow">
+                    {ef.name.slice(0, 2).toUpperCase()}
+                  </span>
+                </span>
+                <span className={`max-w-16 truncate text-[10px] ${effectId === ef.id ? 'font-semibold text-white' : 'text-white/60'}`}>
+                  {ef.name}
+                </span>
               </button>
             ))}
           </div>
@@ -258,7 +335,81 @@ export default function ReelCameraPage() {
             <FlipIcon />
           </button>
         </div>
+
+        {/* All effects button — TikTok style */}
+        {!recording && (
+          <div className="mt-3 flex justify-center">
+            <button
+              onClick={() => setEffectsOpen(true)}
+              className="flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-sm font-semibold text-white backdrop-blur"
+            >
+              <EffectsIcon />
+              All effects
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* All Effects bottom sheet — TikTok style */}
+      {effectsOpen && (
+        <div className="absolute inset-0 z-10 flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setEffectsOpen(false)} />
+          <div className="relative max-h-[70%] rounded-t-3xl bg-[#1c1c1e] p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-base font-semibold text-white">{activeEffect.name}</p>
+                <p className="text-xs text-white/60">Created by: {activeEffect.creator}</p>
+              </div>
+              <button
+                onClick={() => setEffectsOpen(false)}
+                aria-label="Close effects"
+                className="rounded-full bg-white/10 p-2"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="mb-3 flex gap-6 border-b border-white/10">
+              {EFFECT_CATS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setEffectCat(c.id)}
+                  className={`pb-2 text-sm font-semibold transition ${
+                    effectCat === c.id ? 'text-white' : 'text-white/40'
+                  }`}
+                >
+                  {c.name}
+                  {effectCat === c.id && <div className="mx-auto mt-1 h-0.5 w-8 rounded-full bg-white" />}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-4 gap-3 overflow-y-auto pb-4" style={{ maxHeight: '40vh' }}>
+              {CAMERA_EFFECTS.filter((e) => e.cat === effectCat).map((ef) => (
+                <button
+                  key={ef.id}
+                  onClick={() => { setEffectId(ef.id); setEffectsOpen(false); }}
+                  className="flex flex-col items-center gap-1.5"
+                >
+                  <span
+                    className={`flex h-16 w-16 items-center justify-center rounded-2xl transition ${
+                      effectId === ef.id ? 'ring-[3px] ring-white' : ''
+                    }`}
+                    style={{ backgroundColor: ef.swatch }}
+                  >
+                    <span className="text-xs font-bold text-white drop-shadow">
+                      {ef.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  </span>
+                  <span className={`max-w-20 truncate text-[11px] ${effectId === ef.id ? 'font-semibold text-white' : 'text-white/60'}`}>
+                    {ef.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
