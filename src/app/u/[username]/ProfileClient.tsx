@@ -444,11 +444,6 @@ export default function ProfileClient() {
 
   return (
     <div className="mx-auto max-w-xl pb-6">
-      {offlineMode && (
-        <div className="mx-2 mt-2 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-700">
-          You're offline — showing saved profile
-        </div>
-      )}
       <div className="relative">
         <div className="h-32 bg-cover bg-center bg-slate-200" style={{ backgroundImage: `url(${profile.coverPhotoUrl || '/images/default-cover.svg'})` }} />
         {isMe && (

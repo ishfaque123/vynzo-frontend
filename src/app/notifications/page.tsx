@@ -681,12 +681,6 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {offlineMode && (
-        <div className="mx-2 mb-1 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-700">
-          You're offline — showing saved notifications
-        </div>
-      )}
-
       <div className="flex gap-2 overflow-x-auto px-2 py-1">
         {FILTERS.map((f) => (
           <button
