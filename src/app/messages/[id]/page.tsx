@@ -748,6 +748,8 @@ export default function ChatPage() {
                       ? 'Too many links. Messaging restricted for 1 hour due to spam.'
                       : res.error === 'MESSAGING_RESTRICTED'
                         ? 'Messaging temporarily restricted due to spam.'
+                      : res.error === 'ACCOUNT_SUSPENDED'
+                        ? 'Your account has been suspended.'
                     : res.error === 'INVALID_MEDIA_URL'
                       ? 'Invalid media. Please try uploading again.'
                       : 'Could not send message. Please try again.';

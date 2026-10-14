@@ -45,6 +45,7 @@ const NEVER_GROUP = new Set([
   'comment_removed',
   'post_removed',
   'reel_removed',
+  'messaging_restricted',
   'new_device_login',
   'account_restricted',
   'account_banned',
@@ -230,6 +231,8 @@ function messageFor(n: Notification): string {
       return `Your post was removed${n.detail ? ` for ${n.detail}` : ''}`;
     case 'reel_removed':
       return `Your reel was removed${n.detail ? ` for ${n.detail}` : ''}`;
+    case 'messaging_restricted':
+      return n.detail ? `Messaging restricted: ${n.detail}` : 'Messaging restricted';
     default:
       return 'New notification';
   }
@@ -255,6 +258,7 @@ function hrefFor(n: Notification): string | null {
       return n.postId ? `/post/${n.postId}` : null; // the post still exists — shows context
     case 'post_removed':
     case 'reel_removed':
+    case 'messaging_restricted':
       return '/community-guidelines'; // content is gone — show the rules instead
     default:
       return null;
