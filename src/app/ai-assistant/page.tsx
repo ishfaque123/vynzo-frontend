@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { chatWithIsai, IsaiChatMessage } from '@/lib/api/isaiApi';
+import Toast from '@/components/Toast';
 
 function BackIcon() {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
 }
 function SendIcon() {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
+}
+function MicIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0014 0M12 19v3" /></svg>;
 }
 function SparklesIcon() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" /><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" /></svg>;
@@ -17,21 +21,24 @@ function SparklesIcon() {
 type Msg = { role: 'user' | 'isai'; text: string };
 
 const STARTERS = [
-  'Frianzo kis ne banaya hai?',
-  'Meri video ForYou par kyun nahi chal rahi?',
-  'Video viral kaise karun?',
-  'Blue tick kaise milega?',
+  'Who created Frianzo?',
+  "Why isn't my video on ForYou?",
+  'How do I go viral?',
+  'How do I get a blue tick?',
 ];
 
 export default function AiAssistantPage() {
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'isai', text: 'Assalamualaikum! Main ISAI hoon — Frianzo ka AI assistant. Frianzo ke baare mein kuch bhi poochein.' },
+    { role: 'isai', text: "Hey! I'm ISAI \u2014 Frianzo's AI assistant. Ask me anything about Frianzo." },
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [listening, setListening] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,7 +61,35 @@ export default function AiAssistantPage() {
       setMessages((v) => [...v, { role: 'isai', text: r.data.reply }]);
       if (typeof r.data.remaining === 'number') setRemaining(r.data.remaining);
     } else {
-      setMessages((v) => [...v, { role: 'isai', text: r.error?.message || 'Kuch garbar ho gayi. Dobara try karein.' }]);
+      setMessages((v) => [...v, { role: 'isai', text: r.error?.message || 'Something went wrong. Please try again.' }]);
+    }
+  };
+
+  const toggleVoice = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setToast({ message: 'Voice input is not supported on this browser.', type: 'error' });
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const rec = new SR();
+    rec.interimResults = true;
+    rec.onresult = (e: any) => {
+      let text = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript;
+      setInput(text);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setListening(false);
     }
   };
 
@@ -116,15 +151,29 @@ export default function AiAssistantPage() {
         </div>
       )}
 
+      {listening && (
+        <div className="mb-2 flex items-center justify-center gap-2 text-xs text-red-600">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
+          Listening... tap the mic to stop
+        </div>
+      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center gap-2 border-t bg-white pt-3">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
-          placeholder="ISAI se kuch poochein..."
+          placeholder="Ask ISAI anything..."
           maxLength={1000}
           className="flex-1 rounded-full border px-4 py-2.5 text-sm outline-none focus:border-violet-400"
         />
+        <button
+          onClick={toggleVoice}
+          className={`rounded-full p-2.5 ${listening ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+          aria-label="Voice input"
+        >
+          <MicIcon />
+        </button>
         <button
           onClick={() => send()}
           disabled={sending || !input.trim()}
