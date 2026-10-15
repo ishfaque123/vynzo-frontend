@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import NativeRedirect from './NativeRedirect';
+import GooglePlayButton from './GooglePlayButton';
 
 export default function PublicLanding() {
   const features = [
@@ -34,15 +35,7 @@ export default function PublicLanding() {
             <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
               Log in
             </Link>
-            <a
-              href="https://play.google.com/store/apps/details?id=com.frianzo.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition hover:opacity-90"
-              aria-label="Get Frianzo on Google Play"
-            >
-              <img src="/google-play-badge.png" alt="Get it on Google Play" className="h-10 w-auto" />
-            </a>
+            <GooglePlayButton size="sm" />
           </div>
         </header>
 
@@ -59,15 +52,7 @@ export default function PublicLanding() {
               discovering people, following profiles and joining conversations through comments and reactions.
             </p>
             <div className="mt-8 flex flex-col items-start gap-4">
-              <a
-                href="https://play.google.com/store/apps/details?id=com.frianzo.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition hover:opacity-90 hover:brightness-105"
-                aria-label="Get Frianzo on Google Play"
-              >
-                <img src="/google-play-badge.png" alt="Get it on Google Play" className="h-16 w-auto sm:h-[72px]" />
-              </a>
+              <GooglePlayButton size="lg" />
               <Link href="/login" className="text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline">
                 or continue on the web →
               </Link>
