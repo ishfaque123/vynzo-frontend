@@ -25,6 +25,7 @@ const STARTERS = [
   "Why isn't my video on ForYou?",
   'How do I go viral?',
   'How do I get a blue tick?',
+  'Give me content ideas for today',
 ];
 
 export default function AiAssistantPage() {
