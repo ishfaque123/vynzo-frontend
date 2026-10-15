@@ -320,14 +320,6 @@ export default function ReelCameraPage() {
         </div>
       )}
 
-      {/* Selected effect name — TikTok style top display */}
-      {effectId !== 'normal' && !recording && (
-        <div className="absolute left-0 right-0 top-16 flex flex-col items-center">
-          <p className="text-lg font-semibold text-white drop-shadow">{activeEffect.name}</p>
-          <p className="text-xs text-white/70">Created by: {activeEffect.creator}</p>
-        </div>
-      )}
-
       {/* Duration selector — TikTok style, clean pill row above effects */}
       {!recording && !effectsOpen && (
         <div className="absolute bottom-[236px] left-0 right-0 flex justify-center">
