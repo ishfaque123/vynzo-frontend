@@ -22,10 +22,6 @@ export default function PublicLanding() {
       a: 'You can download the official Frianzo app free on Google Play for Android.',
     },
     {
-      q: 'Can I use Frianzo on the web without the app?',
-      a: 'Yes. You can continue on the web at frianzo.online without installing the app.',
-    },
-    {
       q: 'What can I do on Frianzo?',
       a: 'Share posts, photos, reels and stories, chat with friends on the built-in Messenger, follow profiles, join conversations, and discover new people through the For You feed.',
     },
@@ -73,11 +69,8 @@ export default function PublicLanding() {
             </p>
             <div className="mt-8 flex flex-col items-start gap-4">
               <GooglePlayButton size="lg" />
-              <Link href="/login" className="text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline">
-                or continue on the web →
-              </Link>
             </div>
-            <p className="mt-5 text-xs text-slate-500">Free forever. Also available on the web.</p>
+            <p className="mt-5 text-xs text-slate-500">Free forever.</p>
           </div>
 
           <div className="relative mx-auto w-full max-w-md">
@@ -179,8 +172,8 @@ export default function PublicLanding() {
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">A place to share what matters to you</h2>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
             Frianzo brings social sharing, short-form video, stories, profiles and conversations
-            together in one free app. Get the official Frianzo app on Google Play,
-            or explore what Frianzo offers publicly on the web.
+            together in one free app. Get the official Frianzo app on Google Play
+            and start connecting in minutes.
           </p>
         </section>
 

@@ -8,7 +8,7 @@ export const revalidate = 0;
 export const metadata = {
   title: 'Frianzo - Connect. Share. Discover. | Free Social App',
   description:
-    'Frianzo is Pakistan\u2019s free social app for sharing posts, photos, stories and reels, chatting with friends on built-in Messenger, and discovering people. Download free on Google Play, or continue on the web.',
+    'Frianzo is Pakistan\u2019s free social app for sharing posts, photos, stories and reels, chatting with friends on built-in Messenger, and discovering people. Download free on Google Play.',
   keywords:
     'Frianzo, Frianzo app, social app Pakistan, free social media app, share reels, share photos, chat app, download Frianzo, Pakistani social network',
   openGraph: {
@@ -55,14 +55,6 @@ const appStructuredData = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'You can download the official Frianzo app free on Google Play for Android.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: 'Can I use Frianzo on the web without the app?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Yes. You can continue on the web at frianzo.online without installing the app.',
           },
         },
         {
