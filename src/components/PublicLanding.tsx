@@ -34,9 +34,15 @@ export default function PublicLanding() {
             <Link href="/login" className="rounded-full px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
               Log in
             </Link>
-            <Link href="/login" className="rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-              Sign up
-            </Link>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.frianzo.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:opacity-90"
+              aria-label="Get Frianzo on Google Play"
+            >
+              <img src="/google-play-badge.png" alt="Get it on Google Play" className="h-10 w-auto" />
+            </a>
           </div>
         </header>
 
@@ -52,15 +58,21 @@ export default function PublicLanding() {
               Frianzo is a social platform for sharing posts, photos, stories and reels,
               discovering people, following profiles and joining conversations through comments and reactions.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/login" className="rounded-full bg-blue-600 px-7 py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
-                Create Account
-              </Link>
-              <Link href="/login" className="rounded-full border border-slate-200 bg-white px-7 py-3.5 text-center text-sm font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-                Log in
+            <div className="mt-8 flex flex-col items-start gap-4">
+              <a
+                href="https://play.google.com/store/apps/details?id=com.frianzo.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:opacity-90 hover:brightness-105"
+                aria-label="Get Frianzo on Google Play"
+              >
+                <img src="/google-play-badge.png" alt="Get it on Google Play" className="h-16 w-auto sm:h-[72px]" />
+              </a>
+              <Link href="/login" className="text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline">
+                or continue on the web →
               </Link>
             </div>
-            <p className="mt-5 text-xs text-slate-500">Join Frianzo from the web — no app install required.</p>
+            <p className="mt-5 text-xs text-slate-500">Free forever. Also available on the web.</p>
           </div>
 
           <div className="relative mx-auto w-full max-w-md">
@@ -135,8 +147,8 @@ export default function PublicLanding() {
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">A place to share what matters to you</h2>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
             Frianzo brings social sharing, short-form video, stories, profiles and conversations
-            together in one accessible web platform. Visitors can explore what Frianzo offers publicly,
-            while members can create an account and start connecting with others.
+            together in one free app. Get the official Frianzo app on Google Play,
+            or explore what Frianzo offers publicly on the web.
           </p>
         </section>
 
