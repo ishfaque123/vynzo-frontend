@@ -76,6 +76,10 @@ export function deleteAdminUser(userId: string) {
   return request(`/users/${userId}`, { method: 'DELETE' });
 }
 
+export function clearAdminUserStrikes(userId: string) {
+  return request(`/users/${userId}/strikes`, { method: 'DELETE' });
+}
+
 export function updateAdminUserVerification(userId: string, verified: boolean) {
   return request(`/users/${userId}/verification`, {
     method: 'PATCH',
