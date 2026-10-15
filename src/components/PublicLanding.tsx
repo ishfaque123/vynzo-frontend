@@ -12,6 +12,29 @@ export default function PublicLanding() {
     { title: 'Reactions', text: 'React to posts and see how the community responds to shared content.', icon: '♡' },
   ];
 
+  const faqs = [
+    {
+      q: 'Is Frianzo free?',
+      a: 'Yes. Frianzo is completely free to download and use — no subscriptions, no hidden charges.',
+    },
+    {
+      q: 'Where can I download the Frianzo app?',
+      a: 'You can download the official Frianzo app free on Google Play for Android.',
+    },
+    {
+      q: 'Can I use Frianzo on the web without the app?',
+      a: 'Yes. You can continue on the web at frianzo.online without installing the app.',
+    },
+    {
+      q: 'What can I do on Frianzo?',
+      a: 'Share posts, photos, reels and stories, chat with friends on the built-in Messenger, follow profiles, join conversations, and discover new people through the For You feed.',
+    },
+    {
+      q: 'Is Frianzo available in my country?',
+      a: 'Yes. The Frianzo app is available on Google Play in 178 countries.',
+    },
+  ];
+
   return (
     <main className="min-h-screen overflow-hidden bg-white text-slate-900">
       <NativeRedirect />
@@ -120,6 +143,33 @@ export default function PublicLanding() {
                   <p className="mt-2 text-sm leading-6 text-slate-600">{feature.text}</p>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-4xl px-5 py-20 sm:px-8">
+          <p className="text-center text-sm font-bold uppercase tracking-[0.16em] text-blue-600">FAQ</p>
+          <h2 className="mt-3 text-center text-3xl font-black tracking-tight text-slate-950">Questions, answered</h2>
+          <div className="mt-10 space-y-3">
+            {faqs.map((faq) => (
+              <details key={faq.q} className="group rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
+                <summary className="cursor-pointer list-none text-base font-bold text-slate-950 transition group-open:text-blue-600">
+                  {faq.q}
+                </summary>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{faq.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="border-y border-slate-100 bg-blue-600 px-5 py-16 sm:px-8">
+          <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+            <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Get Frianzo today</h2>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">
+              Start sharing, discovering and connecting today. Free forever.
+            </p>
+            <div className="mt-8">
+              <GooglePlayButton size="lg" />
             </div>
           </div>
         </section>
