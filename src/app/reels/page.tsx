@@ -260,8 +260,26 @@ function ReelItem({ reel, index, active, forcePause, preload, cacheUserId, offli
   async function confirmDelete() { setNotice(null); const result = await deleteReel(reel.id); if (result.success) onDeleted(reel.id); else setNotice({ message: 'Something went wrong. Please try again.', confirm: false }); }
   async function copyReelLink() {
     const link = window.location.origin + '/reels?id=' + encodeURIComponent(reel.id);
-    try { await navigator.clipboard.writeText(link); setMoreOpen(false); setNotice({ message: 'Link copied successfully.', confirm: false }); }
-    catch { setMoreOpen(false); setNotice({ message: 'Couldn’t copy the link. Please try again.', confirm: false }); }
+    // Use execCommand instead of Clipboard API to avoid the system "Copied" toast
+    // (our own dialog already confirms the copy)
+    const copyViaExec = () => {
+      const ta = document.createElement('textarea');
+      ta.value = link;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch {}
+      document.body.removeChild(ta);
+      return ok;
+    };
+    try {
+      const ok = copyViaExec();
+      if (!ok) await navigator.clipboard.writeText(link);
+      setMoreOpen(false); setNotice({ message: 'Link copied successfully.', confirm: false });
+    }
+    catch { setMoreOpen(false); setNotice({ message: 'Couldn\u2019t copy the link. Please try again.', confirm: false }); }
   }
   function handleSaveVideo() {
     setMoreOpen(false);
