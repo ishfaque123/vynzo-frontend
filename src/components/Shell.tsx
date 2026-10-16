@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 import { BellIcon } from '@/components/icons/UiIcons';
 import { fetchUnreadCount } from '@/lib/api/notificationApi';
 import { logoutRequest } from '@/lib/api/authApi';
+import { fetchDashboard, fetchFollowCounts } from '@/lib/api/userApi';
 import UsageTracker from '@/components/UsageTracker';
 import PushRegistrar from '@/components/PushRegistrar';
 
@@ -59,6 +60,18 @@ function MenuIcon() {
       <line x1="4" y1="7" x2="20" y2="7" />
       <line x1="4" y1="12" x2="20" y2="12" />
       <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+      <line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
     </svg>
   );
 }
@@ -161,6 +174,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [headerHidden, setHeaderHidden] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -207,6 +221,32 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       window.removeEventListener('keydown', onKey);
     };
   }, [drawerOpen]);
+
+  async function handleDrawerShare() {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      const [dashRes, followRes] = await Promise.all([
+        fetchDashboard(),
+        user?.id ? fetchFollowCounts(user.id) : Promise.resolve(null),
+      ]);
+      const referralLink = dashRes?.success ? dashRes.data?.monetization?.referralLink : null;
+      const followers = followRes?.success ? (followRes.data?.followers ?? followRes.data?.followerCount ?? 0) : 0;
+      const link = referralLink || 'https://play.google.com/store/apps/details?id=com.frianzo.app';
+      const message =
+        `You need to try *Frianzo*!\n\n` +
+        `It's like Facebook + Instagram + TikTok in one app \u2014 share posts, videos, go viral & connect with people worldwide \u{1F30D}\n\n` +
+        `\u{1F525} I've already got *${Number(followers).toLocaleString()} followers* \u2014 come join the wave!\n\n` +
+        `\u26A1 New users can hit *10K followers in just one week!*\n\n` +
+        `\u{1F4F2} Download free: ${link}`;
+      setDrawerOpen(false);
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+    } catch {
+      // Silent fail — user can retry from the drawer.
+    } finally {
+      setSharing(false);
+    }
+  }
 
   async function handleDrawerLogout() {
     const result = await logoutRequest();
@@ -328,6 +368,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <span className="text-slate-800">{item.label}</span>
               </Link>
             ))}
+            <button
+              onClick={handleDrawerShare}
+              disabled={sharing}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-50"
+            >
+              <span className="text-slate-600"><ShareIcon /></span>
+              <span className="text-slate-800">{sharing ? 'Opening WhatsApp...' : 'Share Frianzo'}</span>
+            </button>
           </nav>
 
           <div className="border-t p-3">
