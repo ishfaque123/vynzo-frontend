@@ -799,7 +799,7 @@ export default function NewReelPage() {
 
   if (!file || !previewUrl) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black">
+      <div className="fixed inset-0 flex items-center justify-center bg-black" style={{ height: '100dvh' }}>
         <div className="relative flex h-20 w-20 items-center justify-center" role="status" aria-label="Loading Frianzo">
           <span className="absolute inset-0 animate-spin rounded-full border-4 border-white/20 border-t-white" />
           <img src="/logo.png" alt="Frianzo" className="h-12 w-12 object-contain" />
@@ -809,8 +809,14 @@ export default function NewReelPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <div className="flex items-center justify-between p-4">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-black"
+      style={{ height: '100dvh' }}
+    >
+      <div
+        className="flex shrink-0 items-center justify-between p-4"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
         <button onClick={handleCancel} className="text-white" aria-label="Cancel">
           <CloseIcon />
         </button>
@@ -824,7 +830,7 @@ export default function NewReelPage() {
         </button>
       </div>
 
-      <div className="flex flex-1 items-center justify-center overflow-hidden px-4">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-4">
         <div
           className="relative flex max-h-full max-w-full items-center justify-center overflow-hidden"
           style={crop !== 'original' ? { aspectRatio: crop === 'square' ? '1 / 1' : '4 / 5', maxHeight: '70%' } : undefined}
@@ -865,7 +871,10 @@ export default function NewReelPage() {
         </div>
       </div>
 
-      <div className="space-y-3 p-4">
+      <div
+        className="max-h-[45dvh] shrink-0 space-y-3 overflow-y-auto p-4"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         {previewError && (
           <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
             Video preview is not supported on this device/browser. HEVC/HDR videos may not play here; MP4 (H.264) is recommended.
