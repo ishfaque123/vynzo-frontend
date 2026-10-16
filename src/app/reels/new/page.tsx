@@ -753,6 +753,7 @@ export default function NewReelPage() {
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onError={() => setPreviewError(true)}
           onLoadedMetadata={(e) => {
+            setPreviewError(false);
             const d = Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : duration;
             if (d > 0) {
               setVideoDuration(d);
