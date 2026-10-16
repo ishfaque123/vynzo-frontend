@@ -54,7 +54,8 @@ const LEADERBOARD_TABS: { key: LeaderboardTab; label: string; unit: string }[] =
   { key: 'followers', label: 'Followers', unit: 'followers' },
   { key: 'likers', label: 'Likers', unit: 'likes' },
   { key: 'commenters', label: 'Commenters', unit: 'comments' },
-  { key: 'referrers', label: 'Referrers', unit: 'referrals' },
+  // Referrers tab hidden for now (user order 2026-10-16) — re-enable by uncommenting:
+  // { key: 'referrers', label: 'Referrers', unit: 'referrals' },
 ];
 
 function TrophyIcon() {
