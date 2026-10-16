@@ -58,6 +58,11 @@ export async function fetchDashboard(days = 30) {
   return res.json();
 }
 
+export async function fetchLeaderboard(category: 'followers' | 'likers' | 'commenters' | 'referrers', limit = 10) {
+  const res = await fetch(`${API_URL}/api/users/leaderboard?category=${category}&limit=${limit}`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function blockUser(userId: string) {
   const res = await fetch(`${API_URL}/api/blocks/${userId}`, {
     method: 'POST',

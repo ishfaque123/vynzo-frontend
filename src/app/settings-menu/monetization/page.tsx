@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchDashboard } from '@/lib/api/userApi';
+import { fetchDashboard, fetchLeaderboard } from '@/lib/api/userApi';
 import { fetchPayoutMethods, addPayoutMethod, deletePayoutMethod, setDefaultPayoutMethod, fetchEarnings } from '@/lib/api/payoutApi';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
@@ -39,6 +39,33 @@ type PayoutMethod = {
 
 type Earning = { id: string; amount: number; type: string; createdAt: string };
 
+type LeaderboardEntry = {
+  rank: number;
+  username: string;
+  displayName: string | null;
+  avatar: string | null;
+  isVerified: boolean;
+  count: number;
+};
+
+type LeaderboardTab = 'followers' | 'likers' | 'commenters' | 'referrers';
+
+const LEADERBOARD_TABS: { key: LeaderboardTab; label: string; unit: string }[] = [
+  { key: 'followers', label: 'Followers', unit: 'followers' },
+  { key: 'likers', label: 'Likers', unit: 'likes' },
+  { key: 'commenters', label: 'Commenters', unit: 'comments' },
+  { key: 'referrers', label: 'Referrers', unit: 'referrals' },
+];
+
+function TrophyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z" />
+      <path d="M7 6H4a1 1 0 0 0-1 1c0 2.5 2 4 4 4M17 6h3a1 1 0 0 1 1 1c0 2.5-2 4-4 4" />
+    </svg>
+  );
+}
+
 export default function MonetizationPage() {
   const [data, setData] = useState<ReferralData | null>(null);
   const [earnings, setEarnings] = useState<{ earnings: Earning[]; total: number } | null>(null);
@@ -51,6 +78,9 @@ export default function MonetizationPage() {
   const [form, setForm] = useState({ methodType: '', accountName: '', accountNumber: '', extra: '' });
   const [saving, setSaving] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<LeaderboardTab>('followers');
+  const [boards, setBoards] = useState<Partial<Record<LeaderboardTab, LeaderboardEntry[]>>>({});
+  const [boardLoading, setBoardLoading] = useState(false);
 
   function load() {
     setLoading(true);
@@ -71,6 +101,19 @@ export default function MonetizationPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  function loadBoard(tab: LeaderboardTab) {
+    if (boards[tab]) return;
+    setBoardLoading(true);
+    fetchLeaderboard(tab, 10)
+      .then((r) => {
+        if (r.success) setBoards((prev) => ({ ...prev, [tab]: r.data?.leaderboard ?? [] }));
+      })
+      .catch(() => {})
+      .finally(() => setBoardLoading(false));
+  }
+
+  useEffect(() => { loadBoard(activeTab); }, [activeTab]);
 
   function handleCopy() {
     if (!data?.referralLink) return;
@@ -218,6 +261,72 @@ export default function MonetizationPage() {
           >
             Copy
           </button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-white p-4">
+        <div className="flex items-center gap-2">
+          <span className="text-amber-500"><TrophyIcon /></span>
+          <p className="text-sm font-semibold text-slate-900">Leaderboard</p>
+        </div>
+        <div className="mt-3 flex gap-1.5 overflow-x-auto">
+          {LEADERBOARD_TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
+                activeTab === t.key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3">
+          {boardLoading && !boards[activeTab] ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : (boards[activeTab] ?? []).length === 0 ? (
+            <p className="py-4 text-center text-xs text-slate-500">No rankings yet — be the first!</p>
+          ) : (
+            <div className="space-y-1">
+              {(boards[activeTab] ?? []).map((e) => (
+                <a
+                  key={e.username}
+                  href={`/u/${e.username}`}
+                  className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50"
+                >
+                  <span
+                    className={`w-6 text-center text-sm font-bold ${
+                      e.rank === 1 ? 'text-amber-500' : e.rank === 2 ? 'text-slate-400' : e.rank === 3 ? 'text-amber-700' : 'text-slate-400'
+                    }`}
+                  >
+                    {e.rank}
+                  </span>
+                  {e.avatar ? (
+                    <img src={e.avatar} alt={e.username} className="h-9 w-9 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">
+                      {e.username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      @{e.username}
+                      {e.isVerified && <span className="ml-1 text-blue-500">✓</span>}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">{e.displayName || ''}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-700">
+                    {e.count.toLocaleString()} {LEADERBOARD_TABS.find((t) => t.key === activeTab)?.unit}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
