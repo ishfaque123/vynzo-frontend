@@ -447,6 +447,58 @@ export default function ReelsPage() {
   const [feedError, setFeedError] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [forcePause] = useState(false);
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const pullStartYRef = useRef<number | null>(null);
+  const feedRef = useRef<HTMLDivElement | null>(null);
+
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    // Clear cache for fresh feed
+    feedCacheRef.current[activeTabRef.current] = null;
+    setReels([]);
+    setActiveIndex(0);
+    setHasMore(false);
+    try {
+      const feed = await fetchReelFeed(0, activeTabRef.current);
+      if (feed.success) {
+        setReels(feed.data.reels || []);
+        setHasMore(!!feed.data.hasMore);
+        setFeedError(false);
+      }
+    } catch {}
+    setRefreshing(false);
+    setPullY(0);
+    // Scroll to top
+    const root = document.getElementById('reels-feed');
+    if (root) root.scrollTo({ top: 0 });
+  }
+
+  function onTouchStartRefresh(e: React.TouchEvent) {
+    const root = feedRef.current;
+    if (!root || root.scrollTop > 0 || refreshing) return;
+    pullStartYRef.current = e.touches[0].clientY;
+  }
+
+  function onTouchMoveRefresh(e: React.TouchEvent) {
+    if (pullStartYRef.current === null || refreshing) return;
+    const dy = e.touches[0].clientY - pullStartYRef.current;
+    if (dy > 0) {
+      setPullY(Math.min(dy, 120));
+    }
+  }
+
+  function onTouchEndRefresh() {
+    if (pullStartYRef.current === null) return;
+    pullStartYRef.current = null;
+    if (pullY > 70 && !refreshing) {
+      void handleRefresh();
+    } else {
+      setPullY(0);
+    }
+  }
   function switchTab(tab: 'foryou' | 'following') {
     if (tab === activeTabRef.current || tabSwitching) return;
     const prevTab = activeTabRef.current;
@@ -646,5 +698,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" onWheel={handleWheel} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} index={index} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} onWheel={handleWheel} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{(refreshing || pullY > 0) && <div className="flex items-center justify-center py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><div className={`h-6 w-6 rounded-full border-2 border-white/20 border-t-white ${refreshing ? 'animate-spin' : ''}`} /></div>}{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} index={index} active={index === activeIndex} forcePause={forcePause} preload={Math.abs(index - activeIndex) <= 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
 }
