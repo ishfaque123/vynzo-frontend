@@ -13,13 +13,14 @@ export default function AvatarUploadPage() {
   async function uploadAvatar(username: string, file: File) {
     setUploading(username);
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('username', username);
       formData.append('image', file);
       const res = await fetch('https://api.frianzo.online/api/admin/users/avatar', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        // Session cookie auth (HttpOnly): the app no longer stores a JWT in
+        // localStorage, so send cookies instead of a Bearer token.
+        credentials: 'include',
         body: formData,
       });
       const data = await res.json();
