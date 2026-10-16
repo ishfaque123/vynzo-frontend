@@ -9,6 +9,7 @@ const CATEGORIES = [
   { value: 'follows', label: 'New followers', desc: 'When someone starts following you' },
   { value: 'mentions', label: 'Mentions', desc: 'When someone mentions or tags you' },
   { value: 'shares', label: 'Shares', desc: 'When someone shares your posts' },
+  { value: 'viral', label: 'Viral posts', desc: 'When a post from someone you follow starts going viral' },
 ] as const;
 
 export default function NotificationSettingsPage() {
