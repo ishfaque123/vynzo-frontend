@@ -60,8 +60,9 @@ export default function NewReelPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [caption, setCaption] = useState('');
-  const [category, setCategory] = useState('');
-  const INTERESTS = ['comedy', 'music', 'dance', 'sports', 'food', 'travel', 'fashion', 'tech', 'education', 'gaming', 'pets', 'art'];
+  // AI auto-detects category from video frames (user-ordered 2026-10-16: no manual picker)
+  const [aiCategory, setAiCategory] = useState('');
+  const [detectingCategory, setDetectingCategory] = useState(false);
   const [posting, setPosting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -169,8 +170,97 @@ export default function NewReelPage() {
     setVideoDuration(pending.duration);
     setPreviewError(false);
     setPreviewUrl(URL.createObjectURL(pending.file));
+    // AI watches the video and picks a category automatically
+    detectCategoryFromVideo(pending.file);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Extract frames from video and ask AI to categorize
+  async function detectCategoryFromVideo(videoFile: File) {
+    setDetectingCategory(true);
+    setAiCategory('');
+    try {
+      const frames = await extractVideoFrames(videoFile, 3);
+      if (frames.length === 0) return;
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/reels/detect-category', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ frames }),
+      });
+      const data = await res.json();
+      const cat = data?.data?.category || data?.category || '';
+      if (cat) setAiCategory(cat);
+    } catch {
+      // AI detection failed — reel posts without a category, no problem
+    } finally {
+      setDetectingCategory(false);
+    }
+  }
+
+  // Capture N evenly-spaced frames from a video file as JPEG data URLs
+  function extractVideoFrames(videoFile: File, count: number): Promise<string[]> {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(videoFile);
+      const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      video.src = url;
+      const frames: string[] = [];
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const cleanup = () => URL.revokeObjectURL(url);
+
+      video.onloadedmetadata = async () => {
+        const dur = video.duration || 1;
+        canvas.width = 480;
+        canvas.height = Math.round(480 * (video.videoHeight / Math.max(video.videoWidth, 1))) || 480;
+        for (let i = 0; i < count; i++) {
+          const t = dur * ((i + 1) / (count + 1));
+          try {
+            await seekTo(video, t);
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              frames.push(canvas.toDataURL('image/jpeg', 0.7));
+            }
+          } catch {
+            break;
+          }
+        }
+        cleanup();
+        resolve(frames);
+      };
+      video.onerror = () => {
+        cleanup();
+        resolve([]);
+      };
+      // Safety timeout
+      setTimeout(() => {
+        cleanup();
+        resolve(frames);
+      }, 15000);
+    });
+  }
+
+  function seekTo(video: HTMLVideoElement, time: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const onSeeked = () => {
+        video.removeEventListener('seeked', onSeeked);
+        resolve();
+      };
+      video.addEventListener('seeked', onSeeked);
+      video.currentTime = time;
+      setTimeout(() => {
+        video.removeEventListener('seeked', onSeeked);
+        reject(new Error('seek timeout'));
+      }, 5000);
+    });
+  }
 
   useEffect(() => {
     return () => {
@@ -349,7 +439,7 @@ export default function NewReelPage() {
         video: file,
         ...(coverBlob ? { cover: coverBlob } : {}),
         caption: caption.trim() || undefined,
-        ...(category ? { category } : {}),
+        ...(aiCategory ? { category: aiCategory } : {}),
         durationSec: selectedDuration,
         ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
         ...(filter !== 'normal' ? { filter } : {}),
@@ -795,25 +885,9 @@ export default function NewReelPage() {
           className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/50 outline-none"
         />
 
-        <div className="mt-2">
-          <p className="mb-1 text-xs font-medium text-white/70">Category</p>
-          <div className="flex flex-wrap gap-1.5">
-            {INTERESTS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(category === c ? '' : c)}
-                className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                  category === c
-                    ? 'bg-white text-black'
-                    : 'border border-white/20 bg-white/10 text-white/70'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
+        {detectingCategory && (
+          <p className="text-xs text-white/50">AI video dekh raha hai...</p>
+        )}
 
         {uploadProgress !== null && (
           <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
