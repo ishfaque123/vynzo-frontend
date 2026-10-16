@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchFeed } from '@/lib/api/postApi';
+import { fetchFeed, fetchContentMix } from '@/lib/api/postApi';
 import { fetchReelsConfig, fetchReelFeed } from '@/lib/api/reelApi';
 import { getOfflineFeed, saveOfflineFeed } from '@/lib/offline/feedCache';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
@@ -41,6 +41,9 @@ export default function HomePage() {
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
   const [reels, setReels] = useState<any[]>([]);
+  // Adaptive feed mix: how often reels are injected among posts, based on the
+  // user's actual consumption (reelRatio 0..1 from /api/posts/content-mix).
+  const [reelEvery, setReelEvery] = useState(2);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -100,9 +103,14 @@ export default function HomePage() {
     }
 
     try {
-      const [result, reelPage1, reelPage2, reelPage3] = await Promise.all([
-        fetchFeed(0), fetchReelFeed(0), fetchReelFeed(10), fetchReelFeed(20),
+      const [result, reelPage1, reelPage2, reelPage3, mixRes] = await Promise.all([
+        fetchFeed(0), fetchReelFeed(0), fetchReelFeed(10), fetchReelFeed(20), fetchContentMix().catch(() => null),
       ]);
+      if (mixRes?.success && typeof mixRes.data?.reelRatio === 'number') {
+        const r = mixRes.data.reelRatio;
+        // Heavy reel watcher -> reel after every post; reel ignorer -> rarely.
+        setReelEvery(r >= 0.7 ? 1 : r >= 0.4 ? 2 : r >= 0.15 ? 4 : 6);
+      }
       if (result.success) {
         setPosts(result.data.posts);
         setHasMore(!!result.data.hasMore);
@@ -352,7 +360,7 @@ export default function HomePage() {
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
-                {(index + 1) % 2 === 0 && reels.length > 0 && <div className="my-4 px-4"><FeedReelCard reel={reels[Math.floor(index / 2) % reels.length]} /></div>}
+                {(index + 1) % reelEvery === 0 && reels.length > 0 && <div className="my-4 px-4"><FeedReelCard reel={reels[Math.floor(index / reelEvery) % reels.length]} /></div>}
               </div>
             ))}
           </div>
