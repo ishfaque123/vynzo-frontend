@@ -24,6 +24,9 @@ type Phase = 'idle' | 'generating' | 'done' | 'error';
 export default function AiVideoPage() {
   const router = useRouter();
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [referralCount, setReferralCount] = useState(0);
+  const [referralsNeeded, setReferralsNeeded] = useState(25);
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
   const [durationSeconds, setDurationSeconds] = useState<4 | 8>(8);
@@ -39,6 +42,9 @@ export default function AiVideoPage() {
   useEffect(() => {
     fetchVideoGenStatus().then((r: any) => {
       setEnabled(r?.success ? !!r.data?.enabled : false);
+      setHasAccess(r?.success ? !!r.data?.hasAccess : false);
+      setReferralCount(r?.success ? r.data?.referralCount ?? 0 : 0);
+      setReferralsNeeded(r?.success ? r.data?.referralsNeeded ?? 25 : 25);
     });
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -70,7 +76,8 @@ export default function AiVideoPage() {
     if (!start?.success || !start.data?.operationName) {
       setPhase('error');
       const rawError = start?.error?.message || 'Failed to start generation.';
-      setErrorMsg(rawError === 'PREMIUM_REQUIRED' ? 'PREMIUM_REQUIRED' : rawError);
+      const errCode = (start as any)?.error?.code;
+      setErrorMsg(errCode === 'REFERRALS_REQUIRED' ? 'REFERRALS_REQUIRED' : rawError);
       return;
     }
 
@@ -170,6 +177,33 @@ export default function AiVideoPage() {
         </div>
       )}
 
+      {hasAccess === false && (
+        <div className="mb-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 p-5 text-white shadow-lg">
+          <div className="text-lg font-bold">🔓 Unlock AI Video Generation</div>
+          <p className="mt-1 text-sm text-white/90">
+            Invite friends to Frianzo! Get <strong>25 referrals</strong> to unlock FREE AI video generation.
+          </p>
+          <div className="mt-3">
+            <div className="flex justify-between text-xs font-semibold">
+              <span>{referralCount} / 25 referrals</span>
+              <span>{referralsNeeded} more needed</span>
+            </div>
+            <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-white/25">
+              <div
+                className="h-full rounded-full bg-white transition-all"
+                style={{ width: `${Math.min(100, (referralCount / 25) * 100)}%` }}
+              />
+            </div>
+          </div>
+          <a
+            href="/settings-menu/monetization"
+            className="mt-3 inline-block rounded-lg bg-white px-4 py-2 text-sm font-bold text-violet-700"
+          >
+            Get my referral link →
+          </a>
+        </div>
+      )}
+
       {phase !== 'generating' && phase !== 'done' && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -225,15 +259,21 @@ export default function AiVideoPage() {
           </div>
 
           {phase === 'error' && (
-            errorMsg === 'PREMIUM_REQUIRED' ? (
+            errorMsg === 'REFERRALS_REQUIRED' ? (
               <div className="mt-3 rounded-xl bg-violet-50 p-4 text-center">
                 <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-violet-600">
                   <SparklesIcon />
                 </div>
-                <p className="font-semibold text-violet-900">Premium Feature</p>
+                <p className="font-semibold text-violet-900">🔓 Unlock with Referrals</p>
                 <p className="mt-1 text-sm text-violet-700">
-                  This feature is only available for Premium users.
+                  Invite {referralsNeeded} more friend(s) to unlock AI video generation free!
                 </p>
+                <a
+                  href="/settings-menu/monetization"
+                  className="mt-2 inline-block rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white"
+                >
+                  Get my referral link →
+                </a>
               </div>
             ) : (
               <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{errorMsg}</div>
@@ -242,7 +282,7 @@ export default function AiVideoPage() {
 
           <button
             onClick={handleGenerate}
-            disabled={enabled === false}
+            disabled={enabled === false || hasAccess === false}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
           >
             <SparklesIcon />
