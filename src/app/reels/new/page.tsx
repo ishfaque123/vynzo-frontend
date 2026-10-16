@@ -814,8 +814,8 @@ export default function NewReelPage() {
       style={{ height: '100dvh' }}
     >
       <div
-        className="flex shrink-0 items-center justify-between p-4"
-        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        className="flex shrink-0 items-center justify-between bg-black p-4"
+        style={{ paddingTop: 'max(2.5rem, env(safe-area-inset-top, 2.5rem))' }}
       >
         <button onClick={handleCancel} className="text-white" aria-label="Cancel">
           <CloseIcon />
