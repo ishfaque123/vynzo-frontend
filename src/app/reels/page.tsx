@@ -450,27 +450,16 @@ export default function ReelsPage() {
   // Pull-to-refresh state
   const [refreshing, setRefreshing] = useState(false);
   const [pullY, setPullY] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const pullStartYRef = useRef<number | null>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   async function handleRefresh() {
     if (refreshing) return;
     setRefreshing(true);
-    // Clear cache for fresh feed
+    // Clear cache so the main loader fetches fresh (full logic with filters)
     feedCacheRef.current[activeTabRef.current] = null;
-    setReels([]);
-    setActiveIndex(0);
-    setHasMore(false);
-    try {
-      const feed = await fetchReelFeed(0, activeTabRef.current);
-      if (feed.success) {
-        setReels(feed.data.reels || []);
-        setHasMore(!!feed.data.hasMore);
-        setFeedError(false);
-      }
-    } catch {}
-    setRefreshing(false);
-    setPullY(0);
+    setRefreshKey((k) => k + 1);
     // Scroll to top
     const root = document.getElementById('reels-feed');
     if (root) root.scrollTo({ top: 0 });
@@ -630,10 +619,12 @@ export default function ReelsPage() {
       setUploadReady(enabled && status.success && Number.isFinite(remaining) && remaining > 0);
       setLoading(false);
       setTabSwitching(false);
+      setRefreshing(false);
+      setPullY(0);
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id, activeTab]);
+  }, [user?.id, activeTab, refreshKey]);
   useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length, activeTabRef.current).then((result) => { if (result.success) { setReels((items) => { const existingIds = new Set(items.map((item) => item.id)); const notInterested = getNotInterestedIds(); const newOnes = (result.data.reels || []).filter((item: Reel) => !existingIds.has(item.id) && !notInterested.has(item.id)); return [...items, ...newOnes]; }); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
