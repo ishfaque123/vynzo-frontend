@@ -341,7 +341,7 @@ function ReelItem({ reel, index, active, forcePause, preload, cacheUserId, offli
       }).catch(() => {});
     }
     if (!interested) {
-      setNotice({ message: "We'll show you less like this.", confirm: false });
+      setNotice({ message: "Thanks for your feedback. You'll see fewer reels like this.", confirm: false });
       onDeleted(reel.id);
     } else {
       setNotice({ message: "We'll show you more like this.", confirm: false });
