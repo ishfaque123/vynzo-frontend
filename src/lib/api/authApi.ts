@@ -3,6 +3,60 @@ import { clearOfflineCache } from '@/lib/offline/feedCache';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /**
+ * Permanent fix for broken session after rapid account switching + logout.
+ *
+ * Root causes:
+ * 1. Rapid account switches fire multiple /api/auth/switch requests; they can
+ *    complete OUT OF ORDER, so the last-to-complete (not last-initiated) won.
+ * 2. In-flight requests (fetchMe, feed, etc.) from the old account could finish
+ *    AFTER logout/switch and repopulate stale account data.
+ * 3. router.push('/login') is a client-side nav — React state, query caches and
+ *    in-memory auth could survive it.
+ *
+ * Fix:
+ * - Every auth-state-changing request carries a sequence number; out-of-order
+ *   responses are ignored.
+ * - All in-flight fetches are aborted on logout / account switch.
+ * - Logout does a hard navigation (window.location.href) for a clean slate.
+ */
+
+// --- In-flight request tracking: abort everything on auth change ---
+const inflightControllers = new Set<AbortController>();
+
+/**
+ * Wrap a fetch so it can be aborted when the auth state changes.
+ * Use for any request whose response populates user/account-specific UI.
+ */
+export function trackableFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  inflightControllers.add(controller);
+  const promise = fetch(input, { ...init, signal: controller.signal });
+  // Always clean up the registry when the request settles.
+  promise.finally(() => inflightControllers.delete(controller)).catch(() => {});
+  return promise;
+}
+
+/** Abort every tracked in-flight request. Called on logout / account switch. */
+export function abortInflightRequests() {
+  for (const controller of inflightControllers) {
+    try { controller.abort(); } catch { /* already settled */ }
+  }
+  inflightControllers.clear();
+}
+
+// --- Sequence guard: ignore out-of-order account-switch responses ---
+let switchSequence = 0;
+/** Returns the sequence number for this switch attempt. */
+function nextSwitchSequence(): number {
+  switchSequence += 1;
+  return switchSequence;
+}
+/** True if a newer switch has started since `seq` was issued. */
+function isStaleSwitch(seq: number): boolean {
+  return seq !== switchSequence;
+}
+
+/**
  * Broadcast that the session just ended. Every mounted useAuth instance
  * listens for 'frianzo-logout' and resets to logged-out immediately, so a
  * following client-side navigation never renders stale logged-in UI.
@@ -37,7 +91,7 @@ async function readJson(res: Response) {
 }
 
 export async function fetchMe() {
-  const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include', cache: 'no-store' });
+  const res = await trackableFetch(`${API_URL}/api/auth/me`, { credentials: 'include', cache: 'no-store' });
   return readJson(res);
 }
 
@@ -47,6 +101,9 @@ export async function getSavedAccounts() {
 }
 
 export async function switchAccountRequest(accountId: string) {
+  const seq = nextSwitchSequence();
+  // Kill any in-flight requests from the previous account immediately.
+  abortInflightRequests();
   const res = await fetch(`${API_URL}/api/auth/switch`, {
     method: 'POST',
     credentials: 'include',
@@ -54,6 +111,10 @@ export async function switchAccountRequest(accountId: string) {
     body: JSON.stringify({ accountId }),
   });
   const result = await readJson(res);
+  // Ignore this response if the user already started another switch after it.
+  if (isStaleSwitch(seq)) {
+    return { success: false, error: { message: 'Superseded by a newer account switch.' } };
+  }
   if (result.success) {
     await clearOfflineCache();
     notifyAccountSwitched();
@@ -62,6 +123,9 @@ export async function switchAccountRequest(accountId: string) {
 }
 
 export async function logoutRequest() {
+  // Stop every in-flight request first: nothing from the old session may
+  // complete after logout and resurrect stale account UI.
+  abortInflightRequests();
   const res = await fetch(`${API_URL}/api/auth/logout`, {
     method: 'POST',
     credentials: 'include',

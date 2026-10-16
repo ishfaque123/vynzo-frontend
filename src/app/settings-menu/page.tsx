@@ -381,10 +381,11 @@ export default function SettingsMenuPage() {
       // so closing the app immediately after logging out can't bring the
       // old session back on next launch.
       (window as any).FrianzoNative?.flushCookies?.();
-      // Client-side transition (no full page reload), so logging out doesn't
-      // look like the app closed and reopened. logoutRequest() already
-      // broadcast 'frianzo-logout' to reset auth state in mounted components.
-      router.push('/login');
+      // Hard navigation (not router.push): guarantees a clean slate — no
+      // surviving React state, query cache, or in-memory auth from the old
+      // session. This is the permanent fix for the broken-session issue
+      // seen after rapid account switching + logout.
+      window.location.href = '/login';
       return;
     }
     setLoggingOut(false);

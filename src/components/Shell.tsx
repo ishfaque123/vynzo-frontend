@@ -252,10 +252,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     const result = await logoutRequest();
     if (result?.success) {
       // Persist the cleared session in the Android WebView immediately,
-      // then go to login with a client-side transition (no full reload).
+      // then hard-navigate for a clean slate (permanent fix for the
+      // broken-session issue after rapid account switching + logout).
       (window as any).FrianzoNative?.flushCookies?.();
       setDrawerOpen(false);
-      router.push('/login');
+      window.location.href = '/login';
     }
   }
 
