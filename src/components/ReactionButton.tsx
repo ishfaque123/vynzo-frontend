@@ -6,12 +6,12 @@ import { playReactionSound } from '@/lib/sounds';
 import ReactionIcon from './ReactionIcon';
 
 export const REACTIONS: Record<string, { emoji: string; color: string; label: string }> = {
-  like: { emoji: 'Ã°ÂÂÂ', color: 'text-blue-600', label: 'Like' },
-  love: { emoji: 'Ã¢ÂÂ¤Ã¯Â¸Â', color: 'text-red-600', label: 'Love' },
-  haha: { emoji: 'Ã°ÂÂÂ', color: 'text-yellow-600', label: 'Haha' },
-  wow: { emoji: 'Ã°ÂÂÂ®', color: 'text-yellow-600', label: 'Wow' },
-  sad: { emoji: 'Ã°ÂÂÂ¢', color: 'text-yellow-600', label: 'Sad' },
-  angry: { emoji: 'Ã°ÂÂÂ ', color: 'text-orange-600', label: 'Angry' },
+  like: { emoji: '👍', color: 'text-blue-600', label: 'Like' },
+  love: { emoji: '❤️', color: 'text-red-600', label: 'Love' },
+  haha: { emoji: '😆', color: 'text-yellow-600', label: 'Haha' },
+  wow: { emoji: '😮', color: 'text-yellow-600', label: 'Wow' },
+  sad: { emoji: '😢', color: 'text-yellow-600', label: 'Sad' },
+  angry: { emoji: '😠', color: 'text-orange-600', label: 'Angry' },
 };
 
 const HOLD_TO_OPEN_MS = 400;

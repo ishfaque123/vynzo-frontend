@@ -184,8 +184,8 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
                   ))}
                 </span>
               )}
-              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> ÃÂÃÂÃÂÃÂ· ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ {post.location}</>}
-                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ Pinned</span>}
+              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> · {post.location}</>}
+                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">📌 Pinned</span>}
               </span>
             </div>
           </div>
