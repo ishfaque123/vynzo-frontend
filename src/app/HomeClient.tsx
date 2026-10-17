@@ -108,8 +108,9 @@ export default function HomePage() {
       ]);
       if (mixRes?.success && typeof mixRes.data?.reelRatio === 'number') {
         const r = mixRes.data.reelRatio;
-        // Heavy reel watcher -> reel after every post; reel ignorer -> rarely.
-        setReelEvery(r >= 0.7 ? 1 : r >= 0.4 ? 2 : r >= 0.15 ? 4 : 6);
+        // User-ordered 2026-10-17: MORE reels in feed.
+        // Heavy reel watcher -> reel after every post; even low -> every 3.
+        setReelEvery(r >= 0.6 ? 1 : r >= 0.3 ? 2 : 3);
       }
       if (result.success) {
         setPosts(result.data.posts);
