@@ -9,6 +9,7 @@ const ENGAGER_ACCOUNTS = [
 export default function ReelUploadPage() {
   const [results, setResults] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<string | null>(null);
+  const [captions, setCaptions] = useState<Record<string, string>>({});
 
   async function uploadReel(username: string, file: File) {
     setUploading(username);
@@ -16,6 +17,8 @@ export default function ReelUploadPage() {
       const formData = new FormData();
       formData.append('username', username);
       formData.append('video', file);
+      const caption = captions[username]?.trim();
+      if (caption) formData.append('caption', caption);
       const res = await fetch('https://api.frianzo.online/api/admin/reels/upload', {
         method: 'POST',
         // Session cookie auth (HttpOnly)
@@ -43,20 +46,29 @@ export default function ReelUploadPage() {
       </div>
       <div className="grid gap-4">
         {ENGAGER_ACCOUNTS.map((username) => (
-          <div key={username} className="flex items-center gap-4 rounded-xl border bg-white p-4">
-            <span className="w-40 font-medium">@{username}</span>
+          <div key={username} className="flex flex-col gap-2 rounded-xl border bg-white p-4">
+            <div className="flex items-center gap-4">
+              <span className="w-40 font-medium">@{username}</span>
+              <input
+                type="file"
+                accept="video/*"
+                disabled={uploading === username}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadReel(username, file);
+                }}
+                className="text-sm"
+              />
+              {uploading === username && <span className="text-sm text-blue-600">Uploading...</span>}
+              {results[username] && <span className="text-sm">{results[username]}</span>}
+            </div>
             <input
-              type="file"
-              accept="video/*"
-              disabled={uploading === username}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) uploadReel(username, file);
-              }}
-              className="text-sm"
+              type="text"
+              placeholder="Caption + hashtags (optional)"
+              value={captions[username] || ''}
+              onChange={(e) => setCaptions((c) => ({ ...c, [username]: e.target.value }))}
+              className="w-full rounded-lg border px-3 py-2 text-sm"
             />
-            {uploading === username && <span className="text-sm text-blue-600">Uploading...</span>}
-            {results[username] && <span className="text-sm">{results[username]}</span>}
           </div>
         ))}
       </div>
