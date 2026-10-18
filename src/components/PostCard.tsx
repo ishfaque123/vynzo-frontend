@@ -109,6 +109,8 @@ function ReactionSummary({ post, countDelta = 0 }: { post: any; countDelta?: num
 }
 
 export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted, offline = false }: any) {
+  // Guard: skip posts with missing author (prevents crash)
+  if (!post?.author) return null;
   const isOwner = currentUser?.username === post.author.username;
   const [hiding, setHiding] = useState(false);
   const [countDelta, setCountDelta] = useState(0);
