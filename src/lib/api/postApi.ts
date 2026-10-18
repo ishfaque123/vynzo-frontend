@@ -16,12 +16,18 @@ export async function fetchContentMix() {
   return res.json();
 }
 
-export async function fetchFeed(offset = 0, timeoutMs = 15000) {
+export async function fetchFeed(offset = 0, timeoutMs = 30000, retries = 1) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${API_URL}/api/posts?offset=${offset}`, { credentials: 'include', cache: 'no-store', signal: controller.signal });
     return readJson(res);
+  } catch (err: any) {
+    // Retry once on timeout/abort (common on slow mobile data)
+    if (retries > 0 && (err?.name === 'AbortError' || err?.message?.includes('abort'))) {
+      return fetchFeed(offset, timeoutMs, retries - 1);
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
