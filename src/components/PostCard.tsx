@@ -1,1 +1,260 @@
-J3VzZSBjbGllbnQnOwoKaW1wb3J0IHsgdXNlRWZmZWN0LCB1c2VSZWYsIHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnOwppbXBvcnQgTGluayBmcm9tICduZXh0L2xpbmsnOwppbXBvcnQgUmVhY3Rpb25CdXR0b24sIHsgUkVBQ1RJT05TIH0gZnJvbSAnLi9SZWFjdGlvbkJ1dHRvbic7CmltcG9ydCBSZWFjdGlvbkljb24gZnJvbSAnLi9SZWFjdGlvbkljb24nOwppbXBvcnQgUG9zdE1lbnUgZnJvbSAnLi9Qb3N0TWVudSc7CmltcG9ydCBGb2xsb3dCdXR0b24gZnJvbSAnLi9Gb2xsb3dCdXR0b24nOwppbXBvcnQgUG9zdENvbnRlbnQgZnJvbSAnLi9Qb3N0Q29udGVudCc7CmltcG9ydCB7IGhpZGVQb3N0LCByZWNvcmRQb3N0VmlldyB9IGZyb20gJ0AvbGliL2FwaS9wb3N0QXBpJzsKaW1wb3J0IFZlcmlmaWVkQmFkZ2UgZnJvbSAnLi9WZXJpZmllZEJhZGdlJzsKCmZ1bmN0aW9uIEF2YXRhcih7IHVybCwgbmFtZSwgc2l6ZSA9IDEwIH06IHsgdXJsPzogc3RyaW5nOyBuYW1lPzogc3RyaW5nOyBzaXplPzogbnVtYmVyIH0pIHsKICBjb25zdCBzaXplQ2xhc3MgPSBzaXplID09PSAxMCA/ICdoLTEwIHctMTAgdGV4dC1zbScgOiAnaC03IHctNyB0ZXh0LVsxMXB4XSc7CiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPXtgZmxleCAke3NpemVDbGFzc30gc2hyaW5rLTAgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIG92ZXJmbG93LWhpZGRlbiByb3VuZGVkLWZ1bGwgYmctc2xhdGUtMjAwIGJnLWNvdmVyIGJnLWNlbnRlciBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtNjAwYH0gc3R5bGU9e3VybCA/IHsgYmFja2dyb3VuZEltYWdlOiBgdXJsKCR7dXJsfSlgIH0gOiB7fX0+CiAgICAgIHshdXJsICYmIChuYW1lPy5bMF0/LnRvVXBwZXJDYXNlKCkgfHwgJz8nKX0KICAgIDwvZGl2PgogICk7Cn0KZnVuY3Rpb24gQ29tbWVudEljb24oKSB7CiAgcmV0dXJuICgKICAgIDxzdmcgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2VXaWR0aD0iMi4yIiBzdHJva2VMaW5lY2FwPSJyb3VuZCIgc3Ryb2tlTGluZWpvaW49InJvdW5kIj4KICAgICAgPHBhdGggZD0iTTIxIDExLjVhOC4zOCA4LjM4IDAgMDEtLjkgMy44IDguNSA4LjUgMCAwMS03LjYgNC43IDguMzggOC4zOCAwIDAxLTMuOC0uOUwzIDIxbDEuOS01LjdhOC4zOCA4LjM4IDAgMDEtLjktMy44IDguNSA4LjUgMCAwMTQuNy03LjYgOC4zOCA4LjM4IDAgMDEzLjgtLjloLjVhOC40OCA4LjQ4IDAgMDE4IDh2LjV6IiAvPgogICAgPC9zdmc+CiAgKTsKfQpmdW5jdGlvbiBTaGFyZUljb24oKSB7CiAgcmV0dXJuICgKICAgIDxzdmcgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2VXaWR0aD0iMi4yIiBzdHJva2VMaW5lY2FwPSJyb3VuZCIgc3Ryb2tlTGluZWpvaW49InJvdW5kIj4KICAgICAgPGNpcmNsZSBjeD0iMTgiIGN5PSI1IiByPSIyLjUiIC8+PGNpcmNsZSBjeD0iNiIgY3k9IjEyIiByPSIyLjUiIC8+PGNpcmNsZSBjeD0iMTgiIGN5PSIxOSIgcj0iMi41IiAvPgogICAgICA8bGluZSB4MT0iOC4zIiB5MT0iMTAuNyIgeDI9IjE1LjciIHkyPSI2LjMiIC8+PGxpbmUgeDE9IjguMyIgeTE9IjEzLjMiIHgyPSIxNS43IiB5Mj0iMTcuNyIgLz4KICAgIDwvc3ZnPgogICk7Cn0KZnVuY3Rpb24gUmVwb3N0SWNvbigpIHsKICByZXR1cm4gKAogICAgPHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIj4KICAgICAgPHBvbHlsaW5lIHBvaW50cz0iMTcgMSAyMSA1IDE3IDkiIC8+PHBhdGggZD0iTTMgMTFWOWE0IDQgMCAwMTQtNGgxNCIgLz4KICAgICAgPHBvbHlsaW5lIHBvaW50cz0iNyAyMyAzIDE5IDcgMTUiIC8+PHBhdGggZD0iTTIxIDEzdjJhNCA0IDAgMDEtNCA0SDMiIC8+CiAgICA8L3N2Zz4KICApOwp9CmNvbnN0IFBPU1RfQkFDS0dST1VORF9DTEFTU0VTOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0gewogIHN1bnNldDogJ2JnLWdyYWRpZW50LXRvLWJyIGZyb20tb3JhbmdlLTQwMCB2aWEtcGluay01MDAgdG8tcHVycGxlLTYwMCcsCiAgb2NlYW46ICdiZy1ncmFkaWVudC10by1iciBmcm9tLWN5YW4tNDAwIHZpYS1ibHVlLTUwMCB0by1pbmRpZ28tNjAwJywKICB2aW9sZXQ6ICdiZy1ncmFkaWVudC10by1iciBmcm9tLXZpb2xldC01MDAgdmlhLWZ1Y2hzaWEtNTAwIHRvLXBpbmstNTAwJywKICBtaW50OiAnYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1lbWVyYWxkLTMwMCB2aWEtdGVhbC00MDAgdG8tY3lhbi01MDAnLAogIHBlYWNoOiAnYmctZ3JhZGllbnQtdG8tYnIgZnJvbS15ZWxsb3ctMzAwIHZpYS1vcmFuZ2UtNDAwIHRvLXJvc2UtNTAwJywKICBuaWdodDogJ2JnLWdyYWRpZW50LXRvLWJyIGZyb20tc2xhdGUtNzAwIHZpYS1zbGF0ZS05MDAgdG8tYmxhY2snLAogIHJvc2U6ICdiZy1ncmFkaWVudC10by1iciBmcm9tLXJvc2UtNDAwIHZpYS1yZWQtNTAwIHRvLXBpbmstNjAwJywKICBza3k6ICdiZy1ncmFkaWVudC10by1iciBmcm9tLXNreS0zMDAgdmlhLWJsdWUtNDAwIHRvLWluZGlnby01MDAnLAp9OwoKZnVuY3Rpb24gQ2xvc2VJY29uKCkgewogIHJldHVybiAoCiAgICA8c3ZnIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlV2lkdGg9IjIiPgogICAgICA8bGluZSB4MT0iNiIgeTE9IjYiIHgyPSIxOCIgeTI9IjE4IiAvPjxsaW5lIHgxPSI2IiB5MT0iMTgiIHgyPSIxOCIgeTI9IjYiIC8+CiAgICA8L3N2Zz4KICApOwp9CmV4cG9ydCBmdW5jdGlvbiB0aW1lQWdvKGRhdGVTdHI6IHN0cmluZykgewogIGNvbnN0IHNlY29uZHMgPSBNYXRoLmZsb29yKChEYXRlLm5vdygpIC0gbmV3IERhdGUoZGF0ZVN0cikuZ2V0VGltZSgpKSAvIDEwMDApOwogIGlmIChzZWNvbmRzIDwgNjApIHJldHVybiAnbm93JzsKICBjb25zdCBtaW51dGVzID0gTWF0aC5mbG9vcihzZWNvbmRzIC8gNjApOwogIGlmIChtaW51dGVzIDwgNjApIHJldHVybiBgJHttaW51dGVzfW1gOwogIGNvbnN0IGhvdXJzID0gTWF0aC5mbG9vcihtaW51dGVzIC8gNjApOwogIGlmIChob3VycyA8IDI0KSByZXR1cm4gYCR7aG91cnN9aGA7CiAgY29uc3QgZGF5cyA9IE1hdGguZmxvb3IoaG91cnMgLyAyNCk7CiAgaWYgKGRheXMgPCA3KSByZXR1cm4gYCR7ZGF5c31kYDsKICBpZiAoZGF5cyA8IDMwKSByZXR1cm4gYCR7TWF0aC5mbG9vcihkYXlzIC8gNyl9d2A7CiAgY29uc3QgbW9udGhzID0gTWF0aC5mbG9vcihkYXlzIC8gMzApOwogIGlmIChtb250aHMgPCAxMikgcmV0dXJuIGAke21vbnRoc31tb2A7CiAgcmV0dXJuIGAke01hdGguZmxvb3IoZGF5cyAvIDM2NSl9eWA7Cn0KCmZ1bmN0aW9uIFJlYWN0aW9uU3VtbWFyeSh7IHBvc3QsIGNvdW50RGVsdGEgPSAwIH06IHsgcG9zdDogYW55OyBjb3VudERlbHRhPzogbnVtYmVyIH0pIHsKICBjb25zdCB0b3BSZWFjdGlvbnMgPSBwb3N0LnJlYWN0aW9uQ291bnRzCiAgICA/IE9iamVjdC5lbnRyaWVzKHBvc3QucmVhY3Rpb25Db3VudHMgYXMgUmVjb3JkPHN0cmluZywgbnVtYmVyPikKICAgICAgICAuc29ydCgoYSwgYikgPT4gYlsxXSAtIGFbMV0pCiAgICAgICAgLnNsaWNlKDAsIDMpCiAgICAgICAgLm1hcCgoW3R5cGVdKSA9PiB0eXBlKQogICAgOiBbXTsKCiAgY29uc3QgbGl2ZUNvbW1lbnRDb3VudCA9IE1hdGgubWF4KDAsIChwb3N0LmNvbW1lbnRDb3VudCB8fCAwKSArIGNvdW50RGVsdGEpOwogIGNvbnN0IGhhc0FueSA9IChwb3N0Lmxpa2VDb3VudCA+IDApIHx8IChsaXZlQ29tbWVudENvdW50ID4gMCkgfHwgKHBvc3Quc2hhcmVDb3VudCA+IDApOwogIGlmICghaGFzQW55KSByZXR1cm4gbnVsbDsKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJtdC0xIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBweC0zIHBiLTIgdGV4dC14cyB0ZXh0LXNsYXRlLTUwMCI+CiAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciI+CiAgICAgICAge3RvcFJlYWN0aW9ucy5tYXAoKHR5cGUsIGkpID0+ICgKICAgICAgICAgIDxzcGFuCiAgICAgICAgICAgIGtleT17dHlwZX0KICAgICAgICAgICAgY2xhc3NOYW1lPSJmbGV4IGgtNiB3LTYgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtZnVsbCBib3JkZXItMiBib3JkZXItd2hpdGUgc2hhZG93LXNtIgogICAgICAgICAgICBzdHlsZT17eyBtYXJnaW5MZWZ0OiBpID09PSAwID8gMCA6IC03LCB6SW5kZXg6IHRvcFJlYWN0aW9ucy5sZW5ndGggLSBpIH19CiAgICAgICAgICA+CiAgICAgICAgICAgIDxSZWFjdGlvbkljb24gdHlwZT17dHlwZX0gc2l6ZT17MjJ9IC8+CiAgICAgICAgICA8L3NwYW4+CiAgICAgICAgKSl9CiAgICAgICAge3Bvc3QubGlrZUNvdW50ID4gMCAmJiA8c3BhbiBjbGFzc05hbWU9Im1sLTEuNSI+e3Bvc3QubGlrZUNvdW50fTwvc3Bhbj59CiAgICAgIDwvZGl2PgogICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBnYXAtMyI+CiAgICAgICAge2xpdmVDb21tZW50Q291bnQgPiAwICYmIDxzcGFuPntsaXZlQ29tbWVudENvdW50fSBjb21tZW50czwvc3Bhbj59CiAgICAgICAge3Bvc3Quc2hhcmVDb3VudCA+IDAgJiYgPHNwYW4gY2xhc3NOYW1lPSJyb3VuZGVkLWZ1bGwgYmctc2xhdGUtMTAwIHB4LTIgcHktMC41IGZvbnQtbWVkaXVtIj57cG9zdC5zaGFyZUNvdW50fSBzaGFyZXM8L3NwYW4+fQogICAgICA8L2Rpdj4KICAgIDwvZGl2PgogICk7Cn0KCmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIFBvc3RDYXJkKHsgcG9zdCwgY3VycmVudFVzZXIsIG9uUmVhY3Rpb25DaGFuZ2UsIG9uVG9nZ2xlQ29tbWVudHMsIG9uU2hhcmUsIG9uVXBkYXRlZCwgb25EZWxldGVkLCBvZmZsaW5lID0gZmFsc2UgfTogYW55KSB7CiAgY29uc3QgaXNPd25lciA9IGN1cnJlbnRVc2VyPy51c2VybmFtZSA9PT0gcG9zdD8uYXV0aG9yPy51c2VybmFtZTsKICBjb25zdCBbaGlkaW5nLCBzZXRIaWRpbmddID0gdXNlU3RhdGUoZmFsc2UpOwogIGNvbnN0IFtjb3VudERlbHRhLCBzZXRDb3VudERlbHRhXSA9IHVzZVN0YXRlKDApOwogIC8vIEd1YXJkOiBza2lwIHBvc3RzIHdpdGggbWlzc2luZyBhdXRob3IgKHByZXZlbnRzIGNyYXNoKQogIGlmICghcG9zdD8uYXV0aG9yKSByZXR1cm4gbnVsbDsKCiAgLy8gTGl2ZSBjb21tZW50IGNvdW50IHVwZGF0ZXMgKGFkZC9kZWxldGUpIHdpdGhvdXQgcGFyZW50IHJlZmV0Y2gKICB1c2VFZmZlY3QoKCkgPT4gewogICAgZnVuY3Rpb24gb25Db3VudENoYW5nZShlOiBhbnkpIHsKICAgICAgaWYgKGUuZGV0YWlsPy5wb3N0SWQgPT09IHBvc3QuaWQgJiYgdHlwZW9mIGUuZGV0YWlsPy5kZWx0YSA9PT0gJ251bWJlcicpIHsKICAgICAgICBzZXRDb3VudERlbHRhKChkKSA9PiBkICsgZS5kZXRhaWwuZGVsdGEpOwogICAgICB9CiAgICB9CiAgICB3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcignZnJpYW56by1jb21tZW50LWNvdW50Jywgb25Db3VudENoYW5nZSk7CiAgICByZXR1cm4gKCkgPT4gd2luZG93LnJlbW92ZUV2ZW50TGlzdGVuZXIoJ2ZyaWFuem8tY29tbWVudC1jb3VudCcsIG9uQ291bnRDaGFuZ2UpOwogIH0sIFtwb3N0LmlkXSk7CiAgY29uc3QgY2FyZFJlZiA9IHVzZVJlZjxIVE1MRGl2RWxlbWVudD4obnVsbCk7CiAgY29uc3Qgdmlld2VkUmVmID0gdXNlUmVmKGZhbHNlKTsKCiAgdXNlRWZmZWN0KCgpID0+IHsKICAgIGlmIChvZmZsaW5lIHx8ICFjYXJkUmVmLmN1cnJlbnQpIHJldHVybjsKICAgIGNvbnN0IGVsID0gY2FyZFJlZi5jdXJyZW50OwogICAgY29uc3Qgb2JzZXJ2ZXIgPSBuZXcgSW50ZXJzZWN0aW9uT2JzZXJ2ZXIoKGVudHJpZXMpID0+IHsKICAgICAgaWYgKGVudHJpZXNbMF0uaXNJbnRlcnNlY3RpbmcgJiYgIXZpZXdlZFJlZi5jdXJyZW50KSB7CiAgICAgICAgdmlld2VkUmVmLmN1cnJlbnQgPSB0cnVlOwogICAgICAgIHJlY29yZFBvc3RWaWV3KHBvc3QuaWQpLmNhdGNoKCgpID0+IHsgdmlld2VkUmVmLmN1cnJlbnQgPSBmYWxzZTsgfSk7CiAgICAgIH0KICAgIH0sIHsgdGhyZXNob2xkOiAwLjYgfSk7CiAgICBvYnNlcnZlci5vYnNlcnZlKGVsKTsKICAgIHJldHVybiAoKSA9PiBvYnNlcnZlci5kaXNjb25uZWN0KCk7CiAgfSwgW3Bvc3QuaWQsIG9mZmxpbmVdKTsKCiAgYXN5bmMgZnVuY3Rpb24gaGFuZGxlSGlkZUNsaWNrKCkgewogICAgaWYgKGhpZGluZykgcmV0dXJuOwogICAgc2V0SGlkaW5nKHRydWUpOwogICAgY29uc3QgcmVzdWx0ID0gYXdhaXQgaGlkZVBvc3QocG9zdC5pZCk7CiAgICBpZiAocmVzdWx0LnN1Y2Nlc3MpIG9uRGVsZXRlZChwb3N0LmlkKTsKICAgIGVsc2Ugc2V0SGlkaW5nKGZhbHNlKTsKICB9CgogIHJldHVybiAoCiAgICA8ZGl2IHJlZj17Y2FyZFJlZn0gY2xhc3NOYW1lPSJ3LWZ1bGwgb3ZlcmZsb3ctaGlkZGVuIGJvcmRlci1iLVs4cHhdIGJvcmRlci1zbGF0ZS0xMDAgYmctd2hpdGUiIG9uQ29udGV4dE1lbnU9eyhlKSA9PiBlLnByZXZlbnREZWZhdWx0KCl9PgogICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1zdGFydCBqdXN0aWZ5LWJldHdlZW4gcC0zIHBiLTIiPgogICAgICAgIHtwb3N0Lm9yaWdpbmFsUG9zdCA/ICgKICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IG1pbi13LTAgZmxleC0xIGl0ZW1zLWNlbnRlciBnYXAtMSB0ZXh0LXhzIHRleHQtc2xhdGUtNTAwIj4KICAgICAgICAgICAgPFJlcG9zdEljb24gLz4KICAgICAgICAgICAgPExpbmsgaHJlZj17YC91LyR7cG9zdC5hdXRob3IudXNlcm5hbWV9YH0gY2xhc3NOYW1lPSJtYXgtdy1bNDUlXSB0cnVuY2F0ZSBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtOTAwIj57cG9zdC5hdXRob3IuZGlzcGxheU5hbWV9PC9MaW5rPntwb3N0LmF1dGhvci5pc1ZlcmlmaWVkICYmIDxzcGFuIGNsYXNzTmFtZT0ic2hyaW5rLTAiPjxWZXJpZmllZEJhZGdlIC8+PC9zcGFuPn0KICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJzaHJpbmstMCB3aGl0ZXNwYWNlLW5vd3JhcCI+cmVwb3N0ZWQgwrcge3RpbWVBZ28ocG9zdC5jcmVhdGVkQXQpfTwvc3Bhbj4KICAgICAgICAgIDwvZGl2PgogICAgICAgICkgOiAoCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBtaW4tdy0wIGZsZXgtMSBpdGVtcy1jZW50ZXIgZ2FwLTIuNSI+CiAgICAgICAgICAgIDxMaW5rIGhyZWY9e2AvdS8ke3Bvc3QuYXV0aG9yLnVzZXJuYW1lfWB9PgogICAgICAgICAgICAgIDxBdmF0YXIgdXJsPXtwb3N0LmF1dGhvci5wcm9maWxlUGljdHVyZVVybH0gbmFtZT17cG9zdC5hdXRob3IuZGlzcGxheU5hbWV9IC8+CiAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIGxlYWRpbmctdGlnaHQiPgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IG1pbi13LTAgaXRlbXMtY2VudGVyIGdhcC0xLjUiPgogICAgICAgICAgICAgICAgPExpbmsgaHJlZj17YC91LyR7cG9zdC5hdXRob3IudXNlcm5hbWV9YH0gdGl0bGU9e3Bvc3QuYXV0aG9yLmRpc3BsYXlOYW1lfQogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9Im1pbi13LTAgbWF4LXctWzYwJV0gdHJ1bmNhdGUgdGV4dC1bMTVweF0gZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTkwMCIKICAgICAgICAgICAgICAgID4KICAgICAgICAgICAgICAgICAge3Bvc3QuYXV0aG9yLmRpc3BsYXlOYW1lfTwvTGluaz57cG9zdC5hdXRob3IuaXNWZXJpZmllZCAmJiA8c3BhbiBjbGFzc05hbWU9InNocmluay0wIj48VmVyaWZpZWRCYWRnZSAvPjwvc3Bhbj59CiAgICAgICAgICAgICAgICB7IWlzT3duZXIgJiYgIW9mZmxpbmUgJiYgKAogICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9InNocmluay0wIHdoaXRlc3BhY2Utbm93cmFwIj4KICAgICAgICAgICAgICAgICAgICA8Rm9sbG93QnV0dG9uIHVzZXJJZD17cG9zdC5hdXRob3IuaWR9IHN0YXR1cz17cG9zdC5mcmllbmRTdGF0dXN9IC8+CiAgICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgICl9CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAge3Bvc3QudGFnZ2VkVXNlcnM/Lmxlbmd0aCA+IDAgJiYgKAogICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJibG9jayB0ZXh0LXhzIHRleHQtc2xhdGUtNTAwIj4KICAgICAgICAgICAgICAgICAgd2l0aHsnICd9CiAgICAgICAgICAgICAgICAgIHtwb3N0LnRhZ2dlZFVzZXJzLm1hcCgodDogYW55LCBpOiBudW1iZXIpID0+ICgKICAgICAgICAgICAgICAgICAgICA8c3BhbiBrZXk9e3QuaWR9PgogICAgICAgICAgICAgICAgICAgICAge2kgPiAwICYmICcsICd9CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9ImZvbnQtbWVkaXVtIHRleHQtc2xhdGUtNzAwIj57dC5kaXNwbGF5TmFtZX08L3NwYW4+CiAgICAgICAgICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgICAgICAgICApKX0KICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICApfQogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idGV4dC14cyB0ZXh0LXNsYXRlLTUwMCI+e3RpbWVBZ28ocG9zdC5jcmVhdGVkQXQpfXtwb3N0LmxvY2F0aW9uICYmIDw+IMK3IHtwb3N0LmxvY2F0aW9ufTwvPn0KICAgICAgICAgICAgICAgIHtwb3N0LmlzUGlubmVkICYmIDxzcGFuIGNsYXNzTmFtZT0ibWwtMS41IGlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBnYXAtMC41IHJvdW5kZWQtZnVsbCBiZy1zbGF0ZS0xMDAgcHgtMS41IHB5LTAuNSB0ZXh0LVsxMHB4XSBmb250LW1lZGl1bSB0ZXh0LXNsYXRlLTYwMCI+8J+TjCBQaW5uZWQ8L3NwYW4+fQogICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICApfQogICAgICAgIHshb2ZmbGluZSAmJiAoCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBzaHJpbmstMCBpdGVtcy1jZW50ZXIgZ2FwLTAuNSI+CiAgICAgICAgICAgIDxQb3N0TWVudSBwb3N0SWQ9e3Bvc3QuaWR9IGF1dGhvcklkPXtwb3N0LmF1dGhvci5pZH0gaXNPd25lcj17aXNPd25lcn0gY29udGVudD17cG9zdC5jb250ZW50fSBjb21tZW50QXVkaWVuY2U9e3Bvc3QuY29tbWVudEF1ZGllbmNlfSBmcmllbmRTdGF0dXM9e3Bvc3QuZnJpZW5kU3RhdHVzfSBpc1Bpbm5lZD17cG9zdC5pc1Bpbm5lZH0KICAgICAgICAgICAgICBvblVwZGF0ZWQ9eyhjb250ZW50OiBzdHJpbmcsIGNvbW1lbnRBdWRpZW5jZTogc3RyaW5nKSA9PiBvblVwZGF0ZWQocG9zdC5pZCwgY29udGVudCwgY29tbWVudEF1ZGllbmNlKX0KICAgICAgICAgICAgICBvbkRlbGV0ZWQ9eygpID0+IG9uRGVsZXRlZChwb3N0LmlkKX0KICAgICAgICAgICAgICBvblBpblRvZ2dsZT17KHBpbm5lZDogYm9vbGVhbikgPT4gb25VcGRhdGVkKHBvc3QuaWQsIHBvc3QuY29udGVudCwgcG9zdC5jb21tZW50QXVkaWVuY2UsIHBpbm5lZCl9IC8+CiAgICAgICAgICAgIDxidXR0b24KICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVIaWRlQ2xpY2t9CiAgICAgICAgICAgICAgZGlzYWJsZWQ9e2hpZGluZ30KICAgICAgICAgICAgICBhcmlhLWxhYmVsPSJIaWRlIHRoaXMgcG9zdCIKICAgICAgICAgICAgICBjbGFzc05hbWU9InJvdW5kZWQtZnVsbCBwLTEgdGV4dC1zbGF0ZS01MDAgaG92ZXI6Ymctc2xhdGUtMTAwIGRpc2FibGVkOm9wYWNpdHktNTAiCiAgICAgICAgICAgID4KICAgICAgICAgICAgICA8Q2xvc2VJY29uIC8+CiAgICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgKX0KICAgICAgPC9kaXY+CgogICAgICB7cG9zdC5jb250ZW50ICYmIChwb3N0LmJhY2tncm91bmRTdHlsZSAmJiAhcG9zdC5pbWFnZVVybCA/ICgKICAgICAgICA8ZGl2IGNsYXNzTmFtZT17YG14LTMgbWItMiBmbGV4IG1pbi1oLTU2IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLTJ4bCBwLTYgdGV4dC1jZW50ZXIgJHtQT1NUX0JBQ0tHUk9VTkRfQ0xBU1NFU1twb3N0LmJhY2tncm91bmRTdHlsZV0gfHwgJyd9YH0+CiAgICAgICAgICA8UG9zdENvbnRlbnQgdGV4dD17cG9zdC5jb250ZW50fSBjbGFzc05hbWU9IndoaXRlc3BhY2UtcHJlLXdyYXAgdGV4dC0yeGwgZm9udC1ib2xkIGxlYWRpbmctc251ZyB0ZXh0LXdoaXRlIiAvPgogICAgICAgIDwvZGl2PgogICAgICApIDogKAogICAgICAgIDxQb3N0Q29udGVudCB0ZXh0PXtwb3N0LmNvbnRlbnR9IGNsYXNzTmFtZT0id2hpdGVzcGFjZS1wcmUtd3JhcCBweC0zIHBiLTIgdGV4dC1bMTVweF0gbGVhZGluZy1zbnVnIHRleHQtc2xhdGUtOTAwIiAvPgogICAgICApKX0KICAgICAge3Bvc3QuaW1hZ2VVcmwgJiYgPGltZyBzcmM9e3Bvc3QuaW1hZ2VVcmx9IGFsdD17cG9zdC5jb250ZW50ID8gcG9zdC5jb250ZW50LnNsaWNlKDAsIDEyMCkgOiBgUGhvdG8gYnkgJHtwb3N0LmF1dGhvci5kaXNwbGF5TmFtZX1gfSBjbGFzc05hbWU9InctZnVsbCIgZHJhZ2dhYmxlPXtmYWxzZX0gbG9hZGluZz0ibGF6eSIgZGVjb2Rpbmc9ImFzeW5jIiBvbkNvbnRleHRNZW51PXsoZSkgPT4gZS5wcmV2ZW50RGVmYXVsdCgpfSBzdHlsZT17eyBXZWJraXRUb3VjaENhbGxvdXQ6ICJub25lIiB9fSAvPn0KCiAgICAgIHtwb3N0Lm9yaWdpbmFsUG9zdCAmJiAoCiAgICAgICAgPGRpdiBjbGFzc05hbWU9Im14LTMgbWItMiByb3VuZGVkLWxnIGJvcmRlciBwLTMiPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggbWluLXctMCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSI+CiAgICAgICAgICAgIDxMaW5rIGhyZWY9e2AvdS8ke3Bvc3Qub3JpZ2luYWxQb3N0LmF1dGhvci51c2VybmFtZX1gfT4KICAgICAgICAgICAgICA8QXZhdGFyIHVybD17cG9zdC5vcmlnaW5hbFBvc3QuYXV0aG9yLnByb2ZpbGVQaWN0dXJlVXJsfSBuYW1lPXtwb3N0Lm9yaWdpbmFsUG9zdC5hdXRob3IuZGlzcGxheU5hbWV9IC8+CiAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIGxlYWRpbmctdGlnaHQiPgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IG1pbi13LTAgaXRlbXMtY2VudGVyIGdhcC0xIj4KICAgICAgICAgICAgICAgIDxMaW5rIGhyZWY9e2AvdS8ke3Bvc3Qub3JpZ2luYWxQb3N0LmF1dGhvci51c2VybmFtZX1gfSBjbGFzc05hbWU9Im1pbi13LTAgdHJ1bmNhdGUgdGV4dC1bMTVweF0gZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTkwMCI+e3Bvc3Qub3JpZ2luYWxQb3N0LmF1dGhvci5kaXNwbGF5TmFtZX08L0xpbms+CiAgICAgICAgICAgICAgICB7cG9zdC5vcmlnaW5hbFBvc3QuYXV0aG9yLmlzVmVyaWZpZWQgJiYgPHNwYW4gY2xhc3NOYW1lPSJzaHJpbmstMCI+PFZlcmlmaWVkQmFkZ2UgLz48L3NwYW4+fQogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idGV4dC14cyB0ZXh0LXNsYXRlLTUwMCI+e3RpbWVBZ28ocG9zdC5vcmlnaW5hbFBvc3QuY3JlYXRlZEF0KX08L3NwYW4+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9kaXY+CiAgICAgICAgICB7cG9zdC5vcmlnaW5hbFBvc3QuY29udGVudCAmJiAocG9zdC5vcmlnaW5hbFBvc3QuYmFja2dyb3VuZFN0eWxlICYmICFwb3N0Lm9yaWdpbmFsUG9zdC5pbWFnZVVybCA/ICgKICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e2BtdC0yIGZsZXggbWluLWgtNDAgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtbGcgcC01IHRleHQtY2VudGVyICR7UE9TVF9CQUNLR1JPVU5EX0NMQVNTRVNbcG9zdC5vcmlnaW5hbFBvc3QuYmFja2dyb3VuZFN0eWxlXSB8fCAnJ31gfT4KICAgICAgICAgICAgICA8UG9zdENvbnRlbnQgdGV4dD17cG9zdC5vcmlnaW5hbFBvc3QuY29udGVudH0gY2xhc3NOYW1lPSJ3aGl0ZXNwYWNlLXByZS13cmFwIHRleHQteGwgZm9udC1ib2xkIHRleHQtd2hpdGUiIC8+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgKSA6ICgKICAgICAgICAgICAgPFBvc3RDb250ZW50IHRleHQ9e3Bvc3Qub3JpZ2luYWxQb3N0LmNvbnRlbnR9IGNsYXNzTmFtZT0ibXQtMiB3aGl0ZXNwYWNlLXByZS13cmFwIHRleHQtc20gdGV4dC1zbGF0ZS04MDAiIC8+CiAgICAgICAgICApKX0KICAgICAgICAgIHtwb3N0Lm9yaWdpbmFsUG9zdC5pbWFnZVVybCAmJiA8aW1nIHNyYz17cG9zdC5vcmlnaW5hbFBvc3QuaW1hZ2VVcmx9IGFsdD17cG9zdC5vcmlnaW5hbFBvc3QuY29udGVudCA/IHBvc3Qub3JpZ2luYWxQb3N0LmNvbnRlbnQuc2xpY2UoMCwgMTIwKSA6IGBQaG90byBieSAke3Bvc3Qub3JpZ2luYWxQb3N0LmF1dGhvci5kaXNwbGF5TmFtZX1gfSBjbGFzc05hbWU9Im10LTIgdy1mdWxsIHJvdW5kZWQtbGciIGRyYWdnYWJsZT17ZmFsc2V9IGxvYWRpbmc9ImxhenkiIGRlY29kaW5nPSJhc3luYyIgb25Db250ZXh0TWVudT17KGUpID0+IGUucHJldmVudERlZmF1bHQoKX0gc3R5bGU9e3sgV2Via2l0VG91Y2hDYWxsb3V0OiAibm9uZSIgfX0gLz59CiAgICAgICAgPC9kaXY+CiAgICAgICl9CgogICAgICA8UmVhY3Rpb25TdW1tYXJ5IHBvc3Q9e3Bvc3R9IGNvdW50RGVsdGE9e2NvdW50RGVsdGF9IC8+CgogICAgICA8ZGl2IGNsYXNzTmFtZT17YGZsZXggaXRlbXMtY2VudGVyIGJvcmRlci10IGJvcmRlci1zbGF0ZS0xMDAgcHgtMiBweS0xICR7b2ZmbGluZSA/ICdwb2ludGVyLWV2ZW50cy1ub25lIG9wYWNpdHktNTAnIDogJyd9YH0+CiAgICAgICAgPFJlYWN0aW9uQnV0dG9uIHBvc3RJZD17cG9zdC5pZH0gbXlSZWFjdGlvbj17cG9zdC5teVJlYWN0aW9ufSBsaWtlQ291bnQ9e3Bvc3QubGlrZUNvdW50fSBvbkNoYW5nZT17KHJlYWN0aW9uOiBzdHJpbmcgfCBudWxsLCBjb3VudDogbnVtYmVyKSA9PiBvblJlYWN0aW9uQ2hhbmdlKHBvc3QuaWQsIHJlYWN0aW9uLCBjb3VudCl9IC8+CiAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXsoKSA9PiBvblRvZ2dsZUNvbW1lbnRzKHBvc3QuaWQpfSBjbGFzc05hbWU9ImZsZXggZmxleC0xIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLWxnIHB5LTEuNSB0ZXh0LXNsYXRlLTYwMCB0cmFuc2l0aW9uLXRyYW5zZm9ybSBkdXJhdGlvbi0xMDAgYWN0aXZlOnNjYWxlLTkwIGFjdGl2ZTpiZy1zbGF0ZS0xMDAiPgogICAgICAgICAgPENvbW1lbnRJY29uIC8+CiAgICAgICAgPC9idXR0b24+CiAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXsoKSA9PiBvblNoYXJlKHBvc3QuaWQpfSBjbGFzc05hbWU9ImZsZXggZmxleC0xIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLWxnIHB5LTEuNSB0ZXh0LXNsYXRlLTYwMCB0cmFuc2l0aW9uLXRyYW5zZm9ybSBkdXJhdGlvbi0xMDAgYWN0aXZlOnNjYWxlLTkwIGFjdGl2ZTpiZy1zbGF0ZS0xMDAiPgogICAgICAgICAgPFNoYXJlSWNvbiAvPgogICAgICAgIDwvYnV0dG9uPgogICAgICA8L2Rpdj4KICAgIDwvZGl2PgogICk7Cn0K
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import ReactionButton, { REACTIONS } from './ReactionButton';
+import ReactionIcon from './ReactionIcon';
+import PostMenu from './PostMenu';
+import FollowButton from './FollowButton';
+import PostContent from './PostContent';
+import { hidePost, recordPostView } from '@/lib/api/postApi';
+import VerifiedBadge from './VerifiedBadge';
+
+function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: number }) {
+  const sizeClass = size === 10 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]';
+  return (
+    <div className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`} style={url ? { backgroundImage: `url(${url})` } : {}}>
+      {!url && (name?.[0]?.toUpperCase() || '?')}
+    </div>
+  );
+}
+function CommentIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+    </svg>
+  );
+}
+function ShareIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" />
+      <line x1="8.3" y1="10.7" x2="15.7" y2="6.3" /><line x1="8.3" y1="13.3" x2="15.7" y2="17.7" />
+    </svg>
+  );
+}
+function RepostIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 014-4h14" />
+      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 01-4 4H3" />
+    </svg>
+  );
+}
+const POST_BACKGROUND_CLASSES: Record<string, string> = {
+  sunset: 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600',
+  ocean: 'bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600',
+  violet: 'bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500',
+  mint: 'bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500',
+  peach: 'bg-gradient-to-br from-yellow-300 via-orange-400 to-rose-500',
+  night: 'bg-gradient-to-br from-slate-700 via-slate-900 to-black',
+  rose: 'bg-gradient-to-br from-rose-400 via-red-500 to-pink-600',
+  sky: 'bg-gradient-to-br from-sky-300 via-blue-400 to-indigo-500',
+};
+
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="6" y1="6" x2="18" y2="18" /><line x1="6" y1="18" x2="18" y2="6" />
+    </svg>
+  );
+}
+export function timeAgo(dateStr: string) {
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (seconds < 60) return 'now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  if (days < 30) return `${Math.floor(days / 7)}w`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo`;
+  return `${Math.floor(days / 365)}y`;
+}
+
+function ReactionSummary({ post, countDelta = 0 }: { post: any; countDelta?: number }) {
+  const topReactions = post.reactionCounts
+    ? Object.entries(post.reactionCounts as Record<string, number>)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([type]) => type)
+    : [];
+
+  const liveCommentCount = Math.max(0, (post.commentCount || 0) + countDelta);
+  const hasAny = (post.likeCount > 0) || (liveCommentCount > 0) || (post.shareCount > 0);
+  if (!hasAny) return null;
+
+  return (
+    <div className="mt-1 flex items-center justify-between px-3 pb-2 text-xs text-slate-500">
+      <div className="flex items-center">
+        {topReactions.map((type, i) => (
+          <span
+            key={type}
+            className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white shadow-sm"
+            style={{ marginLeft: i === 0 ? 0 : -7, zIndex: topReactions.length - i }}
+          >
+            <ReactionIcon type={type} size={22} />
+          </span>
+        ))}
+        {post.likeCount > 0 && <span className="ml-1.5">{post.likeCount}</span>}
+      </div>
+      <div className="flex gap-3">
+        {liveCommentCount > 0 && <span>{liveCommentCount} comments</span>}
+        {post.shareCount > 0 && <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium">{post.shareCount} shares</span>}
+      </div>
+    </div>
+  );
+}
+
+export default function PostCard({ post, currentUser, onReactionChange, onToggleComments, onShare, onUpdated, onDeleted, offline = false }: any) {
+  const isOwner = currentUser?.username === post?.author?.username;
+  const [hiding, setHiding] = useState(false);
+  const [countDelta, setCountDelta] = useState(0);
+  // Guard: skip posts with missing author (prevents crash)
+  if (!post?.author) return null;
+
+  // Live comment count updates (add/delete) without parent refetch
+  useEffect(() => {
+    function onCountChange(e: any) {
+      if (e.detail?.postId === post.id && typeof e.detail?.delta === 'number') {
+        setCountDelta((d) => d + e.detail.delta);
+      }
+    }
+    window.addEventListener('frianzo-comment-count', onCountChange);
+    return () => window.removeEventListener('frianzo-comment-count', onCountChange);
+  }, [post.id]);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const viewedRef = useRef(false);
+
+  useEffect(() => {
+    if (offline || !cardRef.current) return;
+    const el = cardRef.current;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !viewedRef.current) {
+        viewedRef.current = true;
+        recordPostView(post.id).catch(() => { viewedRef.current = false; });
+      }
+    }, { threshold: 0.6 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [post.id, offline]);
+
+  async function handleHideClick() {
+    if (hiding) return;
+    setHiding(true);
+    const result = await hidePost(post.id);
+    if (result.success) onDeleted(post.id);
+    else setHiding(false);
+  }
+
+  return (
+    <div ref={cardRef} className="w-full overflow-hidden border-b-[8px] border-slate-100 bg-white" onContextMenu={(e) => e.preventDefault()}>
+      <div className="flex items-start justify-between p-3 pb-2">
+        {post.originalPost ? (
+          <div className="flex min-w-0 flex-1 items-center gap-1 text-xs text-slate-500">
+            <RepostIcon />
+            <Link href={`/u/${post.author.username}`} className="max-w-[45%] truncate font-semibold text-slate-900">{post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+            <span className="shrink-0 whitespace-nowrap">reposted · {timeAgo(post.createdAt)}</span>
+          </div>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <Link href={`/u/${post.author.username}`}>
+              <Avatar url={post.author.profilePictureUrl} name={post.author.displayName} />
+            </Link>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <Link href={`/u/${post.author.username}`} title={post.author.displayName}
+                  className="min-w-0 max-w-[60%] truncate text-[15px] font-semibold text-slate-900"
+                >
+                  {post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+                {!isOwner && !offline && (
+                  <span className="shrink-0 whitespace-nowrap">
+                    <FollowButton userId={post.author.id} status={post.friendStatus} />
+                  </span>
+                )}
+              </div>
+              {post.taggedUsers?.length > 0 && (
+                <span className="block text-xs text-slate-500">
+                  with{' '}
+                  {post.taggedUsers.map((t: any, i: number) => (
+                    <span key={t.id}>
+                      {i > 0 && ', '}
+                      <span className="font-medium text-slate-700">{t.displayName}</span>
+                    </span>
+                  ))}
+                </span>
+              )}
+              <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> · {post.location}</>}
+                {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">📌 Pinned</span>}
+              </span>
+            </div>
+          </div>
+        )}
+        {!offline && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <PostMenu postId={post.id} authorId={post.author.id} isOwner={isOwner} content={post.content} commentAudience={post.commentAudience} friendStatus={post.friendStatus} isPinned={post.isPinned}
+              onUpdated={(content: string, commentAudience: string) => onUpdated(post.id, content, commentAudience)}
+              onDeleted={() => onDeleted(post.id)}
+              onPinToggle={(pinned: boolean) => onUpdated(post.id, post.content, post.commentAudience, pinned)} />
+            <button
+              onClick={handleHideClick}
+              disabled={hiding}
+              aria-label="Hide this post"
+              className="rounded-full p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {post.content && (post.backgroundStyle && !post.imageUrl ? (
+        <div className={`mx-3 mb-2 flex min-h-56 items-center justify-center rounded-2xl p-6 text-center ${POST_BACKGROUND_CLASSES[post.backgroundStyle] || ''}`}>
+          <PostContent text={post.content} className="whitespace-pre-wrap text-2xl font-bold leading-snug text-white" />
+        </div>
+      ) : (
+        <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
+      ))}
+      {post.imageUrl && <img src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} className="w-full" draggable={false} loading="lazy" decoding="async" onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
+
+      {post.originalPost && (
+        <div className="mx-3 mb-2 rounded-lg border p-3">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Link href={`/u/${post.originalPost.author.username}`}>
+              <Avatar url={post.originalPost.author.profilePictureUrl} name={post.originalPost.author.displayName} />
+            </Link>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="flex min-w-0 items-center gap-1">
+                <Link href={`/u/${post.originalPost.author.username}`} className="min-w-0 truncate text-[15px] font-semibold text-slate-900">{post.originalPost.author.displayName}</Link>
+                {post.originalPost.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+              </div>
+              <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
+            </div>
+          </div>
+          {post.originalPost.content && (post.originalPost.backgroundStyle && !post.originalPost.imageUrl ? (
+            <div className={`mt-2 flex min-h-40 items-center justify-center rounded-lg p-5 text-center ${POST_BACKGROUND_CLASSES[post.originalPost.backgroundStyle] || ''}`}>
+              <PostContent text={post.originalPost.content} className="whitespace-pre-wrap text-xl font-bold text-white" />
+            </div>
+          ) : (
+            <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
+          ))}
+          {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 w-full rounded-lg" draggable={false} loading="lazy" decoding="async" onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
+        </div>
+      )}
+
+      <ReactionSummary post={post} countDelta={countDelta} />
+
+      <div className={`flex items-center border-t border-slate-100 px-2 py-1 ${offline ? 'pointer-events-none opacity-50' : ''}`}>
+        <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
+        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
+          <CommentIcon />
+        </button>
+        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
+          <ShareIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
