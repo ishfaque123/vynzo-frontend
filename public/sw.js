@@ -1,4 +1,4 @@
-const CACHE_NAME = 'frianzo-shell-v3';
+const CACHE_NAME = 'frianzo-shell-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -38,13 +38,12 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match(request).then((cached) => {
-          // Serve exact cached page if available
+          // Only serve cached page for its exact URL - never serve '/' for other pages
+          // (that caused feed HTML to show on dashboard URL)
           if (cached) return cached;
-          // Offline: serve the app shell for any page so client-side offline
-          // handling (IndexedDB cached profiles, etc.) can take over —
-          // like Facebook shows cached content without internet.
-          // The client router renders the correct page based on the URL.
-          return caches.match('/');
+          // For root, serve cached shell; for other pages, let browser show offline
+          if (url.pathname === '/') return caches.match('/');
+          throw new Error('offline');
         }))
     );
     return;
