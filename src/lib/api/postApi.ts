@@ -1,5 +1,12 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Retry delays for 429 (rate limit): 3s, 7s, 15s
+const RETRY_DELAYS = [3000, 7000, 15000];
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function readJson(res: Response) {
   if (res.status === 204 || res.status === 304) return { success: false, error: { message: `Empty server response (HTTP ${res.status}).` } };
   const text = await res.text();
@@ -16,11 +23,17 @@ export async function fetchContentMix() {
   return res.json();
 }
 
-export async function fetchFeed(offset = 0, timeoutMs = 30000, retries = 1) {
+export async function fetchFeed(offset = 0, timeoutMs = 30000, retries = 1, rateLimitRetries = 3) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${API_URL}/api/posts?offset=${offset}`, { credentials: 'include', cache: 'no-store', signal: controller.signal });
+    // Auto-retry on 429 (rate limit) with backoff: 3s, 7s, 15s
+    if (res.status === 429 && rateLimitRetries > 0) {
+      const delay = RETRY_DELAYS[3 - rateLimitRetries] || 15000;
+      await sleep(delay);
+      return fetchFeed(offset, timeoutMs, retries, rateLimitRetries - 1);
+    }
     return readJson(res);
   } catch (err: any) {
     // Retry once on timeout/abort (common on slow mobile data)
