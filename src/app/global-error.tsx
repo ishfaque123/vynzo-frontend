@@ -25,10 +25,10 @@ export default function GlobalError({
         >
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>😟</div>
           <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', color: '#1e293b' }}>
-            Kuch ghalat ho gaya
+            Something went wrong
           </h2>
           <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px', maxWidth: '320px' }}>
-            Internet slow ho sakta hai. Dobara try karein.
+            Please check your connection and try again.
           </p>
           <button
             onClick={() => reset()}
@@ -43,7 +43,7 @@ export default function GlobalError({
               cursor: 'pointer',
             }}
           >
-            Dobara Try Karein
+            Try Again
           </button>
         </div>
       </body>
