@@ -83,6 +83,7 @@ export function clearAdminUserStrikes(userId: string) {
 export function setAdminUserMonetization(userId: string, forced: boolean) {
   return request(`/users/${userId}/monetization`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ forced }),
   });
 }
@@ -90,6 +91,7 @@ export function setAdminUserMonetization(userId: string, forced: boolean) {
 export function addAdminUserEarnings(userId: string, amount: number, note?: string) {
   return request(`/users/${userId}/earnings`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ amount, note }),
   });
 }
