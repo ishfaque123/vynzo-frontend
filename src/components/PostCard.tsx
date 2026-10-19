@@ -16,7 +16,23 @@ import VerifiedBadge from './VerifiedBadge';
  */
 function SmartImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<string>('4/3');
+
+  if (failed) {
+    return (
+      <div className={`flex w-full flex-col items-center justify-center gap-2 bg-slate-800 py-12 text-slate-400 ${className}`} style={{ aspectRatio }}>
+        <span className="text-3xl">🖼️</span>
+        <span className="text-sm">Image failed to load</span>
+        <button
+          onClick={() => { setFailed(false); setLoaded(false); }}
+          className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -25,7 +41,9 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
     >
       {/* Shimmer placeholder */}
       {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800" />
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
+        </div>
       )}
       <img
         src={src}
@@ -43,6 +61,7 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
           }
           setLoaded(true);
         }}
+        onError={() => setFailed(true)}
       />
     </div>
   );
@@ -286,10 +305,10 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
       <div className={`flex items-center border-t border-slate-100 px-2 py-1 ${offline ? 'pointer-events-none opacity-50' : ''}`}>
         <ReactionButton postId={post.id} myReaction={post.myReaction} likeCount={post.likeCount} onChange={(reaction: string | null, count: number) => onReactionChange(post.id, reaction, count)} />
-        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
+        <button onClick={() => onToggleComments(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-3 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
           <CommentIcon />
         </button>
-        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-1.5 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
+        <button onClick={() => onShare(post.id)} className="flex flex-1 items-center justify-center rounded-lg py-3 text-slate-600 transition-transform duration-100 active:scale-90 active:bg-slate-100">
           <ShareIcon />
         </button>
       </div>
