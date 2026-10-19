@@ -10,6 +10,44 @@ import PostContent from './PostContent';
 import { hidePost, recordPostView } from '@/lib/api/postApi';
 import VerifiedBadge from './VerifiedBadge';
 
+/**
+ * Facebook-style image with shimmer placeholder and fade-in.
+ * Prevents layout shift by reserving space with aspect-ratio.
+ */
+function SmartImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<string>('4/3');
+
+  return (
+    <div
+      className={`relative w-full overflow-hidden bg-slate-800 ${className}`}
+      style={{ aspectRatio }}
+    >
+      {/* Shimmer placeholder */}
+      {!loaded && (
+        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ WebkitTouchCallout: 'none' }}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth && img.naturalHeight) {
+            setAspectRatio(`${img.naturalWidth}/${img.naturalHeight}`);
+          }
+          setLoaded(true);
+        }}
+      />
+    </div>
+  );
+}
+
 function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: number }) {
   const sizeClass = size === 10 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]';
   return (
@@ -217,7 +255,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
       ) : (
         <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
       ))}
-      {post.imageUrl && <img src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} className="w-full" draggable={false} loading="lazy" decoding="async" onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
+      {post.imageUrl && <SmartImage src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
 
       {post.originalPost && (
         <div className="mx-3 mb-2 rounded-lg border p-3">
@@ -240,7 +278,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           ) : (
             <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
           ))}
-          {post.originalPost.imageUrl && <img src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 w-full rounded-lg" draggable={false} loading="lazy" decoding="async" onContextMenu={(e) => e.preventDefault()} style={{ WebkitTouchCallout: "none" }} />}
+          {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
         </div>
       )}
 
