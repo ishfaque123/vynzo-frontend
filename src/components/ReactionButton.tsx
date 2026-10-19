@@ -31,6 +31,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   const [justReacted, setJustReacted] = useState(false);
   const pressTimer = useRef<any>(null);
   const openedByHold = useRef(false);
+  const touchHandled = useRef(false);
 
   useEffect(() => {
     function onOtherOpen(e: any) {
@@ -57,13 +58,44 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
     playReactionSound();
     setShowPicker(false);
     setJustReacted(true);
-    const result = await setReaction(postId, type);
-    if (result.success) onChange(result.data.reaction, result.data.likeCount);
+
+    // Optimistic UI: update immediately, sync with server in background
+    const prevReaction = myReaction;
+    const prevCount = likeCount;
+    const newReaction = prevReaction === type ? null : type;
+    const newCount = newReaction ? (prevReaction ? prevCount : prevCount + 1) : prevCount - 1;
+    onChange(newReaction, newCount);
+
+    try {
+      const result = await setReaction(postId, type);
+      if (result.success) {
+        // Sync with server's authoritative values
+        onChange(result.data.reaction, result.data.likeCount);
+      } else {
+        // Revert on failure
+        onChange(prevReaction, prevCount);
+      }
+    } catch {
+      // Revert on network error
+      onChange(prevReaction, prevCount);
+    }
   }
 
   function handleTap() {
     if (openedByHold.current) { openedByHold.current = false; return; }
+    // Skip if touch already handled this tap (prevents double-trigger)
+    if (touchHandled.current) { touchHandled.current = false; return; }
     apply(myReaction ? myReaction : 'like');
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    endPress();
+    // If it was a tap (not a hold to open picker), handle immediately
+    // This is faster than waiting for onClick on mobile
+    if (!openedByHold.current && !showPicker) {
+      touchHandled.current = true;
+      // Call apply directly (not via handleTap, which would see touchHandled and skip)
+      apply(myReaction ? myReaction : 'like');
+    }
   }
   function startPress() {
     openedByHold.current = false;
@@ -132,7 +164,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
       <button
         onClick={handleTap}
         onTouchStart={startPress}
-        onTouchEnd={endPress}
+        onTouchEnd={handleTouchEnd}
         onTouchCancel={endPress}
         onTouchMove={endPress}
         onContextMenu={(e) => e.preventDefault()}
