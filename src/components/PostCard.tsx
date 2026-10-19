@@ -13,11 +13,31 @@ import VerifiedBadge from './VerifiedBadge';
 /**
  * Facebook-style image with shimmer placeholder and fade-in.
  * Prevents layout shift by reserving space with aspect-ratio.
+ * Uses IntersectionObserver for smart lazy loading (only loads when visible).
  */
 function SmartImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<string>('4/3');
+  const ref = useRef<HTMLDivElement>(null);
+
+  // IntersectionObserver: only load image when it's near the viewport
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' } // Start loading 200px before visible
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   if (failed) {
     return (
@@ -36,15 +56,18 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
 
   return (
     <div
+      ref={ref}
       className={`relative w-full overflow-hidden bg-slate-800 ${className}`}
       style={{ aspectRatio }}
     >
       {/* Shimmer placeholder */}
-      {!loaded && (
+      {!loaded && !failed && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
         </div>
       )}
+      {/* Only load image when visible (smart lazy loading) */}
+      {visible && !failed && (
       <img
         src={src}
         alt={alt}
@@ -63,6 +86,7 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
         }}
         onError={() => setFailed(true)}
       />
+      )}
     </div>
   );
 }
