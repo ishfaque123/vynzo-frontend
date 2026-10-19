@@ -32,6 +32,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   const pressTimer = useRef<any>(null);
   const openedByHold = useRef(false);
   const touchHandled = useRef(false);
+  const requestInFlight = useRef(false);
 
   useEffect(() => {
     function onOtherOpen(e: any) {
@@ -55,6 +56,11 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   }
 
   async function apply(type: string) {
+    // Debounce: ignore rapid clicks while a request is in flight
+    // UI already updated optimistically, so user sees instant feedback
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+
     playReactionSound();
     setShowPicker(false);
     setJustReacted(true);
@@ -78,6 +84,8 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
     } catch {
       // Revert on network error
       onChange(prevReaction, prevCount);
+    } finally {
+      requestInFlight.current = false;
     }
   }
 
@@ -172,7 +180,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onMouseUp={endPress}
         onMouseLeave={endPress}
         style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
-        className={`flex w-full select-none items-center justify-center rounded-lg py-1.5 transition-transform duration-100 active:scale-90 ${current ? current.color : 'text-slate-600'}`}
+        className={`flex w-full select-none items-center justify-center rounded-lg py-3 transition-transform duration-100 active:scale-90 ${current ? current.color : 'text-slate-600'}`}
       >
         {current ? (
           myReaction === 'like' ? (
