@@ -39,10 +39,19 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
     return () => observer.disconnect();
   }, []);
 
+  // Slow networks: a stalled connection can hold an image request open
+  // forever without ever firing onError, leaving the spinner running
+  // indefinitely. If the image hasn't loaded within 20s, switch to the
+  // error state (which offers a Retry button) instead of spinning forever.
+  useEffect(() => {
+    if (!visible || loaded || failed) return;
+    const t = setTimeout(() => setFailed(true), 20000);
+    return () => clearTimeout(t);
+  }, [visible, loaded, failed]);
+
   if (failed) {
     return (
       <div className={`flex w-full flex-col items-center justify-center gap-2 bg-slate-800 py-12 text-slate-400 ${className}`} style={{ aspectRatio }}>
-        <span className="text-3xl">🖼️</span>
         <span className="text-sm">Image failed to load</span>
         <button
           onClick={() => { setFailed(false); setLoaded(false); }}
