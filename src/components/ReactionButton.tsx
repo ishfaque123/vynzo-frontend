@@ -33,6 +33,10 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   const openedByHold = useRef(false);
   const touchHandled = useRef(false);
   const requestInFlight = useRef(false);
+  // Scroll fix: remember where the touch started so a drag/scroll that
+  // ends on the button is NOT counted as a tap (prevents auto-like).
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const TAP_SLOP_PX = 10;
 
   useEffect(() => {
     function onOtherOpen(e: any) {
@@ -97,6 +101,18 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   }
   function handleTouchEnd(e: React.TouchEvent) {
     endPress();
+    // Scroll fix: a release that drifted beyond tap-slop is a scroll/drag,
+    // not a tap — never fire a reaction for it.
+    const start = touchStartPos.current;
+    touchStartPos.current = null;
+    if (start) {
+      const t = e.changedTouches?.[0];
+      if (t) {
+        const dx = t.clientX - start.x;
+        const dy = t.clientY - start.y;
+        if (dx * dx + dy * dy > TAP_SLOP_PX * TAP_SLOP_PX) return;
+      }
+    }
     // If it was a tap (not a hold to open picker), handle immediately
     // This is faster than waiting for onClick on mobile
     if (!openedByHold.current && !showPicker) {
@@ -105,11 +121,19 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
       apply(myReaction ? myReaction : 'like');
     }
   }
-  function startPress() {
+  function pointFrom(e: any): { x: number; y: number } | null {
+    const t = e?.touches?.[0] ?? e?.changedTouches?.[0];
+    if (t) return { x: t.clientX, y: t.clientY };
+    if (typeof e?.clientX === 'number') return { x: e.clientX, y: e.clientY };
+    return null;
+  }
+  function startPress(e?: React.TouchEvent | React.MouseEvent) {
     openedByHold.current = false;
+    touchStartPos.current = pointFrom(e);
     pressTimer.current = setTimeout(() => { openPicker(); openedByHold.current = true; }, HOLD_TO_OPEN_MS);
   }
   function endPress() { clearTimeout(pressTimer.current); }
+  function cancelPress() { endPress(); touchStartPos.current = null; }
 
   const current = myReaction ? REACTIONS[myReaction] : null;
   const reactionKeys = Object.keys(REACTIONS);
@@ -173,7 +197,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onClick={handleTap}
         onTouchStart={startPress}
         onTouchEnd={handleTouchEnd}
-        onTouchCancel={endPress}
+        onTouchCancel={cancelPress}
         onTouchMove={endPress}
         onContextMenu={(e) => e.preventDefault()}
         onMouseDown={startPress}
