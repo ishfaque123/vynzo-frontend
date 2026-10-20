@@ -9,6 +9,7 @@ import FollowButton from './FollowButton';
 import PostContent from './PostContent';
 import { hidePost, recordPostView } from '@/lib/api/postApi';
 import VerifiedBadge from './VerifiedBadge';
+import Avatar from './Avatar';
 
 /**
  * Facebook-style image with shimmer placeholder and fade-in.
@@ -121,14 +122,6 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
   );
 }
 
-function Avatar({ url, name, size = 10 }: { url?: string; name?: string; size?: number }) {
-  const sizeClass = size === 10 ? 'h-10 w-10 text-sm' : 'h-7 w-7 text-[11px]';
-  return (
-    <div className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center font-semibold text-slate-600`} style={url ? { backgroundImage: `url(${url})` } : {}}>
-      {!url && (name?.[0]?.toUpperCase() || '?')}
-    </div>
-  );
-}
 function CommentIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
