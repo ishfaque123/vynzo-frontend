@@ -20,7 +20,23 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
   const [failed, setFailed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<string>('4/3');
+  const [retryCount, setRetryCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+
+  function retry() {
+    setLoaded(false);
+    setFailed(false);
+    setRetryCount((c) => c + 1);
+  }
+
+  // FB-style: when the internet comes back, a failed image retries on its
+  // own — the user does not have to tap Retry.
+  useEffect(() => {
+    if (!failed) return;
+    const onOnline = () => retry();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [failed]);
 
   // IntersectionObserver: only load image when it's near the viewport
   useEffect(() => {
@@ -50,15 +66,19 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
   }, [visible, loaded, failed]);
 
   if (failed) {
+    // FB-style: tapping ANYWHERE on the box retries (not just the button).
     return (
-      <div className={`flex w-full flex-col items-center justify-center gap-2 bg-slate-800 py-12 text-slate-400 ${className}`} style={{ aspectRatio }}>
+      <div
+        onClick={retry}
+        className={`flex w-full cursor-pointer flex-col items-center justify-center gap-2 bg-slate-800 py-12 text-slate-400 ${className}`}
+        style={{ aspectRatio }}
+        role="button"
+        aria-label="Retry loading image"
+      >
         <span className="text-sm">Image failed to load</span>
-        <button
-          onClick={() => { setFailed(false); setLoaded(false); }}
-          className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white"
-        >
+        <span className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-medium text-white">
           Retry
-        </button>
+        </span>
       </div>
     );
   }
@@ -78,6 +98,7 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
       {/* Only load image when visible (smart lazy loading) */}
       {visible && !failed && (
       <img
+        key={retryCount}
         src={src}
         alt={alt}
         className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
