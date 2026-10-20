@@ -7,17 +7,11 @@ import FollowButton from './FollowButton';
 import Toast from './Toast';
 import VerifiedBadge from './VerifiedBadge';
 import ReactionIcon from './ReactionIcon';
+import Avatar from './Avatar';
 
 const REACTION_KEYS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 const REACTION_LABELS: Record<string, string> = { like: 'Like', love: 'Love', haha: 'Haha', wow: 'Wow', sad: 'Sad', angry: 'Angry' };
 
-function Avatar({ url, name }: { url?: string; name?: string }) {
-  return (
-    <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center text-[10px] font-semibold text-slate-600" style={url ? { backgroundImage: `url(${url})` } : {}}>
-      {!url && (name?.[0]?.toUpperCase() || '?')}
-    </div>
-  );
-}
 function DotsIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -183,7 +177,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
       `}</style>
       {isReply && <span aria-hidden="true" className="absolute left-0 top-3 h-px w-4 bg-slate-200" />}
       <div className="flex items-start gap-2">
-        <Link href={`/u/${comment.author.username}`} className={isReply ? "scale-90 origin-top" : ""}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} /></Link>
+        <Link href={`/u/${comment.author.username}`} className={isReply ? "scale-90 origin-top" : ""}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} px={24} /></Link>
         <div className="flex-1">
           <div className={`rounded-2xl px-3 py-2 ${isReply ? "bg-slate-50 border border-slate-100" : "bg-slate-100"}`}>
             <div className="flex items-center gap-2">
