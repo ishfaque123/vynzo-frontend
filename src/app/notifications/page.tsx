@@ -55,26 +55,30 @@ const NEVER_GROUP = new Set([
   'verification_rejected',
 ]);
 
-// Group consecutive same-actor + same-type notifications (e.g. 9 reel likes
-// from one person become a single "liked 9 of your reels" row).
+// Group same-actor + same-type notifications wherever they appear in the
+// list (e.g. 9 reel likes from one person become a single "liked 9 of
+// your reels" row, even when post likes are interleaved between them).
 function groupNotifications(list: Notification[]): GroupedNotification[] {
-  const groups: GroupedNotification[] = [];
+  const byKey = new Map<string, GroupedNotification>();
   for (const n of list) {
     const actorId = n.actor?.id || 'none';
     // System types get a unique key so they never merge with anything
     const key = NEVER_GROUP.has(n.type) ? `${n.type}:${actorId}:${n.id}` : `${n.type}:${actorId}`;
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) {
-      last.items.push(n);
-      if (!n.read) last.hasUnread = true;
-      if (new Date(n.createdAt).getTime() > new Date(last.latest.createdAt).getTime()) {
-        last.latest = n;
+    const g = byKey.get(key);
+    if (g) {
+      g.items.push(n);
+      if (!n.read) g.hasUnread = true;
+      if (new Date(n.createdAt).getTime() > new Date(g.latest.createdAt).getTime()) {
+        g.latest = n;
       }
     } else {
-      groups.push({ key, type: n.type, actor: n.actor, items: [n], latest: n, hasUnread: !n.read });
+      byKey.set(key, { key, type: n.type, actor: n.actor, items: [n], latest: n, hasUnread: !n.read });
     }
   }
-  return groups;
+  // Newest activity first — a merged group sits at its latest item's time.
+  return [...byKey.values()].sort(
+    (a, b) => new Date(b.latest.createdAt).getTime() - new Date(a.latest.createdAt).getTime()
+  );
 }
 
 function groupMessage(g: GroupedNotification): string {
