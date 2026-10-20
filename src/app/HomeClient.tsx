@@ -103,8 +103,8 @@ export default function HomePage() {
     }
 
     try {
-      const [result, reelPage1, reelPage2, reelPage3, mixRes] = await Promise.all([
-        fetchFeed(0), fetchReelFeed(0), fetchReelFeed(10), fetchReelFeed(20), fetchContentMix().catch(() => null),
+      const [result, reelPage1, mixRes] = await Promise.all([
+        fetchFeed(0), fetchReelFeed(0), fetchContentMix().catch(() => null),
       ]);
       if (mixRes?.success && typeof mixRes.data?.reelRatio === 'number') {
         const r = mixRes.data.reelRatio;
@@ -122,7 +122,7 @@ export default function HomePage() {
         setFeedError(true);
       }
       const reelPool = new Map<string, any>();
-      for (const page of [reelPage1, reelPage2, reelPage3]) {
+      for (const page of [reelPage1]) {
         if (page.success) for (const r of page.data.reels || []) reelPool.set(r.id, r);
       }
       const sortedReels = [...reelPool.values()].sort((a, b) => {
