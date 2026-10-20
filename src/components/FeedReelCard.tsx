@@ -4,14 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ShareModal from './ShareModal';
 import { toggleReelLike } from '@/lib/api/reelApi';
+import Avatar from './Avatar';
 
-function Avatar({ url, name }: { url?: string; name?: string }) {
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 bg-cover bg-center text-xs font-semibold text-slate-600" style={url ? { backgroundImage: `url(${url})` } : {}}>
-      {!url && (name?.[0]?.toUpperCase() || '?')}
-    </div>
-  );
-}
 function MuteIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -215,7 +209,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
     <>
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center gap-2 px-3 py-2">
-        <Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} />
+        <Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} px={32} />
         <span className="text-sm font-semibold text-slate-800">{reel.author?.displayName}</span>
       </div>
       {reel.caption && <ReelCaption text={reel.caption} />}
