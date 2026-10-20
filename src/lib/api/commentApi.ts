@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+import { compressImageFile } from '../compressImage';
+
 export async function fetchComments(postId: string) {
   const res = await fetch(`${API_URL}/api/comments/${postId}`, { credentials: 'include' });
   return res.json();
@@ -10,7 +12,7 @@ export async function addComment(postId: string, content: string, parentCommentI
   formData.append('content', content);
   if (parentCommentId) formData.append('parentCommentId', parentCommentId);
   formData.append('taggedUserIds', JSON.stringify(taggedUserIds));
-  if (image) formData.append('image', image);
+  if (image) formData.append('image', await compressImageFile(image));
   const res = await fetch(`${API_URL}/api/comments/${postId}`, {
     method: 'POST',
     credentials: 'include',

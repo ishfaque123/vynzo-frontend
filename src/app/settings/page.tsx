@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth/useAuth';
 import { updateProfile } from '@/lib/api/userApi';
+import { compressImageFile } from '@/lib/compressImage';
 import { useRouter } from 'next/navigation';
 import { COUNTRIES } from '@/lib/countries';
 import Toast from '@/components/Toast';
@@ -143,7 +144,7 @@ export default function SettingsPage() {
   async function handleUpload(file: File, type: 'avatar' | 'cover') {
     setUploading(true);
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', await compressImageFile(file));
     const res = await fetch(`${API_URL}/api/upload/${type}`, { method: 'POST', credentials: 'include', body: formData });
     const result = await res.json();
     setUploading(false);

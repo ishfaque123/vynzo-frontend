@@ -8,6 +8,7 @@ import { takePendingComposeImage } from '@/lib/pendingComposeImage';
 import { setPendingNewPost } from '@/lib/pendingNewPost';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import { fetchReelsConfig, fetchMyReelStatus } from '@/lib/api/reelApi';
+import { compressImageFile } from '@/lib/compressImage';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_LENGTH = 2000;
@@ -176,12 +177,15 @@ function ComposeForm() {
   useEffect(() => {
     const pending = takePendingComposeImage();
     if (pending) {
-      if (pending.size > MAX_IMAGE_SIZE) {
-        setVideoNotice('Photo is too large. Please choose a photo smaller than 5 MB.');
-        return;
-      }
-      setImage(pending);
-      setImagePreview(URL.createObjectURL(pending));
+      (async () => {
+        const light = await compressImageFile(pending);
+        if (light.size > MAX_IMAGE_SIZE) {
+          setVideoNotice('Photo is too large. Please choose a photo smaller than 5 MB.');
+          return;
+        }
+        setImage(light);
+        setImagePreview(URL.createObjectURL(light));
+      })();
     }
   }, []);
 
@@ -225,16 +229,17 @@ function ComposeForm() {
     textarea.style.height = `${textarea.scrollHeight}px`;
   }, [content]);
 
-  function handlePickImage(file: File) {
-    if (file.size > MAX_IMAGE_SIZE) {
+  async function handlePickImage(file: File) {
+    const light = await compressImageFile(file);
+    if (light.size > MAX_IMAGE_SIZE) {
       setVideoNotice('Photo is too large. Please choose a photo smaller than 5 MB.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
     if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImage(file);
+    setImage(light);
     setBackgroundStyle(null);
-    setImagePreview(URL.createObjectURL(file));
+    setImagePreview(URL.createObjectURL(light));
   }
   async function handleVideoPicked(file: File) {
     if (!file.type.startsWith('video/')) {

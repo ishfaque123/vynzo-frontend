@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+import { compressImageFile } from '../compressImage';
+
 export async function fetchUserProfile(username: string) {
   const res = await fetch(`${API_URL}/api/users/${username}`, { credentials: 'include' });
   return res.json();
@@ -111,7 +113,7 @@ export async function reportUser(userId: string, reason: string, details?: strin
 
 export async function updateAvatar(file: File) {
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', await compressImageFile(file));
   const res = await fetch(`${API_URL}/api/users/me/avatar`, {
     method: 'POST',
     credentials: 'include',
@@ -122,7 +124,7 @@ export async function updateAvatar(file: File) {
 
 export async function updateCover(file: File) {
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', await compressImageFile(file));
   const res = await fetch(`${API_URL}/api/users/me/cover`, {
     method: 'POST',
     credentials: 'include',

@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+import { compressImageFile } from '../compressImage';
+
 async function readJson(res: Response) {
   if (res.status === 204 || res.status === 304) return { success: false, error: { message: `Empty server response (HTTP ${res.status}).` } };
   const text = await res.text();
@@ -18,7 +20,7 @@ export async function fetchStatusFeed() {
 
 export async function createStatus(data: { media?: File | null; textContent?: string; bgColor?: string; visibility?: string; stickers?: any[] }) {
   const formData = new FormData();
-  if (data.media) formData.append('media', data.media);
+  if (data.media) formData.append('media', await compressImageFile(data.media));
   if (data.textContent) formData.append('textContent', data.textContent);
   if (data.bgColor) formData.append('bgColor', data.bgColor);
   if (data.visibility) formData.append('visibility', data.visibility);
@@ -97,13 +99,14 @@ export async function removeCloseFriend(userId: string) {
 
 // Uses XMLHttpRequest instead of fetch so we can report upload progress
 // (fetch has no reliable cross-browser upload-progress event).
-export function createStatusWithProgress(
+export async function createStatusWithProgress(
   data: { media?: File | null; textContent?: string; bgColor?: string; visibility?: string; stickers?: any[] },
   onProgress: (pct: number) => void
 ): Promise<any> {
+  const media = data.media ? await compressImageFile(data.media) : null;
   return new Promise((resolve) => {
     const formData = new FormData();
-    if (data.media) formData.append('media', data.media);
+    if (media) formData.append('media', media);
     if (data.textContent) formData.append('textContent', data.textContent);
     if (data.bgColor) formData.append('bgColor', data.bgColor);
     if (data.visibility) formData.append('visibility', data.visibility);

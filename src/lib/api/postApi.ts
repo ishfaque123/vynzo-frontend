@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+import { compressImageFile } from '../compressImage';
+
 // Retry delays for 429 (rate limit): 3s, 7s, 15s
 const RETRY_DELAYS = [3000, 7000, 15000];
 
@@ -56,7 +58,7 @@ export async function createPost(content: string, image?: File | null, visibilit
   formData.append('content', content);
   formData.append('visibility', visibility);
   formData.append('taggedUserIds', JSON.stringify(taggedUserIds));
-  if (image) formData.append('image', image);
+  if (image) formData.append('image', await compressImageFile(image));
   const res = await fetch(`${API_URL}/api/posts`, { method: 'POST', credentials: 'include', cache: 'no-store', body: formData });
   return readJson(res);
 }

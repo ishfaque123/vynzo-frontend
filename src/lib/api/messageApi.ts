@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+import { compressImageFile } from '../compressImage';
+
 export async function fetchConversations() {
   const res = await fetch(`${API_URL}/api/messages/conversations`, { credentials: 'include' });
   return res.json();
@@ -31,8 +33,9 @@ export async function fetchMessages(conversationId: string, cursor?: string) {
 }
 
 export async function uploadChatMedia(file: File | Blob, filename: string) {
+  const out = file instanceof File ? await compressImageFile(file) : file;
   const formData = new FormData();
-  formData.append('file', file, filename);
+  formData.append('file', out, out !== file ? (out as File).name : filename);
   const res = await fetch(`${API_URL}/api/upload/chat`, {
     method: 'POST',
     credentials: 'include',
