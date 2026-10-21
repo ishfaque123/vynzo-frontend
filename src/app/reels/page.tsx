@@ -241,6 +241,12 @@ function ReelItem({ reel, index, active, forcePause, preload, cacheUserId, offli
     if (!active || !cacheUserId || !reel.videoUrl || reel.videoUrl.startsWith('blob:')) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
+      // Never let the offline-cache download compete with playback: it is a
+      // SECOND full download of the same file, and on slow connections it
+      // starves the playing video (spinner until the download finishes).
+      // Cache only once this video is comfortably buffered, never on Data Saver.
+      const v = videoRef.current;
+      if (cancelled || !v || v.readyState < 3 || isDataSaver()) return;
       void cacheReelVideo(cacheUserId, reel).then((saved) => {
         if (!cancelled && saved) setCachedOffline(true);
       });
@@ -453,6 +459,7 @@ export default function ReelsPage() {
   const [pullY, setPullY] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const pullStartYRef = useRef<number | null>(null);
+  const swipeStartIndexRef = useRef<number | null>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   async function handleRefresh() {
@@ -467,6 +474,7 @@ export default function ReelsPage() {
   }
 
   function onTouchStartRefresh(e: React.TouchEvent) {
+    swipeStartIndexRef.current = getCurrentIndex();
     const root = feedRef.current;
     if (!root || root.scrollTop > 0 || refreshing) return;
     pullStartYRef.current = e.touches[0].clientY;
@@ -481,6 +489,20 @@ export default function ReelsPage() {
   }
 
   function onTouchEndRefresh() {
+    // One reel per swipe: a hard fling in a snap container can come to rest
+    // two reels away (snap only aligns the resting position; it does not
+    // cap travel). If this gesture overshot by more than one reel, settle
+    // exactly one step from where the swipe started.
+    const startIndex = swipeStartIndexRef.current;
+    swipeStartIndexRef.current = null;
+    if (startIndex !== null) {
+      window.setTimeout(() => {
+        const idx = getCurrentIndex();
+        if (Math.abs(idx - startIndex) > 1) {
+          scrollToIndex(startIndex + Math.sign(idx - startIndex));
+        }
+      }, 200);
+    }
     if (pullStartYRef.current === null) return;
     pullStartYRef.current = null;
     if (pullY > 70 && !refreshing) {
@@ -690,5 +712,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} onWheel={handleWheel} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{(refreshing || pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} index={index} active={index === activeIndex} forcePause={forcePause} preload={index === activeIndex || index === activeIndex - 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+  return <div className="absolute inset-0 bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} onWheel={handleWheel} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto h-full w-full max-w-[480px] snap-y snap-mandatory overflow-y-auto overscroll-y-contain touch-pan-y">{(refreshing || pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start"><ReelItem reel={reel} index={index} active={index === activeIndex} forcePause={forcePause} preload={index === activeIndex || index === activeIndex + 1} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
 }
