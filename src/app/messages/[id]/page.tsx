@@ -619,11 +619,19 @@ export default function ChatPage() {
     socket.on('presence:offline', handlePresenceOffline);
     socket.on('conversation:read', handleConversationRead);
     socket.on('conversation:delivered', handleConversationDelivered);
-    const handleConnect = () => setIsOffline(false);
+    const handleConnect = () => {
+      setIsOffline(false);
+      // Rejoin this conversation's room after a reconnect — rooms are
+      // joined at connection time, so a chat created after the first
+      // connect would otherwise never deliver live events.
+      socket.emit('conversation:join', { conversationId });
+      socket.emit('conversation:read', { conversationId });
+    };
     const handleDisconnect = () => setIsOffline(true);
     setIsOffline(!socket.connected);
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+    socket.emit('conversation:join', { conversationId });
     socket.emit('conversation:read', { conversationId });
 
     return () => {
