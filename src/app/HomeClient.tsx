@@ -13,6 +13,7 @@ import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
+import SponsoredCard from '@/components/SponsoredCard';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
 import { takePendingNewPost } from '@/lib/pendingNewPost';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
@@ -355,6 +356,7 @@ export default function HomePage() {
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
+                {(index + 1) % 10 === 0 && <div className="my-4 px-4"><SponsoredCard /></div>}
                 {(index + 1) % reelEvery === 0 && reels.length > 0 && <div className="my-4 px-4"><FeedReelCard reel={reels[Math.floor(index / reelEvery) % reels.length]} /></div>}
               </div>
             ))}
