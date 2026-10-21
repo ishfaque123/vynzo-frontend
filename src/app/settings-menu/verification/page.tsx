@@ -4,16 +4,17 @@ import { useEffect, useState } from 'react';
 import { createVerificationRequest, fetchMyVerificationRequest } from '@/lib/api/userApi';
 import Toast from '@/components/Toast';
 
-type Requirement = { current: number; required: number; met: boolean };
+type Requirement = { current: number | string; required: number | string; met: boolean };
 type Eligibility = {
   eligible: boolean;
   isVerified: boolean;
   requirements: {
+    referrals: Requirement;
+    followers: Requirement;
     accountAge: Requirement;
     posts: Requirement;
-    reels: Requirement;
-    comments: Requirement;
-    sharedPosts: Requirement;
+    profile: Requirement;
+    cleanRecord: Requirement;
   };
 };
 
@@ -23,7 +24,7 @@ function RequirementRow({ label, item, suffix = '', icon }: { label: string; ite
       <div>
         <p className="text-sm font-medium text-slate-800">{label}</p>
         <p className="text-xs text-slate-500">
-          {item.current}{suffix} / {item.required}{suffix} required
+          {item.current}{suffix} / {item.required}{suffix}{typeof item.required === 'number' ? ' required' : ''}
         </p>
       </div>
       <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${item.met ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
@@ -114,12 +115,15 @@ export default function VerificationPage() {
   }
 
   const r = eligibility.requirements;
+  // Fallbacks keep this page alive even if the API shape ever changes again —
+  // a missing requirement must show as "not met", never crash the page.
   const requirementItems = [
-    { label: 'Account age', item: r.accountAge, suffix: ' days', icon: '01' },
-    { label: 'Posts uploaded', item: r.posts, icon: '02' },
-    { label: 'Reels uploaded', item: r.reels, icon: '03' },
-    { label: 'Comments made', item: r.comments, icon: '04' },
-    { label: 'Posts shared', item: r.sharedPosts, icon: '05' },
+    { label: 'Referrals invited', item: r.referrals || { current: 0, required: 25, met: false }, icon: '01' },
+    { label: 'Followers', item: r.followers || { current: 0, required: 100, met: false }, icon: '02' },
+    { label: 'Account age', item: r.accountAge || { current: 0, required: 30, met: false }, suffix: ' days', icon: '03' },
+    { label: 'Posts uploaded', item: r.posts || { current: 0, required: 5, met: false }, icon: '04' },
+    { label: 'Profile complete', item: r.profile || { current: 'Incomplete', required: 'Photo + Bio', met: false }, icon: '05' },
+    { label: 'Clean record', item: r.cleanRecord || { current: 'Clean', required: 'No violations (90d)', met: false }, icon: '06' },
   ];
   const completedCount = requirementItems.filter(({ item }) => item.met).length;
   const progress = Math.round((completedCount / requirementItems.length) * 100);
