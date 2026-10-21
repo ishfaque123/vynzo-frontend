@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { articles } from '@/lib/blog';
 
 const SITE_URL = 'https://www.frianzo.online';
 
@@ -48,5 +49,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    {
+      url: `${SITE_URL}/blog`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    ...articles.map((a) => ({
+      url: `${SITE_URL}/blog/${a.slug}`,
+      lastModified: new Date(`${a.date}T00:00:00Z`),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
   ];
 }

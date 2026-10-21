@@ -185,6 +185,7 @@ export default function PublicLanding() {
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-300">
               <Link href="/about" className="transition hover:text-white">About</Link>
+              <Link href="/blog" className="transition hover:text-white">Blog</Link>
               <Link href="/help" className="transition hover:text-white">Help Center</Link>
               <Link href="/contact" className="transition hover:text-white">Contact</Link>
               <Link href="/community-guidelines" className="transition hover:text-white">Community Guidelines</Link>
