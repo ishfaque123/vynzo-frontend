@@ -155,6 +155,37 @@ export default function PublicLanding() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-4xl px-5 pb-20 sm:px-8">
+          <p className="text-center text-sm font-bold uppercase tracking-[0.16em] text-blue-600">More than a feed</p>
+          <h2 className="mt-3 text-center text-3xl font-black tracking-tight text-slate-950">Built for how Pakistan actually connects</h2>
+          <div className="mt-10 space-y-6 text-sm leading-7 text-slate-600 sm:text-base">
+            <p>
+              Frianzo is a complete social space, not just a scrolling feed. The built-in Messenger
+              carries real conversations — text, photos, emoji and voice notes — so the discussion
+              that starts under a post can continue privately with the people who matter. Profiles,
+              followers and a For You feed shaped around local languages and interests help new
+              creators get discovered by the audiences most likely to care about them, from Karachi
+              to Khyber and everywhere in between.
+            </p>
+            <p>
+              We also believe the people who build a community should share in its success. Every
+              Frianzo account comes with a personal referral link: invite friends, and the credit
+              you earn collects in your in-app wallet, visible honestly in your dashboard. Accounts
+              that grow genuinely can work toward the blue tick — our verification badge for real,
+              established profiles — while Data Saver mode keeps the whole experience usable on
+              slow connections and small data packages.
+            </p>
+            <p>
+              And because a social platform is only as good as its guidance, the Frianzo blog
+              publishes free, practical guides for our community: how feeds work, how to film
+              better reels with an ordinary phone, how creators in Pakistan earn online through
+              legitimate routes, and how to recognise the earning scams that target beginners.
+              No hype, no shortcuts — just knowledge that makes our users harder to fool and
+              easier to find.
+            </p>
+          </div>
+        </section>
+
         <section className="border-y border-slate-100 bg-blue-600 px-5 py-16 sm:px-8">
           <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
             <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Get Frianzo today</h2>
@@ -172,7 +203,9 @@ export default function PublicLanding() {
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">A place to share what matters to you</h2>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
             Frianzo brings social sharing, short-form video, stories, profiles and conversations
-            together in one free app. Get the official Frianzo app on Google Play
+            together in one free app. It is built in Pakistan, for the languages, phones and
+            networks people here actually use — and it is open to everyone, everywhere. Get the
+            official Frianzo app on Google Play, or simply open frianzo.online in your browser,
             and start connecting in minutes.
           </p>
         </section>

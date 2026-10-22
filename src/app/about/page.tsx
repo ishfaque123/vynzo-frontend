@@ -52,10 +52,45 @@ export default function AboutPage() {
           photos, voice notes, and emoji.
         </li>
         <li>
+          <strong>Invite &amp; earn</strong> — share your personal referral link, earn credit in
+          your in-app wallet when friends join, and track everything from your dashboard.
+        </li>
+        <li>
+          <strong>Get verified</strong> — established accounts can apply for the blue tick, the
+          badge that confirms a profile is the genuine person or brand it claims to be.
+        </li>
+        <li>
+          <strong>Save your data</strong> — Data Saver mode keeps Frianzo usable on slow
+          connections and small data packages, because we build for real networks, not ideal
+          ones.
+        </li>
+        <li>
           <strong>Stay safe</strong> — block, report, and manage your privacy with built-in
           controls on every profile and post.
         </li>
       </ul>
+
+      <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Built in Pakistan, for Pakistan — and open to everyone</h2>
+      <p className="mb-4">
+        Frianzo was created in Pakistan, for the way people here actually live online: in Urdu,
+        Punjabi, Sindhi, Pashto and English; on phones of every budget; on connections that are
+        not always fast or unlimited. That is why the feed is designed to surface local creators
+        in your own languages, why Data Saver mode exists, and why our blog publishes practical
+        guides for Pakistani creators — from growing a first audience to spotting the online
+        earning scams that target hopeful beginners. The app is available on Google Play in
+        countries around the world, but its home, its team and its first community are here.
+      </p>
+
+      <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Referrals, Wallet &amp; Verification</h2>
+      <p className="mb-4">
+        Frianzo rewards the people who build its community. Every account has a personal
+        referral link; when friends join through it, the inviter earns credit in their in-app
+        wallet, and the app shows the balance and withdrawal options honestly in one place.
+        Verification works alongside this: the blue tick is earned by real, established
+        accounts — not bought reach — so a verified badge on Frianzo actually means something.
+        Our blog explains both systems in plain language, including the exact eligibility
+        ideas behind the blue tick.
+      </p>
 
       <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">How Frianzo Works</h2>
       <p className="mb-4">

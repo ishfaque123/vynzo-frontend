@@ -14,6 +14,391 @@ export interface BlogArticle {
 
 export const articles: BlogArticle[] = [
   {
+    slug: 'how-creators-earn-online-pakistan',
+    title: 'How creators in Pakistan actually earn online: the legitimate routes',
+    description:
+      'No hype and no shortcuts: the real ways Pakistani creators and freelancers earn money online — platform programs, brand deals, client work, products and teaching — and how the payments actually reach a Pakistani bank account.',
+    date: '2026-10-23',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Search for "online earning in Pakistan" and you will drown in promises: earn lakhs from your phone, no skills needed, start today. The truth is quieter and much better than the hype. Thousands of Pakistanis genuinely do earn online — as creators, freelancers, teachers and small sellers — but every legitimate route has the same shape: a real skill or a real audience, offered to real people or businesses who pay for a reason. This guide walks through the routes that actually work, what each one demands from you, and how the money physically reaches you in Pakistan.',
+        ],
+      },
+      {
+        heading: '1. Platform monetisation programs',
+        paragraphs: [
+          'The route most people imagine first is getting paid by a platform itself. YouTube\u2019s Partner Program shares advertising revenue with channels that meet its subscriber and watch-time thresholds and follow its content policies. Facebook and TikTok run their own creator programs with their own eligibility rules, and newer platforms periodically open local programs too. Two honest warnings: the thresholds and rules change often, so always check the program\u2019s official page rather than a video someone made last year — and earnings per view in Pakistan are usually modest, because advertisers pay less for Pakistani audiences than for American or European ones. Treat platform payouts as one stream among several, not the whole plan.',
+        ],
+      },
+      {
+        heading: '2. Brand deals and sponsored content',
+        paragraphs: [
+          'For many mid-sized Pakistani creators, local brands pay better than platforms do. A clothing label, a food brand, a coaching academy or a mobile shop would rather pay a trusted local creator whose followers actually buy things than run a generic ad. Brands care about engagement and trust far more than raw follower counts — a small account whose comments are full of real questions is worth more than a huge account full of silent, bought followers. Start by posting honest reviews of products you already use, keep screenshots of your best-performing posts, and write a simple one-page profile of your audience and rates. That professionalism is what separates creators brands return to from creators they try once.',
+        ],
+      },
+      {
+        heading: '3. Freelancing the skills behind your content',
+        paragraphs: [
+          'If you can make a good reel, you already have a sellable skill. Small businesses across Pakistan — restaurants, salons, clothing sellers, clinics, academies — need exactly what creators do for fun: short videos, product photos, captions, page management. Many creators earn their first real online income not from views but from two or three local clients paying a monthly fee for content. The same skills also sell internationally on freelance marketplaces: video editing, thumbnail design, caption writing, translation between Urdu, English and regional languages, and social media management. Client work is unglamorous and dependable — the opposite of viral fame, and for most people a faster road to real money.',
+        ],
+      },
+      {
+        heading: '4. Selling products and services of your own',
+        paragraphs: [
+          'An audience that trusts you will buy from you. Pakistani creators sell home-made food, clothing, cosmetics, plants, exam notes, design templates, and services from tutoring to fitness coaching — usually coordinated through WhatsApp, with payment by mobile wallet or bank transfer and delivery by courier. Start with one product, a clear price, and honest photos. The creators who fail here almost always fail on operations, not demand: late replies, unclear prices, and deliveries that drift. Answer fast, price clearly, deliver when promised, and your buyers become your marketing.',
+        ],
+      },
+      {
+        heading: '5. Affiliate marketing, done honestly',
+        paragraphs: [
+          'Affiliate programs pay you a commission when someone buys through your link — marketplaces like Daraz run them, as do many software and hosting companies. This can be a fair extra stream if, and only if, you recommend things you have genuinely used. The moment a creator starts pushing random products for commission, followers smell it, and the trust that made the account valuable evaporates. Disclose that a link earns you commission; audiences in Pakistan respect the honesty and punish the hiding.',
+        ],
+      },
+      {
+        heading: '6. Teaching what you know',
+        paragraphs: [
+          'Knowledge is the most underrated product in Pakistan. Creators earn by teaching: recorded courses, live Zoom classes, paid WhatsApp or Telegram groups, e-books and notes. The pattern that works is free, useful content in public — which proves you know the subject — and deeper, structured teaching for those who pay. If your free videos genuinely help people pass an exam, cook a dish, fix a phone or learn a skill, a fraction of those viewers will happily pay for the full version.',
+        ],
+      },
+      {
+        heading: '7. How the money actually reaches you',
+        paragraphs: [
+          'Payments are where many beginners get confused, so here is the practical picture. For local clients and buyers, JazzCash, Easypaisa and direct bank transfer are normal. For international platforms and clients, PayPal does not officially serve Pakistan, so freelancers and creators typically use Payoneer — which receives payments from marketplaces and clients abroad and withdraws to a local Pakistani bank account — or similar services such as Wise where available. Keep simple records of what you earned and from where: a notebook or spreadsheet is enough at the start. As your income grows, registering your work properly and speaking to an accountant about tax is part of treating it as a real business — and legitimate earners do.',
+        ],
+      },
+      {
+        heading: 'The honest timeline',
+        paragraphs: [
+          'Almost every real earner will tell you the same story: the first months paid little or nothing, because they were building the skill and the audience at the same time. Then one stream started working, then a second. Anyone who promises you the reverse — money first, skill later — is selling you something, and a companion article on this blog covers the scams to recognise. Build the skill, serve a real audience, stack two or three of the routes above, and the income stops depending on any single platform\u2019s mood. That is what sustainable online earning in Pakistan actually looks like.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'online-earning-scams-pakistan',
+    title: 'Online earning in Pakistan: the scams everyone should recognise',
+    description:
+      'Fake investment apps, jobs that charge a joining fee, WhatsApp task scams and OTP phishing steal money from hopeful Pakistanis every day. Learn exactly how each one works, the red flags they all share, and what to do if you have already sent money.',
+    date: '2026-10-23',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Every week, people across Pakistan lose money they could not afford to lose to "online earning" schemes — students with their savings, homemakers with household money, young men borrowing from friends to invest. The schemes wear different costumes, but they run on the same few tricks. This article names those tricks plainly. If you recognise the pattern while it is happening to you or someone in your family, you can stop before the money is gone.',
+        ],
+      },
+      {
+        heading: 'Scam 1: "Double your money" investment apps and groups',
+        paragraphs: [
+          'The pitch: deposit money into an app or send it to an agent, and receive guaranteed profit — daily, weekly, double in a month. Early members really do get paid, which is why they recruit so enthusiastically. But the "profit" is not earned from any business; it is paid out of the deposits of newer members. The moment new deposits slow down, the app stops withdrawals, the group goes silent, and the operators vanish. No genuine investment on earth guarantees high returns on a fixed schedule. If returns are guaranteed and large, the product being sold is you.',
+        ],
+      },
+      {
+        heading: 'Scam 2: Jobs that charge you to join',
+        paragraphs: [
+          'The pitch: a data-entry job, a typing job, an ad-watching job, a packaging job — easy work, high pay, work from home. There is just one small thing: a registration fee, an activation charge, a security deposit, or a "starter kit" you must buy first. Real employers pay you; they never charge you for the privilege of working. The fee is the entire business. Once paid, the "job" either never materialises or pays a few rupees before inventing a new fee for "level two". Any earning opportunity that requires you to pay before you earn has the flow of money exactly backwards.',
+        ],
+      },
+      {
+        heading: 'Scam 3: WhatsApp and Telegram task scams',
+        paragraphs: [
+          'This one starts politely: a message offers part-time work liking videos or rating products. The first tasks genuinely pay small amounts into your wallet — that is the bait, and it works because it feels like proof. Then comes a "high-value task" that requires you to deposit money first to unlock bigger commissions. The deposits escalate. Each withdrawal is blocked by a new condition: a tax, a penalty, a minimum balance. People have emptied accounts chasing money that was never theirs to withdraw. The small early payments are simply the cost of making you trust the big theft.',
+        ],
+      },
+      {
+        heading: 'Scam 4: Fake bank, JazzCash and Easypaisa messages',
+        paragraphs: [
+          'A text or call claims your account will be blocked, a transaction failed, or a prize is waiting — and asks for your PIN, your OTP code, or a click on a link to "verify". Sometimes it is a fake courier demanding a small customs payment for a parcel. Remember the rule that defeats all of these: no bank or wallet company will ever ask for your PIN or OTP, on a call, in a message, or through a link. Those codes are for your fingers only. If a message creates panic and urgency, that panic is the product — hang up, and call the official helpline printed on your card or inside the real app instead.',
+        ],
+      },
+      {
+        heading: 'Scam 5: Crypto and trading "mentors"',
+        paragraphs: [
+          'Screenshots of profits, photos of cars, a friendly mentor who will "double your account" or copy his trades for you. Sometimes it is a fake trading app where your balance grows beautifully on screen — and can never be withdrawn. Sometimes your money goes into a coin that only the group is buying, whose price collapses the moment the organisers sell. Trading is genuinely risky even when it is real; most beginners lose money. Anyone who removes that risk from the story is not describing trading — they are describing a transfer of your money to them.',
+        ],
+      },
+      {
+        heading: 'The red flags every scam shares',
+        paragraphs: [
+          'Different costumes, same skeleton. Be suspicious when you see: guaranteed or unusually high returns; pressure to act immediately before the "offer" closes; payment requested only into a personal wallet or bank account rather than a registered business; no real office, registration, or verifiable company behind the scheme; earnings that depend on recruiting more people; and support that exists only as a WhatsApp number. One red flag can be an accident. Three together are a design.',
+          'Before sending money anywhere, do three free checks: search the scheme\u2019s name together with the word "scam" and read what victims say; ask what legal company runs it and verify the name independently; and tell a level-headed friend the full plan out loud — scams often collapse the moment they are described in plain words to someone who is not inside the excitement.',
+        ],
+      },
+      {
+        heading: 'If you have already sent money',
+        paragraphs: [
+          'Act in hours, not days. Call your bank or wallet provider\u2019s official helpline immediately and report the transaction as fraud — fast reports sometimes stop money from moving further. Save every screenshot, number, and receipt. Then report the case to the FIA\u2019s cybercrime wing (NR3C) through its official complaint channels, and warn the group or community where you found the scheme; your warning may save the next person. Do not pay any "recovery agent" who contacts you afterwards — that is the same criminals returning for a second harvest, and it is heartbreakingly common.',
+        ],
+      },
+      {
+        heading: 'What real online earning looks like',
+        paragraphs: [
+          'Real earning is slower and far less dramatic: a skill people pay for, a service a business needs, an audience that trusts you, a product someone is glad to own. It usually pays nothing in the first weeks, which is exactly why the scams — which promise the opposite — find customers. A companion guide on this blog walks through the legitimate routes in detail. Protect your money first; then build the real thing, patiently, on ground that does not disappear overnight.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'social-media-privacy-safety-settings-guide',
+    title: 'Your social media privacy checklist: the settings to change today',
+    description:
+      'Most account hacks and privacy disasters come from default settings nobody ever opened. This plain-language checklist walks through the logins, sessions, audience, contact, location and permission settings worth fifteen minutes on every social app you use.',
+    date: '2026-10-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Every social app arrives with default settings chosen by the company, not by you — and the defaults usually favour sharing over privacy. Most people never open the settings menu until something goes wrong: a stranger commenting on family photos, an old phone still logged into their account, a login code shared with a convincing scammer. Fifteen quiet minutes with this checklist will prevent most of it. The exact menu names differ between apps, but every setting below exists, in some form, on every major platform.',
+        ],
+      },
+      {
+        heading: '1. Lock the front door: password and two-step verification',
+        paragraphs: [
+          'Start where every account takeover starts: the login. Use a long password you do not use anywhere else — a stolen password from one leaked website is routinely tried against every social account with the same email. Then turn on two-step verification (sometimes called two-factor authentication or login verification) in the security settings. Where the app offers an authenticator-app option, prefer it; where only SMS codes are offered, use them anyway — an imperfect lock beats no lock. Save the backup or recovery codes the app gives you somewhere offline, like a notebook at home. And the rule that protects everything else: your login code is yours alone. No company, no "support agent", no prize committee will ever legitimately ask for it.',
+        ],
+      },
+      {
+        heading: '2. Review where you are logged in',
+        paragraphs: [
+          'Most apps keep a list of active sessions or logged-in devices in their security settings. Look at yours. You will often find an old phone, a borrowed laptop, or a browser from months ago still holding a valid login. Remove everything you do not recognise — and anything you simply no longer use. If you see a session from a city you have never visited, change your password immediately after removing it. This single screen is the fastest health check an account can get, and almost nobody looks at it.',
+        ],
+      },
+      {
+        heading: '3. Decide who can see your life',
+        paragraphs: [
+          'Next, walk through the audience settings: who can see your posts, your photos, your stories, your followers and following lists. Decide deliberately instead of accepting defaults. Many people are comfortable with public posts but prefer a private account — where only approved followers see anything — and there is no wrong choice, only an unexamined one. Check also whether search engines and people searching by your phone number or email can find your profile; turning off discovery by phone number is wise if your number circulates widely. While you are there, review old posts: most platforms let you limit past posts or delete the ones that no longer represent you.',
+        ],
+      },
+      {
+        heading: '4. Control who can reach you',
+        paragraphs: [
+          'Open the contact settings: who can send you messages, who can add you to groups, who can mention or tag you, and whether tags appear on your profile only after your approval. Tag approval alone prevents a whole category of embarrassment and spam. Turn on comment filters for offensive words if the app offers them, and learn where the message-request folder is — that is where strangers\u2019 messages land, and it should stay a folder you visit, not a door into your inbox. Blocking is not rude; it is the basic tool the platform gives you, and using it early is always easier than using it late.',
+        ],
+      },
+      {
+        heading: '5. Location: the setting people forget',
+        paragraphs: [
+          'Location leaks quietly. Check whether your posts and photos carry location tags, whether the app adds your city automatically, and whether your phone is attaching GPS coordinates to photos you share. Post the outing after you are home, not while you are there — a public "we are all at a wedding in Karachi" is also a public "our house in Sukkur is empty". If you run a business page, a general area is fine; your home address never is. Children\u2019s locations deserve the strictest rule of all: never in real time, never with a school name attached.',
+        ],
+      },
+      {
+        heading: '6. Audit app permissions and connected apps',
+        paragraphs: [
+          'Two audits, both quick. First, your phone\u2019s permissions for each social app: does it really need your contacts, your microphone when you never record, precise location at all times? Tighten anything you cannot explain. Second, the "connected apps" or "apps and websites" list inside each platform — every quiz, game and "see who visited your profile" tool you ever authorised may still hold access to your account. Remove everything you do not actively use. Those novelty apps are also a common doorway for account theft, which is why no legitimate tool can ever show you your profile visitors: the platforms do not provide that data to anyone.',
+        ],
+      },
+      {
+        heading: '7. Public information hygiene',
+        paragraphs: [
+          'Finally, look at your profile the way a stranger does. Is your personal phone number in your bio? Your exact birth date public? Photos that show your house number, your car plate, your children\u2019s school uniform logo? Creators who need public contact should use a separate work number and email — in Pakistan a second SIM for public contact is cheap and standard practice among careful creators. Your personal number belongs to your family, your bank, and your wallet accounts — not to everyone who can open your profile.',
+        ],
+      },
+      {
+        heading: 'A fifteen-minute monthly routine',
+        paragraphs: [
+          'Privacy is not a one-time setup; accounts drift. Once a month: skim the logged-in devices list, glance at new followers if your account is private, remove one connected app you forgot about, and confirm your recovery email and phone number are still yours — a recycled SIM or an abandoned email is a silent way to lose an account forever. Fifteen minutes a month is the entire price. The account you protect this way is the same one your income, your memories and your community live in — it deserves the routine.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'grow-social-media-safely-pakistan',
+    title: 'How to grow your social media account safely in Pakistan',
+    description:
+      'Bought followers, password-hungry "growth apps" and engagement tricks promise fast growth and deliver banned, stolen or hollow accounts. This guide covers the safe road: security first, real content, honest engagement, and growth that is still yours next year.',
+    date: '2026-10-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Everyone wants the number to go up. Around that desire an entire market has grown in Pakistan: panels selling followers by the thousand, apps promising instant likes, "growth services" asking for your password. They do grow one thing reliably — the list of accounts that end up banned, stolen, or followed by ten thousand ghosts who never watch a single video. Safe growth is not slower growth; it is growth that survives. This guide lays out the road that keeps your account secure, your audience real, and your progress yours to keep.',
+        ],
+      },
+      {
+        heading: '1. Secure the account before you grow it',
+        paragraphs: [
+          'Growth makes an account a target, so do the boring security work first, while you are small: a strong unique password, two-step verification turned on, and a recovery email and phone number that you actually control. Growing creators in Pakistan lose accounts most often not to brilliant hackers but to simple tricks — a message claiming their account will be deleted unless they "verify" through a link, a fake brand deal that asks them to log in on a lookalike page. If a message creates fear or greed and ends with a login page, it is a trap. Always reach your account through the app itself, never through a link someone sent you.',
+        ],
+      },
+      {
+        heading: '2. Never buy followers or likes',
+        paragraphs: [
+          'The sales pitch is everywhere: a thousand followers for the price of a burger. Here is what actually arrives: accounts that are fake, stolen, or operated in bulk, which never watch, comment, or buy anything. Platforms measure how your audience responds to your posts; when a thousand new "followers" ignore everything you publish, the system concludes your content is uninteresting and shows it to fewer real people. Periodically the platforms purge fake accounts in bulk, and the purchased number evaporates publicly. Brands and collaborators can spot a bought audience in seconds by comparing followers to comments. You are not buying growth; you are buying the appearance of growth, at the cost of the real thing.',
+        ],
+      },
+      {
+        heading: '3. Never give your password to a "growth" tool',
+        paragraphs: [
+          'Any app or website that asks for your social media password in exchange for followers, likes, or "who viewed your profile" reports is asking for the keys to your account. Some use your account to follow and spam others without your knowledge, which gets you flagged or banned by the platform\u2019s automated systems. Others simply take the account. Platforms do not share profile-visitor data with anyone, so every such promise is false by design. The same goes for auto-like and auto-comment bots: the platforms detect robotic patterns, and the penalties — reduced reach, restrictions, permanent bans — land on your account, not on the tool that caused them.',
+        ],
+      },
+      {
+        heading: '4. Grow the way the system is built to reward',
+        paragraphs: [
+          'Every feed, whatever the platform, promotes content that holds attention and starts conversation. So the safe strategy is also the effective one: pick a clear subject you can sustain — comedy in your own language, cooking on a budget, cricket analysis, exam help, village life, tech in simple words — and post consistently enough for the system to learn who enjoys you. Use the discovery formats (short video above all), open with the interesting moment rather than a greeting, and write titles and captions in the words your audience actually searches for. Growth built on being genuinely worth following compounds; growth built on tricks has an expiry date printed on it.',
+        ],
+      },
+      {
+        heading: '5. Engage like a person, not a strategy',
+        paragraphs: [
+          'Reply to your comments — all of them, while you are small enough to manage it. Comment thoughtfully on other creators in your niche; their audiences are exactly the people most likely to enjoy you, and genuine comments get visited. Collaborate with creators of similar size: a joint video introduces each of you to a warm audience, which is worth more than any advertisement. What to avoid: copy-pasting the same comment under fifty posts, follow-for-follow chains, and engagement groups that exchange hollow likes. Platforms detect the artificial pattern, audiences feel the emptiness, and the accounts involved quietly stop growing.',
+        ],
+      },
+      {
+        heading: '6. Respect copyright before it respects you',
+        paragraphs: [
+          'New creators often build on other people\u2019s work: full songs, drama scenes, match highlights, film clips. Platforms scan for this automatically, and the consequences range from muted audio and blocked videos to copyright strikes that can end an account. Use the music library the app itself provides, your own recordings, and footage you have permission for. Commentary and review have some room in most policies, but "I added subtitles" does not make a full episode yours. One strike is a warning you never want; three can be the end of an account you spent a year building.',
+        ],
+      },
+      {
+        heading: '7. Protect yourself as the account grows',
+        paragraphs: [
+          'Visibility has a personal cost if you let it. Keep your home address, your family\u2019s routines and your children\u2019s school out of your content. Use a separate public contact — a work email or second SIM — rather than your personal number. Post location after leaving, not while present. And decide in advance how you will handle abuse: mute, restrict and block are tools, not admissions of defeat. Pakistani creators, especially women, grow fastest in the long run when the audience gets the work, not unrestricted access to the person.',
+        ],
+      },
+      {
+        heading: 'The long game',
+        paragraphs: [
+          'Ask any creator with an audience that has lasted five years and you will hear an unglamorous story: steady posting, real replies, no purchased numbers, no borrowed passwords, a few copyright lessons learned early. Their growth looked slow in month two and unstoppable in year two, because real audiences compound — every genuine follower is a person who can share you with people who trust them. Grow like that, and the account remains what it should be: an asset you own, safe from the ban, the purge and the thief.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'make-better-reels-with-your-phone',
+    title: 'Better reels with just your phone: a beginner\u2019s filming guide',
+    description:
+      'Expensive cameras are not what separate dull reels from magnetic ones. Light, sound, steadiness and the first two seconds are. A practical filming guide for beginners shooting on the phone they already own.',
+    date: '2026-10-21',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Watch a reel that feels professional and one that feels amateur, shot on the same phone, and the difference is almost never the phone. It is light falling the right way, a voice you can hear clearly, a frame that does not shake, and an opening that respects the viewer\u2019s thumb. All four are free. This guide teaches filming — the part that happens before editing — because no editor can rescue footage that was dark, muffled and trembling to begin with.',
+        ],
+      },
+      {
+        heading: '1. Set up the phone once, properly',
+        paragraphs: [
+          'Before filming anything: wipe the lens. It sounds insulting and it is the single highest-value step in this guide — a phone lens lives against fingers, pockets and dust, and a soft greasy smear is the invisible cause of most "my camera is bad" footage. Then open your camera settings: record at 1080p (full HD) rather than 4K, which eats storage and slows uploads, and turn on the grid overlay to help your framing. If your camera offers a frame rate choice, 30 frames per second is the natural look for talking and everyday content. Clean lens, sane settings — now every reel you shoot starts life sharper.',
+        ],
+      },
+      {
+        heading: '2. Light: face the window, never fight it',
+        paragraphs: [
+          'Light is the difference between looking like a creator and looking like a hostage video. The free studio every beginner already owns is a window: stand or sit facing it, so daylight falls evenly on your face, and film during the day whenever the content allows. The classic mistake is the reverse — window behind you — which turns your face into a dark silhouette while the camera happily exposes for the bright background. Outdoors, the softest light comes in the early morning and the hour before sunset; the harsh midday sun of a Pakistani summer creates hard shadows and squinting, so choose shade with bright surroundings instead. At night, any steady lamp placed in front of you and slightly above eye level beats your room\u2019s ceiling light — and a thin white cloth over a harsh bulb softens it for free.',
+        ],
+      },
+      {
+        heading: '3. Sound: the audience forgives video, never audio',
+        paragraphs: [
+          'Viewers will watch slightly grainy footage with clear sound and abandon crystal-clear footage they cannot hear. Film in the quietest room you have — soft things help: curtains, bedding and carpets absorb the echo that makes voices sound like they were recorded in a bathroom. Turn off the fan if you can bear it, or accept its hum knowingly. Stay close to the phone: half an arm\u2019s length sounds intimate and clear, across the room sounds distant. The wired earphones that came with your phone hide a surprisingly decent microphone — clipping the mic near your collar transforms a talking video. Whatever your setup, record ten seconds, play it back with earphones, and listen before filming the real thing. That habit alone puts you ahead of most beginners.',
+        ],
+      },
+      {
+        heading: '4. Steadiness without a tripod',
+        paragraphs: [
+          'Shaky footage screams beginner. Until you buy a small tripod — genuinely cheap, and the first accessory worth buying — your home is full of substitutes: a stack of books, a shelf, a water bottle, a chair against a wall. Prop the phone, set a three-second timer or use your earphone button as a shutter release, and step into frame calmly. If you must hold the phone, hold it with both hands, elbows tucked into your body, and move by turning your whole body slowly rather than waving your arms. For walking shots, shorter steps and a slightly bent knee smooth the bounce more than any software stabiliser.',
+        ],
+      },
+      {
+        heading: '5. Framing: give the eye a clean place to rest',
+        paragraphs: [
+          'Use the grid you switched on: place your eyes roughly on the top third line, leave a little space above your head, and keep the camera at eye level — a low angle looking up at you is nobody\u2019s friend. Look at your background before you film, not after you post: a tidy, simple background keeps attention on you, while a chaotic one steals it. Remove the hanging laundry and the flickering screen behind you, or simply turn the camera toward the plainest wall in the room. For product or food reels, get closer than feels natural — filling the frame with the subject is what makes phone food footage look delicious.',
+        ],
+      },
+      {
+        heading: '6. Film for the first two seconds',
+        paragraphs: [
+          'A reel is decided almost immediately, so plan your opening frame and line before you press record. Start with the result, the question, or the surprise — the finished dish, the bold claim, the "nobody tells beginners this" — and explain afterwards. Film a little extra at the start and end of every take (editors call it handles) so cuts never feel amputated. And shoot each section as its own clip rather than one long take: if you stumble in section three, you refilm ten seconds, not three minutes. This one habit makes filming faster and editing dramatically easier.',
+        ],
+      },
+      {
+        heading: '7. A simple practice routine',
+        paragraphs: [
+          'Skill in filming is reps, not talent. For two weeks, film one short reel daily using exactly the habits above: lens wiped, window light, quiet room, propped phone, planned opening. Watch each one back with a notebook and write down the single most annoying flaw — darkness, echo, shake, a slow start — and fix only that flaw tomorrow. Fourteen days of single fixes will transform your footage more than any new phone would, and the day you finally do upgrade your gear, the skills will already be waiting for it.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'video-editing-basics-beginners',
+    title: 'Video editing basics: turning raw phone clips into reels people finish',
+    description:
+      'You filmed the clips — now what? Trimming dead air, adding captions, balancing music under your voice, simple colour fixes, the right export settings, and a repeatable workflow that turns editing from an evening\u2019s struggle into twenty calm minutes.',
+    date: '2026-10-21',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Beginners imagine editing is where the magic happens — effects, transitions, animations. Professionals know the truth: editing is mostly removing. Removing the pause before you started speaking, the sentence that went nowhere, the four seconds of you reaching for the phone. A viewer who finishes your reel is a viewer the platform shows your next reel to, and people finish videos that respect their time. This guide covers the handful of editing skills that account for nearly all of that respect, using the free editors already on your phone.',
+        ],
+      },
+      {
+        heading: '1. Choose one editor and learn it properly',
+        paragraphs: [
+          'CapCut, VN and YouCut are the common free choices on Android; any of them is more than capable, and all of them beat switching apps every week. Pick one, and spend a single evening learning its five core moves: split a clip, trim its ends, reorder clips, add text, and adjust volume. Every skill in this article is a combination of those five. Editing speed comes from familiarity, not features — the creator who knows one simple editor deeply will finish a reel in twenty minutes while the app-hopper is still watching a tutorial.',
+        ],
+      },
+      {
+        heading: '2. The first edit is always the trim',
+        paragraphs: [
+          'Lay your clips in order and go through once with one job: cut everything that is not the content. The breath before your first word — cut. The "um, so basically" — cut. The long silence while you demonstrate something the viewer already understood — cut or speed up. These tight cuts, called jump cuts when they happen mid-sentence, feel energetic rather than rude on short video; they are the native language of the format. A useful target: if a stranger would not feel the loss, the seconds should not survive. Most beginner footage improves by a third just from this pass, before a single effect is added.',
+        ],
+      },
+      {
+        heading: '3. Captions: because most people watch on mute',
+        paragraphs: [
+          'A large share of short video is watched silently — in offices, in rickshaws, beside sleeping children. Captions are therefore not an accessibility extra; they are how most of your audience receives your words. Most editors can generate auto-captions; use them, then spend two minutes correcting them, because Urdu, Punjabi, Sindhi and accented English confuse the software in ways that can embarrass you — names and key terms especially. Style them for tired eyes: large, bold, high-contrast text, placed in the lower-middle of the frame where platform buttons and captions from the app itself will not cover them.',
+        ],
+      },
+      {
+        heading: '4. Sound in the edit: voice first, music second',
+        paragraphs: [
+          'Your voice (or the video\u2019s natural sound) is the content; music is the seasoning. The beginner mistake is music at full volume competing with speech, forcing viewers to strain. Bring background music down until it feels almost too quiet — in most editors that means somewhere around a tenth to a fifth of full volume under speech — and let it rise only in parts with no talking. If your editor offers it, a feature called ducking or volume automation does this balancing for you. Also normalise your own clips: if one section was filmed closer to the phone than another, adjust their volumes to match, so the viewer is not reaching for the volume button mid-reel.',
+        ],
+      },
+      {
+        heading: '5. Colour and light: small fixes, honestly applied',
+        paragraphs: [
+          'Editing can rescue mildly dull footage with three gentle adjustments: brightness up a touch if the shot is dark, contrast up slightly to restore depth, and saturation up a little for food and outdoor scenes. The keyword is slightly — heavy filters that turn skin orange and skies electric are the visual equivalent of shouting. Many editors include an "auto enhance" or "adjust" preset; apply it, then dial its strength down to about half. Consistency matters more than perfection: footage that looks similar across all your reels becomes part of your recognisable style.',
+        ],
+      },
+      {
+        heading: '6. Pacing: cut on movement and meaning',
+        paragraphs: [
+          'Pacing is the rhythm of your cuts, and it decides whether a reel feels brisk or exhausting. Change the visual every few seconds — a different clip, a zoom, a text overlay, a cut to the thing you are describing — because the eye wanders when nothing changes. Cut at natural moments: at the end of a sentence, on a gesture, on the beat of the music. Avoid stacking fancy transitions; a clean cut is invisible, while a spinning whirlpool transition announces "beginner" louder than any flaw it hides. One transition used consistently beats ten used randomly.',
+        ],
+      },
+      {
+        heading: '7. The cover frame and the title',
+        paragraphs: [
+          'When your reel appears on your profile grid or in search, its first impression is a still frame and a few words. Choose the cover deliberately inside your editor: the clearest, most expressive frame — a face mid-reaction, the finished dish, the product front and centre — never a blurry mid-blink accident. Add a short title on the cover if your style uses it, in the same large readable text as your captions, and keep it to a handful of words that make a promise the video keeps: "3 mistakes", "under Rs 500", "in 60 seconds". The cover is packaging; the video must still be the product.',
+        ],
+      },
+      {
+        heading: '8. Export once, at the right settings',
+        paragraphs: [
+          'Exporting badly can ruin good editing — every re-export and re-upload shaves quality. Export at 1080 by 1920 (full HD vertical) at the editor\u2019s recommended bitrate, and upload that file directly to the platform rather than sending it to yourself through a messaging app first, which compresses it further. Keep the exported master on your phone or drive; if you ever need the reel again, you will be glad it exists at full quality. And a small discipline that saves careers: before posting, watch the exported file once, fully, with sound — exports occasionally drop audio or captions, and the only good time to discover that is before your audience does.',
+        ],
+      },
+      {
+        heading: 'A workflow you can repeat',
+        paragraphs: [
+          'Put together, a calm editing session looks like this: import and order the clips (five minutes), trim ruthlessly (five minutes), captions on and corrected (five minutes), music under the voice and the three colour touches (three minutes), cover chosen, export, one full watch (two minutes). Twenty minutes, start to finish, once the routine is muscle memory. Editing stops being the hard part of creating — which frees your energy for the part that actually grows accounts: filming something worth editing, again tomorrow.',
+        ],
+      },
+    ],
+  },
+  {
     slug: 'grow-first-1000-followers',
     title: 'How to grow your first 1,000 followers on Frianzo',
     description:

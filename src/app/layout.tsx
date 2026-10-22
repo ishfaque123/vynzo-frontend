@@ -120,6 +120,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "(function(){try{var t=localStorage.getItem('vynzo_theme');var d=t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();",
           }}
         />
+        <script
+          // Google AdSense site-verification / loader script. This MUST live
+          // in the root layout <head> so it is present in the served HTML of
+          // every page (including the homepage). It previously existed only
+          // inside <AdUnit>, which loads it client-side via next/script and
+          // renders only inside the logged-in feed — so Google's review
+          // crawler never found the code in the site's HTML and rejected the
+          // site. Do not move this back into a component.
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8689135580842158"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>
         <OfflineServiceWorker />
