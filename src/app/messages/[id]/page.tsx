@@ -105,14 +105,6 @@ function ImageIcon() {
     </svg>
   );
 }
-function EmojiIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" />
-    </svg>
-  );
-}
-const QUICK_EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','😭','😡','👍','👎','🙏','👏','🔥','❤️','💔','✨','🎉','😮','😢','🥺','🤝','👋','💯','✅','❌','⭐','🌙','☀️','🎵','⚽','🚗','🍕','☕','🌹','💡','🙌'];
 function MicIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -413,7 +405,6 @@ export default function ChatPage() {
   }
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [emojiOpen, setEmojiOpen] = useState(false);
   const sendingRef = useRef(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -665,11 +656,19 @@ export default function ChatPage() {
     };
   }, [conversationId, user?.id]);
 
+  const loadOlderRef = useRef(loadOlderMessages);
+  loadOlderRef.current = loadOlderMessages;
+
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const onScroll = () => {
       isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      // Near the top: pull in older messages automatically (WhatsApp-style)
+      // instead of leaving the user to find the load-older button. The
+      // loader guards itself (already loading / nothing more) and keeps
+      // the scroll position steady after the older page is prepended.
+      if (el.scrollTop < 120) loadOlderRef.current();
     };
     onScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -1459,31 +1458,6 @@ export default function ChatPage() {
             </>
           ) : (
             <>
-              <div className="relative">
-                <button
-                  onClick={() => setEmojiOpen((v) => !v)}
-                  className="p-2 text-slate-500"
-                  aria-label="Emoji"
-                >
-                  <EmojiIcon />
-                </button>
-                {emojiOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setEmojiOpen(false)} />
-                    <div className="absolute bottom-12 left-0 z-50 grid w-64 grid-cols-8 gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
-                      {QUICK_EMOJIS.map((e) => (
-                        <button
-                          key={e}
-                          onClick={() => { setText((t) => t + e); setEmojiOpen(false); }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-xl hover:bg-slate-100 active:scale-90"
-                        >
-                          {e}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
               <button
                 onClick={() => imageInputRef.current?.click()}
                 disabled={uploadingMedia}
