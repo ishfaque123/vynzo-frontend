@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createConversation } from '@/lib/api/messageApi';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 const FAZEELA_ID = '6e1891cf-4bff-4e86-9bb8-ba2cfa8a10d9';
 const FAZEELA_AVATAR =
@@ -45,8 +46,9 @@ export default function BlueTickAd() {
           className="h-10 w-10 shrink-0 rounded-full object-cover"
         />
         <div className="min-w-0 flex-1">
-          <div className="text-[14.5px] font-bold leading-tight text-slate-900 dark:text-slate-100">
-            Dr Fazeela Shar
+          <div className="flex items-center gap-1.5 text-[14.5px] font-bold leading-tight text-slate-900 dark:text-slate-100">
+            <span className="truncate">Dr Fazeela Shar</span>
+            <VerifiedBadge size="lg" />
           </div>
           <div className="text-[11.5px] text-slate-500 dark:text-slate-400">
             Sponsored · Blue Tick Offer
