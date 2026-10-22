@@ -57,27 +57,28 @@ export default function BlueTickAd() {
         <div className="px-1 text-base tracking-widest text-slate-400">•••</div>
       </div>
 
-      <p className="px-3 pb-3 text-[13.5px] leading-snug text-slate-800 dark:text-slate-200">
-        Make your profile official with the <span className="font-semibold">Blue Tick</span> —{' '}
-        <span className="font-semibold">12 months for just Rs 400</span>, including a feed boost
-        and priority placement in search.
+      <p
+        dir="rtl"
+        className="px-3 pb-3 text-right text-[14px] leading-relaxed text-slate-800 dark:text-slate-200"
+      >
+        اپنے پروفائل کو <span className="font-bold">بلیو ٹک</span> کے ساتھ آفیشل بنائیں — صرف{' '}
+        <span className="font-bold">400 روپے میں پورے 12 ماہ</span>، فیڈ بوسٹ اور سرچ میں ترجیحی
+        درجے کے ساتھ۔
       </p>
 
       <button
         type="button"
         onClick={openChat}
         disabled={opening}
-        className="block w-full bg-blue-700 px-4 py-5 text-left text-white transition-colors hover:bg-blue-800 disabled:opacity-70"
+        className="block w-full disabled:opacity-70"
+        aria-label="Blue Tick offer — tap to message"
       >
-        <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 text-[10.5px] font-semibold tracking-wider">
-          LAUNCH OFFER · UNTIL 31 OCTOBER
-        </span>
-        <span className="mt-2.5 block text-[22px] font-bold leading-tight">
-          Blue Tick — 12 Months · Rs 400
-        </span>
-        <span className="mt-1 block text-[12.5px] text-blue-100">
-          Regular price afterwards: Rs 400 / 30 days
-        </span>
+        <img
+          src="https://pub-72f9ea3dc70249cdb12b7e61642d0bb7.r2.dev/blue-tick-ad.webp"
+          alt="Frianzo Blue Tick — 12 months for Rs 400"
+          className="block h-auto w-full"
+          loading="lazy"
+        />
       </button>
 
       <div className="flex items-center justify-between px-3 py-2.5">
@@ -86,7 +87,7 @@ export default function BlueTickAd() {
             Frianzo Blue Tick
           </div>
           <div className="text-[11.5px] text-slate-500 dark:text-slate-400">
-            Message now to get yours
+            Tap Send Message to order
           </div>
         </div>
         <button
