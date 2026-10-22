@@ -16,7 +16,7 @@ export const metadata = {
     description:
       'Pakistan\u2019s free social app: posts, reels, stories, Messenger and more. Download free on Google Play.',
     type: 'website',
-    url: 'https://frianzo.online/',
+    url: 'https://www.frianzo.online/',
     images: [{ url: '/logo.png', width: 512, height: 512, alt: 'Frianzo logo' }],
   },
   twitter: {
@@ -39,7 +39,7 @@ const appStructuredData = {
       downloadUrl: 'https://play.google.com/store/apps/details?id=com.frianzo.app',
       installUrl: 'https://play.google.com/store/apps/details?id=com.frianzo.app',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-      author: { '@type': 'Organization', name: 'Frianzo', url: 'https://frianzo.online' },
+      author: { '@type': 'Organization', name: 'Frianzo', url: 'https://www.frianzo.online' },
     },
     {
       '@type': 'FAQPage',
