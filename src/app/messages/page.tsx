@@ -207,17 +207,22 @@ export default function MessagesPage() {
   async function handleDelete(id: string) {
     if (deleting) return;
     setDeleting(id);
-    const result = await deleteConversation(id);
-    if (result.success) {
-      setConversations((prev) => prev.filter((c) => c.id !== id));
-      setPreviews((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      setOpenActions(null);
+    try {
+      const result = await deleteConversation(id);
+      if (result.success) {
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        setPreviews((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setOpenActions(null);
+      }
+    } catch {
+      // A failed request must never leave the delete buttons disabled.
+    } finally {
+      setDeleting(null);
     }
-    setDeleting(null);
   }
 
   async function handleDeleteSelected() {
@@ -225,24 +230,36 @@ export default function MessagesPage() {
     const ids = [...selectedConversationIds];
     setDeleting('selected');
 
-    const deletedIds: string[] = [];
-    for (const id of ids) {
-      const result = await deleteConversation(id);
-      if (result.success) deletedIds.push(id);
-    }
+    try {
+      // Delete in parallel; a single failed request must not strand the
+      // rest or leave the button disabled forever (the old serial loop
+      // escaped on the first throw and never reset `deleting`).
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const result = await deleteConversation(id);
+            return result.success ? id : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+      const deletedIds = results.filter((x): x is string => x !== null);
 
-    if (deletedIds.length) {
-      setConversations((prev) => prev.filter((c) => !deletedIds.includes(c.id)));
-      setPreviews((prev) => {
-        const next = { ...prev };
-        for (const id of deletedIds) delete next[id];
-        return next;
-      });
-    }
+      if (deletedIds.length) {
+        setConversations((prev) => prev.filter((c) => !deletedIds.includes(c.id)));
+        setPreviews((prev) => {
+          const next = { ...prev };
+          for (const id of deletedIds) delete next[id];
+          return next;
+        });
+      }
 
-    setSelectedConversationIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
-    setOpenActions(null);
-    setDeleting(null);
+      setSelectedConversationIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+      setOpenActions(null);
+    } finally {
+      setDeleting(null);
+    }
   }
 
   function clearSelection() {
