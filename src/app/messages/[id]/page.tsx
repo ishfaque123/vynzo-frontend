@@ -461,6 +461,20 @@ export default function ChatPage() {
       if (saved) setWallpaper(saved);
     } catch { /* ignore */ }
   }, [conversationId]);
+  useEffect(() => {
+    // Click-to-message prefill (e.g. the Blue Tick feed ad): the ad stores
+    // the first message before opening this chat; place it in the composer
+    // once, ready for the user to send.
+    try {
+      const raw = sessionStorage.getItem('frianzo_prefill_message');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { conversationId?: string; text?: string };
+      if (parsed.conversationId === conversationId && parsed.text) {
+        setText(parsed.text);
+        sessionStorage.removeItem('frianzo_prefill_message');
+      }
+    } catch { /* ignore */ }
+  }, [conversationId]);
   function pickWallpaper(id: string) {
     setWallpaper(id);
     setWallpaperOpen(false);

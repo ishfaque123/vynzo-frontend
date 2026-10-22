@@ -1,13 +1,41 @@
+'use client';
+
 // House sponsored card (Blue Tick offer) shown in the home feed.
-// Pure presentational component: the CTA opens the click-to-message flow
-// (/messages/new?to=<seller>&text=<prefilled first message>).
+// Click-to-message, Facebook style: tapping the card opens (or creates)
+// the buyer's chat with Dr Fazeela Shar directly, with the first message
+// already written in the composer — no people-picker in between.
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createConversation } from '@/lib/api/messageApi';
+
 const FAZEELA_ID = '6e1891cf-4bff-4e86-9bb8-ba2cfa8a10d9';
 const FAZEELA_AVATAR =
   'https://pub-72f9ea3dc70249cdb12b7e61642d0bb7.r2.dev/avatars/be6839f0-24a5-4c1a-b217-5c0d1c28402f.jpeg';
 const MESSAGE_TEXT = 'Hello! I Need Blue Tick. Please send me the details.';
-const CTA_URL = `/messages/new?to=${FAZEELA_ID}&text=${encodeURIComponent(MESSAGE_TEXT)}`;
 
 export default function BlueTickAd() {
+  const router = useRouter();
+  const [opening, setOpening] = useState(false);
+
+  async function openChat() {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const result = await createConversation(FAZEELA_ID);
+      if (result?.success && result.data?.id) {
+        try {
+          sessionStorage.setItem(
+            'frianzo_prefill_message',
+            JSON.stringify({ conversationId: result.data.id, text: MESSAGE_TEXT })
+          );
+        } catch { /* ignore */ }
+        router.push(`/messages/${result.data.id}`);
+        return;
+      }
+    } catch { /* fall through to the profile, whose Message button works the same way */ }
+    router.push('/u/Fazeela');
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center gap-2.5 px-3 pb-2 pt-3">
@@ -33,9 +61,11 @@ export default function BlueTickAd() {
         search mein pehle number par ana bhi shamil hai.
       </p>
 
-      <a
-        href={CTA_URL}
-        className="block bg-gradient-to-br from-sky-950 via-blue-800 to-sky-500 px-4 py-5 text-white"
+      <button
+        type="button"
+        onClick={openChat}
+        disabled={opening}
+        className="block w-full bg-gradient-to-br from-sky-950 via-blue-800 to-sky-500 px-4 py-5 text-left text-white disabled:opacity-70"
       >
         <span className="inline-block rounded-full border border-white/40 bg-white/15 px-2.5 py-1 text-[10.5px] font-bold tracking-wider">
           LAUNCH OFFER · 31 OCTOBER TAK
@@ -48,7 +78,7 @@ export default function BlueTickAd() {
         <span className="mt-1.5 block text-[13px] text-white/90">
           Us ke baad regular daam: Rs 400 / 30 days
         </span>
-      </a>
+      </button>
 
       <div className="flex items-center justify-between px-3 py-2.5">
         <div>
@@ -59,12 +89,14 @@ export default function BlueTickAd() {
             Details ke liye message karein
           </div>
         </div>
-        <a
-          href={CTA_URL}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-[13px] font-bold text-white"
+        <button
+          type="button"
+          onClick={openChat}
+          disabled={opening}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-[13px] font-bold text-white disabled:opacity-70"
         >
-          Send Message
-        </a>
+          {opening ? 'Opening...' : 'Send Message'}
+        </button>
       </div>
     </div>
   );
