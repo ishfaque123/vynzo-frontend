@@ -485,6 +485,7 @@ export default function ChatPage() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const swipeStartRef = useRef<{ x: number; y: number; id: string } | null>(null);
   const [swipeDx, setSwipeDx] = useState<{ id: string; dx: number } | null>(null);
+  const swipeDxRef = useRef<{ id: string; dx: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
@@ -945,22 +946,32 @@ export default function ChatPage() {
     }
     const dx = t.clientX - s.x;
     const dy = t.clientY - s.y;
-    if (dx > 12 && dx > Math.abs(dy) * 1.5) {
+    if (dx > 10 && dx > Math.abs(dy)) {
       cancelLongPress();
-      setSwipeDx({ id: m.id, dx: Math.min(dx, 90) });
+      const v = { id: m.id, dx: Math.min(dx, 90) };
+      swipeDxRef.current = v;
+      setSwipeDx(v);
     } else if (Math.abs(dy) > 10 || Math.abs(dx) > 10) {
       cancelLongPress();
+      swipeDxRef.current = null;
       setSwipeDx(null);
     }
   }
   function handleBubbleTouchEnd(m: Message) {
-    const s = swipeDx;
+    const s = swipeDxRef.current;
     swipeStartRef.current = null;
+    swipeDxRef.current = null;
     setSwipeDx(null);
     cancelLongPress();
     if (s && s.id === m.id && s.dx > 55 && !m.isDeleted && !selectedMessageIds.length) {
       setReplyTo(m);
     }
+  }
+  function handleBubbleTouchCancel() {
+    swipeStartRef.current = null;
+    swipeDxRef.current = null;
+    setSwipeDx(null);
+    cancelLongPress();
   }
 
   function enterSelectionMode(message: Message) {
@@ -1333,13 +1344,14 @@ export default function ChatPage() {
                 <div
                   onTouchStart={(e) => handleBubbleTouchStart(m, e)}
                   onTouchEnd={() => handleBubbleTouchEnd(m)}
+                  onTouchCancel={handleBubbleTouchCancel}
                   onTouchMove={(e) => handleBubbleTouchMove(m, e)}
                   onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
                   onCopy={(e) => e.preventDefault()}
                   onCut={(e) => e.preventDefault()}
                   onDragStart={(e) => e.preventDefault()}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
-                  style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', transform: swipeDx?.id === m.id ? `translateX(${swipeDx.dx}px)` : undefined, transition: swipeDx?.id === m.id ? 'none' : 'transform 0.15s ease' }}
+                  style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'pan-y', transform: swipeDx?.id === m.id ? `translateX(${swipeDx.dx}px)` : undefined, transition: swipeDx?.id === m.id ? 'none' : 'transform 0.15s ease' }}
                   className={`max-w-[75%] text-[16px] leading-relaxed shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     isMine ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
                   } ${
