@@ -4,6 +4,7 @@ import Shell from '@/components/Shell';
 import ThemeProvider from '@/components/ThemeProvider';
 import { FollowProvider } from '@/contexts/FollowContext';
 import OfflineServiceWorker from '@/components/OfflineServiceWorker';
+import { AdsterraSocialBar } from '@/components/Adsterra';
 import { fetchSeoSettings } from '@/lib/api/settingsApi';
 
 const SITE_URL = 'https://www.frianzo.online';
@@ -140,6 +141,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Shell>{children}</Shell>
           </FollowProvider>
         </ThemeProvider>
+        {/* Adsterra Social Bar slot (placement 31872374) — SEPARATE from the
+            AdSense loader in <head> above; do not merge the two. This slot
+            renders nothing until the real snippet is pasted into
+            src/lib/adsterraSnippets.ts, and the component itself restricts
+            the bar to public routes (/, /blog, /about, /help) so it can
+            never appear on chat/DM or other logged-in app screens. */}
+        <AdsterraSocialBar />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

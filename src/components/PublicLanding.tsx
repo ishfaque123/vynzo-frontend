@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import NativeRedirect from './NativeRedirect';
 import GooglePlayButton from './GooglePlayButton';
+import { AdsterraBanner } from './Adsterra';
 
 export default function PublicLanding() {
   const features = [
@@ -209,6 +210,11 @@ export default function PublicLanding() {
             and start connecting in minutes.
           </p>
         </section>
+
+        {/* Adsterra leaderboard slot (728x90, placement 31872375). Renders
+            nothing until the real snippet is pasted into
+            src/lib/adsterraSnippets.ts. Public landing page only. */}
+        <AdsterraBanner size="728x90" className="flex justify-center px-5 py-6" />
 
         <footer className="border-t border-slate-200 bg-slate-950 px-5 py-10 text-white sm:px-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-7 sm:flex-row sm:items-center sm:justify-between">

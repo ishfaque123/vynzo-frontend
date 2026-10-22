@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { articles } from '@/lib/blog';
+import { AdsterraBanner } from '@/components/Adsterra';
 
 export const metadata = {
   title: 'Blog | Frianzo',
@@ -50,6 +51,11 @@ export default function BlogIndexPage() {
           </article>
         ))}
       </div>
+
+      {/* Adsterra leaderboard slot (728x90, placement 31872375). Renders
+          nothing until the real snippet is pasted into
+          src/lib/adsterraSnippets.ts. */}
+      <AdsterraBanner size="728x90" className="mt-10 flex justify-center" />
 
       <p className="mt-10 text-sm text-slate-500">
         New here?{' '}

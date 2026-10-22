@@ -13,6 +13,7 @@ import ShareModal from '@/components/ShareModal';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
+import { AdsterraBanner } from '@/components/Adsterra';
 import SponsoredCard from '@/components/SponsoredCard';
 import EarnProAd from '@/components/EarnProAd';
 import BlueTickAd from '@/components/BlueTickAd';
@@ -357,6 +358,7 @@ export default function HomePage() {
                   replyTo={replyTo} setReplyTo={setReplyTo}
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
+                {(index + 1) === 4 && <div className="my-4 flex justify-center px-4"><AdsterraBanner size="300x250" /></div>}
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
                 {((index + 1) === 2 || (index + 1) === 8) && <div className="my-4 px-4"><SponsoredCard /></div>}
                 {(index + 1) === 3 && <div className="my-4 px-4"><BlueTickAd /></div>}

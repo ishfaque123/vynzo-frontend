@@ -1,3 +1,5 @@
+import { AdsterraBanner } from '@/components/Adsterra';
+
 export const metadata = {
   title: 'About Frianzo | Social Network',
   description: 'Learn about Frianzo — a social network for sharing posts, photos, stories and reels, discovering people, and connecting with friends. Our mission, features, and community values.',
@@ -122,6 +124,10 @@ export default function AboutPage() {
         <a href="/contact" className="text-blue-600 underline">Contact page</a> or browse the{' '}
         <a href="/help" className="text-blue-600 underline">Help Center</a> for quick answers.
       </p>
+
+      {/* Adsterra banner slot (300x250, placement 31872376). Renders nothing
+          until the real snippet is pasted into src/lib/adsterraSnippets.ts. */}
+      <AdsterraBanner size="300x250" className="mt-10 flex justify-center" />
     </div>
   );
 }
