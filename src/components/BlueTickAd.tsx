@@ -57,28 +57,26 @@ export default function BlueTickAd() {
         <div className="px-1 text-base tracking-widest text-slate-400">•••</div>
       </div>
 
-      <p className="px-3 pb-2.5 text-[13.5px] leading-snug text-slate-800 dark:text-slate-200">
-        Apne profile ko <span className="font-semibold">Blue Tick</span> se official banao —{' '}
-        <span className="font-semibold">12 months sirf Rs 400</span>. Sath mein feed boost aur
-        search mein pehle number par ana bhi shamil hai.
+      <p className="px-3 pb-3 text-[13.5px] leading-snug text-slate-800 dark:text-slate-200">
+        Make your profile official with the <span className="font-semibold">Blue Tick</span> —{' '}
+        <span className="font-semibold">12 months for just Rs 400</span>, including a feed boost
+        and priority placement in search.
       </p>
 
       <button
         type="button"
         onClick={openChat}
         disabled={opening}
-        className="block w-full bg-gradient-to-br from-sky-950 via-blue-800 to-sky-500 px-4 py-5 text-left text-white disabled:opacity-70"
+        className="block w-full bg-blue-700 px-4 py-5 text-left text-white transition-colors hover:bg-blue-800 disabled:opacity-70"
       >
-        <span className="inline-block rounded-full border border-white/40 bg-white/15 px-2.5 py-1 text-[10.5px] font-bold tracking-wider">
-          LAUNCH OFFER · 31 OCTOBER TAK
+        <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 text-[10.5px] font-semibold tracking-wider">
+          LAUNCH OFFER · UNTIL 31 OCTOBER
         </span>
-        <span className="mt-2.5 block text-[23px] font-extrabold leading-tight">
-          Blue Tick
-          <br />
-          12 Months · Rs 400
+        <span className="mt-2.5 block text-[22px] font-bold leading-tight">
+          Blue Tick — 12 Months · Rs 400
         </span>
-        <span className="mt-1.5 block text-[13px] text-white/90">
-          Us ke baad regular daam: Rs 400 / 30 days
+        <span className="mt-1 block text-[12.5px] text-blue-100">
+          Regular price afterwards: Rs 400 / 30 days
         </span>
       </button>
 
@@ -88,14 +86,14 @@ export default function BlueTickAd() {
             Frianzo Blue Tick
           </div>
           <div className="text-[11.5px] text-slate-500 dark:text-slate-400">
-            Details ke liye message karein
+            Message now to get yours
           </div>
         </div>
         <button
           type="button"
           onClick={openChat}
           disabled={opening}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-[13px] font-bold text-white disabled:opacity-70"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-70"
         >
           {opening ? 'Opening...' : 'Send Message'}
         </button>
