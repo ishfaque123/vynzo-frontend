@@ -8,18 +8,29 @@
  *
  * Approved units (do NOT add popunders or any other format):
  *   Native Banner   placement 31872373 -> nativeBanner   (blog article pages)
- *   Social Bar      placement 31872374 -> socialBar      (root layout; public routes + home feed + /reels)
+ *   Social Bar      placement 31872374 -> socialBar      (REMOVED — see below)
  *   Banner 728x90   placement 31872375 -> banner728x90   (landing + blog index)
  *   Banner 300x250  placement 31872376 -> banner300x250  (blog article + about + home feed)
  *   Banner 320x50   placement 31872377 -> banner320x50   (help page + reels page)
+ *
+ * 2026-10-23: the Social Bar was REMOVED on the owner's order — as a
+ * floating format it popped over pages and broke the UI. The `socialBar`
+ * constant is therefore intentionally EMPTY (its slot renders nothing
+ * anywhere), and the owner's standing rule is: no floating/pop ad formats;
+ * ads only in fixed, in-design spots. Do NOT re-add the Social Bar code
+ * without the owner's explicit approval.
  */
 export const ADSTERRA_SNIPPETS = {
   /** Native Banner — placement 31872373. */
   nativeBanner: `<script async="async" data-cfasync="false" src="https://bicea.org/21/bd53bf64edbd2d4a41d2dce1586ecebb"></script>
 <div id="container-bd53bf64edbd2d4a41d2dce1586ecebb"></div>`,
 
-  /** Social Bar — placement 31872374. */
-  socialBar: `<script data-cfasync="false" src="https://bicea.org/14/08c7d5ffbc80298d685e1ff9c33e248f"></script>`,
+  /**
+   * Social Bar — placement 31872374. INTENTIONALLY EMPTY: removed on the
+   * owner's order 2026-10-23 (floating format broke the UI). An empty
+   * snippet makes AdsterraSocialBar render nothing on every route.
+   */
+  socialBar: ``,
 
   /** Banner 728x90 — placement 31872375. */
   banner728x90: `<script>
