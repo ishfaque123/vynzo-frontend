@@ -28,10 +28,21 @@ export default function NewMessagePage() {
   const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [directPrefill, setDirectPrefill] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setShareUrl(params.get('share') || '');
+    const directText = params.get('text');
+    const directTo = params.get('to');
+    if (directText && directTo) {
+      // Click-to-message entry (e.g. the Blue Tick feed ad): preselect the
+      // recipient and prefill the first message; Send delivers it as-is.
+      setShareUrl(directText);
+      setSelectedIds([directTo]);
+      setDirectPrefill(true);
+    } else {
+      setShareUrl(params.get('share') || '');
+    }
   }, []);
 
   useEffect(() => {
@@ -164,6 +175,12 @@ export default function NewMessagePage() {
         <h1 className="text-xl font-semibold">Send to</h1>
         <p className="mt-1 text-sm text-slate-500">Select up to {MAX_SELECTED} people</p>
       </div>
+
+      {directPrefill && (
+        <div className="mb-4 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950 dark:text-blue-100">
+          Your message is ready — press <b>Send</b> below and it will open your chat.
+        </div>
+      )}
 
       <input
         value={query}
