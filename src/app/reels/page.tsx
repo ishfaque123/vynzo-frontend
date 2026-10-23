@@ -436,10 +436,18 @@ export default function ReelsPage() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadingMoreRef = useRef(false);
-  const gestureLockedRef = useRef(false);
-  const wheelLockRef = useRef(false);
-  const navTargetRef = useRef<number | null>(null);
-  const navSettleTimerRef = useRef<number | undefined>(undefined);
+  // Authoritative feed position for keyboard/wheel stepping. Kept in sync
+  // by the IntersectionObserver below and set optimistically the moment a
+  // step starts, so a step NEVER derives its start position from a
+  // mid-animation scrollTop read (the old Math.round(scrollTop /
+  // clientHeight) read is what produced the two-position jump).
+  const currentIndexRef = useRef(0);
+  // Target index of a programmatic step that is still animating. While
+  // set, further wheel/key steps are dropped; cleared when the observer
+  // reports the target slide as most-visible (ratio >= 0.8), with a
+  // 1200 ms backstop so the driver can never wedge.
+  const navInFlightRef = useRef<number | null>(null);
+  const navBackstopTimerRef = useRef<number | undefined>(undefined);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const activeTabRef = useRef<'foryou' | 'following'>('foryou');
@@ -468,6 +476,11 @@ export default function ReelsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const pullStartYRef = useRef<number | null>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the authoritative index in sync with the visible slide (tab
+  // restores, first load, touch scrolling — everything that moves the
+  // feed without going through the wheel/key step functions).
+  useEffect(() => { currentIndexRef.current = activeIndex; }, [activeIndex]);
 
   async function handleRefresh() {
     if (refreshing) return;
@@ -701,7 +714,7 @@ export default function ReelsPage() {
     setHasMore(more);
   }
 
-  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore) { void loadMoreReels(); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
+  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); currentIndexRef.current = visibleIndex; setActiveIndex(visibleIndex); if (navInFlightRef.current !== null && visibleIndex === navInFlightRef.current && visible.intersectionRatio >= 0.8) { navInFlightRef.current = null; window.clearTimeout(navBackstopTimerRef.current); } if (visibleIndex >= reels.length - 3 && hasMore) { void loadMoreReels(); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
   function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
@@ -711,60 +724,87 @@ export default function ReelsPage() {
     const root = document.getElementById('reels-feed');
     if (!root) return;
     const targetIndex = Math.max(0, Math.min(index, reels.length - 1));
+    // Optimistic: the authoritative index moves NOW, before the smooth
+    // scroll animates, so nothing can derive a second step from the
+    // in-flight position.
+    currentIndexRef.current = targetIndex;
     setActiveIndex(targetIndex);
     root.scrollTo({ top: targetIndex * root.clientHeight, behavior: 'smooth' });
   }
-  function getCurrentIndex() {
-    const root = document.getElementById('reels-feed');
-    if (!root || !root.clientHeight) return activeIndex;
-    return Math.max(0, Math.min(reels.length - 1, Math.round(root.scrollTop / root.clientHeight)));
-  }
   function goNext() {
-    if (gestureLockedRef.current || !reels.length) return;
-    const currentIndex = getCurrentIndex();
+    if (navInFlightRef.current !== null || !reels.length) return;
+    const currentIndex = currentIndexRef.current;
     if (currentIndex >= reels.length - 1) return;
-    gestureLockedRef.current = true;
-    scrollToIndex(currentIndex + 1);
-    window.setTimeout(() => { gestureLockedRef.current = false; }, 550);
-    return currentIndex + 1;
+    beginStepNav(currentIndex + 1);
   }
   function goPrevious() {
-    if (gestureLockedRef.current || !reels.length) return;
-    const currentIndex = getCurrentIndex();
+    if (navInFlightRef.current !== null || !reels.length) return;
+    const currentIndex = currentIndexRef.current;
     if (currentIndex <= 0) return;
-    gestureLockedRef.current = true;
-    scrollToIndex(currentIndex - 1);
-    window.setTimeout(() => { gestureLockedRef.current = false; }, 550);
-    return currentIndex - 1;
+    beginStepNav(currentIndex - 1);
   }
-  function beginWheelNav(targetIndex: number) {
-    navTargetRef.current = targetIndex;
-    window.clearTimeout(navSettleTimerRef.current);
-    // Backstop: never wedge the wheel driver if the settle signal is missed
-    navSettleTimerRef.current = window.setTimeout(() => { navTargetRef.current = null; }, 900);
+  function beginStepNav(targetIndex: number) {
+    navInFlightRef.current = targetIndex;
+    window.clearTimeout(navBackstopTimerRef.current);
+    // Backstop: never wedge the step driver if the observer's settle
+    // signal is missed (e.g. the target slide never reaches ratio 0.8)
+    navBackstopTimerRef.current = window.setTimeout(() => { navInFlightRef.current = null; }, 1200);
+    scrollToIndex(targetIndex);
   }
-  function handleFeedScroll(e: React.UIEvent<HTMLDivElement>) {
-    const target = navTargetRef.current;
-    if (target === null) return;
-    const root = e.currentTarget;
-    if (!root.clientHeight) return;
-    if (Math.abs(root.scrollTop - target * root.clientHeight) < 2) {
-      navTargetRef.current = null;
-      window.clearTimeout(navSettleTimerRef.current);
+  function isOverlayOrFieldEvent(e: Event): boolean {
+    // Overlays rendered inside a slide (share sheet, report dialog,
+    // notice) are position:fixed subtrees, and form fields need their
+    // native wheel/key behavior (the report dialog has a textarea and
+    // radio inputs). Events from either never belong to the feed
+    // driver. (The comments modal is portaled to <body>, so its events
+    // never reach these listeners at all.)
+    const t = e.target as HTMLElement | null;
+    if (!t || !(t instanceof HTMLElement)) return false;
+    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return true;
+    let el: HTMLElement | null = t;
+    const root = feedRef.current;
+    while (el && el !== root) {
+      if (window.getComputedStyle(el).position === 'fixed') return true;
+      el = el.parentElement;
     }
+    return false;
   }
-  function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
-    if (Math.abs(e.deltaY) < 8) return;
+  function handleWheelNative(e: WheelEvent) {
+    if (isOverlayOrFieldEvent(e)) return;
+    // Registered natively with { passive: false } in the effect below.
+    // React's onWheel is passive, so its preventDefault() was ignored and
+    // every wheel event ALSO scrolled the feed natively — each gesture
+    // moved the feed twice (programmatic smooth scroll + native delta)
+    // and snap-mandatory settled the uncontrolled sum to +1, +2, or +0.
+    // Cancel FIRST and unconditionally, so every wheel event — stepped
+    // or dropped — contributes zero native scroll.
     e.preventDefault();
-    // A wheel navigation is still settling: swallow trailing wheel events so
-    // they cannot step again off the in-flight (past-halfway) scroll position
-    if (navTargetRef.current !== null) return;
-    if (wheelLockRef.current) return;
-    wheelLockRef.current = true;
-    const target = e.deltaY > 0 ? goNext() : goPrevious();
-    if (typeof target === 'number') beginWheelNav(target);
-    window.setTimeout(() => { wheelLockRef.current = false; }, 650);
+    if (Math.abs(e.deltaY) < 8) return;
+    // A step is still animating: drop the event (it moved nothing above)
+    if (navInFlightRef.current !== null) return;
+    if (e.deltaY > 0) goNext(); else goPrevious();
   }
+  function handleKeyDownNative(e: KeyboardEvent) {
+    // Only while the feed itself has focus — never hijack keys from
+    // overlays or form fields inside them.
+    if (isOverlayOrFieldEvent(e)) return;
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); goNext(); }
+    else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); goPrevious(); }
+  }
+  // Native wheel + keyboard drivers for the feed. No dependency array on
+  // purpose: the handlers close over the current reels list, and the
+  // cleanup/re-register on every render keeps them fresh; the feed
+  // element itself is also re-created when the loading screen unmounts.
+  useEffect(() => {
+    const root = feedRef.current;
+    if (!root) return;
+    root.addEventListener('wheel', handleWheelNative, { passive: false });
+    root.addEventListener('keydown', handleKeyDownNative);
+    return () => {
+      root.removeEventListener('wheel', handleWheelNative);
+      root.removeEventListener('keydown', handleKeyDownNative);
+    };
+  });
   useEffect(()=>{ if(!notice) return; const t=setTimeout(()=>setNotice(null),4000); return ()=>clearTimeout(t); },[notice]);
   async function handleUpload() {
     if (!reelsEnabled) return;
@@ -794,5 +834,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 flex flex-col bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} onWheel={handleWheel} onScroll={handleFeedScroll} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto min-h-0 w-full max-w-[480px] flex-1 snap-y snap-mandatory overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y">{(refreshing || pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start overflow-hidden"><ReelItem reel={reel} index={index} active={index === activeIndex} forcePause={forcePause} preload={index === activeIndex || index === activeIndex + 1} feedBusy={tabSwitching} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div><div className="flex shrink-0 items-center justify-center bg-black py-1"><AdsterraBanner size="320x50" /></div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+  return <div className="absolute inset-0 flex flex-col bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} tabIndex={-1} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto min-h-0 w-full max-w-[480px] flex-1 snap-y snap-mandatory overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y outline-none">{(refreshing || pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.map((reel, index) => <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start overflow-hidden"><ReelItem reel={reel} index={index} active={index === activeIndex} forcePause={forcePause} preload={index === activeIndex || index === activeIndex + 1} feedBusy={tabSwitching} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div><div className="flex shrink-0 items-center justify-center bg-black py-1"><AdsterraBanner size="320x50" /></div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
 }
