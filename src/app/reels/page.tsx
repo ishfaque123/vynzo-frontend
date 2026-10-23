@@ -442,7 +442,12 @@ export default function ReelsPage() {
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const activeTabRef = useRef<'foryou' | 'following'>('foryou');
   // Per-tab feed cache: switching back to a visited tab is instant, no reload
-  const feedCacheRef = useRef<Record<'foryou' | 'following', { reels: Reel[]; hasMore: boolean; activeIndex: number } | null>>({ foryou: null, following: null });
+  const feedCacheRef = useRef<Record<'foryou' | 'following', { reels: Reel[]; hasMore: boolean; activeIndex: number; offset: number } | null>>({ foryou: null, following: null });
+  // Raw server offset of the visible feed: advances by how many reels each
+  // fetch RETURNS (before client-side dedupe), never by the deduped list
+  // length — the server re-sorts per request, so pages overlap and a
+  // length-derived offset stalls the feed (see loadMoreReels).
+  const feedOffsetRef = useRef(0);
   // Subtle spinner for tab switches (full-screen 3-dots only on first page load)
   const [tabSwitching, setTabSwitching] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -460,7 +465,6 @@ export default function ReelsPage() {
   const [pullY, setPullY] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const pullStartYRef = useRef<number | null>(null);
-  const swipeStartIndexRef = useRef<number | null>(null);
   const feedRef = useRef<HTMLDivElement | null>(null);
 
   async function handleRefresh() {
@@ -475,7 +479,6 @@ export default function ReelsPage() {
   }
 
   function onTouchStartRefresh(e: React.TouchEvent) {
-    swipeStartIndexRef.current = getCurrentIndex();
     const root = feedRef.current;
     if (!root || root.scrollTop > 0 || refreshing) return;
     pullStartYRef.current = e.touches[0].clientY;
@@ -490,20 +493,16 @@ export default function ReelsPage() {
   }
 
   function onTouchEndRefresh() {
-    // One reel per swipe: a hard fling in a snap container can come to rest
-    // two reels away (snap only aligns the resting position; it does not
-    // cap travel). If this gesture overshot by more than one reel, settle
-    // exactly one step from where the swipe started.
-    const startIndex = swipeStartIndexRef.current;
-    swipeStartIndexRef.current = null;
-    if (startIndex !== null) {
-      window.setTimeout(() => {
-        const idx = getCurrentIndex();
-        if (Math.abs(idx - startIndex) > 1) {
-          scrollToIndex(startIndex + Math.sign(idx - startIndex));
-        }
-      }, 200);
-    }
+    // Deliberately NO post-touch "one reel per swipe" correction here.
+    // The old version re-checked the index 200ms after touchend and
+    // smooth-scrolled back to one step from the swipe's start whenever
+    // the view had moved further — but at 200ms a fast fling is still
+    // mid-momentum, so the check read a position 2-3 slides ahead and
+    // the "correction" yanked the view BACK toward where the swipe
+    // began (owner report: fast scrolling repeatedly jumps back to the
+    // old place). CSS snap-mandatory already settles every gesture on
+    // the nearest slide in the direction of travel, for slow and fast
+    // scrolling alike — let it do that job alone.
     if (pullStartYRef.current === null) return;
     pullStartYRef.current = null;
     if (pullY > 70 && !refreshing) {
@@ -517,8 +516,8 @@ export default function ReelsPage() {
     const prevTab = activeTabRef.current;
     // Remember scroll position of the tab we're leaving
     const prevCached = feedCacheRef.current[prevTab];
-    if (prevCached) prevCached.activeIndex = activeIndex;
-    else if (reels.length > 0) feedCacheRef.current[prevTab] = { reels, hasMore, activeIndex };
+    if (prevCached) { prevCached.activeIndex = activeIndex; prevCached.offset = feedOffsetRef.current; }
+    else if (reels.length > 0) feedCacheRef.current[prevTab] = { reels, hasMore, activeIndex, offset: feedOffsetRef.current };
 
     activeTabRef.current = tab;
     setActiveTab(tab);
@@ -529,6 +528,7 @@ export default function ReelsPage() {
       setReels(cached.reels);
       setHasMore(cached.hasMore);
       setActiveIndex(cached.activeIndex);
+      feedOffsetRef.current = cached.offset;
       setFeedError(false);
       setOfflineMode(false);
       requestAnimationFrame(() => {
@@ -541,6 +541,7 @@ export default function ReelsPage() {
       setReels([]);
       setActiveIndex(0);
       setHasMore(false);
+      feedOffsetRef.current = 0;
       setFeedError(false);
       setOfflineMode(false);
     }
@@ -550,7 +551,7 @@ export default function ReelsPage() {
   useEffect(() => {
     const tab = activeTabRef.current;
     if (feedCacheRef.current[tab] && reels.length > 0) {
-      feedCacheRef.current[tab] = { reels, hasMore, activeIndex };
+      feedCacheRef.current[tab] = { reels, hasMore, activeIndex, offset: feedOffsetRef.current };
     }
   }, [reels, hasMore, activeIndex]);
 
@@ -632,9 +633,12 @@ export default function ReelsPage() {
 
       const finalReels = combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item);
       const finalHasMore = !usingOfflineReels && !!feed.data?.hasMore;
+      // Raw offset = however many reels the server returned, before the
+      // author/not-interested filtering above shrank the visible list.
+      feedOffsetRef.current = feed.success ? (feed.data.reels || []).length : 0;
       setReels(finalReels);
       setHasMore(finalHasMore);
-      if (!cancelled) feedCacheRef.current[tab] = { reels: finalReels, hasMore: finalHasMore, activeIndex: 0 };
+      if (!cancelled) feedCacheRef.current[tab] = { reels: finalReels, hasMore: finalHasMore, activeIndex: 0, offset: feedOffsetRef.current };
 
       const enabled = !!(config.success && config.data?.enabled);
       const remaining = status.success ? Number(status.data?.remaining) : 0;
@@ -649,7 +653,53 @@ export default function ReelsPage() {
 
     return () => { cancelled = true; };
   }, [user?.id, activeTab, refreshKey]);
-  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore && !loadingMoreRef.current) { loadingMoreRef.current = true; void fetchReelFeed(reels.length, activeTabRef.current).then((result) => { if (result.success) { setReels((items) => { const existingIds = new Set(items.map((item) => item.id)); const notInterested = getNotInterestedIds(); const newOnes = (result.data.reels || []).filter((item: Reel) => !existingIds.has(item.id) && !notInterested.has(item.id)); return [...items, ...newOnes]; }); setHasMore(!!result.data.hasMore); } }).finally(() => { loadingMoreRef.current = false; }); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
+
+  // Infinite scroll: fetch the next page(s) by RAW server offset. The
+  // server re-sorts by popularity on every request, so consecutive pages
+  // overlap heavily and a page can contain only reels already on screen.
+  // The old code derived the offset from the deduped list length and only
+  // fetched from an effect keyed on that length: an all-duplicate page
+  // changed nothing, no new fetch ever fired, and the feed dead-ended
+  // after ~100-150 reels with hasMore still true. Advance the offset by
+  // the raw page size instead, and when a page adds nothing new, keep
+  // fetching (bounded) until fresh reels or the real end of the feed.
+  async function loadMoreReels() {
+    if (loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    const tab = activeTabRef.current;
+    const notInterested = getNotInterestedIds();
+    const seen = new Set(reels.map((item) => item.id));
+    const collected: Reel[] = [];
+    let more = hasMore;
+    try {
+      let dupPages = 0;
+      while (more && dupPages < 5) {
+        const result = await fetchReelFeed(feedOffsetRef.current, tab);
+        if (!result.success || activeTabRef.current !== tab) break;
+        const raw: Reel[] = result.data.reels || [];
+        feedOffsetRef.current += raw.length;
+        more = !!result.data.hasMore;
+        const fresh = raw.filter((item: Reel) => !seen.has(item.id) && !notInterested.has(item.id));
+        fresh.forEach((item) => seen.add(item.id));
+        if (!fresh.length) { dupPages += 1; continue; }
+        collected.push(...fresh);
+        break;
+      }
+    } finally {
+      loadingMoreRef.current = false;
+    }
+    if (activeTabRef.current !== tab) return;
+    if (collected.length) {
+      setReels((items) => {
+        const ids = new Set(items.map((item) => item.id));
+        const extra = collected.filter((item) => !ids.has(item.id));
+        return extra.length ? [...items, ...extra] : items;
+      });
+    }
+    setHasMore(more);
+  }
+
+  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleIndex = Number((visible.target as HTMLElement).dataset.reelIndex); setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore) { void loadMoreReels(); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
   function updateCommentCount(id: string, delta: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, commentCount: Math.max(0, (item.commentCount || 0) + delta) } : item)); }
