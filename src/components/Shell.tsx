@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { BellIcon } from '@/components/icons/UiIcons';
 import { fetchUnreadCount } from '@/lib/api/notificationApi';
+import { fetchConversations } from '@/lib/api/messageApi';
 import { logoutRequest } from '@/lib/api/authApi';
 import { fetchDashboard, fetchFollowCounts } from '@/lib/api/userApi';
 import UsageTracker from '@/components/UsageTracker';
@@ -172,6 +173,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, offline } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [headerHidden, setHeaderHidden] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -196,6 +198,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     }
     loadCount();
     const interval = setInterval(loadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, offline]);
+
+  useEffect(() => {
+    if (!isAuthenticated || offline) {
+      setUnreadMessages(0);
+      return;
+    }
+    function loadMessageCount() {
+      fetchConversations().then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          const total = res.data.reduce(
+            (sum: number, c: { unreadCount?: number }) => sum + (c.unreadCount || 0),
+            0,
+          );
+          setUnreadMessages(total);
+        }
+      });
+    }
+    loadMessageCount();
+    const interval = setInterval(loadMessageCount, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated, offline]);
 
@@ -298,8 +321,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <Link href="/search" aria-label="Search" className="p-2">
                 <SearchIcon active={currentPath === '/search'} />
               </Link>
-              <Link href="/messages" aria-label="Messages" className="p-2">
+              <Link href="/messages" aria-label="Messages" className="relative p-2">
                 <ChatIcon active={currentPath === '/messages'} />
+                {unreadMessages > 0 && (
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
+                    {unreadMessages > 9 ? '9+' : unreadMessages}
+                  </span>
+                )}
               </Link>
             </>
           )}
