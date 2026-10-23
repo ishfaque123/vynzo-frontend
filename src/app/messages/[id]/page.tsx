@@ -252,6 +252,14 @@ function VoiceMessagePlayer({ url, duration, isMine }: { url: string; duration?:
   );
 }
 
+function ClockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8b9a8f" strokeWidth="2" strokeLinecap="round" className="flex-shrink-0">
+      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
 // WhatsApp-style ticks: one grey = sent, two grey = delivered, two blue = read.
 function Ticks({ status }: { status: 'sent' | 'delivered' | 'read' }) {
   const color = status === 'read' ? '#4fc3f7' : '#8b9a8f';
@@ -288,6 +296,44 @@ interface Message {
   reactions?: { userId: string; emoji: string }[];
   createdAt: string;
   sender?: { id: string; username: string; displayName: string; profilePictureUrl?: string };
+  // Client-only send state for optimistic (local) entries. Server messages
+  // never carry this; a local entry is replaced by its server message as
+  // soon as the send resolves.
+  localStatus?: 'sending' | 'failed';
+}
+
+// Server send rejections whose reason the user should read (blocked,
+// restricted, rate-limited...). Their text is shown as a subtle inline
+// notice above the composer — never as the red toast pill.
+const SEND_POLICY_ERRORS: Record<string, string> = {
+  BLOCKED: "You can't send messages to this user.",
+  MESSAGES_DISABLED: 'This user is not accepting messages.',
+  MESSAGES_RESTRICTED: 'This user only accepts messages from followers.',
+  RATE_LIMITED: 'You are sending too fast. Please slow down.',
+  LINK_SPAM_RESTRICTED: 'Too many links. Messaging restricted for 1 hour due to spam.',
+  MESSAGING_RESTRICTED: 'Messaging temporarily restricted due to spam.',
+  ACCOUNT_SUSPENDED: 'Your account has been suspended.',
+  INVALID_MEDIA_URL: 'Invalid media. Please try uploading again.',
+};
+
+// Bookkeeping for one optimistic (local) message entry, keyed by the
+// entry's local id.
+interface PendingSend {
+  payload: {
+    conversationId: string;
+    content: string;
+    replyToId?: string;
+    mediaUrl?: string;
+    mediaType?: 'image' | 'voice';
+    voiceDuration?: number;
+  };
+  // True while an emit for this entry is still waiting for its ack. A
+  // timed-out entry can still be ack-pending (the emit sits in the
+  // socket's offline buffer), and re-emitting then would duplicate it.
+  ackPending: boolean;
+  settled: boolean;
+  timer: ReturnType<typeof setTimeout> | null;
+  onSettled?: () => void;
 }
 interface OtherUser {
   id: string;
@@ -404,8 +450,14 @@ export default function ChatPage() {
     if (composerRef.current) composerRef.current.style.height = 'auto';
   }
   const [sending, setSending] = useState(false);
+  const [sendNotice, setSendNotice] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const sendingRef = useRef(false);
+  const sendNoticeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSendsRef = useRef<Map<string, PendingSend>>(new Map());
+  const localIdCounterRef = useRef(0);
+  const messagesRef = useRef<Message[]>([]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [disappearing, setDisappearing] = useState<number | null>(null);
@@ -571,6 +623,19 @@ export default function ChatPage() {
 
     function handleNewMessage(message: Message) {
       if (message.conversationId !== conversationId) return;
+      if (message.senderId === user?.id) {
+        // The server echoes our own sends to the whole conversation room
+        // (message:new is emitted just before the ack). Upgrade the
+        // matching local pending entry in place instead of adding a
+        // second bubble; the ack that follows then finds nothing to do.
+        const local = findLocalMatch(message);
+        if (local) {
+          settlePendingSend(local.id);
+          pendingSendsRef.current.delete(local.id);
+          setMessages((prev) => prev.map((m) => (m.id === local.id ? message : m)));
+          return;
+        }
+      }
       setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       if (message.senderId !== user?.id) {
         socket.emit('conversation:read', { conversationId });
@@ -718,6 +783,170 @@ export default function ChatPage() {
 
   const MAX_MESSAGE_LENGTH = 2000;
 
+  // --- Optimistic (local) sends ----------------------------------------
+  // A sent message appears instantly as a local bubble marked 'sending'
+  // (clock). The server ack — or the message:new echo, whichever reaches
+  // us first — replaces that same entry with the real message. If neither
+  // arrives within 15s the entry flips to 'failed' and can be retried by
+  // tapping it. Matching is per-entry: the ack callback closes over its
+  // own local id, and the emit payload is left exactly as before (the
+  // server destructures fixed fields, so a clientId would be ignored and
+  // never echoed back).
+
+  function showSendNotice(message: string) {
+    if (sendNoticeTimeout.current) clearTimeout(sendNoticeTimeout.current);
+    setSendNotice(message);
+    sendNoticeTimeout.current = setTimeout(() => setSendNotice(null), 5000);
+  }
+
+  function settlePendingSend(clientId: string) {
+    const record = pendingSendsRef.current.get(clientId);
+    if (!record) return;
+    if (record.timer) {
+      clearTimeout(record.timer);
+      record.timer = null;
+    }
+    if (!record.settled) {
+      record.settled = true;
+      record.onSettled?.();
+    }
+  }
+
+  function markLocalStatus(clientId: string, localStatus: 'sending' | 'failed') {
+    setMessages((prev) => prev.map((m) => (m.id === clientId ? { ...m, localStatus } : m)));
+  }
+
+  function armAckTimer(clientId: string) {
+    const record = pendingSendsRef.current.get(clientId);
+    if (!record) return;
+    if (record.timer) clearTimeout(record.timer);
+    record.timer = setTimeout(() => {
+      // No ack within 15s: the bubble becomes 'failed'. The emit may
+      // still be buffered by the socket (offline) — its late ack, if it
+      // ever lands, upgrades this same entry, so nothing is lost and
+      // nothing is doubled.
+      markLocalStatus(clientId, 'failed');
+      settlePendingSend(clientId);
+    }, 15000);
+  }
+
+  function handleSendAck(
+    clientId: string,
+    res: { success: boolean; data?: Message; error?: string; delivered?: boolean }
+  ) {
+    if (res?.success && res.delivered) setOtherLastDeliveredAt(new Date());
+    const record = pendingSendsRef.current.get(clientId);
+    if (!record) return; // already reconciled by the message:new echo
+    record.ackPending = false;
+    settlePendingSend(clientId);
+    if (res?.success && res.data) {
+      pendingSendsRef.current.delete(clientId);
+      const saved = res.data;
+      setMessages((prev) => {
+        // message:new may have appended the server message already; then
+        // just drop the local entry instead of replacing it (no dupes).
+        if (prev.some((m) => m.id === saved.id)) return prev.filter((m) => m.id !== clientId);
+        return prev.map((m) => (m.id === clientId ? saved : m));
+      });
+    } else {
+      // Any ack error flips the entry to 'failed' (tap to retry). Policy
+      // rejections additionally explain themselves in the subtle inline
+      // notice; the generic red toast is gone for send failures.
+      markLocalStatus(clientId, 'failed');
+      if (res?.error && SEND_POLICY_ERRORS[res.error]) {
+        showSendNotice(SEND_POLICY_ERRORS[res.error]);
+      }
+    }
+  }
+
+  function emitPendingSend(clientId: string) {
+    const record = pendingSendsRef.current.get(clientId);
+    if (!record || record.ackPending) return;
+    record.ackPending = true;
+    markLocalStatus(clientId, 'sending');
+    armAckTimer(clientId);
+    getSocket().emit('message:send', record.payload, (res: {
+      success: boolean;
+      data?: Message;
+      error?: string;
+      delivered?: boolean;
+    }) => handleSendAck(clientId, res));
+  }
+
+  function addLocalMessage(
+    partial: {
+      content: string;
+      mediaUrl?: string;
+      mediaType?: 'image' | 'voice';
+      voiceDuration?: number;
+      replyToId?: string;
+      replyTo?: Message['replyTo'];
+    },
+    onSettled?: () => void
+  ): string {
+    localIdCounterRef.current += 1;
+    const clientId = `local-${localIdCounterRef.current}`;
+    const entry: Message = {
+      id: clientId,
+      conversationId,
+      senderId: user?.id || '',
+      content: partial.content,
+      mediaUrl: partial.mediaUrl ?? null,
+      mediaType: partial.mediaType ?? null,
+      voiceDuration: partial.voiceDuration ?? null,
+      replyToId: partial.replyToId ?? null,
+      replyTo: partial.replyTo ?? null,
+      createdAt: new Date().toISOString(),
+      localStatus: 'sending',
+    };
+    pendingSendsRef.current.set(clientId, {
+      payload: {
+        conversationId,
+        content: partial.content,
+        replyToId: partial.replyToId,
+        mediaUrl: partial.mediaUrl,
+        mediaType: partial.mediaType,
+        voiceDuration: partial.voiceDuration,
+      },
+      ackPending: false,
+      settled: false,
+      timer: null,
+      onSettled,
+    });
+    setMessages((prev) => [...prev, entry]);
+    return clientId;
+  }
+
+  // Find the single local entry an incoming own-message echo belongs to.
+  // Media URLs are unique per upload; text matches by content. If the
+  // match is ambiguous (e.g. the same text is pending twice), return null
+  // and let each entry's own ack reconcile it instead.
+  function findLocalMatch(incoming: Message): Message | null {
+    const locals = messagesRef.current.filter((m) => m.localStatus);
+    if (!locals.length) return null;
+    const matches = locals.filter((m) =>
+      incoming.mediaUrl
+        ? m.mediaUrl === incoming.mediaUrl && m.mediaType === incoming.mediaType
+        : !m.mediaUrl && m.content === incoming.content
+    );
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  function retryLocalMessage(m: Message) {
+    if (m.localStatus !== 'failed') return;
+    const record = pendingSendsRef.current.get(m.id);
+    if (!record) return;
+    if (record.ackPending) {
+      // The first emit never resolved (e.g. still buffered in the socket
+      // while offline). Emitting again would deliver the message twice —
+      // just show 'sending' again and keep waiting on the original emit.
+      markLocalStatus(m.id, 'sending');
+      armAckTimer(m.id);
+      return;
+    }
+    emitPendingSend(m.id);
+  }
+
   async function sendMessage() {
     const content = text.trim();
     if (!content || sendingRef.current) return;
@@ -744,58 +973,41 @@ export default function ChatPage() {
       });
       return;
     }
-    socket.emit(
-      'message:send',
-      { conversationId, content, replyToId: replyTo?.id || undefined },
-      (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
-        clearTimeout(ackTimer);
-        if (res.success && res.data) {
-          setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
-          if (res.delivered) setOtherLastDeliveredAt(new Date());
-          setText('');
-          resetComposerHeight();
-          setReplyTo(null);
-          socket.emit('typing:stop', { conversationId });
-        } else {
-          const errorText =
-            res.error === 'BLOCKED'
-              ? "You can't send messages to this user."
-              : res.error === 'MESSAGES_DISABLED'
-                ? 'This user is not accepting messages.'
-                : res.error === 'MESSAGES_RESTRICTED'
-                  ? 'This user only accepts messages from followers.'
-                  : res.error === 'RATE_LIMITED'
-                    ? 'You are sending too fast. Please slow down.'
-                    : res.error === 'LINK_SPAM_RESTRICTED'
-                      ? 'Too many links. Messaging restricted for 1 hour due to spam.'
-                      : res.error === 'MESSAGING_RESTRICTED'
-                        ? 'Messaging temporarily restricted due to spam.'
-                      : res.error === 'ACCOUNT_SUSPENDED'
-                        ? 'Your account has been suspended.'
-                    : res.error === 'INVALID_MEDIA_URL'
-                      ? 'Invalid media. Please try uploading again.'
-                      : 'Could not send message. Please try again.';
-          showToast(errorText, 'error');
-        }
-        done();
-      }
+    clearTimeout(ackTimer);
+    // Optimistic send: append the local bubble and clear the composer
+    // immediately. The `done` guard releases when the send settles (ack,
+    // echo, or the 15s timer — whichever comes first).
+    const replyTarget = replyTo;
+    const clientId = addLocalMessage(
+      {
+        content,
+        replyToId: replyTarget?.id || undefined,
+        replyTo: replyTarget
+          ? {
+              id: replyTarget.id,
+              content: replyTarget.content,
+              mediaType: replyTarget.mediaType,
+              sender: replyTarget.sender
+                ? { displayName: replyTarget.sender.displayName, username: replyTarget.sender.username }
+                : null,
+            }
+          : null,
+      },
+      done
     );
+    setText('');
+    resetComposerHeight();
+    setReplyTo(null);
+    socket.emit('typing:stop', { conversationId });
+    emitPendingSend(clientId);
   }
 
   function sendMediaMessage(mediaUrl: string, mediaType: 'image' | 'voice', voiceDuration?: number) {
-    const socket = getSocket();
-    socket.emit(
-      'message:send',
-      { conversationId, content: '', mediaUrl, mediaType, voiceDuration },
-      (res: { success: boolean; data?: Message; error?: string; delivered?: boolean }) => {
-        if (res.success && res.data) {
-          setMessages((prev) => (prev.some((m) => m.id === res.data!.id) ? prev : [...prev, res.data!]));
-          if (res.delivered) setOtherLastDeliveredAt(new Date());
-        } else if (res.error === 'BLOCKED') {
-          showToast("You can't send messages to this user.", 'error');
-        }
-      }
-    );
+    // The media is already uploaded at this point; the send itself gets
+    // the same optimistic treatment as text (sending → sent/failed, tap
+    // to retry re-emits the same uploaded URL).
+    const clientId = addLocalMessage({ content: '', mediaUrl, mediaType, voiceDuration });
+    emitPendingSend(clientId);
   }
 
   async function handlePickImage(file: File) {
@@ -920,7 +1132,7 @@ export default function ChatPage() {
   }
 
   function startLongPress(m: Message, clientX?: number, clientY?: number) {
-    if (m.isDeleted || selectedMessageIds.length) return;
+    if (m.isDeleted || m.localStatus || selectedMessageIds.length) return;
     longPressTimer.current = setTimeout(() => {
       const left = Math.max(8, Math.min((clientX ?? window.innerWidth / 2) - 145, window.innerWidth - 298));
       const top = Math.max(70, Math.min((clientY ?? window.innerHeight / 2) - 115, window.innerHeight - 190));
@@ -963,7 +1175,7 @@ export default function ChatPage() {
     swipeDxRef.current = null;
     setSwipeDx(null);
     cancelLongPress();
-    if (s && s.id === m.id && s.dx > 55 && !m.isDeleted && !selectedMessageIds.length) {
+    if (s && s.id === m.id && s.dx > 55 && !m.isDeleted && !m.localStatus && !selectedMessageIds.length) {
       setReplyTo(m);
     }
   }
@@ -975,13 +1187,13 @@ export default function ChatPage() {
   }
 
   function enterSelectionMode(message: Message) {
-    if (message.isDeleted) return;
+    if (message.isDeleted || message.localStatus) return;
     setActionMenuFor(null);
     setSelectedMessageIds((prev) => (prev.includes(message.id) ? prev : [...prev, message.id]));
   }
 
   function toggleSelectedMessage(message: Message) {
-    if (message.isDeleted) return;
+    if (message.isDeleted || message.localStatus) return;
     setSelectedMessageIds((prev) =>
       prev.includes(message.id) ? prev.filter((id) => id !== message.id) : [...prev, message.id]
     );
@@ -1346,11 +1558,17 @@ export default function ChatPage() {
                   onTouchEnd={() => handleBubbleTouchEnd(m)}
                   onTouchCancel={handleBubbleTouchCancel}
                   onTouchMove={(e) => handleBubbleTouchMove(m, e)}
-                  onClick={() => selectedMessageIds.length && toggleSelectedMessage(m)}
+                  onClick={() => {
+                    if (selectedMessageIds.length) {
+                      toggleSelectedMessage(m);
+                      return;
+                    }
+                    if (m.localStatus === 'failed') retryLocalMessage(m);
+                  }}
                   onCopy={(e) => e.preventDefault()}
                   onCut={(e) => e.preventDefault()}
                   onDragStart={(e) => e.preventDefault()}
-                  onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted) setActionMenuFor(m); }}
+                  onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted && !m.localStatus) setActionMenuFor(m); }}
                   style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'pan-y', transform: swipeDx?.id === m.id ? `translateX(${swipeDx.dx}px)` : undefined, transition: swipeDx?.id === m.id ? 'none' : 'transform 0.15s ease' }}
                   className={`max-w-[75%] text-[16px] leading-relaxed shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     isMine ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
@@ -1370,7 +1588,14 @@ export default function ChatPage() {
                         <img
                           src={m.mediaUrl!}
                           alt=""
-                          onClick={(e) => { if (!selectedMessageIds.length) { e.stopPropagation(); setViewingImage(m.mediaUrl!); } }}
+                          onClick={(e) => {
+                            if (m.localStatus === 'failed') {
+                              e.stopPropagation();
+                              retryLocalMessage(m);
+                              return;
+                            }
+                            if (!selectedMessageIds.length) { e.stopPropagation(); setViewingImage(m.mediaUrl!); }
+                          }}
                           className="max-h-72 w-full rounded-xl object-cover"
                         />
                       )}
@@ -1395,8 +1620,17 @@ export default function ChatPage() {
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-amber-500"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
                         )}
                         <span className="text-[11px]">{m.editedAt ? 'edited · ' : ''}{formatMessageTime(m.createdAt)}</span>
-                        {isMine && status && <Ticks status={status} />}
+                        {isMine && (m.localStatus === 'sending' ? (
+                          <ClockIcon />
+                        ) : m.localStatus === 'failed' ? (
+                          <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold leading-none text-white">!</span>
+                        ) : (
+                          status && <Ticks status={status} />
+                        ))}
                       </div>
+                      {m.localStatus === 'failed' && (
+                        <p className="mt-0.5 text-right text-[11px] font-medium text-red-600">Not sent · Tap to retry</p>
+                      )}
                       {m.reactions?.length ? <div className="mt-1 flex flex-wrap gap-1">{Array.from(new Set(m.reactions.map((r) => r.emoji))).map((emoji) => <span key={emoji} className="rounded-full border bg-white px-1.5 py-0.5 text-xs">{emoji}</span>)}</div> : null}
                       {m.pinnedAt && <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-700"><PinIcon /> <span>Pinned</span></div>}
                     </>
@@ -1420,6 +1654,12 @@ export default function ChatPage() {
         </div>
         <div ref={bottomRef} />
       </div>
+
+      {sendNotice && (
+        <div className="border-t border-slate-100 bg-slate-100 px-3 py-2 text-center text-xs font-medium text-slate-600">
+          {sendNotice}
+        </div>
+      )}
 
       {replyTo && !editingMessage && (
         <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
