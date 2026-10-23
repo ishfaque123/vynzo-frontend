@@ -18,7 +18,6 @@ import ShareModal from '@/components/ShareModal';
 import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
-import { AdsterraNative } from '@/components/Adsterra';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
@@ -601,16 +600,6 @@ export default function ProfileClient() {
             {friendStatus === 'following' ? 'Following' : friendStatus === 'follow_back' ? 'Follow Back' : 'Follow'}
           </button>
         )}
-      </div>
-
-      {/* Adsterra Native Banner slot (placement 31872373) — fixed spot
-          below the profile header/bio, above the tabbed posts views.
-          Native unit (the same one used at the end of blog articles) so
-          the creative sits in the layout like content; the old 300x250
-          banner unit served fake-popup style creatives here. Main
-          profile view only; followers/following sub-pages have none. */}
-      <div className="mt-4 px-4">
-        <AdsterraNative />
       </div>
 
       {!isBlockedView && (highlights.length > 0 || isMe) && (
