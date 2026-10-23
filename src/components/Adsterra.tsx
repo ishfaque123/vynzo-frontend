@@ -12,15 +12,16 @@
  * fresh elements the browser will run).
  *
  * Placement policy (hard rule): public pages (landing, /blog, /about,
- * /help) plus — by the owner's explicit order on 2026-10-23, because most
- * users live there — the logged-in home feed (300x250 banner) and the
- * /reels page (320x50 banner + Social Bar). NEVER import these components
- * into chat/DM/messaging screens, admin, settings, or auth screens. The
+ * /help) plus — by the owner's explicit orders on 2026-10-23, because most
+ * users live there — the logged-in home feed (300x250 banner), the /reels
+ * page (320x50 banner), and profile pages /u/[username] (one 300x250
+ * banner below the header/bio). NEVER import these components into
+ * chat/DM/messaging screens, admin, settings, or auth screens. The
  * Social Bar additionally enforces its route allowlist itself (see
  * AdsterraSocialBar below).
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ADSTERRA_SNIPPETS } from '@/lib/adsterraSnippets';
 
@@ -84,6 +85,49 @@ export function AdsterraBanner({
       placementId={banner.placementId}
       className={className}
     />
+  );
+}
+
+/**
+ * Client-side media-query state: null until the width has been measured
+ * after mount (SSR / first paint), then true/false. Lets a slot pick its
+ * size BEFORE anything is injected, so the wrong-sized iframe never loads.
+ */
+function useMediaQuery(query: string): boolean | null {
+  const [matches, setMatches] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [query]);
+
+  return matches;
+}
+
+/**
+ * Responsive leaderboard — used on the landing page and the blog index.
+ * The 728x90 iframe overflows phone screens, so on viewports narrower
+ * than 768px this serves the 320x50 unit instead; on desktop (>=768px) it
+ * renders exactly the 728x90 slot. Only ONE slot is ever mounted: the size
+ * is chosen from matchMedia before injection (no CSS-hidden second iframe),
+ * and while the width is still unknown the slot renders nothing. If the
+ * viewport crosses the breakpoint, the mounted slot swaps to the other
+ * size (the old node unmounts, the new one injects).
+ */
+export function AdsterraResponsiveLeaderboard({
+  className,
+}: {
+  className?: string;
+}) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  if (isDesktop === null) return null;
+  return isDesktop ? (
+    <AdsterraBanner size="728x90" className={className} />
+  ) : (
+    <AdsterraBanner size="320x50" className={className} />
   );
 }
 

@@ -18,6 +18,7 @@ import ShareModal from '@/components/ShareModal';
 import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
+import { AdsterraBanner } from '@/components/Adsterra';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
@@ -600,6 +601,13 @@ export default function ProfileClient() {
             {friendStatus === 'following' ? 'Following' : friendStatus === 'follow_back' ? 'Follow Back' : 'Follow'}
           </button>
         )}
+      </div>
+
+      {/* Adsterra banner slot (300x250, placement 31872376) — fixed spot
+          below the profile header/bio, above the tabbed posts views.
+          Main profile view only; followers/following sub-pages have none. */}
+      <div className="mt-4 flex justify-center px-4">
+        <AdsterraBanner size="300x250" />
       </div>
 
       {!isBlockedView && (highlights.length > 0 || isMe) && (

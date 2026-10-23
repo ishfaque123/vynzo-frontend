@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import NativeRedirect from './NativeRedirect';
 import GooglePlayButton from './GooglePlayButton';
-import { AdsterraBanner } from './Adsterra';
+import { AdsterraResponsiveLeaderboard } from './Adsterra';
 
 export default function PublicLanding() {
   const features = [
@@ -211,10 +211,12 @@ export default function PublicLanding() {
           </p>
         </section>
 
-        {/* Adsterra leaderboard slot (728x90, placement 31872375). Renders
-            nothing until the real snippet is pasted into
-            src/lib/adsterraSnippets.ts. Public landing page only. */}
-        <AdsterraBanner size="728x90" className="flex justify-center px-5 py-6" />
+        {/* Adsterra responsive leaderboard (placement 31872375 on desktop,
+            320x50 / placement 31872377 below 768px — the 728x90 iframe
+            overflows phone screens). Renders nothing until the real snippet
+            is pasted into src/lib/adsterraSnippets.ts and the viewport
+            width is known. Public landing page only. */}
+        <AdsterraResponsiveLeaderboard className="flex justify-center px-5 py-6" />
 
         <footer className="border-t border-slate-200 bg-slate-950 px-5 py-10 text-white sm:px-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-7 sm:flex-row sm:items-center sm:justify-between">
