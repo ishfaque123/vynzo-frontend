@@ -1495,6 +1495,22 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* Floating load-older pill: pinned at the top of the chat viewport (below the
+          header and the strips above, which are in normal flow before this anchor).
+          A tap target is never intercepted by the app wrapper's pull-to-refresh,
+          unlike the scroll gesture that history loading normally needs. */}
+      {!loading && hasMore && messages.length > 0 && (
+        <div className="relative z-20">
+          <button
+            onClick={loadOlderMessages}
+            disabled={loadingOlder}
+            className="absolute left-1/2 top-2 -translate-x-1/2 rounded-full border border-slate-200 bg-white/90 px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-md hover:bg-slate-50 disabled:opacity-50"
+          >
+            {loadingOlder ? 'Loading...' : 'Load older messages'}
+          </button>
+        </div>
+      )}
+
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-3 py-3"
