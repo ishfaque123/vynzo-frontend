@@ -695,6 +695,13 @@ export default function ProfileClient() {
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
           <div>
+            {/* Thin banner at the very top of the All tab, directly
+                under the tabs divider (owner-approved, 2026-10-23).
+                The fixed-height wrapper reserves the slot so the layout
+                never shifts whether the ad fills or not. */}
+            <div className="mt-2 flex h-[50px] w-full items-center justify-center overflow-hidden">
+              <AdsterraBanner size="320x50" />
+            </div>
             {(() => {
               const entries = [...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
                 .sort((a, b) => Number(b.item.isPinned || false) - Number(a.item.isPinned || false) || new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime());
