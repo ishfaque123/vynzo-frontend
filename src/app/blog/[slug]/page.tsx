@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { articles, getArticle } from '@/lib/blog';
-import { AdsterraBanner, AdsterraNative } from '@/components/Adsterra';
 
 export function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
@@ -74,11 +73,6 @@ export default async function BlogArticlePage({
         </section>
       ))}
 
-      {/* Adsterra Native Banner slot (placement 31872373), end of article.
-          Renders nothing until the real snippet is pasted into
-          src/lib/adsterraSnippets.ts. */}
-      <AdsterraNative className="mt-10" />
-
       <div className="mt-12 rounded-lg bg-slate-950 px-6 py-6 text-white">
         <p className="mb-1 text-lg font-bold">Try Frianzo today</p>
         <p className="mb-4 text-sm text-slate-300">
@@ -92,10 +86,6 @@ export default async function BlogArticlePage({
           Get the app
         </a>
       </div>
-
-      {/* Adsterra banner slot (300x250, placement 31872376). Renders nothing
-          until the real snippet is pasted into src/lib/adsterraSnippets.ts. */}
-      <AdsterraBanner size="300x250" className="mt-10 flex justify-center" />
 
       <h2 className="mb-3 mt-12 text-lg font-semibold text-slate-900">
         More from the blog

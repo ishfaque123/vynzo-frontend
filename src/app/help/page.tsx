@@ -1,5 +1,3 @@
-import { AdsterraBanner } from '@/components/Adsterra';
-
 export const metadata = {
   title: 'Help Center | Frianzo',
   description: 'Frianzo Help Center — answers about accounts, posts, reels, stories, messaging, privacy, and troubleshooting.',
@@ -159,10 +157,6 @@ export default function HelpPage() {
         </section>
       ))}
 
-      {/* Adsterra mobile banner slot (320x50, placement 31872377). Renders
-          nothing until the real snippet is pasted into
-          src/lib/adsterraSnippets.ts. */}
-      <AdsterraBanner size="320x50" className="mt-2 flex justify-center" />
     </div>
   );
 }

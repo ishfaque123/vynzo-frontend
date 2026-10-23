@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { articles } from '@/lib/blog';
-import { AdsterraResponsiveLeaderboard } from '@/components/Adsterra';
 
 export const metadata = {
   title: 'Blog | Frianzo',
@@ -29,14 +28,6 @@ export default function BlogIndexPage() {
         to grow as a creator, how referrals and verification work, and how to
         keep your account safe. Written for our community in Pakistan and beyond.
       </p>
-
-      {/* Adsterra responsive leaderboard (placement 31872375 on desktop,
-          320x50 / placement 31872377 below 768px — the 728x90 iframe
-          overflows phone screens). Renders nothing until the real snippet
-          is pasted into src/lib/adsterraSnippets.ts and the viewport
-          width is known. Directly under the intro so it is actually seen
-          (it used to sit below the article list). */}
-      <AdsterraResponsiveLeaderboard className="mb-10 flex justify-center" />
 
       <div className="space-y-8">
         {sorted.map((a) => (
