@@ -48,6 +48,7 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [feedOffline, setFeedOffline] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
@@ -68,6 +69,7 @@ export default function HomePage() {
     }
     if (!user?.id) return;
     setFeedError(false);
+    setLoadMoreError(false);
 
     // Cache-first startup: show the last successful feed immediately when
     // available. Network refresh happens afterwards, so reopening the app
@@ -89,7 +91,7 @@ export default function HomePage() {
       if (posts.length === 0) setFeedLoading(true);
     }
 
-    if (offline || feedOffline) {
+    if ((offline || feedOffline) && !navigator.onLine) {
       if (cachedPosts?.length) {
         setFeedOffline(true);
         setHasMore(false);
@@ -131,7 +133,10 @@ export default function HomePage() {
       });
       setReels(sortedReels);
     } catch {
-      const cached = await getOfflineFeed(user.id);
+      // Only a genuinely offline device falls back to the cached feed.
+      // A request error while online is a normal load error (the existing
+      // error/Retry state), never the end of the feed.
+      const cached = !navigator.onLine ? await getOfflineFeed(user.id) : null;
       if (cached?.posts?.length) {
         setPosts(cached.posts);
         setHasMore(false);
@@ -163,9 +168,13 @@ export default function HomePage() {
     };
   }, [isAuthenticated]);
 
-  async function loadMore() {
+  async function loadMore(fromRetry = false) {
     if (loadingMore || !hasMore || offline || feedOffline) return;
+    // After a failed page fetch, only the sentinel's Retry button may
+    // re-attempt — the observer must not spin on a dead request.
+    if (loadMoreError && !fromRetry) return;
     setLoadingMore(true);
+    setLoadMoreError(false);
     try {
       const result = await fetchFeed(offset);
       if (result.success) {
@@ -178,15 +187,13 @@ export default function HomePage() {
         });
         setHasMore(!!result.data.hasMore);
         setOffset((o) => o + result.data.posts.length);
+      } else {
+        // A failed page is not the end of the feed: keep the posts,
+        // offset and hasMore exactly as they were and offer a retry.
+        setLoadMoreError(true);
       }
     } catch {
-      const cached = await getOfflineFeed(user.id);
-      if (cached?.posts?.length) {
-        setPosts(cached.posts);
-        setHasMore(false);
-        setOffset(cached.posts.length);
-        setFeedOffline(true);
-      }
+      setLoadMoreError(true);
     } finally {
       setLoadingMore(false);
     }
@@ -368,7 +375,9 @@ export default function HomePage() {
             ))}
           </div>
           <div ref={sentinelRef} className="flex min-h-12 items-center justify-center px-4 py-4 text-sm text-slate-400">
-            {loadingMore ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" /> : hasMore ? null : "You're all caught up"}
+            {loadingMore ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" /> : loadMoreError ? (
+              <button onClick={() => loadMore(true)} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Couldn't load more posts. Tap to retry.</button>
+            ) : hasMore ? null : "You're all caught up"}
           </div>
         </>
       )}
