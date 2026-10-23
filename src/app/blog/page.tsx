@@ -30,6 +30,14 @@ export default function BlogIndexPage() {
         keep your account safe. Written for our community in Pakistan and beyond.
       </p>
 
+      {/* Adsterra responsive leaderboard (placement 31872375 on desktop,
+          320x50 / placement 31872377 below 768px — the 728x90 iframe
+          overflows phone screens). Renders nothing until the real snippet
+          is pasted into src/lib/adsterraSnippets.ts and the viewport
+          width is known. Directly under the intro so it is actually seen
+          (it used to sit below the article list). */}
+      <AdsterraResponsiveLeaderboard className="mb-10 flex justify-center" />
+
       <div className="space-y-8">
         {sorted.map((a) => (
           <article key={a.slug} className="border-b border-slate-200 pb-8">
@@ -51,13 +59,6 @@ export default function BlogIndexPage() {
           </article>
         ))}
       </div>
-
-      {/* Adsterra responsive leaderboard (placement 31872375 on desktop,
-          320x50 / placement 31872377 below 768px — the 728x90 iframe
-          overflows phone screens). Renders nothing until the real snippet
-          is pasted into src/lib/adsterraSnippets.ts and the viewport
-          width is known. */}
-      <AdsterraResponsiveLeaderboard className="mt-10 flex justify-center" />
 
       <p className="mt-10 text-sm text-slate-500">
         New here?{' '}

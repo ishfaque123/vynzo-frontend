@@ -117,6 +117,14 @@ export default function PublicLanding() {
           </div>
         </section>
 
+        {/* Adsterra responsive leaderboard (placement 31872375 on desktop,
+            320x50 / placement 31872377 below 768px — the 728x90 iframe
+            overflows phone screens). Renders nothing until the real snippet
+            is pasted into src/lib/adsterraSnippets.ts and the viewport
+            width is known. Public landing page only, directly under the
+            hero so it is actually seen (it used to sit above the footer). */}
+        <AdsterraResponsiveLeaderboard className="flex justify-center px-5 py-6" />
+
         <section id="features" className="border-y border-slate-100 bg-slate-50/80 px-5 py-20 sm:px-8">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-2xl text-center">
@@ -210,13 +218,6 @@ export default function PublicLanding() {
             and start connecting in minutes.
           </p>
         </section>
-
-        {/* Adsterra responsive leaderboard (placement 31872375 on desktop,
-            320x50 / placement 31872377 below 768px — the 728x90 iframe
-            overflows phone screens). Renders nothing until the real snippet
-            is pasted into src/lib/adsterraSnippets.ts and the viewport
-            width is known. Public landing page only. */}
-        <AdsterraResponsiveLeaderboard className="flex justify-center px-5 py-6" />
 
         <footer className="border-t border-slate-200 bg-slate-950 px-5 py-10 text-white sm:px-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-7 sm:flex-row sm:items-center sm:justify-between">
