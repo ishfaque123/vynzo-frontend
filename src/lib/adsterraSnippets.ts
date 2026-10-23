@@ -11,7 +11,7 @@
  *   Social Bar      placement 31872374 -> socialBar      (REMOVED — see below)
  *   Banner 728x90   placement 31872375 -> banner728x90   (landing + blog index, desktop >=768px only)
  *   Banner 300x250  placement 31872376 -> banner300x250  (blog article + about + home feed + profile pages)
- *   Banner 320x50   placement 31872377 -> banner320x50   (help page + reels page + landing/blog index below 768px)
+ *   Banner 320x50   placement 31872377 -> banner320x50   (help page + reels page + profile pages between posts + landing/blog index below 768px)
  *
  * 2026-10-23: the Social Bar was REMOVED on the owner's order — as a
  * floating format it popped over pages and broke the UI. The `socialBar`

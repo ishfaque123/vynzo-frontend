@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -18,6 +18,7 @@ import ShareModal from '@/components/ShareModal';
 import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
+import { AdsterraBanner } from '@/components/Adsterra';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
@@ -694,15 +695,42 @@ export default function ProfileClient() {
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
           <div>
-            {[...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
-              .sort((a, b) => Number(b.item.isPinned || false) - Number(a.item.isPinned || false) || new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime())
-              .map((entry) => entry.kind === 'post' ? (
-                <PostCard key={`post-${entry.item.id}`} post={entry.item} currentUser={currentUser}
-                  onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
-                  onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
-              ) : (
-                <div key={`reel-${entry.item.id}`} className="mx-4 mb-4"><FeedReelCard reel={entry.item} /></div>
-              ))}
+            {(() => {
+              const entries = [...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
+                .sort((a, b) => Number(b.item.isPinned || false) - Number(a.item.isPinned || false) || new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime());
+              // Thin banner ads between posts (owner-approved pattern,
+              // 2026-10-23): after post #1, #5 and #11, then every 6 posts
+              // (17, 23, ...). Only actual posts advance the counter —
+              // interleaved reels do not. The 320x50 unit is used at every
+              // viewport width: the profile column is max-w-xl (576px), so
+              // the 728x90 unit could never render at its full size here
+              // and would clip — the owner requires ads to show at their
+              // correct size, centered and fully contained. The wrapper is
+              // full-width with overflow hidden so an ad can never push the
+              // page sideways.
+              let postsSeen = 0;
+              return entries.map((entry) => {
+                const isPost = entry.kind === 'post';
+                if (isPost) postsSeen += 1;
+                const showAd = isPost && (postsSeen === 1 || postsSeen === 5 || postsSeen === 11 || (postsSeen > 11 && (postsSeen - 11) % 6 === 0));
+                return (
+                  <Fragment key={isPost ? `post-${entry.item.id}` : `reel-${entry.item.id}`}>
+                    {isPost ? (
+                      <PostCard post={entry.item} currentUser={currentUser}
+                        onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
+                        onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
+                    ) : (
+                      <div className="mx-4 mb-4"><FeedReelCard reel={entry.item} /></div>
+                    )}
+                    {showAd && (
+                      <div className="my-4 flex w-full max-w-full justify-center overflow-hidden">
+                        <AdsterraBanner size="320x50" />
+                      </div>
+                    )}
+                  </Fragment>
+                );
+              });
+            })()}
           </div>
         )}
       </div>

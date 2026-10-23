@@ -14,8 +14,10 @@
  * Placement policy (hard rule): public pages (landing, /blog, /about,
  * /help) plus — by the owner's explicit orders on 2026-10-23, because most
  * users live there — the logged-in home feed (300x250 banner), the /reels
- * page (320x50 banner), and profile pages /u/[username] (one 300x250
- * banner below the header/bio). NEVER import these components into
+ * page (320x50 banner), and profile pages /u/[username] (thin 320x50
+ * banners between posts: after posts #1, #5, #11, then every 6 — the
+ * profile column is max-w-xl, too narrow for the 728x90 unit to render
+ * at full size). NEVER import these components into
  * chat/DM/messaging screens, admin, settings, or auth screens. The
  * Social Bar additionally enforces its route allowlist itself (see
  * AdsterraSocialBar below).

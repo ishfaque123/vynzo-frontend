@@ -358,7 +358,7 @@ export default function HomePage() {
                   replyTo={replyTo} setReplyTo={setReplyTo}
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
-                {((index + 1) === 2 || (index + 1) === 5 || (index + 1) === 9 || ((index + 1) > 9 && ((index + 1) - 9) % 8 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex justify-center px-4"><AdsterraBanner size="300x250" /></div>}
+                {((index + 1) === 2 || (index + 1) === 5 || (index + 1) === 8 || ((index + 1) > 8 && ((index + 1) - 8) % 5 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex justify-center px-4"><AdsterraBanner size="300x250" /></div>}
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
                 {((index + 1) === 2 || (index + 1) === 8) && <div className="my-4 px-4"><SponsoredCard /></div>}
                 {(index + 1) === 3 && <div className="my-4 px-4"><BlueTickAd /></div>}
