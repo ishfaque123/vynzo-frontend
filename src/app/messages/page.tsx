@@ -66,11 +66,21 @@ export default function MessagesPage() {
   const [selectedConversationIds, setSelectedConversationIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchMoved = useRef(false);
   const suppressClick = useRef(false);
+
+  function showToast(message: string, type: 'success' | 'error') {
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    setToast({ message, type });
+    toastTimeout.current = setTimeout(() => setToast(null), 3000);
+  }
 
   function loadConversations() {
     setLoading(true);
@@ -217,9 +227,13 @@ export default function MessagesPage() {
           return next;
         });
         setOpenActions(null);
+      } else {
+        showToast('Could not delete conversation.', 'error');
       }
     } catch {
-      // A failed request must never leave the delete buttons disabled.
+      // A failed request must never leave the delete buttons disabled —
+      // and must no longer fail silently either.
+      showToast('Could not delete conversation.', 'error');
     } finally {
       setDeleting(null);
     }
@@ -228,23 +242,32 @@ export default function MessagesPage() {
   async function handleDeleteSelected() {
     if (deleting || selectedConversationIds.length === 0) return;
     const ids = [...selectedConversationIds];
+    setConfirmBulkDelete(false);
     setDeleting('selected');
+    setBulkProgress({ done: 0, total: ids.length });
 
     try {
       // Delete in parallel; a single failed request must not strand the
       // rest or leave the button disabled forever (the old serial loop
-      // escaped on the first throw and never reset `deleting`).
+      // escaped on the first throw and never reset `deleting`). Each
+      // settle advances the visible "Deleting n of N…" counter.
+      let done = 0;
       const results = await Promise.all(
         ids.map(async (id) => {
+          let ok = false;
           try {
             const result = await deleteConversation(id);
-            return result.success ? id : null;
+            ok = result.success;
           } catch {
-            return null;
+            ok = false;
           }
+          done += 1;
+          setBulkProgress({ done, total: ids.length });
+          return ok ? id : null;
         })
       );
       const deletedIds = results.filter((x): x is string => x !== null);
+      const failedCount = ids.length - deletedIds.length;
 
       if (deletedIds.length) {
         setConversations((prev) => prev.filter((c) => !deletedIds.includes(c.id)));
@@ -257,8 +280,16 @@ export default function MessagesPage() {
 
       setSelectedConversationIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
       setOpenActions(null);
+
+      // Report the outcome — partial failures used to be completely silent.
+      if (failedCount === 0) {
+        showToast(`${deletedIds.length} conversation${deletedIds.length === 1 ? '' : 's'} deleted`, 'success');
+      } else {
+        showToast(`${deletedIds.length} deleted · ${failedCount} could not be deleted`, 'error');
+      }
     } finally {
       setDeleting(null);
+      setBulkProgress(null);
     }
   }
 
@@ -269,6 +300,15 @@ export default function MessagesPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl" onClick={() => openActions && setOpenActions(null)}>
+      {toast && (
+        <div
+          className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-medium text-white shadow-lg ${
+            toast.type === 'success' ? 'bg-slate-900' : 'bg-red-600'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 py-3">
         {selectedConversationIds.length > 0 ? (
           <>
@@ -280,18 +320,23 @@ export default function MessagesPage() {
               Cancel
             </button>
             <h1 className="text-lg font-semibold">{selectedConversationIds.length} selected</h1>
-            <button
-              type="button"
-              aria-label="Delete selected conversations"
-              disabled={deleting === 'selected'}
-              onClick={(event) => {
-                event.stopPropagation();
-                handleDeleteSelected();
-              }}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-red-600 disabled:opacity-50"
-            >
-              <TrashIcon />
-            </button>
+            {deleting === 'selected' ? (
+              <span className="flex h-9 items-center text-sm font-medium text-red-600" role="status">
+                {bulkProgress ? `Deleting ${bulkProgress.done} of ${bulkProgress.total}…` : 'Deleting…'}
+              </span>
+            ) : (
+              <button
+                type="button"
+                aria-label="Delete selected conversations"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setConfirmBulkDelete(true);
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-red-600 disabled:opacity-50"
+              >
+                <TrashIcon />
+              </button>
+            )}
           </>
         ) : (
           <h1 className="text-lg font-semibold">Messages</h1>
@@ -436,6 +481,25 @@ export default function MessagesPage() {
               <button
                 onClick={() => { const id = confirmDeleteId; setConfirmDeleteId(null); handleDelete(id); }}
                 disabled={deleting === confirmDeleteId}
+                className="flex-1 rounded-full bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmBulkDelete && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setConfirmBulkDelete(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-base font-semibold text-slate-900">Delete {selectedConversationIds.length} conversation{selectedConversationIds.length === 1 ? '' : 's'}?</p>
+            <p className="mt-1 text-center text-sm text-slate-500">This will remove the chats from your list. This can't be undone.</p>
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setConfirmBulkDelete(false)} className="flex-1 rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={deleting === 'selected'}
                 className="flex-1 rounded-full bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
                 Delete

@@ -260,6 +260,14 @@ function ClockIcon() {
   );
 }
 
+function SpinnerIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin flex-shrink-0">
+      <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+    </svg>
+  );
+}
+
 // WhatsApp-style ticks: one grey = sent, two grey = delivered, two blue = read.
 function Ticks({ status }: { status: 'sent' | 'delivered' | 'read' }) {
   const color = status === 'read' ? '#4fc3f7' : '#8b9a8f';
@@ -476,6 +484,8 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [deleteMenuFor, setDeleteMenuFor] = useState<Message | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [blockSheetOpen, setBlockSheetOpen] = useState(false);
   const [actionMenuFor, setActionMenuFor] = useState<Message | null>(null);
   const [actionMenuPosition, setActionMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
@@ -544,6 +554,7 @@ export default function ChatPage() {
   const firstMessageIdRef = useRef<string | null>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDeleteRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> | null } | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -554,6 +565,52 @@ export default function ChatPage() {
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
     setToast({ message, type });
     toastTimeout.current = setTimeout(() => setToast(null), 3000);
+  }
+
+  // The local tombstone update the message:deleted broadcast performs —
+  // shared so a delete-for-everyone can apply it the moment its own ack
+  // lands instead of waiting for the broadcast to come back around.
+  function applyDeletedMessage(messageId: string) {
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, isDeleted: true, content: '', mediaUrl: null, mediaType: null } : m)));
+  }
+
+  function settlePendingDelete(id: string) {
+    const record = pendingDeleteRef.current;
+    if (record && record.id === id) {
+      if (record.timer) clearTimeout(record.timer);
+      pendingDeleteRef.current = null;
+    }
+    setDeletingId((prev) => (prev === id ? null : prev));
+  }
+
+  // Single-message delete with real in-flight feedback: the bubble dims
+  // with a "Deleting…" affordance until the ack (or the broadcast, or a
+  // 15s timeout — mirroring the send flow) settles it.
+  function startMessageDelete(id: string, mode: 'me' | 'everyone') {
+    if (pendingDeleteRef.current) settlePendingDelete(pendingDeleteRef.current.id);
+    const record: { id: string; timer: ReturnType<typeof setTimeout> | null } = { id, timer: null };
+    pendingDeleteRef.current = record;
+    setDeletingId(id);
+    record.timer = setTimeout(() => {
+      // No ack within 15s: clear the in-flight state and tell the user.
+      // A late ack, if it ever lands, still applies its local effect.
+      if (pendingDeleteRef.current === record) pendingDeleteRef.current = null;
+      setDeletingId((prev) => (prev === id ? null : prev));
+      showToast('Could not delete message.', 'error');
+    }, 15000);
+    const socket = getSocket();
+    socket.emit('message:delete', { messageId: id, mode }, (res: { success: boolean; error?: string }) => {
+      settlePendingDelete(id);
+      if (!res.success) {
+        showToast('Could not delete message.', 'error');
+        return;
+      }
+      if (mode === 'me') {
+        setMessages((prev) => prev.filter((m) => m.id !== id));
+      } else {
+        applyDeletedMessage(id);
+      }
+    });
   }
   useEffect(() => {
     const pending = takePendingMessageText();
@@ -667,7 +724,8 @@ export default function ChatPage() {
     }
 
     function handleMessageDeleted({ messageId }: { messageId: string }) {
-      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, isDeleted: true, content: '', mediaUrl: null, mediaType: null } : m)));
+      applyDeletedMessage(messageId);
+      settlePendingDelete(messageId);
     }
     function handleMessageEdited(message: Message) {
       setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m)));
@@ -1253,11 +1311,7 @@ export default function ChatPage() {
     if (!deleteMenuFor) return;
     const id = deleteMenuFor.id;
     setDeleteMenuFor(null);
-    const socket = getSocket();
-    socket.emit('message:delete', { messageId: id, mode: 'me' }, (res: { success: boolean; error?: string }) => {
-      if (res.success) setMessages((prev) => prev.filter((m) => m.id !== id));
-      else showToast('Could not delete message.', 'error');
-    });
+    startMessageDelete(id, 'me');
   }
   const deleteMenuForEveryoneAllowed = !!deleteMenuFor && deleteMenuFor.senderId === user?.id;
 
@@ -1265,10 +1319,7 @@ export default function ChatPage() {
     if (!deleteMenuFor) return;
     const id = deleteMenuFor.id;
     setDeleteMenuFor(null);
-    const socket = getSocket();
-    socket.emit('message:delete', { messageId: id, mode: 'everyone' }, (res: { success: boolean; error?: string }) => {
-      if (!res.success) showToast('Could not delete message.', 'error');
-    });
+    startMessageDelete(id, 'everyone');
   }
 
   function openReportModal() {
@@ -1307,8 +1358,7 @@ export default function ChatPage() {
 
   async function handleBlock() {
     if (!otherUser || blockActionLoading) return;
-    setMoreOpen(false);
-    if (!confirm(`Block ${otherUser.displayName || otherUser.username}?`)) return;
+    setBlockSheetOpen(false);
     setBlockActionLoading(true);
     const result = await blockUser(otherUser.id);
     setBlockActionLoading(false);
@@ -1403,7 +1453,7 @@ export default function ChatPage() {
                   Unblock user
                 </button>
               ) : (
-                <button onClick={handleBlock} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">
+                <button onClick={() => { setMoreOpen(false); setBlockSheetOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">
                   Block user
                 </button>
               )}
@@ -1570,7 +1620,7 @@ export default function ChatPage() {
                   onDragStart={(e) => e.preventDefault()}
                   onContextMenu={(e) => { e.preventDefault(); if (!m.isDeleted && !m.localStatus) setActionMenuFor(m); }}
                   style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'pan-y', transform: swipeDx?.id === m.id ? `translateX(${swipeDx.dx}px)` : undefined, transition: swipeDx?.id === m.id ? 'none' : 'transform 0.15s ease' }}
-                  className={`max-w-[75%] text-[16px] leading-relaxed shadow-sm transition ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
+                  className={`max-w-[75%] text-[16px] leading-relaxed shadow-sm transition ${deletingId === m.id ? 'opacity-60' : ''} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''} ${
                     isMine ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
                   } ${
                     m.isDeleted ? 'bg-slate-100 italic text-slate-400' :
@@ -1630,6 +1680,11 @@ export default function ChatPage() {
                       </div>
                       {m.localStatus === 'failed' && (
                         <p className="mt-0.5 text-right text-[11px] font-medium text-red-600">Not sent · Tap to retry</p>
+                      )}
+                      {deletingId === m.id && (
+                        <p className="mt-0.5 flex items-center justify-end gap-1 text-[11px] font-medium text-slate-500">
+                          <SpinnerIcon /> Deleting…
+                        </p>
                       )}
                       {m.reactions?.length ? <div className="mt-1 flex flex-wrap gap-1">{Array.from(new Set(m.reactions.map((r) => r.emoji))).map((emoji) => <span key={emoji} className="rounded-full border bg-white px-1.5 py-0.5 text-xs">{emoji}</span>)}</div> : null}
                       {m.pinnedAt && <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-700"><PinIcon /> <span>Pinned</span></div>}
@@ -2043,6 +2098,27 @@ export default function ChatPage() {
             </div>
             <div className="px-5 pt-3">
               <button onClick={() => setDeleteMenuFor(null)} className="w-full rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700 active:bg-slate-200">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {blockSheetOpen && otherUser && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setBlockSheetOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="px-5 pt-5 text-center text-base font-semibold text-slate-900">Block {otherUser.displayName || otherUser.username}?</p>
+            <p className="px-5 pt-1 text-center text-sm text-slate-500">
+              They won't be able to message you anymore. You can unblock them anytime.
+            </p>
+            <div className="px-5 pt-4">
+              <button
+                onClick={handleBlock}
+                disabled={blockActionLoading}
+                className="w-full rounded-full bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {blockActionLoading ? 'Blocking…' : 'Block'}
+              </button>
+              <button onClick={() => setBlockSheetOpen(false)} className="mt-2 w-full rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700 active:bg-slate-200">Cancel</button>
             </div>
           </div>
         </div>
