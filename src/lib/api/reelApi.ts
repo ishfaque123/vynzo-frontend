@@ -35,11 +35,17 @@ export async function fetchReelsConfig() {
   } catch { return { success: false, error: { message: 'Unable to connect to the server.' } }; }
 }
 
-export async function fetchReelFeed(offset = 0, feed: 'foryou' | 'following' = 'foryou') {
+export async function fetchReelFeed(offset = 0, feed: 'foryou' | 'following' = 'foryou', timeoutMs = 30000) {
+  // Same 30s timeout as fetchFeed: without it, a stalled reels request
+  // blocks HomeClient's Promise.all forever and the feed skeleton never
+  // clears, even when posts already arrived.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(apiUrl(`/api/reels?offset=${Math.max(0, Math.floor(offset))}&feed=${feed}`), { credentials: 'include' });
+    const res = await fetch(apiUrl(`/api/reels?offset=${Math.max(0, Math.floor(offset))}&feed=${feed}`), { credentials: 'include', signal: controller.signal });
     return await readResponse(res);
   } catch { return { success: false, error: { message: 'Unable to load reels.' } }; }
+  finally { clearTimeout(timer); }
 }
 
 export async function fetchMyReelStatus() {

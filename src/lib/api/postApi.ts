@@ -20,9 +20,19 @@ async function readJson(res: Response) {
   }
 }
 
-export async function fetchContentMix() {
-  const res = await fetch(`${API_URL}/api/posts/content-mix`, { credentials: 'include', cache: 'no-store' });
-  return res.json();
+export async function fetchContentMix(timeoutMs = 30000) {
+  // Same 30s timeout as fetchFeed: without it, a stalled content-mix
+  // request blocks HomeClient's Promise.all forever and the feed skeleton
+  // never clears, even when posts already arrived. Callers (HomeClient)
+  // already .catch() this to null, so a timeout degrades to the default mix.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_URL}/api/posts/content-mix`, { credentials: 'include', cache: 'no-store', signal: controller.signal });
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function fetchFeed(offset = 0, timeoutMs = 30000, retries = 1, rateLimitRetries = 3) {
