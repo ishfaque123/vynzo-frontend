@@ -27,12 +27,18 @@ const inflightControllers = new Set<AbortController>();
  * Wrap a fetch so it can be aborted when the auth state changes.
  * Use for any request whose response populates user/account-specific UI.
  */
-export function trackableFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+export function trackableFetch(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs?: number): Promise<Response> {
   const controller = new AbortController();
   inflightControllers.add(controller);
+  // Optional timeout: without it a stalled request (e.g. fetchMe on a fresh
+  // install with no cached user) leaves the UI stuck forever — the blank
+  // screen half of the feed-stall bug. Aborting only rejects this request;
+  // callers already handle failures (useAuth falls back to the cached user
+  // or null). The timer is cleared on settle.
+  const timer = timeoutMs ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
   const promise = fetch(input, { ...init, signal: controller.signal });
   // Always clean up the registry when the request settles.
-  promise.finally(() => inflightControllers.delete(controller)).catch(() => {});
+  promise.finally(() => { inflightControllers.delete(controller); if (timer) clearTimeout(timer); }).catch(() => {});
   return promise;
 }
 
@@ -91,7 +97,7 @@ async function readJson(res: Response) {
 }
 
 export async function fetchMe() {
-  const res = await trackableFetch(`${API_URL}/api/auth/me`, { credentials: 'include', cache: 'no-store' });
+  const res = await trackableFetch(`${API_URL}/api/auth/me`, { credentials: 'include', cache: 'no-store' }, 30000);
   return readJson(res);
 }
 
