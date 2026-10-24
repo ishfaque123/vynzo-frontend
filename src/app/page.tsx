@@ -1,4 +1,5 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import HomeClient from './HomeClient';
 import PublicLanding from '@/components/PublicLanding';
 
@@ -82,6 +83,14 @@ export default async function Page() {
   const store = await cookies();
   const loggedIn = !!(store.get('vynzo_auth_token') || store.get('vynzo_token'));
   if (loggedIn) return <HomeClient />;
+  // Logged-out loads inside the Android app's WebView must go to /login,
+  // never the marketing page: the marketing page has no login button, so
+  // an app user landing on it is stuck with no way to sign in. The native
+  // side only forces /login at app start; any later cookieless load of /
+  // used to get the marketing page (the marketing/login indecision).
+  // Android WebViews carry the "; wv" UA marker; regular browsers don't.
+  const ua = (await headers()).get('user-agent') || '';
+  if (ua.includes('; wv')) redirect('/login');
   return (
     <>
       <script
