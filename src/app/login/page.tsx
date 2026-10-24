@@ -30,7 +30,7 @@ function FrianzoLogo() {
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, verified } = useAuth();
   const isSwitching = searchParams.get('switch') === '1';
   const hasError = searchParams.get('error') === 'google_auth_failed';
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -78,8 +78,8 @@ function LoginForm() {
   const loginUrl = API_URL + '/api/auth/google/start' + (isSwitching ? '?switch=1' : '');
 
   useEffect(() => {
-    if (!loading && isAuthenticated && !isSwitching) router.push('/');
-  }, [loading, isAuthenticated, isSwitching, router]);
+    if (!loading && verified && isAuthenticated && !isSwitching) router.push('/');
+  }, [loading, verified, isAuthenticated, isSwitching, router]);
 
   async function handleSendCode() {
     const value = email.trim().toLowerCase();
