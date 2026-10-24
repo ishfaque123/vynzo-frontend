@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import ReactionButton, { REACTIONS } from './ReactionButton';
 import ReactionIcon from './ReactionIcon';
 import PostMenu from './PostMenu';
@@ -71,7 +70,7 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
     // FB-style: tapping ANYWHERE on the box retries (not just the button).
     return (
       <div
-        onClick={(e) => { e.stopPropagation(); retry(); }}
+        onClick={retry}
         className={`flex w-full cursor-pointer flex-col items-center justify-center gap-2 bg-slate-800 py-12 text-slate-400 ${className}`}
         style={{ aspectRatio }}
         role="button"
@@ -217,10 +216,6 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
   const isOwner = currentUser?.username === post?.author?.username;
   const [hiding, setHiding] = useState(false);
   const [countDelta, setCountDelta] = useState(0);
-  const router = useRouter();
-  // Tap-to-open guard: PostContent copies text on a 500ms long-press, so a
-  // press held >= 500ms must NOT navigate (it was a copy, not a tap).
-  const pressStartRef = useRef(0);
   // Guard: skip posts with missing author (prevents crash)
   if (!post?.author) return null;
 
@@ -319,20 +314,14 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         )}
       </div>
 
-      <div
-        onPointerDown={() => { pressStartRef.current = Date.now(); }}
-        onClick={() => { if (Date.now() - pressStartRef.current < 500) router.push(`/post/${post.id}`); }}
-        className="cursor-pointer"
-      >
-        {post.content && (post.backgroundStyle && !post.imageUrl ? (
-          <div className={`mx-3 mb-2 flex min-h-56 items-center justify-center rounded-2xl p-6 text-center ${POST_BACKGROUND_CLASSES[post.backgroundStyle] || ''}`}>
-            <PostContent text={post.content} className="whitespace-pre-wrap text-2xl font-bold leading-snug text-white" />
-          </div>
-        ) : (
-          <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
-        ))}
-        {post.imageUrl && <SmartImage src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
-      </div>
+      {post.content && (post.backgroundStyle && !post.imageUrl ? (
+        <div className={`mx-3 mb-2 flex min-h-56 items-center justify-center rounded-2xl p-6 text-center ${POST_BACKGROUND_CLASSES[post.backgroundStyle] || ''}`}>
+          <PostContent text={post.content} className="whitespace-pre-wrap text-2xl font-bold leading-snug text-white" />
+        </div>
+      ) : (
+        <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
+      ))}
+      {post.imageUrl && <SmartImage src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
 
       {post.originalPost && (
         <div className="mx-3 mb-2 rounded-lg border p-3">
@@ -348,20 +337,14 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               <span className="text-xs text-slate-500">{timeAgo(post.originalPost.createdAt)}</span>
             </div>
           </div>
-          <div
-            onPointerDown={() => { pressStartRef.current = Date.now(); }}
-            onClick={() => { if (Date.now() - pressStartRef.current < 500) router.push(`/post/${post.originalPost.id}`); }}
-            className="cursor-pointer"
-          >
-            {post.originalPost.content && (post.originalPost.backgroundStyle && !post.originalPost.imageUrl ? (
-              <div className={`mt-2 flex min-h-40 items-center justify-center rounded-lg p-5 text-center ${POST_BACKGROUND_CLASSES[post.originalPost.backgroundStyle] || ''}`}>
-                <PostContent text={post.originalPost.content} className="whitespace-pre-wrap text-xl font-bold text-white" />
-              </div>
-            ) : (
-              <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
-            ))}
-            {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
-          </div>
+          {post.originalPost.content && (post.originalPost.backgroundStyle && !post.originalPost.imageUrl ? (
+            <div className={`mt-2 flex min-h-40 items-center justify-center rounded-lg p-5 text-center ${POST_BACKGROUND_CLASSES[post.originalPost.backgroundStyle] || ''}`}>
+              <PostContent text={post.originalPost.content} className="whitespace-pre-wrap text-xl font-bold text-white" />
+            </div>
+          ) : (
+            <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
+          ))}
+          {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
         </div>
       )}
 
