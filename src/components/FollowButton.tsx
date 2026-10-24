@@ -9,7 +9,7 @@ export default function FollowButton({ userId, status: initialStatus }: { userId
   const [loading, setLoading] = useState(false);
 
   if (status === 'self') return null;
-  if (status === 'friends') return <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] font-semibold text-emerald-700">✓ Friends</span>;
+  if (status === 'friends') return <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] font-semibold text-emerald-700">✓ Friends</span>;
 
   async function handleClick() {
     setLoading(true);
@@ -35,7 +35,7 @@ export default function FollowButton({ userId, status: initialStatus }: { userId
         : 'border border-slate-300 bg-transparent text-slate-900';
 
   return (
-    <button onClick={handleClick} disabled={loading} className={`inline-flex items-center rounded-full px-4 py-1.5 text-[13px] font-semibold disabled:opacity-50 ${pillClass}`}>
+    <button onClick={handleClick} disabled={loading} className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] font-semibold disabled:opacity-50 ${pillClass}`}>
       {label}
     </button>
   );
