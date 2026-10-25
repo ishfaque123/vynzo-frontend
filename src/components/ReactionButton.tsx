@@ -18,9 +18,9 @@ const HOLD_TO_OPEN_MS = 400;
 
 function ThumbIcon({ filled = false }: { filled?: boolean }) {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? "0" : "2.5"} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8.5 10h1a2.5 2.5 0 012.5 2.5v6a2.5 2.5 0 01-2.5 2.5h-1a2.5 2.5 0 01-2.5-2.5v-6A2.5 2.5 0 018.5 10z" />
-      <path d="M9 10l3-7a2 2 0 012 2v5h5a2 2 0 012 2l-1.5 7a2 2 0 01-2 1.5H9" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? "0" : "2"} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 11h1a1.5 1.5 0 011.5 1.5v5a1.5 1.5 0 01-1.5 1.5h-1A1.5 1.5 0 013 17.5v-5A1.5 1.5 0 014.5 11z" />
+      <path d="M7 11C7.5 9 8.5 7 9.5 5 10 4 10.5 3.5 11.5 3.5 12.5 3.5 13 4.5 13 6L13 9.5 17 9.5C18.5 9.5 19.5 10.5 19.5 12a 1 1 0 0 1 0 1.8a 1 1 0 0 1 0 1.8a 1 1 0 0 1 0 1.8L19.5 17.5C19.5 18.5 18.5 19 17.5 19L7 19Z" />
     </svg>
   );
 }
