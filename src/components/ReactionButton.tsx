@@ -18,7 +18,7 @@ const HOLD_TO_OPEN_MS = 400;
 
 function ThumbIcon({ filled = false }: { filled?: boolean }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? "0" : "2.2"} strokeLinecap="round" strokeLinejoin="round">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? "0" : "2.5"} strokeLinecap="round" strokeLinejoin="round">
       <path d="M7 22h2a2 2 0 002-2v-8a2 2 0 00-2-2H7v12z" />
       <path d="M9 10l3-7a2 2 0 012 2v5h5a2 2 0 012 2l-1.5 7a2 2 0 01-2 1.5H9" />
     </svg>
