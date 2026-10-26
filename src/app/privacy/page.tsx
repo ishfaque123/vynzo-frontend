@@ -63,6 +63,7 @@ export default function PrivacyPage() {
         <List items={[
           "Device and browser information",
           "IP address",
+          "Location information, including country derived from your IP address and device location when you choose to add a location to a post",
           "Operating system and version",
           "App or website version",
           "Network and connectivity information",
@@ -125,7 +126,7 @@ export default function PrivacyPage() {
         </p>
         <p className="mt-3">
           Frianzo may display advertisements through Google advertising services, including Google
-          AdSense on the website. Google and its advertising partners may process information such
+          AdSense on the website and Google AdMob in the mobile app. Google and its advertising partners may process information such
           as IP address, cookies, device information, and advertising-related identifiers to
           provide, measure, and protect advertising services, subject to applicable settings,
           consent requirements, and Google's policies.
