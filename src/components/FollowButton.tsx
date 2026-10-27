@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { toggleFollow } from '@/lib/api/userApi';
 import { useFollowStatus } from '@/contexts/FollowContext';
 
-export default function FollowButton({ userId, status: initialStatus }: { userId: string; status: string }) {
+export default function FollowButton({ userId, status: initialStatus, compact = false }: { userId: string; status: string; compact?: boolean }) {
   const { status, setStatus } = useFollowStatus(userId, initialStatus);
   const [loading, setLoading] = useState(false);
 
   if (status === 'self') return null;
-  if (status === 'friends') return <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] font-semibold text-emerald-700">✓ Friends</span>;
+  if (status === 'friends') return <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold ${compact ? 'bg-[#e4e6eb] px-3 py-1 text-xs text-slate-900' : 'border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] text-emerald-700'}`}>✓ Friends</span>;
 
   async function handleClick() {
     setLoading(true);
@@ -27,15 +27,18 @@ export default function FollowButton({ userId, status: initialStatus }: { userId
   }
 
   const label = status === 'following' ? 'Following' : status === 'follow_back' ? 'Follow Back' : 'Follow';
-  const pillClass =
-    status === 'following'
+  // Compact = FB-normal style used in comment rows: small light-grey button
+  // for every state, instead of the large dark pill.
+  const pillClass = compact
+    ? 'bg-[#e4e6eb] text-slate-900'
+    : status === 'following'
       ? 'border border-slate-200 bg-slate-100 text-slate-600'
       : status === 'follow_back'
         ? 'bg-slate-900 text-white'
         : 'border border-slate-300 bg-transparent text-slate-900';
 
   return (
-    <button onClick={handleClick} disabled={loading} className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] font-semibold disabled:opacity-50 ${pillClass}`}>
+    <button onClick={handleClick} disabled={loading} className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold disabled:opacity-50 ${compact ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-[13px]'} ${pillClass}`}>
       {label}
     </button>
   );

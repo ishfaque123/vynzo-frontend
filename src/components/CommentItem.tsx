@@ -183,7 +183,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
             <div className="flex items-center gap-2">
               <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold">{comment.author.displayName}</Link>
               {comment.author.isVerified && <VerifiedBadge />}
-              {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} />}
+              {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} compact />}
             </div>
             {comment.mediaUrl && (
               <div className="mt-2">
