@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-slate-700">
       <h1 className="mb-3 text-3xl font-bold text-slate-900">Privacy Policy for Frianzo</h1>
-      <p className="mb-8 text-sm text-slate-500">Last Updated: September 26, 2026</p>
+      <p className="mb-8 text-sm text-slate-500">Last Updated: October 27, 2026</p>
 
       <p className="mb-5">
         Welcome to Frianzo ("Frianzo", "we", "us", or "our"). Frianzo is a social networking
