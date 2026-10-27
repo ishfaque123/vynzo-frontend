@@ -169,8 +169,8 @@ export default function PublicLanding() {
             </p>
             <p>
               We also believe the people who build a community should share in its success. Every
-              Frianzo account comes with a personal referral link: invite friends, and the credit
-              you earn collects in your in-app wallet, visible honestly in your dashboard. Accounts
+              Frianzo account comes with a personal referral link: invite friends to join the
+              community you are building. Accounts
               that grow genuinely can work toward the blue tick — our verification badge for real,
               established profiles — while Data Saver mode keeps the whole experience usable on
               slow connections and small data packages.

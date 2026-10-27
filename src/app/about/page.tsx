@@ -52,8 +52,8 @@ export default function AboutPage() {
           photos, voice notes, and emoji.
         </li>
         <li>
-          <strong>Invite &amp; earn</strong> — share your personal referral link, earn credit in
-          your in-app wallet when friends join, and track everything from your dashboard.
+          <strong>Invite friends</strong> — share your personal referral link and help the
+          community grow.
         </li>
         <li>
           <strong>Get verified</strong> — established accounts can apply for the blue tick, the
@@ -81,15 +81,14 @@ export default function AboutPage() {
         countries around the world, but its home, its team and its first community are here.
       </p>
 
-      <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Referrals, Wallet &amp; Verification</h2>
+      <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Referrals &amp; Verification</h2>
       <p className="mb-4">
-        Frianzo rewards the people who build its community. Every account has a personal
-        referral link; when friends join through it, the inviter earns credit in their in-app
-        wallet, and the app shows the balance and withdrawal options honestly in one place.
-        Verification works alongside this: the blue tick is earned by real, established
-        accounts — not bought reach — so a verified badge on Frianzo actually means something.
-        Our blog explains both systems in plain language, including the exact eligibility
-        ideas behind the blue tick.
+        Frianzo grows through the people who build its community. Every account has a
+        personal referral link to invite friends to join. Verification works alongside this:
+        the blue tick is earned by real, established accounts — not bought reach — so a
+        verified badge on Frianzo actually means something. Our blog explains the
+        verification system in plain language, including the exact eligibility ideas behind
+        the blue tick.
       </p>
 
       <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">How Frianzo Works</h2>
