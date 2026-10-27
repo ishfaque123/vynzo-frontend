@@ -208,7 +208,6 @@ export default function MonetizationPage() {
           <div>
             <p className="text-sm font-semibold text-slate-900">Earnings</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">${(earnings?.total ?? 0).toFixed(2)}</p>
-            <p className="mt-1 text-xs text-slate-500">${earningRate.toFixed(2)} per referral after the first {requiredReferrals}</p>
           </div>
           <span className={eligible
             ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700'
