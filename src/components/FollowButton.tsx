@@ -9,7 +9,7 @@ export default function FollowButton({ userId, status: initialStatus, compact = 
   const [loading, setLoading] = useState(false);
 
   if (status === 'self') return null;
-  if (status === 'friends') return <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold ${compact ? 'bg-[#e4e6eb] px-3 py-1 text-xs text-slate-900' : 'border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] text-emerald-700'}`}>✓ Friends</span>;
+  if (status === 'friends') return <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold ${compact ? 'bg-[#e4e6eb] px-3 py-1 text-xs text-[#1e2530]' : 'border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] text-emerald-700'}`}>✓ Friends</span>;
 
   async function handleClick() {
     setLoading(true);
@@ -29,8 +29,10 @@ export default function FollowButton({ userId, status: initialStatus, compact = 
   const label = status === 'following' ? 'Following' : status === 'follow_back' ? 'Follow Back' : 'Follow';
   // Compact = FB-normal style used in comment rows: small light-grey button
   // for every state, instead of the large dark pill.
+  // text-[#1e2530] (NOT text-slate-900): the dark-mode CSS flips slate-900
+  // to near-white, which is unreadable on the light pill.
   const pillClass = compact
-    ? 'bg-[#e4e6eb] text-slate-900'
+    ? 'bg-[#e4e6eb] text-[#1e2530]'
     : status === 'following'
       ? 'border border-slate-200 bg-slate-100 text-slate-600'
       : status === 'follow_back'
