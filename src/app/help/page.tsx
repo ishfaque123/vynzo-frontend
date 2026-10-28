@@ -95,15 +95,15 @@ const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [
     ],
   },
   {
-    title: 'Referrals, Wallet & Verification',
+    title: 'Referrals & Verification',
     items: [
       {
         q: 'How do referrals work?',
-        a: 'Every Frianzo account has a personal referral link, available from your profile and dashboard. When a friend signs up through your link and becomes an active user, you earn referral credit. Share the link anywhere — WhatsApp status, other social profiles, or directly with friends.',
+        a: 'Every Frianzo account has a personal referral link, available from your profile and dashboard. When a friend signs up through your link and becomes an active user, it counts toward your referrals. Share the link anywhere — WhatsApp status, other social profiles, or directly with friends.',
       },
       {
         q: 'What is the wallet?',
-        a: 'Your wallet is where your referral credit collects inside the app. Open it from your dashboard to see your balance and the withdrawal options available to you, including local payment methods. Amounts and eligibility are always shown in the app before you withdraw.',
+        a: 'Your wallet is where your balance is kept inside the app. Open it from your dashboard to see your balance and the withdrawal options available to you, including local payment methods. Amounts and eligibility are always shown in the app before you withdraw.',
       },
       {
         q: 'What is the blue tick and how do I get one?',

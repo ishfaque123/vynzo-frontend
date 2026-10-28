@@ -192,7 +192,6 @@ export default function MonetizationPage() {
   const referrals = data?.referrals ?? 0;
   const progress = data?.progress ?? 0;
   const eligible = data?.status === 'eligible';
-  const earningRate = data?.earningPerReferral ?? 0.1;
   const countryMethods = userCountry ? (allowed[userCountry] || []) : [];
   const selectedMethod = countryMethods.find((m) => m.code === form.methodType);
 
@@ -232,7 +231,7 @@ export default function MonetizationPage() {
             <div className="space-y-1.5">
               {earnings.earnings.slice(0, 5).map((e) => (
                 <div key={e.id} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Referral · {new Date(e.createdAt).toLocaleDateString()}</span>
+                  <span className="text-slate-500">{e.type === 'views' ? 'Views' : 'Referral'} · {new Date(e.createdAt).toLocaleDateString()}</span>
                   <span className="font-semibold text-emerald-600">+${e.amount.toFixed(2)}</span>
                 </div>
               ))}
@@ -244,7 +243,7 @@ export default function MonetizationPage() {
       <div className="mb-3 rounded-lg border bg-white p-4">
         <p className="text-sm font-semibold text-slate-900">Your referral link</p>
         <p className="mt-1 text-xs text-slate-500">
-          Share this link. First {requiredReferrals} referrals unlock payouts, then you earn ${earningRate.toFixed(2)} per referral.
+          Share this link with friends to invite them to Frianzo.
         </p>
         <div className="mt-3 flex gap-2">
           <input
@@ -336,7 +335,7 @@ export default function MonetizationPage() {
           <button onClick={() => setShowAdd(true)} className="text-xs font-medium text-blue-600">+ Add</button>
         </div>
         {methods.length === 0 ? (
-          <p className="mt-2 text-xs text-slate-500">No payout method added yet. Add one to receive your earnings.</p>
+          <p className="mt-2 text-xs text-slate-500">No payout method added yet. Add one to withdraw your balance.</p>
         ) : (
           <div className="mt-3 space-y-2">
             {methods.map((m) => (
