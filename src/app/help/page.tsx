@@ -103,7 +103,7 @@ const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: 'What is the wallet?',
-        a: 'Your wallet is where your balance is kept inside the app. Open it from your dashboard to see your balance and the withdrawal options available to you, including local payment methods. Amounts and eligibility are always shown in the app before you withdraw.',
+        a: 'Your wallet is an in-app section you can open from your dashboard. It does not pay you for referrals: referrals only count toward the 25-referral gate that unlocks monetization. If any earning applies to your account, its rules are shown inside the app itself, not promised here.',
       },
       {
         q: 'What is the blue tick and how do I get one?',

@@ -522,7 +522,7 @@ export const articles: BlogArticle[] = [
       {
         heading: 'Money: followers vs an actual path to earnings',
         paragraphs: [
-          'TikTok monetization in Pakistan is famously limited — no official creator fund payouts for most local creators. Frianzo is building its economics locally from the start: a referrals program that credits your balance when people join through your link, a monetization dashboard in Settings, leaderboards for top referrers, and a paid blue tick for creators who want the verified badge plus a feed boost. It is early days, but the direction is clear: the money side is designed for Pakistani users, with local payment methods in mind.',
+          'TikTok monetization in Pakistan is famously limited — no official creator fund payouts for most local creators. Frianzo is building its economics locally from the start: a referrals program that counts invites toward a monetization unlock, a monetization dashboard in Settings, leaderboards for top referrers, and a paid blue tick for creators who want the verified badge plus a feed boost. It is early days, but the direction is clear: the platform is designed for Pakistani users, with local realities in mind.',
         ],
       },
       {
@@ -651,40 +651,40 @@ export const articles: BlogArticle[] = [
   },
   {
     slug: 'frianzo-referrals-explained',
-    title: 'Frianzo referrals explained: how every invite earns you credit',
+    title: 'Frianzo referrals explained: how invites count toward monetization',
     description:
-      'How the Frianzo referral program works: your personal link, what counts as a referral, the 25-referral unlock, where your earnings appear, and honest tips to grow your count.',
+      'How the Frianzo referral program works: your personal link, what counts as a referral, and the 25-referral gate that unlocks monetization. Referrals themselves do not earn cash.',
     date: '2026-10-17',
     readingMinutes: 4,
     sections: [
       {
         heading: null,
         paragraphs: [
-          'Frianzo grows through its users — so Frianzo pays its users for growing it. The referral program is simple: invite people with your personal link, and when they join through it, they are counted as your referrals. Here is exactly how it works, including the part most people ask about: when the credit actually lands.',
+          'Frianzo grows through its users, and referrals are how that growth is counted. The referral program is simple: invite people with your personal link, and when they join through it, they are counted as your referrals. Referrals themselves do not earn cash. Here is exactly how it works, including the part most people ask about: what reaching 25 referrals actually unlocks.',
         ],
       },
       {
         heading: 'Your personal referral link',
         paragraphs: [
-          'Every Frianzo account has its own referral link, based on the Google Play listing with your username attached. You can find and share it from the app — the "Share Frianzo" option in the menu sends a ready-made WhatsApp message with your link and your live follower count. When someone installs the app through your link, the Play Store passes your username to the app, and the new account is credited to you automatically.',
+          'Every Frianzo account has its own referral link, based on the Google Play listing with your username attached. You can find and share it from the app — the "Share Frianzo" option in the menu sends a ready-made WhatsApp message with your link and your live follower count. When someone installs the app through your link, the Play Store passes your username to the app, and the new account is counted as your referral automatically.',
         ],
       },
       {
-        heading: 'The 25-referral unlock',
+        heading: 'The 25-referral gate',
         paragraphs: [
-          'Referral earnings unlock at 25 referrals. Below 25, your invites are still counted — nothing is lost — but the credit is released once you cross the threshold, and every referral after that earns immediately. The current rate is shown on your monetization page inside the app (Settings → Monetization), along with your referral count and balance. The threshold exists for a practical reason: it keeps the program for real inviters instead of fake sign-up farms, which protects the earnings of everyone honest.',
+          'At 25 referrals, monetization unlocks in the app. Below 25, your invites are still counted toward that gate — nothing is lost — but no referral on its own earns cash, and there is no per-referral payment at or after 25. Your referral count is shown on your monetization page inside the app (Settings → Monetization). The threshold exists for a practical reason: it keeps the program for real inviters instead of fake sign-up farms, which protects the community from abuse.',
         ],
       },
       {
         heading: 'Where to watch your progress',
         paragraphs: [
-          'Your monetization page shows your earnings balance and your referral progress. There is also a leaderboard ranking the top referrers on the platform — if you are competitive, it is a surprisingly motivating place to climb. The same page hosts the top followers, top likers and top commenters boards.',
+          'Your monetization page shows your referral progress. There is also a leaderboard ranking the top referrers on the platform — if you are competitive, it is a surprisingly motivating place to climb. The same page hosts the top followers, top likers and top commenters boards.',
         ],
       },
       {
         heading: 'What counts — and what does not',
         paragraphs: [
-          'A referral counts when a genuinely new user joins through your link and the app records it. Creating extra accounts yourself, or asking the same person to reinstall repeatedly, does not build a real count — the system is designed to credit real, distinct people. Follow and follow-back activity is normal community behaviour and is not treated as spam; only fake or abusive patterns are a problem.',
+          'A referral counts when a genuinely new user joins through your link and the app records it. Creating extra accounts yourself, or asking the same person to reinstall repeatedly, does not build a real count — the system is designed to count real, distinct people. Follow and follow-back activity is normal community behaviour and is not treated as spam; only fake or abusive patterns are a problem.',
         ],
       },
       {
@@ -696,7 +696,7 @@ export const articles: BlogArticle[] = [
       {
         heading: 'Why we built it this way',
         paragraphs: [
-          'Big platforms spend their marketing money on ads. We would rather spend it on the users who bring their friends. Every referral you earn is Frianzo saying thank you in the only language that matters — credit in your balance. Invite honestly, watch your count grow on the monetization page, and help build Pakistan\'s own social platform while you do it.',
+          'Big platforms spend their marketing money on ads. We would rather grow through the users who bring their friends. Every referral you earn counts toward the 25-referral gate — that is the whole point of the program, and it is not a cash payment for inviting someone. Invite honestly, watch your count grow on the monetization page, and help build Pakistan\'s own social platform while you do it.',
         ],
       },
     ],
@@ -981,6 +981,171 @@ export const articles: BlogArticle[] = [
         heading: 'A calmer inbox, by design',
         paragraphs: [
           'Two habits make any messenger peaceful: mute threads that are busy but not urgent, and leave groups that no longer serve you. Frianzo will not punish you for either. Your attention is the product of your life, not ours — the messenger is a tool for the people you choose, and everything in this guide exists to keep it that way.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'write-captions-people-read',
+    title: 'How to write captions people actually read',
+    description:
+      'A practical guide to writing social media captions: start with the point, say one thing at a time, write the way you talk, and finish with a reason to reply.',
+    date: '2026-11-01',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Most captions fail in the first line. People scroll fast, and they decide in a second or two whether the rest is worth their time. A caption does not need to be clever, long, or full of emojis to work. It needs to be clear: what is this post about, why should anyone care, and what should they do next? If a stranger cannot answer those three questions after reading your first two sentences, rewrite the opening before you worry about anything else.',
+        ],
+      },
+      {
+        heading: 'Start with the point, not the greeting',
+        paragraphs: [
+          'Openings like a long greeting, a weather report, or a vague teaser waste the only moment you are guaranteed. Put the interesting part first. Instead of building up to the news, state it plainly: what happened, what you made, what you learned, or what changed. You can add context after that. Readers who are interested will keep going, and readers who are not were never going to read a slow build-up anyway.',
+          'This does not mean every caption must be dramatic. A plain, honest first line often beats a dramatic one. If you cooked something, say what it is and why it mattered to you. If you travelled somewhere, say where and what surprised you. Specific detail is what stops a scroll; general excitement is easy to ignore because every post claims to be exciting.',
+        ],
+      },
+      {
+        heading: 'One caption, one idea',
+        paragraphs: [
+          'A caption that tries to announce three things, tell a life story, and sell something at the same time usually communicates none of them well. Pick the single idea that matters for this post and let the rest go. If you have more to say, that is what the next post is for. Readers remember one clear message far better than a paragraph that wanders through several topics.',
+          'A useful test is to read your caption back and ask what a friend would repeat about it afterwards. If the answer is vague, the caption is trying to do too much. Cut it down until the answer is one sentence. Short does not mean shallow: a short caption can still carry a real thought, a real feeling, or a useful detail. It simply refuses to bury that thought under extra words.',
+        ],
+      },
+      {
+        heading: 'Write the way you actually talk',
+        paragraphs: [
+          'The best captions sound like a person, not like an advertisement or a textbook. Write in the language and style you use with friends, whether that is Urdu, Roman Urdu, English, or a mix of both. Short sentences help. So do line breaks: a wall of text looks like work, while a few short paragraphs look like a message worth reading.',
+          'Avoid words you would never say out loud. If a sentence sounds stiff when you read it back, rewrite it in simpler words. You do not need impressive vocabulary to sound serious, and you do not need slang in every line to sound friendly. The goal is a voice a reader recognises as yours, so that over time your posts feel like they come from a real person rather than a page posting for the sake of posting.',
+        ],
+      },
+      {
+        heading: 'Give people a reason to reply',
+        paragraphs: [
+          'A caption that only describes a photo gives readers nothing to do. A question, an honest opinion, or a small choice gives them a reason to stop and respond. Ask something you genuinely want to know, not a question you already answered in the post. If you post a photo of a meal, asking which version people prefer at home is a real question. Asking people to comment a word for no reason is not.',
+          'Replies matter because they turn a post into a conversation. When someone answers, answer them back. A creator who replies to early comments builds a habit in their audience: people learn that commenting leads somewhere, so they comment again. A creator who never replies teaches the opposite lesson, no matter how good the caption was.',
+        ],
+      },
+      {
+        heading: 'A quick editing checklist',
+        paragraphs: [
+          'Before you post, read the caption once out loud. Fix anything you stumble over. Check that the first line makes sense on its own, that there is only one main idea, and that spelling mistakes have not changed the meaning of a word. Remove hashtags that have nothing to do with the post: a few relevant ones help people find it, while a long block of unrelated ones makes the whole post look careless.',
+          'Finally, check the caption against the photo or video. If the caption promises something the post does not show, readers feel tricked and will not trust the next one. Honest captions build slowly, post by post, into an audience that actually reads. That audience is worth far more than a single post that got attention by overpromising.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'free-phone-storage-without-losing-photos',
+    title: 'Phone storage full? Free space without losing your photos',
+    description:
+      'A careful, step-by-step way to free space on an Android phone: find what is actually using storage, clean up safely, and keep your photos and chats intact.',
+    date: '2026-11-01',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'A phone that says storage is full usually does not need to be replaced. It needs a clean-up done in the right order. The mistake most people make is deleting photos in a panic, or clearing data from an app and then discovering they have been logged out of everything. A slower, careful clean-up frees more space and loses nothing important. Start by finding out what is actually taking the space, then work through the biggest items one at a time.',
+        ],
+      },
+      {
+        heading: 'First, see what is using the space',
+        paragraphs: [
+          'Open your phone settings and look for storage. It will show how much space photos, videos, apps, and system files are using. This step matters because the fix depends on the cause. A phone full of videos needs a different clean-up from a phone full of apps, and a phone full of chat media needs a different one again. Do not guess, and do not delete at random: check the breakdown first, then start with the largest category you can safely reduce.',
+          'While you are there, note which apps are largest. A social app, a game, or a maps app can grow large over time because of saved files and cache. That does not automatically mean you should delete the app. Often the app itself is small and its stored files are large, which leads to the next, safer step.',
+        ],
+      },
+      {
+        heading: 'Photos and videos: back up before you delete',
+        paragraphs: [
+          'Photos and videos are usually the biggest category, and they are also the hardest to get back once deleted. Before deleting anything, make a copy somewhere else: a cloud backup, a computer, or a memory card, depending on what you use. Wait until the copy is actually complete before you remove the originals from the phone. A backup that is still uploading is not a backup yet.',
+          'Once the copy is confirmed, you can remove duplicates, blurry shots, and videos you recorded by accident. Keep the photos that matter to you, even if they are not perfect. A useful habit is to review new photos once a week and delete the obvious failures straight away. That small habit prevents the storage warning from coming back every month.',
+        ],
+      },
+      {
+        heading: 'Chat media: the hidden storage eater',
+        paragraphs: [
+          'Messaging apps often hold far more media than people expect. Every forwarded video, meme, and family group photo can be saved to your phone even if you only glanced at it once. Open your messaging app settings and look for storage or data usage: many apps let you see which chats use the most space and delete only the media from a chat while keeping the messages themselves.',
+          'Be careful with group chats. Deleting media from a group does not delete the conversation, but it does remove those files from your phone, so only do it after you have saved anything you want to keep. If a chat contains important documents, photos of family, or receipts, save those first. The rest — repeated forwards and old jokes — is usually safe to remove.',
+        ],
+      },
+      {
+        heading: 'Cache is safe to clear; app data usually is not',
+        paragraphs: [
+          'Every app has two different kinds of stored data, and confusing them causes most clean-up accidents. Cache is temporary data an app can rebuild, like thumbnails and recently loaded images. Clearing cache is generally safe and frees space without logging you out. App data, on the other hand, can include your login, settings, and saved content inside the app. Clearing that can log you out or delete things the app was storing only on your phone.',
+          'So the rule is simple: clear cache when you want space, and only clear app data when you understand exactly what that app will lose. If you are unsure, leave app data alone and look for space somewhere else. A few minutes of patience here saves hours of recovering accounts later.',
+        ],
+      },
+      {
+        heading: 'Downloads, old files, and apps you no longer use',
+        paragraphs: [
+          'Check your downloads folder. It often contains files you downloaded once for a single purpose — forms, images, documents, installation files — and never opened again. Delete what you no longer need, but pause on anything that looks like an identity document, a ticket, or a receipt until you are sure you have it elsewhere.',
+          'Then look at your apps. Uninstall the ones you have not opened in months, starting with games and large apps. You can always install an app again later; you cannot easily recover a photo you deleted in a hurry. If an app is large because of files inside it, check whether the app itself offers a way to clear downloads or offline content before you uninstall it completely.',
+        ],
+      },
+      {
+        heading: 'Keep it from filling up again',
+        paragraphs: [
+          'After the clean-up, set up two habits. First, turn on automatic backup for photos if you use one, so deleting from the phone stops feeling risky. Second, review chat media and downloads once in a while instead of waiting for the storage warning. A phone with some free space also runs better: apps update more smoothly, photos save without errors, and you are not forced to delete something important in the middle of recording a video that matters.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'protect-accounts-passwords-two-factor-phishing',
+    title: 'Protect your accounts: passwords, two-factor checks, and phishing messages',
+    description:
+      'Plain-language account security: unique passwords, two-factor verification, how to recognise phishing messages, and what to do if you clicked or shared something by mistake.',
+    date: '2026-11-01',
+    readingMinutes: 7,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Most account theft does not start with a clever hacker breaking into a system. It starts with a normal person being tricked: a familiar-looking message, a fake login page, or a password reused across many sites. Good account security is therefore less about technology and more about habits. A few steady habits — different passwords, a second check when signing in, and a pause before clicking — protect far more than any single app or setting.',
+        ],
+      },
+      {
+        heading: 'One account, one password',
+        paragraphs: [
+          'Reusing the same password everywhere is the single most common weakness. If one website leaks its passwords, every other account using the same password becomes easy to open. That is why security advice keeps repeating the same rule: use a different password for each important account, especially email, banking, and social accounts. Your email matters most of all, because a person who controls your email can often reset the passwords of your other accounts.',
+          'A password does not need to be impossible to remember to be strong. A longer phrase made of unrelated words is generally better than a short password with a few symbols tacked on. If remembering many different passwords feels hard, use a password manager — an app designed to store them securely behind one strong master password — or write them in a private notebook kept at home, never as a photo in your phone or a note shared with anyone. Never send a password to anyone who asks for it in a message, even if they claim to work for the service.',
+        ],
+      },
+      {
+        heading: 'Turn on the second check',
+        paragraphs: [
+          'Two-factor verification means that signing in needs something extra besides your password, such as a code from an authenticator app or a prompt on your own phone. Even if someone learns your password, they still cannot get in without that second step. Turn it on for email and for any account that holds money, photos, or private messages.',
+          'Keep your recovery options up to date as well: a recovery email and phone number you actually control. If you change your number, update it everywhere important before you lose access to the old one. Losing both your password and your recovery method at the same time is how accounts become very hard to recover, even for their real owners.',
+        ],
+      },
+      {
+        heading: 'How to recognise a phishing message',
+        paragraphs: [
+          'Phishing messages pretend to be from a bank, a delivery company, a social app, or a government office. They usually create urgency: your account will be closed, your parcel is stuck, you have won something, or you must verify now. The message then asks you to click a link, download a file, or share a code. Real services do not ask for your password or one-time code in a message, and they do not threaten to close your account in the next hour unless you click immediately.',
+          'Before clicking, look carefully. Check the sender address, not just the displayed name. Hover over or long-press a link to see where it really goes, without opening it. Watch for misspelled company names, strange domains, and links that do not match the service they claim to be. If a message claims a problem with an account, open the official app or website yourself and check there, instead of following the link in the message. That one habit defeats most phishing attempts.',
+        ],
+      },
+      {
+        heading: 'Codes are secrets, even from helpful strangers',
+        paragraphs: [
+          'A one-time code sent to your phone or email is the key to your account for a few minutes. Never share it with anyone, including someone who says they are helping you, fixing your account, or verifying your identity. No legitimate support agent needs your code to help you. The same rule applies to the codes shown by an authenticator app and to password-reset links: if someone else gets them, they can act as you.',
+          'Be especially careful with calls and messages that claim to be from your bank or a platform and ask you to read out a code. If you are unsure, hang up and call the official number yourself. A real company will not be offended by that caution, and a scammer will try hard to stop you from doing it.',
+        ],
+      },
+      {
+        heading: 'If you clicked or shared something by mistake',
+        paragraphs: [
+          'Mistakes happen, and acting quickly matters more than feeling embarrassed. If you entered your password on a suspicious page, change that password immediately from the official app or website, and change it anywhere else you used the same password. If you shared a code, change the password and check your account for new devices, changed settings, or messages you did not send, and sign out of sessions you do not recognise.',
+          'If money is involved, contact your bank or payment provider straight away and tell them exactly what happened. If an account was taken over, use the official recovery process for that service and report the message that tricked you. Reporting helps protect other people too, because the same message is usually sent to many people at once. After the urgent steps, turn on two-factor verification if it was not already on, and treat the incident as a reminder to slow down before the next urgent-looking message.',
+        ],
+      },
+      {
+        heading: 'A calm habit that covers almost everything',
+        paragraphs: [
+          'Account security becomes much easier if you adopt one rule: pause before acting on any message that asks for a password, a code, a payment, or an urgent click. Open the service yourself, check the facts there, and only then act. Scammers rely on speed and panic; legitimate services can wait a few minutes while you verify. Combined with unique passwords and a second sign-in check, that pause protects almost every everyday account far better than worrying about rare, sophisticated attacks.',
         ],
       },
     ],

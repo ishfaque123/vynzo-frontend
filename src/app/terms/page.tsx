@@ -4,7 +4,7 @@ export default function TermsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 text-slate-700">
       <h1 className="mb-4 text-2xl font-bold">Terms of Service</h1>
-      <p className="mb-4 text-sm text-slate-500">Last updated: {new Date().toLocaleDateString()}</p>
+      <p className="mb-4 text-sm text-slate-500">Last updated: November 1, 2026</p>
 
       <p className="mb-4">By using Frianzo, you agree to these Terms of Service. Please read them carefully.</p>
 
@@ -23,8 +23,8 @@ export default function TermsPage() {
       <h2 className="mt-6 mb-2 text-lg font-semibold">Safety and Moderation</h2>
       <p className="mb-4">Frianzo provides tools to block and report users or content that violates our guidelines, on every profile and post. Our team reviews reports against these Terms and our Child Safety policy. Content that breaks the Community Guidelines can be removed, and repeat violations can restrict an account. If you believe a decision was a mistake, contact us through the Contact page with your username and we will review it.</p>
 
-      <h2 className="mt-6 mb-2 text-lg font-semibold">Referrals, Wallet and Verification</h2>
-      <p className="mb-4">Every Frianzo account has a personal referral link. When a friend signs up through your link and becomes an active user, it counts toward your referrals. Your wallet shows your balance and the withdrawal options available to you, including local payment methods, and amounts and eligibility are always shown in the app before you withdraw. The blue tick is a verification badge for genuine, established accounts with a complete profile, real followers, real posts and a clean record; it is not available to brand-new accounts.</p>
+      <h2 className="mt-6 mb-2 text-lg font-semibold">Referrals and Verification</h2>
+      <p className="mb-4">Every Frianzo account has a personal referral link. When a friend signs up through your link and becomes an active user, it counts toward your referrals. Referrals do not earn cash by themselves; reaching 25 referrals unlocks monetization eligibility in the app. The blue tick is a verification badge for genuine, established accounts with a complete profile, real followers, real posts and a clean record; it is not available to brand-new accounts.</p>
 
       <h2 className="mt-6 mb-2 text-lg font-semibold">Account Termination</h2>
       <p className="mb-4">We reserve the right to suspend or terminate accounts that violate these terms or applicable laws.</p>
