@@ -38,9 +38,19 @@ function AdsterraSlot({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasCode = snippet.trim().length > 0;
+  // Assume the Android app until checked (same pattern as AdUnit): the
+  // script is only ever injected after the check proves this is NOT the
+  // app, so no Adsterra request can leave the app's WebView. This gates
+  // every Adsterra placement at once (feed, reels, profile, blog, social
+  // bar) — call-site gating alone would miss a placement.
+  const [inApp, setInApp] = useState(true);
 
   useEffect(() => {
-    if (!hasCode || !ref.current) return;
+    setInApp(!!(window as any).FrianzoNative);
+  }, []);
+
+  useEffect(() => {
+    if (!hasCode || !ref.current || inApp) return;
     const el = ref.current;
     el.innerHTML = snippet;
     // Scripts inserted via innerHTML are inert — replace each with a fresh
@@ -53,9 +63,9 @@ function AdsterraSlot({
       fresh.textContent = old.textContent;
       old.replaceWith(fresh);
     });
-  }, [snippet, hasCode]);
+  }, [snippet, hasCode, inApp]);
 
-  if (!hasCode) return null;
+  if (!hasCode || inApp) return null;
 
   return (
     <div

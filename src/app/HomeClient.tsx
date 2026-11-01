@@ -273,8 +273,23 @@ export default function HomePage() {
     if (!loading && !user && isNativeApp) router.replace('/login');
   }, [loading, user, isNativeApp, router]);
 
-  if (loading) return null;
-  if (!user) return isNativeApp ? null : <PublicLanding />;
+  // Never return null in the app: with the dark body background (#1e2530)
+  // that renders as a completely empty dark screen while auth/feed loads,
+  // exactly like the empty screen after the splash on /login. Show a visible
+  // loading state instead; the redirect effect above still fires for a
+  // logged-out app user. Auth/feed logic is unchanged.
+  if (loading) return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
+      <p className="text-sm text-slate-500">Loading…</p>
+    </div>
+  );
+  if (!user) return isNativeApp ? (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
+      <p className="text-sm text-slate-500">Loading…</p>
+    </div>
+  ) : <PublicLanding />;
 
   const openPost = posts.find((p) => p.id === openComments);
 
@@ -365,7 +380,7 @@ export default function HomePage() {
                   replyTo={replyTo} setReplyTo={setReplyTo}
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
-                {((index + 1) === 1 || ((index + 1) > 1 && ((index + 1) - 1) % 4 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex justify-center px-4"><AdsterraBanner size="300x250" /></div>}
+                {!isNativeApp && ((index + 1) === 1 || ((index + 1) > 1 && ((index + 1) - 1) % 4 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex justify-center px-4"><AdsterraBanner size="300x250" /></div>}
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
                 {((index + 1) === 2 || (index + 1) === 8) && <div className="my-4 px-4"><SponsoredCard /></div>}
                 {(index + 1) === 3 && <div className="my-4 px-4"><BlueTickAd /></div>}
