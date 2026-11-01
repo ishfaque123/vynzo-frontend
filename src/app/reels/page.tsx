@@ -767,10 +767,10 @@ export default function ReelsPage() {
     try {
       let dupPages = 0;
       while (more && dupPages < 5) {
-        const result = await fetchReelFeed(feedOffsetRef.current, tab);
+        const result = await fetchReelFeed(0, tab, 30000, reels.map((item) => item.id));
         if (!result.success || activeTabRef.current !== tab) break;
         const raw: Reel[] = result.data.reels || [];
-        feedOffsetRef.current += raw.length;
+        /* REPEAT FIX: offset no longer pages; the server excludes shown ids, so this ref is only the shown-count for the tab cache (set after the loop). */
         more = !!result.data.hasMore;
         const fresh = raw.filter((item: Reel) => !seen.has(item.id) && !notInterested.has(item.id));
         fresh.forEach((item) => seen.add(item.id));
@@ -782,6 +782,7 @@ export default function ReelsPage() {
       loadingMoreRef.current = false;
     }
     if (activeTabRef.current !== tab) return;
+    feedOffsetRef.current = reels.length + collected.length;
     if (collected.length) {
       setReels((items) => {
         const ids = new Set(items.map((item) => item.id));
