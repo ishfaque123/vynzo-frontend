@@ -344,6 +344,12 @@ export default function SettingsMenuPage() {
   }
 
   function handleAddAccount() {
+    // Google double-click fix (2026-11-01): the fallback path below
+    // returned before setAddingAccount(true), so in the app (where the
+    // URL is intercepted and the page never navigates away) repeat taps
+    // fired repeat sign-ins. Lock first, like the login page.
+    if (addingAccount) return;
+    setAddingAccount(true);
     const url = `${API_URL}/api/auth/google/start?switch=1`;
     // Prefer a popup (desktop browsers): the sheet stays put and the new
     // account appears in the list when the popup closes. The Android
@@ -356,10 +362,15 @@ export default function SettingsMenuPage() {
       popup = null;
     }
     if (!popup) {
+      // No popup (app / popup blocker): the page stays mounted in the
+      // app, so release the lock after 8s — the app-side single-flight
+      // guard covers the native flow itself, and a cancelled picker must
+      // never leave this button dead. On the web this navigation leaves
+      // the page, so the timer is moot.
+      window.setTimeout(() => setAddingAccount(false), 8000);
       window.location.href = url;
       return;
     }
-    setAddingAccount(true);
     if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
     popupTimerRef.current = window.setInterval(() => {
       if (popup && popup.closed) {

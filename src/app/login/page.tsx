@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { requestEmailCode, verifyEmailCode } from '@/lib/api/authApi';
@@ -65,6 +65,14 @@ function LoginForm() {
   const [code, setCode] = useState('');
   const [codeStep, setCodeStep] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Google double-click fix (2026-11-01): the Google button had no busy
+  // state at all, unlike the email buttons above. First click locks it;
+  // the lock auto-releases after 8s because the Android app gives the web
+  // page no cancel signal (a cancelled native picker leaves this page
+  // mounted). The app-side single-flight guard is the authoritative lock
+  // for the whole native flow; this is belt-and-braces for the web button.
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const googleBusyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [emailMessage, setEmailMessage] = useState('');
   const [country, setCountry] = useState('your country');
 
@@ -102,6 +110,26 @@ function LoginForm() {
   }, []);
 
   const loginUrl = API_URL + '/api/auth/google/start' + (isSwitching ? '?switch=1' : '');
+
+  useEffect(() => {
+    return () => {
+      if (googleBusyTimer.current) clearTimeout(googleBusyTimer.current);
+    };
+  }, []);
+
+  function handleGoogleClick(e: React.MouseEvent) {
+    if (googleBusy) {
+      e.preventDefault();
+      return;
+    }
+    setGoogleBusy(true);
+    if (googleBusyTimer.current) clearTimeout(googleBusyTimer.current);
+    // Auto-release: on the web the click navigates away immediately, so
+    // this only matters in the app, where a cancelled picker leaves this
+    // page mounted with no cancel signal. The app guard covers the flow
+    // itself; this timer only guarantees the button never stays dead.
+    googleBusyTimer.current = setTimeout(() => setGoogleBusy(false), 8000);
+  }
 
   useEffect(() => {
     if (!loading && verified && isAuthenticated && !isSwitching) router.push('/');
@@ -177,10 +205,12 @@ function LoginForm() {
 
         <a
           href={loginUrl}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow"
+          onClick={handleGoogleClick}
+          aria-disabled={googleBusy}
+          className={`mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow ${googleBusy ? 'pointer-events-none opacity-60' : ''}`}
         >
           <GoogleIcon />
-          Continue with Google
+          {googleBusy ? 'Signing in…' : 'Continue with Google'}
         </a>
 
         <div className="my-6 flex items-center gap-3 text-xs text-slate-400">
