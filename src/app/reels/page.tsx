@@ -509,20 +509,6 @@ export default function ReelsPage() {
   // below), so a fast fling could settle 2-3 slides away.
   const touchStartPositionRef = useRef<number | null>(null);
   const touchUnsettledRef = useRef(false);
-  // BIG-SWIPE FIX (replaces the scrollend clamp): the old clamp only ran
-  // AFTER momentum ended, so a big swipe first jumped 2-3 slides ahead
-  // and then got yanked back to start+1 — the bounce-back the owner
-  // reported. Instead the gesture is band-limited live and settled once
-  // on touchend (see onTouchMoveRefresh / onTouchEndRefresh below).
-  const touchStartYRef = useRef<number | null>(null);
-  const touchLastYRef = useRef<number | null>(null);
-  // While set, the IntersectionObserver must not change activeIndex
-  // (it would flash intermediate slides as active during the settle)
-  // and every scroll event is forced back to this slide position, which
-  // kills post-release momentum overshoot. Cleared after 500 ms.
-  const touchSettleTargetRef = useRef<number | null>(null);
-  const touchSettleTimerRef = useRef<number | undefined>(undefined);
-  const suppressObserverRef = useRef(false);
   const navBackstopTimerRef = useRef<number | undefined>(undefined);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
@@ -584,31 +570,14 @@ export default function ReelsPage() {
 
   function onTouchStartRefresh(e: React.TouchEvent) {
     const root = feedRef.current;
-    // BIG-SWIPE FIX: record the gesture start in slide-position space and
-    // the finger Y, even when this is not a pull-to-refresh.
-    touchStartYRef.current = e.touches[0].clientY;
-    touchLastYRef.current = e.touches[0].clientY;
+    // SKIP FIX: record the gesture start in slide-position space even when
+    // this is not a pull-to-refresh (the old early return skipped it).
     if (root && root.clientHeight) { touchStartPositionRef.current = Math.round(root.scrollTop / root.clientHeight); touchUnsettledRef.current = true; }
     if (!root || root.scrollTop > 0 || refreshing) return;
     pullStartYRef.current = e.touches[0].clientY;
   }
 
   function onTouchMoveRefresh(e: React.TouchEvent) {
-    touchLastYRef.current = e.touches[0].clientY;
-    // BIG-SWIPE FIX (1): clamp the LIVE scroll position to the band
-    // [start-1, start+1] during the gesture, so a long bottom-to-top
-    // fling has nowhere to jump to before release. This runs for every
-    // touch gesture, not just pull-to-refresh (pullStartYRef is null for
-    // ordinary swipes, so the pull logic below must not gate it).
-    const root = feedRef.current;
-    if (root && root.clientHeight && touchStartPositionRef.current !== null && !refreshing) {
-      const h = root.clientHeight;
-      const start = touchStartPositionRef.current;
-      const min = Math.max(0, (start - 1) * h);
-      const max = (start + 1) * h;
-      if (root.scrollTop < min) root.scrollTop = min;
-      else if (root.scrollTop > max) root.scrollTop = max;
-    }
     if (pullStartYRef.current === null || refreshing) return;
     const dy = e.touches[0].clientY - pullStartYRef.current;
     if (dy > 0) {
@@ -617,59 +586,23 @@ export default function ReelsPage() {
   }
 
   function onTouchEndRefresh() {
-    // Pull-to-refresh handling (unchanged): only when a pull was started.
-    if (pullStartYRef.current !== null) {
-      pullStartYRef.current = null;
-      if (pullY > 70 && !refreshing) {
-        void handleRefresh();
-      } else {
-        setPullY(0);
-      }
+    // Deliberately NO post-touch "one reel per swipe" correction here.
+    // The old version re-checked the index 200ms after touchend and
+    // smooth-scrolled back to one step from the swipe's start whenever
+    // the view had moved further — but at 200ms a fast fling is still
+    // mid-momentum, so the check read a position 2-3 slides ahead and
+    // the "correction" yanked the view BACK toward where the swipe
+    // began (owner report: fast scrolling repeatedly jumps back to the
+    // old place). CSS snap-mandatory already settles every gesture on
+    // the nearest slide in the direction of travel, for slow and fast
+    // scrolling alike — let it do that job alone.
+    if (pullStartYRef.current === null) return;
+    pullStartYRef.current = null;
+    if (pullY > 70 && !refreshing) {
+      void handleRefresh();
+    } else {
+      setPullY(0);
     }
-    // BIG-SWIPE FIX (2): decide the step ONCE on touchend and settle
-    // INSTANTLY (behavior 'auto'), instead of letting native momentum
-    // carry the feed 2-3 slides and correcting it afterwards (the old
-    // scrollend clamp, which produced jump-then-bounce-back). Direction
-    // comes from the scroll displacement if it is at least a quarter
-    // slide, otherwise from the finger displacement (>= 60 px); a small
-    // aborted swipe snaps back to the start slide. The step is in slide
-    // position space, so a big swipe across an ad boundary lands on the
-    // ad, then the next reel, in order. The observer is suppressed
-    // during the settle so intermediate slides never flash as active,
-    // and the scroll lock in the effect below holds the target for
-    // 500 ms to kill any post-release momentum overshoot.
-    if (!touchUnsettledRef.current) { touchStartYRef.current = null; touchLastYRef.current = null; return; }
-    touchUnsettledRef.current = false;
-    const root = feedRef.current;
-    const start = touchStartPositionRef.current;
-    if (!root || !root.clientHeight || start === null || refreshing) {
-      touchStartPositionRef.current = null; touchStartYRef.current = null; touchLastYRef.current = null; return;
-    }
-    const h = root.clientHeight;
-    const maxPosition = slideCountForReelCount(reels.length) - 1;
-    const fingerDy = (touchStartYRef.current !== null && touchLastYRef.current !== null)
-      ? touchStartYRef.current - touchLastYRef.current : 0; // > 0 = swipe up = next
-    const scrollDy = root.scrollTop - start * h;
-    let dir = 0;
-    if (Math.abs(scrollDy) >= h * 0.25) dir = Math.sign(scrollDy);
-    else if (Math.abs(fingerDy) >= 60) dir = Math.sign(fingerDy);
-    const target = Math.max(0, Math.min(start + dir, maxPosition));
-    touchStartPositionRef.current = null; touchStartYRef.current = null; touchLastYRef.current = null;
-    suppressObserverRef.current = true;
-    touchSettleTargetRef.current = target;
-    currentPositionRef.current = target;
-    if (isAdSlidePosition(target)) setAdInView(true);
-    else {
-      setAdInView(false);
-      const targetReel = reelIndexForSlidePosition(target);
-      setActiveIndex(targetReel);
-      if (targetReel >= reels.length - 3 && hasMore) void loadMoreReels();
-    }
-    root.scrollTo({ top: target * h, behavior: 'auto' });
-    window.clearTimeout(touchSettleTimerRef.current);
-    touchSettleTimerRef.current = window.setTimeout(() => {
-      suppressObserverRef.current = false; touchSettleTargetRef.current = null;
-    }, 500);
   }
   function switchTab(tab: 'foryou' | 'following') {
     if (tab === activeTabRef.current || tabSwitching) return;
@@ -868,10 +801,7 @@ export default function ReelsPage() {
     setHasMore(more);
   }
 
-  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index], [data-ad-slide]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; // BIG-SWIPE FIX: during a touch settle, the target was already
-    // chosen on touchend — observer reports of intermediate slides
-    // must not flash them as active or re-order the feed.
-    if (suppressObserverRef.current) return; const visibleTarget = visible.target as HTMLElement; const isAd = visibleTarget.hasAttribute('data-ad-slide'); // Settle compares slide positions on both sides: a step's in-flight target is a position, so a reel reports its position via the helper and an ad slide carries its own position in data-ad-position.
+  useEffect(() => { const root = document.getElementById('reels-feed'); if (!root) return; const items = Array.from(root.querySelectorAll<HTMLElement>('[data-reel-index], [data-ad-slide]')); if (!items.length) return; const observer = new IntersectionObserver((entries) => { const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]; if (!visible) return; const visibleTarget = visible.target as HTMLElement; const isAd = visibleTarget.hasAttribute('data-ad-slide'); // Settle compares slide positions on both sides: a step's in-flight target is a position, so a reel reports its position via the helper and an ad slide carries its own position in data-ad-position.
     const visiblePosition = isAd ? Number(visibleTarget.dataset.adPosition) : slidePositionForReelIndex(Number(visibleTarget.dataset.reelIndex)); if (navInFlightRef.current !== null && visiblePosition === navInFlightRef.current && visible.intersectionRatio >= 0.8) { navInFlightRef.current = null; window.clearTimeout(navBackstopTimerRef.current); } if (isAd) { currentPositionRef.current = visiblePosition; setAdInView(true); return; } setAdInView(false); const visibleIndex = Number(visibleTarget.dataset.reelIndex); currentPositionRef.current = visiblePosition; setActiveIndex(visibleIndex); if (visibleIndex >= reels.length - 3 && hasMore) { void loadMoreReels(); } }, { root, threshold: [0.6, 0.8, 1] }); items.forEach((item) => observer.observe(item)); return () => observer.disconnect(); }, [reels.length, hasMore]);
   function updateLike(id: string, liked: boolean, count: number) { setReels((items) => items.map((item) => item.id === id ? { ...item, liked, likeCount: count } : item)); }
   function updateFavorite(id: string, favorited: boolean) { setReels((items) => items.map((item) => item.id === id ? { ...item, favorited } : item)); }
@@ -951,25 +881,33 @@ export default function ReelsPage() {
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); goNext(); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); goPrevious(); }
   }
-  // BIG-SWIPE FIX (3): the old scrollend clamp is DELETED, not kept as a
-  // backstop — keeping it would re-introduce the yank/bounce-back, since
-  // it fires after momentum and smooth-scrolls back to start+1. In its
-  // place, this scroll lock holds the touchend-chosen target for 500 ms:
-  // any post-release momentum scroll that drifts off the target is
-  // forced straight back to it (instant, no smooth return journey, so
-  // no skipped reel ever flashes on the way back). Outside a touch
-  // settle the lock is inactive and native scrolling is untouched.
+  // SKIP FIX: one touch gesture must move at most ONE slide. CSS
+  // scroll-snap-mandatory only guarantees settling ON a snap stop, not on
+  // the NEAREST one, so a fast fling's momentum crosses 2-3 full-screen
+  // stops before settling; the intermediate reels never become active,
+  // never preload (window is active-1..active+2) and never record a view.
+  // Clamp on 'scrollend' (fires after momentum ends, unlike the old fixed
+  // 200 ms touchend check that read a mid-momentum position), with a
+  // 600 ms touchend fallback for browsers without scrollend.
   useEffect(() => {
     const root = feedRef.current;
     if (!root) return;
-    const onScroll = () => {
-      const target = touchSettleTargetRef.current;
-      if (target === null || !root.clientHeight) return;
-      const want = target * root.clientHeight;
-      if (Math.abs(root.scrollTop - want) > 1) root.scrollTo({ top: want, behavior: 'auto' });
+    const clampTouchJump = () => {
+      if (!touchUnsettledRef.current) return;
+      touchUnsettledRef.current = false;
+      if (refreshing) return;
+      if (navInFlightRef.current !== null) return;
+      const start = touchStartPositionRef.current;
+      if (start === null || !root.clientHeight) return;
+      const settled = Math.round(root.scrollTop / root.clientHeight);
+      const delta = settled - start;
+      if (Math.abs(delta) > 1) scrollToSlidePosition(start + Math.sign(delta));
     };
-    root.addEventListener('scroll', onScroll, { passive: true });
-    return () => root.removeEventListener('scroll', onScroll);
+    const onScrollEnd = () => clampTouchJump();
+    const onTouchEndFallback = () => { window.setTimeout(() => clampTouchJump(), 600); };
+    root.addEventListener('scrollend', onScrollEnd);
+    root.addEventListener('touchend', onTouchEndFallback);
+    return () => { root.removeEventListener('scrollend', onScrollEnd); root.removeEventListener('touchend', onTouchEndFallback); };
   });
   // Native wheel + keyboard drivers for the feed. No dependency array on
   // purpose: the handlers close over the current reels list, and the
