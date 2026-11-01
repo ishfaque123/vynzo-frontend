@@ -173,6 +173,9 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
   const lastTapRef = useRef(0);
   const userPausedRef = useRef(false);
   const [videoError, setVideoError] = useState<number | null>(null);
+  const [videoStalled, setVideoStalled] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
+  const autoRetryRef = useRef(false);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartTimersRef = useRef<number[]>([]);
   const [isMuted, setIsMuted] = useState(false);
@@ -210,6 +213,45 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
   const captionShown = !captionLong || captionExpanded ? reel.caption : `${reel.caption!.slice(0, CAPTION_LIMIT)}...`;
 
   function revealControls() { setShowControls(true); if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); controlsTimerRef.current = setTimeout(() => setShowControls(false), 2500); }
+  // Error-code-2 fix: adaptive stall timeout + cache-busting retry.
+  // A slow link (e.g. ~2 K/s) must not be declared dead after a fixed 12s:
+  // the wait grows when the browser reports a slow connection, and it
+  // resets whenever buffered data actually advances.
+  function stallTimeoutMs() {
+    try {
+      const conn = (navigator as unknown as { connection?: { effectiveType?: string; downlink?: number } }).connection;
+      const type = conn?.effectiveType;
+      const downlink = conn?.downlink;
+      if (type === 'slow-2g' || type === '2g' || (typeof downlink === 'number' && downlink < 0.1)) return 30000;
+      if (type === '3g' || (typeof downlink === 'number' && downlink < 0.5)) return 20000;
+    } catch { /* navigator.connection is not available everywhere */ }
+    return 12000;
+  }
+  function cacheBustedUrl(url: string) {
+    try {
+      const u = new URL(url);
+      u.searchParams.set('frianzo_retry', String(Date.now()));
+      return u.toString();
+    } catch {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}frianzo_retry=${Date.now()}`;
+    }
+  }
+  // Retry with a fresh (cache-busted) URL so a stale failed fetch is not
+  // repeated verbatim. Never retries the exact same URL.
+  function retryVideo(cacheBust: boolean) {
+    const v = videoRef.current;
+    if (!v) return;
+    setVideoStalled(false);
+    setVideoError(null);
+    setIsVideoLoading(true);
+    setRetryNonce((n) => n + 1);
+    if (cacheBust && reel.videoUrl) {
+      try { v.setAttribute('src', cacheBustedUrl(reel.videoUrl)); } catch { /* keep the original src */ }
+    }
+    v.load();
+    void v.play().catch(() => {});
+  }
   useEffect(() => () => { if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); if (moreOptionsTimerRef.current) clearTimeout(moreOptionsTimerRef.current); heartTimersRef.current.forEach((timer) => window.clearTimeout(timer)); }, []);
   async function openComments() {
     setCommentsOpen(true);
@@ -294,22 +336,41 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
   const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
   async function handleFollow(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); if (following) return; setFollowing(true); const result = await toggleFollow(reel.author.id); setFollowing(false); if (result.success && result.data.following) onFollowed(reel.author.id); }
   useEffect(() => { const video = videoRef.current; if (!video) return; if (preload) { if (video.getAttribute('src') !== reel.videoUrl) video.setAttribute('src', reel.videoUrl); } else if (video.getAttribute('src')) { video.pause(); video.removeAttribute('src'); video.load(); setIsPlaying(false); } }, [preload, reel.videoUrl]);
-  useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); setProgress(0); manualPlayRef.current = false; return; } if (isDataSaver() && !manualPlayRef.current) { setIsPlaying(false); setIsVideoLoading(false); return; } video.currentTime = 0; userPausedRef.current = false; setVideoError(null); setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 2); setProgress(0); let cancelled = false; (async () => { for (let attempt = 0; attempt < 4 && !cancelled; attempt++) { try { video.muted = true; setIsMuted(true); await video.play(); if (cancelled) return; video.muted = false; setIsMuted(false); if (video.paused) { video.muted = true; setIsMuted(true); await video.play(); } setIsPlaying(true); return; } catch { if (video.error) return; await new Promise((resolve) => setTimeout(resolve, 250)); } } })(); return () => { cancelled = true; }; }, [active, dataSaver]);
-  // Stall guard: if the ACTIVE slide stays in the loading state
-  // continuously for ~12s (stalled download, dead connection), stop the
-  // infinite spinner and surface the same error/retry UI that onError
-  // drives. Any exit from the loading state — loadeddata/canplay,
-  // leaving the slide, or a real error — runs the cleanup and cancels
-  // the timer, so it only ever fires on one unbroken stall.
+  useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); setProgress(0); manualPlayRef.current = false; return; } if (isDataSaver() && !manualPlayRef.current) { setIsPlaying(false); setIsVideoLoading(false); return; } video.currentTime = 0; userPausedRef.current = false; setVideoError(null); setVideoStalled(false); autoRetryRef.current = false; setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 2); setProgress(0); let cancelled = false; (async () => { for (let attempt = 0; attempt < 4 && !cancelled; attempt++) { try { video.muted = true; setIsMuted(true); await video.play(); if (cancelled) return; video.muted = false; setIsMuted(false); if (video.paused) { video.muted = true; setIsMuted(true); await video.play(); } setIsPlaying(true); return; } catch { if (video.error) return; await new Promise((resolve) => setTimeout(resolve, 250)); } } })(); return () => { cancelled = true; }; }, [active, dataSaver]);
+  // Stall guard: if the ACTIVE slide stays in the loading state with no
+  // buffered data advancing for the adaptive timeout (12s on a fast link,
+  // up to 30s on a slow link), the download has stalled. This is NOT a
+  // network Error code 2: it gets its own distinct "slow connection"
+  // state, never the code-2 label. Before showing that state, one
+  // automatic retry (cache-busted, after a 2s backoff) is attempted;
+  // only if that retry also stalls is the stall state shown. Any exit
+  // from the loading state — loadeddata/canplay, leaving the slide, or
+  // a real error — runs the cleanup and cancels the check.
   useEffect(() => {
-    if (!active || !isVideoLoading || videoError) return;
-    const timer = window.setTimeout(() => {
+    if (!active || !isVideoLoading || videoError || videoStalled) return;
+    const timeout = stallTimeoutMs();
+    let stallStart = Date.now();
+    let lastBufferedEnd = 0;
+    const interval = window.setInterval(() => {
+      const v = videoRef.current;
+      if (!v) return;
+      let bufferedEnd = 0;
+      try { if (v.buffered.length > 0) bufferedEnd = v.buffered.end(v.buffered.length - 1); } catch { /* buffered ranges can throw mid media-swap */ }
+      if (bufferedEnd > lastBufferedEnd + 0.01) { lastBufferedEnd = bufferedEnd; stallStart = Date.now(); return; }
+      if (Date.now() - stallStart < timeout) return;
+      window.clearInterval(interval);
       setIsVideoLoading(false);
       setIsPlaying(false);
-      setVideoError(2); // MEDIA_ERR_NETWORK — the download stalled
-    }, 12000);
-    return () => window.clearTimeout(timer);
-  }, [active, isVideoLoading, videoError]);
+      if (!autoRetryRef.current) {
+        autoRetryRef.current = true;
+        setIsVideoLoading(true);
+        window.setTimeout(() => { retryVideo(true); }, 2000);
+      } else {
+        setVideoStalled(true);
+      }
+    }, 2000);
+    return () => window.clearInterval(interval);
+  }, [active, isVideoLoading, videoError, videoStalled, retryNonce]);
   useEffect(() => { const video = videoRef.current; if (!video || !active) return; if (forcePause) { video.pause(); setIsPlaying(false); } else if (video.paused) { video.play().then(() => setIsPlaying(true)).catch(() => {}); } }, [forcePause]);
   function toggleMute(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); const video = videoRef.current; if (!video) return; video.muted = !video.muted; setIsMuted(video.muted); }
   function togglePlayback(e?: React.MouseEvent) { e?.preventDefault(); e?.stopPropagation(); const video = videoRef.current; if (!video) return; if (video.paused) { userPausedRef.current = false; video.play().then(() => setIsPlaying(true)).catch(() => {}); } else { userPausedRef.current = true; video.pause(); setIsPlaying(false); } revealControls(); }
@@ -412,6 +473,7 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
     const video = videoRef.current;
     if (!video) return;
     manualPlayRef.current = true;
+    setVideoStalled(false);
     setIsVideoLoading(true);
     video.muted = true;
     setIsMuted(true);
@@ -419,7 +481,7 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
   }
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center overflow-hidden bg-black">
-    <video ref={videoRef} poster={reel.thumbnailUrl || undefined} playsInline controls={false} muted={isMuted} preload={dataSaver && !manualPlayRef.current ? 'none' : (preload ? 'auto' : 'none')} className="absolute inset-0 h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onLoadedData={() => setIsVideoLoading(false)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused && !(isDataSaver() && !manualPlayRef.current)) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); }} onError={(e) => { setIsVideoLoading(false); setIsPlaying(false); setVideoError(e.currentTarget.error?.code || 4); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible' && !(isDataSaver() && !manualPlayRef.current)) { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); }} />
+    <video ref={videoRef} poster={reel.thumbnailUrl || undefined} playsInline controls={false} muted={isMuted} preload={dataSaver && !manualPlayRef.current ? 'none' : (preload ? 'auto' : 'none')} className="absolute inset-0 h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onLoadedData={() => setIsVideoLoading(false)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused && !(isDataSaver() && !manualPlayRef.current)) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); setVideoStalled(false); }} onError={(e) => { const code = e.currentTarget.error?.code || 4; if (code === 2 && active && !autoRetryRef.current) { autoRetryRef.current = true; setIsVideoLoading(true); window.setTimeout(() => { retryVideo(true); }, 1500); return; } setIsVideoLoading(false); setIsPlaying(false); setVideoError(code); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible' && !(isDataSaver() && !manualPlayRef.current)) { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={(e) => { const video = e.currentTarget; video.currentTime = 0; void video.play().then(() => setIsPlaying(true)).catch(() => {}); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); }} />
     {active && dataSaver && !isPlaying && !manualPlayRef.current && (
       <button type="button" onClick={handleManualPlay} aria-label="Play video" className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/30">
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl">
@@ -429,7 +491,8 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
       </button>
     )}
     {active && isVideoLoading && !feedBusy && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"><div className="h-12 w-12 animate-[spin_0.8s_linear_infinite] rounded-full border-4 border-white/30 border-t-white" aria-label="Loading video" /></div>}
-    {active && videoError && <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 px-6 text-center text-white"><p className="text-sm font-medium [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">This video can&apos;t be played right now.</p><button type="button" onClick={(e) => { e.stopPropagation(); const v = videoRef.current; if (!v) return; setVideoError(null); setIsVideoLoading(true); v.load(); void v.play().catch(() => {}); }} className="pointer-events-auto rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Try again</button><span className="text-[10px] text-white/60">Error code {videoError}</span></div>}
+    {active && videoStalled && !videoError && <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 px-6 text-center text-white"><p className="text-sm font-medium [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">Slow connection — this video is taking longer to load.</p><button type="button" onClick={(e) => { e.stopPropagation(); retryVideo(true); }} className="pointer-events-auto rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Try again</button><span className="text-[10px] text-white/60">Still loading on a slow connection</span></div>}
+    {active && videoError && <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 px-6 text-center text-white"><p className="text-sm font-medium [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]">This video can&apos;t be played right now.</p><button type="button" onClick={(e) => { e.stopPropagation(); retryVideo(true); }} className="pointer-events-auto rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Try again</button><span className="text-[10px] text-white/60">Error code {videoError}</span></div>}
     {offlineMode && <div className="pointer-events-none absolute left-3 top-20 z-30 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white/90 backdrop-blur-sm">Offline</div>}
     {heartBursts.map((heart) => <div key={heart.id} className="pointer-events-none absolute z-30" style={{ left: `${heart.left}%`, top: `${heart.top}%`, transform: 'translate(-50%, -50%)' }}><div className="animate-[heartPop_700ms_ease-out_forwards] drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]"><HeartIcon filled size={105} /></div></div>)}
     <div className="absolute bottom-0 left-0 right-0 z-20 group/progress px-3 pb-1 pt-3" onClick={(e) => { e.stopPropagation(); const bar = e.currentTarget; const rect = bar.getBoundingClientRect(); const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)); const video = videoRef.current; if (video && video.duration) { video.currentTime = ratio * video.duration; setProgress(ratio * 100); } }}>
