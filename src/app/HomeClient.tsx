@@ -278,12 +278,18 @@ export default function HomePage() {
   // logged-out app user. Auth/feed logic is unchanged.
   if (loading) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
+      {/* Smooth-loading: same logo + spinner + text as login LoadingState,
+          so the feed path shows the identical screen, not a logo-less one. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="Frianzo" className="h-16 w-16 animate-pulse object-contain" />
       <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
       <p className="text-sm text-slate-500">Loading…</p>
     </div>
   );
   if (!user) return isNativeApp ? (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="Frianzo" className="h-16 w-16 animate-pulse object-contain" />
       <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
       <p className="text-sm text-slate-500">Loading…</p>
     </div>
