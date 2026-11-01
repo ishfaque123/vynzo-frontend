@@ -502,13 +502,13 @@ export default function ReelsPage() {
   // observer reports the target slide as most-visible (ratio >= 0.8),
   // with a 1200 ms backstop so the driver can never wedge.
   const navInFlightRef = useRef<number | null>(null);
-  // SKIP FIX (touch only): slide position where the current touch gesture
-  // started, and whether that gesture is still un-settled. Wheel/keyboard
-  // steps are already clamped to +-1 by goNext/goPrevious + navInFlight;
-  // touch scrolling was NOT clamped at all (see onTouchEndRefresh comment
-  // below), so a fast fling could settle 2-3 slides away.
-  const touchStartPositionRef = useRef<number | null>(null);
-  const touchUnsettledRef = useRef(false);
+  // PROGRAMMATIC PAGING state: one touch gesture's finger positions.
+  // Wheel/keyboard steps are already exactly +-1 via goNext/goPrevious
+  // + navInFlight; touch is brought under the same driver below instead
+  // of letting the browser create a native fling (two clamp attempts
+  // failed in opposite directions: scrollend yank-back, live band
+  // clamp runaway fling — both raced the compositor-owned fling).
+  const pagingTouchRef = useRef<{ startY: number; lastY: number; committed: boolean } | null>(null);
   const navBackstopTimerRef = useRef<number | undefined>(undefined);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
@@ -570,9 +570,6 @@ export default function ReelsPage() {
 
   function onTouchStartRefresh(e: React.TouchEvent) {
     const root = feedRef.current;
-    // SKIP FIX: record the gesture start in slide-position space even when
-    // this is not a pull-to-refresh (the old early return skipped it).
-    if (root && root.clientHeight) { touchStartPositionRef.current = Math.round(root.scrollTop / root.clientHeight); touchUnsettledRef.current = true; }
     if (!root || root.scrollTop > 0 || refreshing) return;
     pullStartYRef.current = e.touches[0].clientY;
   }
@@ -881,33 +878,70 @@ export default function ReelsPage() {
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); goNext(); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); goPrevious(); }
   }
-  // SKIP FIX: one touch gesture must move at most ONE slide. CSS
-  // scroll-snap-mandatory only guarantees settling ON a snap stop, not on
-  // the NEAREST one, so a fast fling's momentum crosses 2-3 full-screen
-  // stops before settling; the intermediate reels never become active,
-  // never preload (window is active-1..active+2) and never record a view.
-  // Clamp on 'scrollend' (fires after momentum ends, unlike the old fixed
-  // 200 ms touchend check that read a mid-momentum position), with a
-  // 600 ms touchend fallback for browsers without scrollend.
+  // PROGRAMMATIC PAGING (TikTok approach): one touch gesture = at most
+  // ONE step, by construction. The browser never creates a fling for
+  // the feed: the container has touch-action: none (see its className),
+  // and a native non-passive touchmove listener prevents default once
+  // a swipe commits, so scrollTop never moves under the finger. On
+  // touchend, finger displacement >= PAGING_THRESHOLD_PX steps exactly
+  // once via goNext/goPrevious (navInFlight + 1200 ms backstop already
+  // drop re-entrant steps, and the step is in slide-position space so
+  // ad boundaries land in order: ad stop, then the next reel).
+  // Anything smaller is a tap/aborted swipe and steps nowhere, because
+  // native scroll never moved — no snap-back scroll is needed.
+  // PAGING_THRESHOLD_PX = 60: matches the old finger-displacement
+  // fallback, small enough that short flicks still step, large enough
+  // that taps and finger jitter never step. A 1/4-slide threshold was
+  // rejected: it would make short flicks feel dead.
+  // Exemptions, load-bearing: pull-to-refresh owns downward drags at
+  // the very top (React pull handlers still run); overlays/form fields
+  // are exempt via isOverlayOrFieldEvent (comments modal is portaled
+  // to <body> so its touches never reach this listener; the actions
+  // sheet list keeps its own touch-action: pan-y and is a fixed
+  // subtree, so it still scrolls natively).
+  const PAGING_THRESHOLD_PX = 60;
+  const PAGING_COMMIT_PX = 10;
   useEffect(() => {
     const root = feedRef.current;
     if (!root) return;
-    const clampTouchJump = () => {
-      if (!touchUnsettledRef.current) return;
-      touchUnsettledRef.current = false;
-      if (refreshing) return;
-      if (navInFlightRef.current !== null) return;
-      const start = touchStartPositionRef.current;
-      if (start === null || !root.clientHeight) return;
-      const settled = Math.round(root.scrollTop / root.clientHeight);
-      const delta = settled - start;
-      if (Math.abs(delta) > 1) scrollToSlidePosition(start + Math.sign(delta));
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1 || isOverlayOrFieldEvent(e)) { pagingTouchRef.current = null; return; }
+      const y = e.touches[0].clientY;
+      pagingTouchRef.current = { startY: y, lastY: y, committed: false };
     };
-    const onScrollEnd = () => clampTouchJump();
-    const onTouchEndFallback = () => { window.setTimeout(() => clampTouchJump(), 600); };
-    root.addEventListener('scrollend', onScrollEnd);
-    root.addEventListener('touchend', onTouchEndFallback);
-    return () => { root.removeEventListener('scrollend', onScrollEnd); root.removeEventListener('touchend', onTouchEndFallback); };
+    const onTouchMove = (e: TouchEvent) => {
+      const g = pagingTouchRef.current;
+      if (!g || e.touches.length !== 1 || isOverlayOrFieldEvent(e)) return;
+      g.lastY = e.touches[0].clientY;
+      const dy = g.lastY - g.startY;
+      // Pull-to-refresh owns downward drags at the very top: never
+      // step or block them.
+      if (pullStartYRef.current !== null && dy > 0 && (feedRef.current?.scrollTop ?? 0) === 0) return;
+      if (Math.abs(dy) >= PAGING_COMMIT_PX) { g.committed = true; e.preventDefault(); }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const g = pagingTouchRef.current;
+      pagingTouchRef.current = null;
+      if (!g || !g.committed || isOverlayOrFieldEvent(e)) return;
+      const dy = g.lastY - g.startY;
+      // Pull-to-refresh owns downward drags at the very top.
+      if (pullStartYRef.current !== null && dy > 0 && (feedRef.current?.scrollTop ?? 0) === 0) return;
+      if (Math.abs(dy) < PAGING_THRESHOLD_PX) return;
+      // A committed swipe must not also fire the button it started on.
+      e.preventDefault();
+      if (dy < 0) goNext(); else goPrevious();
+    };
+    const onTouchCancel = () => { pagingTouchRef.current = null; };
+    root.addEventListener('touchstart', onTouchStart, { passive: true });
+    root.addEventListener('touchmove', onTouchMove, { passive: false });
+    root.addEventListener('touchend', onTouchEnd, { passive: false });
+    root.addEventListener('touchcancel', onTouchCancel);
+    return () => {
+      root.removeEventListener('touchstart', onTouchStart);
+      root.removeEventListener('touchmove', onTouchMove);
+      root.removeEventListener('touchend', onTouchEnd);
+      root.removeEventListener('touchcancel', onTouchCancel);
+    };
   });
   // Native wheel + keyboard drivers for the feed. No dependency array on
   // purpose: the handlers close over the current reels list, and the
@@ -952,5 +986,5 @@ export default function ReelsPage() {
       </div>
     </div>
   );
-  return <div className="absolute inset-0 flex flex-col bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} tabIndex={-1} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto min-h-0 w-full max-w-[480px] flex-1 snap-y snap-mandatory overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y outline-none">{(pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.flatMap((reel, index) => { const slide = <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start overflow-hidden"><ReelItem reel={reel} index={index} active={index === activeIndex && !adInView} forcePause={forcePause} preload={index >= activeIndex - 1 && index <= activeIndex + 2} feedBusy={tabSwitching} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>; return (index + 1) % REELS_AD_EVERY === 0 ? [slide, <section key={`ad-after-${reel.id}`} data-ad-slide="" data-ad-position={slidePositionForReelIndex(index) + 1} aria-label="Advertisement" className="relative flex h-full w-full snap-start items-center justify-center overflow-hidden bg-black"><span className="absolute left-3 top-3 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/50">Ad</span><AdsterraBanner size="300x250" /></section>] : [slide]; }) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div><div className="flex shrink-0 items-center justify-center bg-black py-1"><AdsterraBanner size="320x50" /></div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+  return <div className="absolute inset-0 flex flex-col bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} tabIndex={-1} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto min-h-0 w-full max-w-[480px] flex-1 snap-y snap-mandatory overflow-y-auto overflow-x-hidden overscroll-y-contain touch-none outline-none">{(pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.flatMap((reel, index) => { const slide = <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start overflow-hidden"><ReelItem reel={reel} index={index} active={index === activeIndex && !adInView} forcePause={forcePause} preload={index >= activeIndex - 1 && index <= activeIndex + 2} feedBusy={tabSwitching} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} /></section>; return (index + 1) % REELS_AD_EVERY === 0 ? [slide, <section key={`ad-after-${reel.id}`} data-ad-slide="" data-ad-position={slidePositionForReelIndex(index) + 1} aria-label="Advertisement" className="relative flex h-full w-full snap-start items-center justify-center overflow-hidden bg-black"><span className="absolute left-3 top-3 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/50">Ad</span><AdsterraBanner size="300x250" /></section>] : [slide]; }) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div><div className="flex shrink-0 items-center justify-center bg-black py-1"><AdsterraBanner size="320x50" /></div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
 }
