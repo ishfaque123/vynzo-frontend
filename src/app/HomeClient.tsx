@@ -271,23 +271,15 @@ export default function HomePage() {
     if (!loading && !user && isNativeApp) router.replace('/login');
   }, [loading, user, isNativeApp, router]);
 
-  // Never return null in the app: with the dark body background (#1e2530)
-  // that renders as a completely empty dark screen while auth/feed loads,
-  // exactly like the empty screen after the splash on /login. Show a visible
-  // loading state instead; the redirect effect above still fires for a
-  // logged-out app user. Auth/feed logic is unchanged.
-  if (loading) return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
-      <p className="text-sm text-slate-500">Loading…</p>
-    </div>
-  );
-  if (!user) return isNativeApp ? (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
-      <p className="text-sm text-slate-500">Loading…</p>
-    </div>
-  ) : <PublicLanding />;
+  // No web loading screen here, on purpose: during the auth check the web
+  // page renders nothing of its own. In the app the native 6-dots overlay
+  // covers this stage until useAuth signals auth is done, so the user sees
+  // only the original 6-dots loading and never a second Loading... screen.
+  // The redirect effect above still fires for a logged-out app user, and
+  // that redirect stage also renders nothing in the app. Auth/feed logic
+  // is unchanged.
+  if (loading) return null;
+  if (!user) return isNativeApp ? null : <PublicLanding />;
 
   const openPost = posts.find((p) => p.id === openComments);
 

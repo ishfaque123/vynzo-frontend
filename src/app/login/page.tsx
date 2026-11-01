@@ -27,21 +27,12 @@ function FrianzoLogo() {
   );
 }
 
-// Visible loading state for the auth check. The old code returned an empty
-// bg-slate-50 div here (dark mode: #1e2530, no content at all), so while
-// fetchMe was pending the app showed a completely empty dark screen after
-// the native splash faded. Auth logic is unchanged: this only replaces the
-// empty screen with a logo + spinner until the check resolves.
-function LoadingState() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.png" alt="Frianzo" className="h-16 w-16 animate-pulse object-contain" />
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
-      <p className="text-sm text-slate-500">Loading…</p>
-    </div>
-  );
-}
+// No web loading screen here, on purpose: during the auth check the web
+// page renders nothing of its own. In the app the native 6-dots overlay
+// covers this stage until useAuth signals auth is done, so the user sees
+// only the original 6-dots loading and never a second Loading... screen.
+// (In a plain browser there is no native overlay, so this stage is blank
+// until the auth check finishes — see the report for that caveat.)
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -174,7 +165,7 @@ function LoginForm() {
   }
 
   if (loading || (isAuthenticated && !isSwitching)) {
-    return <LoadingState />;
+    return null;
   }
 
   return (
@@ -289,7 +280,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoadingState />}>
+    <Suspense fallback={null}>
       <LoginForm />
     </Suspense>
   );

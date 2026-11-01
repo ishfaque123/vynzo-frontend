@@ -52,7 +52,23 @@ export function useAuth() {
         setVerified(true);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          // Tell the Android app the auth check is done. The native
+          // 6-dots overlay is held until this signal (or its 15s safety
+          // timeout); without it the dots would hang until the timeout
+          // on every cold launch. The cached-user path above deliberately
+          // does NOT signal: it is optimistic, and signalling on it would
+          // hide the overlay before the server-verified auth result,
+          // reintroducing login->home flicker. Harmless on the web,
+          // where window.FrianzoNative is absent.
+          try {
+            const bridge = (window as any).FrianzoNative;
+            if (bridge?.notifyAuthReady) bridge.notifyAuthReady();
+          } catch {
+            // Bridge unavailable (web browser) — ignore.
+          }
+        }
       });
 
     return () => {
