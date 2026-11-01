@@ -502,6 +502,13 @@ export default function ReelsPage() {
   // observer reports the target slide as most-visible (ratio >= 0.8),
   // with a 1200 ms backstop so the driver can never wedge.
   const navInFlightRef = useRef<number | null>(null);
+  // SKIP FIX (touch only): slide position where the current touch gesture
+  // started, and whether that gesture is still un-settled. Wheel/keyboard
+  // steps are already clamped to +-1 by goNext/goPrevious + navInFlight;
+  // touch scrolling was NOT clamped at all (see onTouchEndRefresh comment
+  // below), so a fast fling could settle 2-3 slides away.
+  const touchStartPositionRef = useRef<number | null>(null);
+  const touchUnsettledRef = useRef(false);
   const navBackstopTimerRef = useRef<number | undefined>(undefined);
   const [reels, setReels] = useState<Reel[]>([]);
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
@@ -558,6 +565,9 @@ export default function ReelsPage() {
 
   function onTouchStartRefresh(e: React.TouchEvent) {
     const root = feedRef.current;
+    // SKIP FIX: record the gesture start in slide-position space even when
+    // this is not a pull-to-refresh (the old early return skipped it).
+    if (root && root.clientHeight) { touchStartPositionRef.current = Math.round(root.scrollTop / root.clientHeight); touchUnsettledRef.current = true; }
     if (!root || root.scrollTop > 0 || refreshing) return;
     pullStartYRef.current = e.touches[0].clientY;
   }
@@ -862,6 +872,34 @@ export default function ReelsPage() {
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); goNext(); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); goPrevious(); }
   }
+  // SKIP FIX: one touch gesture must move at most ONE slide. CSS
+  // scroll-snap-mandatory only guarantees settling ON a snap stop, not on
+  // the NEAREST one, so a fast fling's momentum crosses 2-3 full-screen
+  // stops before settling; the intermediate reels never become active,
+  // never preload (window is active-1..active+2) and never record a view.
+  // Clamp on 'scrollend' (fires after momentum ends, unlike the old fixed
+  // 200 ms touchend check that read a mid-momentum position), with a
+  // 600 ms touchend fallback for browsers without scrollend.
+  useEffect(() => {
+    const root = feedRef.current;
+    if (!root) return;
+    const clampTouchJump = () => {
+      if (!touchUnsettledRef.current) return;
+      touchUnsettledRef.current = false;
+      if (refreshing) return;
+      if (navInFlightRef.current !== null) return;
+      const start = touchStartPositionRef.current;
+      if (start === null || !root.clientHeight) return;
+      const settled = Math.round(root.scrollTop / root.clientHeight);
+      const delta = settled - start;
+      if (Math.abs(delta) > 1) scrollToSlidePosition(start + Math.sign(delta));
+    };
+    const onScrollEnd = () => clampTouchJump();
+    const onTouchEndFallback = () => { window.setTimeout(() => clampTouchJump(), 600); };
+    root.addEventListener('scrollend', onScrollEnd);
+    root.addEventListener('touchend', onTouchEndFallback);
+    return () => { root.removeEventListener('scrollend', onScrollEnd); root.removeEventListener('touchend', onTouchEndFallback); };
+  });
   // Native wheel + keyboard drivers for the feed. No dependency array on
   // purpose: the handlers close over the current reels list, and the
   // cleanup/re-register on every render keeps them fresh; the feed
