@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-slate-700">
       <h1 className="mb-3 text-3xl font-bold text-slate-900">Privacy Policy for Frianzo</h1>
-      <p className="mb-8 text-sm text-slate-500">Last Updated: November 1, 2026</p>
+      <p className="mb-8 text-sm text-slate-500">Last Updated: October 27, 2026</p>
 
       <p className="mb-5">
         Welcome to Frianzo ("Frianzo", "we", "us", or "our"). Frianzo is a social networking
@@ -98,14 +98,7 @@ export default function PrivacyPage() {
         <p>
           We may share information when necessary to operate Frianzo with service providers that
           support areas such as hosting, infrastructure, authentication, security, storage,
-          and communications. These providers process information on Frianzo&apos;s behalf to
-          operate the service; they are not advertising partners.
-        </p>
-        <p className="mt-3">
-          The Android app does not share information with advertising third parties. Advertising
-          scripts and ad network code are not loaded inside the app&apos;s WebView, so no
-          advertising partner receives app users&apos; information from the app. Advertising
-          described in Section 5 applies to the website only.
+          communications, analytics, and advertising.
         </p>
         <p className="mt-3">
           Information you intentionally make public, such as public profile information, posts,
@@ -132,18 +125,11 @@ export default function PrivacyPage() {
           sessions, security, preferences, and measuring website performance.
         </p>
         <p className="mt-3">
-          On the website, Frianzo may display advertisements through Google AdSense. The AdSense
-          loader script is present in the website&apos;s served pages so Google can verify the
-          site. Google and its advertising partners may process information such as IP address,
-          cookies, device information, and advertising-related identifiers to provide, measure,
-          and protect advertising services on the website, subject to applicable settings,
-          consent requirements, and Google&apos;s policies.
-        </p>
-        <p className="mt-3">
-          The Android app does not use Google AdMob and does not load the AdSense loader script
-          or any ad network code inside its WebView, so no advertising partner receives
-          information from app users through the app. Earlier wording that suggested AdMob runs
-          in the mobile app was incorrect and has been removed.
+          Frianzo may display advertisements through Google advertising services, including Google
+          AdSense on the website and Google AdMob in the mobile app. Google and its advertising partners may process information such
+          as IP address, cookies, device information, and advertising-related identifiers to
+          provide, measure, and protect advertising services, subject to applicable settings,
+          consent requirements, and Google's policies.
         </p>
         <p className="mt-3">
           Where applicable, users may manage advertising or consent choices through the controls
@@ -242,15 +228,13 @@ export default function PrivacyPage() {
       <Section title="14. Third-Party Services">
         <p>
           Frianzo may use third-party services for authentication, hosting, infrastructure,
-          storage, security, and communications. These providers may process information
-          according to their own privacy policies and terms. Advertising services are not used
-          inside the Android app; on the website only, Google AdSense may apply as described
-          in Section 5.
+          storage, security, analytics, communications, and advertising. These providers may
+          process information according to their own privacy policies and terms.
         </p>
         <p className="mt-3">
-          Applicable Google services may include Google Sign-In for authentication and, on the
-          website only, Google AdSense. Users should review the privacy policies of
-          third-party services that apply to their use of Frianzo.
+          Applicable Google services may include Google Sign-In and Google advertising services.
+          Users should review the privacy policies of third-party services that apply to their use
+          of Frianzo.
         </p>
       </Section>
 
