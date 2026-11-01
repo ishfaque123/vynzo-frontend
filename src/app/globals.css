@@ -147,17 +147,6 @@ html.dark .skeleton-shimmer::after {
   animation: app-logo-pulse 1.4s ease-in-out infinite;
 }
 
-/* Startup loading dots: 720ms pulse, staggered 120ms per dot, matching
-   the native overlay dot animation. This is only the spinner animation;
-   no loading system, layout or logic is changed here. */
-@keyframes loading-dot-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.6); opacity: 0.4; }
-}
-.loading-dot {
-  animation: loading-dot-pulse 0.72s ease-in-out infinite;
-}
-
 /* Disable text selection app-wide (like Facebook/Instagram).
    Long-press should trigger app actions, not the native Copy/Select popup.
    Text remains selectable inside inputs, textareas, and editable areas. */

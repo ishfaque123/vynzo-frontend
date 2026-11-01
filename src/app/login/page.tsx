@@ -31,23 +31,13 @@ function FrianzoLogo() {
 // bg-slate-50 div here (dark mode: #1e2530, no content at all), so while
 // fetchMe was pending the app showed a completely empty dark screen after
 // the native splash faded. Auth logic is unchanged: this only replaces the
-// empty screen with a logo + dots until the check resolves. Dots revision
-// (2026-11-01): the round ring spinner is replaced by 6 pulsing dots —
-// the only change here; layout, logo, text and background are untouched.
+// empty screen with a logo + spinner until the check resolves.
 function LoadingState() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="Frianzo" className="h-16 w-16 animate-pulse object-contain" />
-      <div className="flex items-center gap-1.5" role="status" aria-label="Loading">
-        {[0, 120, 240, 360, 480, 600].map((delay) => (
-          <span
-            key={delay}
-            className="loading-dot h-2 w-2 rounded-full"
-            style={{ backgroundColor: '#5B8DEF', animationDelay: `${delay}ms` }}
-          />
-        ))}
-      </div>
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
       <p className="text-sm text-slate-500">Loading…</p>
     </div>
   );
