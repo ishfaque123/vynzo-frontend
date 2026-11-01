@@ -278,11 +278,19 @@ export default function HomePage() {
   // logged-out app user. Auth/feed logic is unchanged.
   if (loading) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
-      {/* Smooth-loading: same logo + spinner + text as login LoadingState,
+      {/* Smooth-loading: same logo + dots + text as login LoadingState,
           so the feed path shows the identical screen, not a logo-less one. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="Frianzo" className="h-16 w-16 animate-pulse object-contain" />
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
+      <div className="flex items-center gap-1.5" role="status" aria-label="Loading">
+        {[0, 120, 240, 360, 480, 600].map((delay) => (
+          <span
+            key={delay}
+            className="loading-dot h-2 w-2 rounded-full"
+            style={{ backgroundColor: '#5B8DEF', animationDelay: `${delay}ms` }}
+          />
+        ))}
+      </div>
       <p className="text-sm text-slate-500">Loading…</p>
     </div>
   );
@@ -290,7 +298,15 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="Frianzo" className="h-16 w-16 animate-pulse object-contain" />
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading" />
+      <div className="flex items-center gap-1.5" role="status" aria-label="Loading">
+        {[0, 120, 240, 360, 480, 600].map((delay) => (
+          <span
+            key={delay}
+            className="loading-dot h-2 w-2 rounded-full"
+            style={{ backgroundColor: '#5B8DEF', animationDelay: `${delay}ms` }}
+          />
+        ))}
+      </div>
       <p className="text-sm text-slate-500">Loading…</p>
     </div>
   ) : <PublicLanding />;
