@@ -47,6 +47,9 @@ export default function HomePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [feedOffline, setFeedOffline] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
+  const [autoRetrying, setAutoRetrying] = useState(false);
+  const autoRetryCountRef = useRef(0);
+  const autoRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentText, setCommentText] = useState('');
@@ -56,7 +59,28 @@ export default function HomePage() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  async function loadFeed() {
+  // FB-style background auto-retry for a failed first load: up to 3 further
+  // attempts (3s, 8s, 15s backoff). Manual Retry resets the counter.
+  // Cached posts are never cleared by a failure, so retries run behind them.
+  function scheduleAutoRetry() {
+    if (autoRetryCountRef.current >= 3) return;
+    const delays = [3000, 8000, 15000];
+    const delay = delays[autoRetryCountRef.current];
+    autoRetryCountRef.current += 1;
+    setAutoRetrying(true);
+    if (autoRetryTimerRef.current) clearTimeout(autoRetryTimerRef.current);
+    autoRetryTimerRef.current = setTimeout(() => {
+      setAutoRetrying(false);
+      void loadFeed(true);
+    }, delay);
+  }
+  useEffect(() => {
+    return () => {
+      if (autoRetryTimerRef.current) clearTimeout(autoRetryTimerRef.current);
+    };
+  }, []);
+
+  async function loadFeed(isAutoRetry = false) {
     // Optimistically prepend just-created post (Facebook/Instagram behavior)
     const pendingPost = takePendingNewPost();
     if (pendingPost) {
@@ -66,6 +90,11 @@ export default function HomePage() {
       });
     }
     if (!user?.id) return;
+    if (!isAutoRetry) {
+      autoRetryCountRef.current = 0;
+      setAutoRetrying(false);
+      if (autoRetryTimerRef.current) clearTimeout(autoRetryTimerRef.current);
+    }
     setFeedError(false);
     setLoadMoreError(false);
 
@@ -111,6 +140,8 @@ export default function HomePage() {
         setReelEvery(r >= 0.6 ? 1 : r >= 0.3 ? 2 : 3);
       }
       if (result.success) {
+        autoRetryCountRef.current = 0;
+        setAutoRetrying(false);
         setPosts(result.data.posts);
         setHasMore(!!result.data.hasMore);
         setOffset(result.data.posts.length);
@@ -118,6 +149,7 @@ export default function HomePage() {
         await saveOfflineFeed(user.id, result.data.posts, !!result.data.hasMore);
       } else {
         setFeedError(true);
+        scheduleAutoRetry();
       }
       const reelPool = new Map<string, any>();
       for (const page of [reelPage1]) {
@@ -142,6 +174,7 @@ export default function HomePage() {
         setFeedOffline(true);
       } else {
         setFeedError(true);
+        scheduleAutoRetry();
       }
     } finally {
       setFeedLoading(false);
@@ -347,19 +380,18 @@ export default function HomePage() {
 
       <div className="px-4"><StatusBar user={user} offline={feedOffline} /></div>
 
-      {feedLoading ? (
+      {feedLoading && posts.length === 0 ? (
         <div className="flex flex-col gap-3 px-4" role="status" aria-label="Loading feed">
           <SkeletonPostCard /><SkeletonPostCard /><SkeletonPostCard />
         </div>
-      ) : feedError ? (
-        <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
-          <p className="text-sm text-red-500">Failed to load posts. Please try again.</p>
-          <button onClick={loadFeed} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
-        </div>
-      ) : posts.length === 0 ? (
-        <p className="px-4 text-slate-500">No posts yet. Be the first to post!</p>
-      ) : (
+      ) : posts.length > 0 ? (
         <>
+          {feedError && (
+            <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
+              <p className="text-sm text-red-600">{autoRetrying ? 'Connection is slow, retrying…' : 'Could not refresh posts. Showing saved posts.'}</p>
+              <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(); }} className="shrink-0 rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Retry</button>
+            </div>
+          )}
           <div className="flex flex-col">
             {posts.map((post, index) => (
               <div key={post.id}>
@@ -383,6 +415,13 @@ export default function HomePage() {
             ) : hasMore ? null : "You're all caught up"}
           </div>
         </>
+      ) : feedError ? (
+        <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+          <p className="text-sm text-red-500">{autoRetrying ? 'Connection is slow, retrying…' : 'Failed to load posts. Please try again.'}</p>
+          <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(); }} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
+        </div>
+      ) : (
+        <p className="px-4 text-slate-500">No posts yet. Be the first to post!</p>
       )}
 
       {shareModalPost && <ShareModal postId={shareModalPost} initialShareCode={posts.find((p) => p.id === shareModalPost)?.shareCode ?? null} onClose={() => setShareModalPost(null)} />}
