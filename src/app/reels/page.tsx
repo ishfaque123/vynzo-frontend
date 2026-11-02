@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
-import { toggleFollow, fetchFollowStatus } from '@/lib/api/userApi';
+import { toggleFollow } from '@/lib/api/userApi';
 import ShareModal from '@/components/ShareModal';
 import ReelCommentsModal from '@/components/ReelCommentsModal';
 import ReelReportModal from '@/components/ReelReportModal';
@@ -340,7 +340,7 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
       v.removeEventListener('ended', fire);
     };
   }, [active, cacheUserId, reel]);
-  const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back');
+  const showFollow = !reel.isMine && (reel.friendStatus === 'none' || reel.friendStatus === 'follow_back' || reel.friendStatus === 'follower');
   async function handleFollow(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); if (following) return; setFollowing(true); const result = await toggleFollow(reel.author.id); setFollowing(false); if (result.success && result.data.following) onFollowed(reel.author.id); }
   useEffect(() => { const video = videoRef.current; if (!video) return; if (preload) { if (video.getAttribute('src') !== reel.videoUrl) video.setAttribute('src', reel.videoUrl); } else if (video.getAttribute('src')) { video.pause(); video.removeAttribute('src'); video.load(); setIsPlaying(false); } }, [preload, reel.videoUrl]);
   useEffect(() => { const video = videoRef.current; if (!video) return; if (!active) { video.pause(); setIsPlaying(false); setProgress(0); manualPlayRef.current = false; return; } if (isDataSaver() && !manualPlayRef.current) { setIsPlaying(false); setIsVideoLoading(false); return; } video.currentTime = 0; userPausedRef.current = false; setVideoError(null); setVideoStalled(false); autoRetryRef.current = false; setShowControls(false); setIsPlaying(false); setIsVideoLoading(video.readyState < 2); setProgress(0); let cancelled = false; (async () => { for (let attempt = 0; attempt < 4 && !cancelled; attempt++) { try { video.muted = true; setIsMuted(true); await video.play(); if (cancelled) return; video.muted = false; setIsMuted(false); if (video.paused) { video.muted = true; setIsMuted(true); await video.play(); } setIsPlaying(true); return; } catch { if (video.error) return; await new Promise((resolve) => setTimeout(resolve, 250)); } } })(); return () => { cancelled = true; }; }, [active, dataSaver]);
@@ -511,7 +511,7 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
     <button onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'} className="absolute right-4 top-20 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-black/60">{isMuted ? <MuteIcon /> : <UnmuteIcon />}</button>
     {active && !isPlaying && !isVideoLoading && !videoError && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/50"><svg width="36" height="36" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg></div></div>}
     {showControls && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"><div className="pointer-events-auto flex items-center gap-8 px-4 py-3"><button aria-label="Play or pause" onClick={togglePlayback} className="flex h-14 w-14 items-center justify-center rounded-full bg-black/35 backdrop-blur-sm shadow-lg"><PlayIcon playing={isPlaying} /></button></div></div>}
-    <div className="absolute bottom-2 left-0 right-16 z-10 p-4 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author?.username}`} className="flex min-w-0 items-center gap-2"><span className="flex-shrink-0 overflow-hidden rounded-full border border-white/60"><Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} px={36} /></span><span className="min-w-0 truncate text-sm font-semibold">{reel.author?.displayName}</span>{reel.author?.isVerified && <VerifiedBadge size="sm" />}<span className="shrink-0 whitespace-nowrap text-xs text-white/70">· {timeAgo(reel.createdAt)}</span></Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label={reel.friendStatus === 'follow_back' ? 'Follow Back' : 'Follow'} className="shrink-0 whitespace-nowrap rounded-full border border-white/70 bg-black/45 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm disabled:opacity-50">{reel.friendStatus === 'follow_back' ? 'Follow Back' : 'Follow'}</button>}</div>{reel.category && <span className="mb-1 inline-block rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium capitalize backdrop-blur-sm">#{reel.category}</span>}
+    <div className="absolute bottom-2 left-0 right-16 z-10 p-4 pb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]"><div className="relative mb-2 flex items-center gap-2"><Link href={`/u/${reel.author?.username}`} className="flex min-w-0 items-center gap-2"><span className="flex-shrink-0 overflow-hidden rounded-full border border-white/60"><Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} px={36} /></span><span className="min-w-0 truncate text-sm font-semibold">{reel.author?.displayName}</span>{reel.author?.isVerified && <VerifiedBadge size="sm" />}<span className="shrink-0 whitespace-nowrap text-xs text-white/70">· {timeAgo(reel.createdAt)}</span></Link>{showFollow && <button type="button" onClick={handleFollow} disabled={following} aria-label={(reel.friendStatus === 'follow_back' || reel.friendStatus === 'follower') ? 'Follow Back' : 'Follow'} className="shrink-0 whitespace-nowrap rounded-full border border-white/70 bg-black/45 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm disabled:opacity-50">{(reel.friendStatus === 'follow_back' || reel.friendStatus === 'follower') ? 'Follow Back' : 'Follow'}</button>}</div>{reel.category && <span className="mb-1 inline-block rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium capitalize backdrop-blur-sm">#{reel.category}</span>}
       {!feedbackGiven && reel.category && active && (watchedEnough || reel.liked) && (
         <div className="mt-2 flex items-center gap-2 rounded-lg bg-black/40 px-3 py-2 backdrop-blur-sm">
           <span className="text-xs text-white/80">Interested in #{reel.category}?</span>
@@ -801,20 +801,18 @@ function ReelsPage() {
       const notInterested = getNotInterestedIds();
       combined = combined.filter((item) => !notInterested.has(item.id));
 
-      const authorIds = [...new Set(combined.filter((item: Reel) => !item.isMine).map((item: Reel) => item.author.id))] as string[];
-      const statusResults: Array<[string, string] | null> = usingOfflineReels ? [] : await Promise.all(authorIds.map(async (userId) => {
-        const result = await fetchFollowStatus(userId);
-        const followStatus = result.success ? result.data?.status : null;
-        return typeof followStatus === 'string' ? [userId, followStatus] : null;
-      }));
+      // C3: NO follow-status fan-out here. The feed already returns
+      // friendStatus per reel (backend getReelFeed), and load-more already
+      // used it directly. The old Promise.all over fetchFollowStatus had
+      // no timeout and no catch — one failed request threw, setReels /
+      // setLoading(false) never ran, and the 3-dots loader spun forever.
+      // Dropping the fan-out removes that hang entirely. Legacy 'follower'
+      // (the feed's old value for a follower-only author) is normalised
+      // to 'follow_back', matching the status endpoint and the Follow
+      // Back button below; the backend feed now returns 'follow_back'.
       if (cancelled) { setRefreshing(false); setPullY(0); return; }
 
-      const statusMap = new Map<string, string>();
-      statusResults.forEach((item) => {
-        if (item && typeof item[0] === 'string' && typeof item[1] === 'string') statusMap.set(item[0], item[1]);
-      });
-
-      const finalReels = combined.map((item: Reel) => statusMap.has(item.author.id) ? { ...item, friendStatus: statusMap.get(item.author.id) } : item);
+      const finalReels = combined.map((item: Reel) => item.friendStatus === 'follower' ? { ...item, friendStatus: 'follow_back' } : item);
       const finalHasMore = !usingOfflineReels && !!feed.data?.hasMore;
       // Raw offset = however many reels the server returned, before the
       // author/not-interested filtering above shrank the visible list.

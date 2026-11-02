@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-slate-700">
       <h1 className="mb-3 text-3xl font-bold text-slate-900">Privacy Policy for Frianzo</h1>
-      <p className="mb-8 text-sm text-slate-500">Last Updated: October 27, 2026</p>
+      <p className="mb-8 text-sm text-slate-500">Last Updated: November 2, 2026</p>
 
       <p className="mb-5">
         Welcome to Frianzo ("Frianzo", "we", "us", or "our"). Frianzo is a social networking
@@ -125,11 +125,13 @@ export default function PrivacyPage() {
           sessions, security, preferences, and measuring website performance.
         </p>
         <p className="mt-3">
-          Frianzo may display advertisements through Google advertising services, including Google
-          AdSense on the website and Google AdMob in the mobile app. Google and its advertising partners may process information such
-          as IP address, cookies, device information, and advertising-related identifiers to
-          provide, measure, and protect advertising services, subject to applicable settings,
-          consent requirements, and Google's policies.
+          Frianzo may display advertisements through advertising services. On the website,
+          Google AdSense may be used. In the mobile app, advertisements are currently provided
+          by Adsterra. Google AdMob is not currently used in the mobile app; it may be added
+          in the future, after approval, if an ad unit is added to the app. Advertising providers
+          may process information such as IP address, cookies, device information, and
+          advertising-related identifiers to provide, measure, and protect advertising services,
+          subject to applicable settings, consent requirements, and the providers' policies.
         </p>
         <p className="mt-3">
           Where applicable, users may manage advertising or consent choices through the controls
