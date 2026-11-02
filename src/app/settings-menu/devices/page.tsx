@@ -29,6 +29,7 @@ export default function DevicesPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState(false);
+  const [pending, setPending] = useState<{ type: 'single'; id: string; label: string } | { type: 'all' } | null>(null);
 
   useEffect(() => {
     fetchDevices().then((result) => {
@@ -38,7 +39,7 @@ export default function DevicesPage() {
   }, []);
 
   async function handleLogout(id: string) {
-    if (!confirm('Log out this device? It will need to sign in again.')) return;
+    setPending(null);
     setBusyId(id);
     const result = await logoutDevice(id);
     setBusyId(null);
@@ -46,7 +47,7 @@ export default function DevicesPage() {
   }
 
   async function handleLogoutOthers() {
-    if (!confirm('Log out of all other devices?')) return;
+    setPending(null);
     setBusyAll(true);
     const result = await logoutOtherDevices();
     setBusyAll(false);
@@ -88,7 +89,7 @@ export default function DevicesPage() {
                 </div>
                 {!d.isCurrent && (
                   <button
-                    onClick={() => handleLogout(d.id)}
+                    onClick={() => setPending({ type: 'single', id: d.id, label: d.label })}
                     disabled={busyId === d.id}
                     className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 disabled:opacity-40"
                   >
@@ -101,7 +102,7 @@ export default function DevicesPage() {
 
           {others.length > 0 && (
             <button
-              onClick={handleLogoutOthers}
+              onClick={() => setPending({ type: 'all' })}
               disabled={busyAll}
               className="mt-4 w-full rounded-full bg-red-600 py-2.5 text-sm font-medium text-white disabled:opacity-40"
             >
@@ -109,6 +110,29 @@ export default function DevicesPage() {
             </button>
           )}
         </>
+      )}
+
+      {pending && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-5" onClick={() => setPending(null)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-2 text-base font-semibold text-slate-900">
+              {pending.type === 'all' ? 'Log out of all other devices?' : 'Log out this device?'}
+            </h2>
+            <p className="mb-4 text-sm leading-6 text-slate-700">
+              {pending.type === 'all'
+                ? 'All other devices will need to sign in again. This device will stay signed in.'
+                : `${pending.label} will need to sign in again.`}
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setPending(null)} className="flex-1 rounded-xl border px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+              <button
+                type="button"
+                onClick={() => void (pending.type === 'all' ? handleLogoutOthers() : handleLogout(pending.id))}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+              >Log out</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
