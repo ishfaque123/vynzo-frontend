@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   fetchNotifications,
+  markNotificationRead,
   markAllNotificationsRead,
   deleteNotifications,
   deleteAllNotifications,
@@ -201,6 +202,14 @@ function iconFor(type: string) {
     case 'comment_removed':
     case 'post_removed':
       return { icon: <BellEmptyIcon />, bg: 'bg-red-100', color: 'text-red-600' };
+    case 'verification_approved':
+      return { icon: <CheckIcon />, bg: 'bg-green-100', color: 'text-green-600' };
+    case 'verification_rejected':
+    case 'account_restricted':
+    case 'account_banned':
+      return { icon: <BellEmptyIcon />, bg: 'bg-red-100', color: 'text-red-600' };
+    case 'viral_post':
+      return { icon: <BellEmptyIcon />, bg: 'bg-amber-100', color: 'text-amber-600' };
     default:
       return { icon: <BellEmptyIcon />, bg: 'bg-slate-100', color: 'text-slate-600' };
   }
@@ -239,12 +248,22 @@ function messageFor(n: Notification): string {
       return `Your reel was removed${n.detail ? ` for ${n.detail}` : ''}`;
     case 'messaging_restricted':
       return n.detail ? `Messaging restricted: ${n.detail}` : 'Messaging restricted';
+    case 'verification_approved':
+      return 'Your account has been verified';
+    case 'verification_rejected':
+      return 'Your verification request was rejected';
+    case 'account_restricted':
+      return n.detail ? `Your account has been restricted: ${n.detail}` : 'Your account has been restricted';
+    case 'account_banned':
+      return n.detail ? `Your account has been banned: ${n.detail}` : 'Your account has been banned';
+    case 'viral_post':
+      return n.detail && n.detail !== 'viral-scan-marker' ? n.detail : `🔥 ${name}'s post is going viral!`;
     default:
       return 'New notification';
   }
 }
 
-function hrefFor(n: Notification): string | null {
+function hrefFor(n: Notification, viewerUsername?: string | null): string | null {
   switch (n.type) {
     case 'follow':
       return n.actor?.username ? `/u/${n.actor.username}` : null;
@@ -259,6 +278,15 @@ function hrefFor(n: Notification): string | null {
     case 'reel_reply':
       return n.reelId ? `/reels?id=${n.reelId}` : '/reels';
     case 'comment_mention':
+      return n.postId ? `/post/${n.postId}` : null;
+    case 'verification_approved':
+      return viewerUsername ? `/u/${viewerUsername}` : '/settings-menu/verification';
+    case 'verification_rejected':
+      return '/settings-menu/verification';
+    case 'account_restricted':
+    case 'account_banned':
+      return '/community-guidelines';
+    case 'viral_post':
       return n.postId ? `/post/${n.postId}` : null;
     case 'comment_removed':
       return n.postId ? `/post/${n.postId}` : null; // the post still exists — shows context
@@ -306,6 +334,7 @@ function NotificationRow({
   onEnterSelectMode,
   onToggleSelected,
   onSwipeDelete,
+  onTapRead,
 }: {
   g: GroupedNotification;
   href: string | null;
@@ -314,6 +343,7 @@ function NotificationRow({
   onEnterSelectMode: (ids: string[]) => void;
   onToggleSelected: (ids: string[]) => void;
   onSwipeDelete: (g: GroupedNotification) => void;
+  onTapRead: (ids: string[]) => void;
 }) {
   const n = g.latest;
   const ids = g.items.map((x) => x.id);
@@ -396,6 +426,8 @@ function NotificationRow({
     if (selectMode) {
       e.preventDefault();
       onToggleSelected(ids);
+    } else if (g.hasUnread) {
+      onTapRead(ids);
     }
   }
 
@@ -509,6 +541,16 @@ export default function NotificationsPage() {
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
+
+  async function handleRowTap(ids: string[]) {
+    const unreadIds = notifications.filter((n) => ids.includes(n.id) && !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    setNotifications((prev) => prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: true } : n)));
+    const results = await Promise.all(unreadIds.map((id) => markNotificationRead(id)));
+    if (results.some((r) => !r.success)) {
+      setNotifications((prev) => prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: false } : n)));
+    }
+  }
 
   async function handleMarkAllRead() {
     const result = await markAllNotificationsRead();
@@ -707,12 +749,13 @@ export default function NotificationsPage() {
             <NotificationRow
               key={g.key}
               g={g}
-              href={hrefFor(g.latest)}
+              href={hrefFor(g.latest, user?.username)}
               selectMode={selectMode}
               isSelected={allSelected}
               onEnterSelectMode={enterSelectMode}
               onToggleSelected={toggleSelected}
               onSwipeDelete={handleSwipeDelete}
+              onTapRead={handleRowTap}
             />
           );
         })}

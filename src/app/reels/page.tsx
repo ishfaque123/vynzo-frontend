@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
 import { toggleFollow, fetchFollowStatus } from '@/lib/api/userApi';
 import ShareModal from '@/components/ShareModal';
@@ -547,8 +547,20 @@ function ReelItem({ reel, index, active, forcePause, preload, feedBusy, cacheUse
   </div>;
 }
 
-export default function ReelsPage() {
+function ReelsPage() {
   const router = useRouter();
+  // H3 DEEP LINK: ?id= from a reel notification. The first-load effect
+  // already prepends the target on a fresh page load, but it never re-runs
+  // when the user taps a notification while already on /reels (SPA
+  // navigation keeps this component mounted), so the tap used to land on
+  // whatever reel was already first. This effect handles that case: it
+  // jumps to the target if it is already loaded, otherwise fetches it
+  // and puts it first. A deleted/private target simply leaves the feed
+  // as-is instead of looping on failed fetches.
+  const searchParams = useSearchParams();
+  const deepLinkId = searchParams.get('id');
+  const handledDeepLinkRef = useRef<string | null>(null);
+  const fetchingDeepLinkRef = useRef<string | null>(null);
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const loadingMoreRef = useRef(false);
@@ -819,6 +831,30 @@ export default function ReelsPage() {
     return () => { cancelled = true; };
   }, [user?.id, activeTab, refreshKey]);
 
+  useEffect(() => {
+    if (!deepLinkId || handledDeepLinkRef.current === deepLinkId) return;
+    if (loading || reels.length === 0) return;
+    if (activeTabRef.current !== 'foryou') { switchTab('foryou'); return; }
+    const idx = reels.findIndex((item) => item.id === deepLinkId);
+    if (idx >= 0) {
+      handledDeepLinkRef.current = deepLinkId;
+      scrollToSlidePosition(slidePositionForReelIndex(idx));
+      return;
+    }
+    if (fetchingDeepLinkRef.current === deepLinkId) return;
+    fetchingDeepLinkRef.current = deepLinkId;
+    void (async () => {
+      const result = await fetchReelById(deepLinkId);
+      fetchingDeepLinkRef.current = null;
+      handledDeepLinkRef.current = deepLinkId;
+      if (result.success && result.data?.reel?.author?.id) {
+        const target: Reel = result.data.reel;
+        setReels((items) => [target, ...items.filter((item) => item.id !== target.id)]);
+        setActiveIndex(0);
+      }
+    })();
+  }, [deepLinkId, reels, loading]);
+
   // Infinite scroll: fetch the next page(s) by RAW server offset. The
   // server re-sorts by popularity on every request, so consecutive pages
   // overlap heavily and a page can contain only reels already on screen.
@@ -1017,4 +1053,12 @@ export default function ReelsPage() {
     </div>
   );
   return <div className="absolute inset-0 flex flex-col bg-black"><div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-center gap-6 pt-3"><button type="button" onClick={() => switchTab('following')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'following' ? 'text-white' : 'text-white/50'}`}>Following{activeTab === 'following' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button><button type="button" onClick={() => switchTab('foryou')} className={`pb-1 text-[15px] font-semibold transition ${activeTab === 'foryou' ? 'text-white' : 'text-white/50'}`}>For You{activeTab === 'foryou' && <div className="mx-auto mt-0.5 h-0.5 w-6 rounded-full bg-white" />}</button></div><div id="reels-feed" ref={feedRef} tabIndex={-1} onTouchStart={onTouchStartRefresh} onTouchMove={onTouchMoveRefresh} onTouchEnd={onTouchEndRefresh} className="mx-auto min-h-0 w-full max-w-[480px] flex-1 snap-y snap-mandatory overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y outline-none">{(pullY > 0) && <div className="flex items-center justify-center gap-1.5 py-3" style={{ height: Math.max(pullY, refreshing ? 48 : 0) }}><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} /><span className="h-2 w-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} /></div>}{reels.length ? reels.flatMap((reel, index) => { const slide = <section key={reel.id} data-reel-index={index} className="h-full w-full snap-start overflow-hidden"><ReelItem reel={reel} index={index} active={index === activeIndex && !adInView} forcePause={forcePause} preload={index >= activeIndex - 1 && index <= activeIndex + 2} feedBusy={tabSwitching} cacheUserId={user?.id} offlineMode={offlineMode} onLikeChange={updateLike} onFavoriteChange={updateFavorite} onDeleted={handleDeleted} onFollowed={handleFollowed} onCommentCountChange={updateCommentCount} onEnded={goNext} /></section>; return (index + 1) % REELS_AD_EVERY === 0 ? [slide, <section key={`ad-after-${reel.id}`} data-ad-slide="" data-ad-position={slidePositionForReelIndex(index) + 1} aria-label="Advertisement" className="relative flex h-full w-full snap-start items-center justify-center overflow-hidden bg-black"><span className="absolute left-3 top-3 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/50">Ad</span><AdsterraBanner size="300x250" /></section>] : [slide]; }) : feedError ? <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white"><p>Could not load reels. Check your connection.</p><button onClick={() => window.location.reload()} className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Retry</button></div> : <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">{activeTab === 'following' ? (<><p className="font-semibold">No reels from people you follow yet</p><p className="text-sm text-white/60">Follow creators to see their reels here.</p></>) : (<p>No reels yet. Be the first to post one.</p>)}</div>}</div><div className="flex shrink-0 items-center justify-center bg-black py-1"><AdsterraBanner size="320x50" /></div>{reelsEnabled&&<button onClick={handleUpload} aria-label="Create reel" title="Create reel" className="absolute right-4 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-xl backdrop-blur-md transition hover:scale-105 active:scale-95"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>}<input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={(e)=>{const f=e.target.files&&e.target.files[0]; if(f) handleFilePicked(f); e.target.value="";}}/>{tabSwitching&&<div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" role="status" aria-label="Loading reels" /></div>}{notice&&<div onClick={()=>setNotice(null)} className="absolute bottom-36 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2.5 text-sm text-white shadow-xl">{notice}</div>}</div>;
+}
+
+export default function ReelsPageWithSearchParams() {
+  return (
+    <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center bg-black" />}>
+      <ReelsPage />
+    </Suspense>
+  );
 }

@@ -29,6 +29,14 @@ export async function markAllNotificationsRead() {
   return readJson(res);
 }
 
+export async function markNotificationRead(id: string) {
+  const res = await fetch(`${API_URL}/api/notifications/${encodeURIComponent(id)}/read`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return readJson(res);
+}
+
 export async function deleteNotifications(ids: string[]) {
   const res = await fetch(`${API_URL}/api/notifications`, {
     method: 'DELETE',
