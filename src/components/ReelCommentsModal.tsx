@@ -19,7 +19,7 @@ function timeAgo(date: string) { const seconds = Math.max(0, Math.floor((Date.no
 function DotsIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>; }
 function renderWithMentions(text: string) { const parts = text.split(/(@[a-zA-Z0-9_.]+)/g); return parts.map((part, i) => part.startsWith('@') && part.length > 1 ? <Link key={i} href={`/u/${part.slice(1)}`} className="font-semibold text-blue-600">{part}</Link> : <span key={i}>{part}</span>); }
 
-function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, depth = 0 }: { comment: CommentNode; currentUserId?: string; reelOwner: boolean; onReply: (comment: CommentNode) => void; onChanged: (topLevel: boolean) => void; depth?: number }) {
+function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, depth = 0 }: { comment: CommentNode; currentUserId?: string; reelOwner: boolean; onReply: (comment: CommentNode) => void; onChanged: (delta: number) => void; depth?: number }) {
   const [picker, setPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -99,7 +99,10 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     setDeleteBusy(false);
     if (result.success) {
       setFeedback('success');
-      onChanged(depth === 0);
+      // Server counts every comment row (top-level + replies) in _count.comments,
+      // and deleting a top-level comment cascades to its replies, so the badge
+      // must drop by 1 + reply count, not just 1 — and a reply delete by 1.
+      onChanged(-(1 + (depth === 0 ? replies.length : 0)));
     } else {
       setFeedback('error');
     }
@@ -115,7 +118,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     setSaving(false);
     if (result.success) {
       setEditing(false);
-      onChanged(false);
+      onChanged(0);
     }
   }
 
@@ -334,8 +337,8 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
     });
   }
   function startReply(comment: CommentNode) { setReplyTo(comment); setText(''); window.setTimeout(() => { inputRef.current?.focus(); inputRef.current?.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 0); }
-  async function send() { const content = text.trim(); if (!content || sending) return; setSending(true); const result = await addReelComment(reelId, content, replyTo?.id); setSending(false); if (!result.success) return; playCommentSound(); setText(''); setReplyTo(null); onCountChange(replyTo ? 0 : 1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; justSentRef.current = true; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
-  function changed(topLevel: boolean) { if (topLevel) onCountChange(-1); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
+  async function send() { const content = text.trim(); if (!content || sending) return; setSending(true); const result = await addReelComment(reelId, content, replyTo?.id); setSending(false); if (!result.success) return; playCommentSound(); setText(''); setReplyTo(null); onCountChange(1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; justSentRef.current = true; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
+  function changed(delta: number) { if (delta !== 0) onCountChange(delta); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
   if (!mounted) return null;
   const wrapperStyle: React.CSSProperties = viewport ? { position: 'fixed', top: viewport.top, left: 0, right: 0, height: viewport.height } : { position: 'fixed', inset: 0 };
   const modalHeight = viewport ? Math.round(viewport.height * 0.78) : undefined;
