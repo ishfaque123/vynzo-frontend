@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { addReelComment, deleteReelComment, editReelComment, setReelCommentReaction } from '@/lib/api/reelCommentApi';
 import { reportReelComment } from '@/lib/api/reelApi';
 import { playCommentSound } from '@/lib/sounds';
+import Avatar from '@/components/Avatar';
 import VerifiedBadge from '@/components/VerifiedBadge';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
@@ -15,7 +16,6 @@ const COMMENT_MAX_LENGTH = 500;
 type CommentNode = { id: string; content: string; createdAt: string; reactionCount: number; myReaction: string | null; author: { id: string; username?: string | null; displayName?: string | null; profilePictureUrl?: string | null; isVerified?: boolean }; replies?: CommentNode[] };
 
 function timeAgo(date: string) { const seconds = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 1000)); if (seconds < 60) return 'now'; const minutes = Math.floor(seconds / 60); if (minutes < 60) return `${minutes}m`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours}h`; const days = Math.floor(hours / 24); if (days < 7) return `${days}d`; const weeks = Math.floor(days / 7); if (weeks < 4) return `${weeks}w`; const months = Math.floor(days / 30); if (months < 12) return `${months}mo`; return `${Math.floor(days / 365)}y`; }
-function Avatar({ author }: { author: CommentNode['author'] }) { return <Link href={author.username ? `/u/${author.username}` : '#'} className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200 bg-cover bg-center text-center text-xs font-semibold leading-8 text-slate-600" style={author.profilePictureUrl ? { backgroundImage: `url(${author.profilePictureUrl})` } : {}}>{!author.profilePictureUrl && (author.displayName?.[0]?.toUpperCase() || '?')}</Link>; }
 function DotsIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>; }
 function renderWithMentions(text: string) { const parts = text.split(/(@[a-zA-Z0-9_.]+)/g); return parts.map((part, i) => part.startsWith('@') && part.length > 1 ? <Link key={i} href={`/u/${part.slice(1)}`} className="font-semibold text-blue-600">{part}</Link> : <span key={i}>{part}</span>); }
 
@@ -137,7 +137,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
     <>
       <div className={depth > 0 ? 'ml-9 mt-2' : 'mb-3'} onTouchStart={(e) => startLongPress(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => moveLongPress(e.touches[0].clientX, e.touches[0].clientY)} onTouchEnd={endLongPress} onTouchCancel={endLongPress} onPointerDown={(e) => startLongPress(e.clientX, e.clientY)} onPointerMove={(e) => moveLongPress(e.clientX, e.clientY)} onPointerUp={endLongPress} onPointerCancel={endLongPress}>
         <div className="flex items-start gap-2">
-          <Avatar author={comment.author} />
+          <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="shrink-0"><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} px={32} /></Link>
           <div className="min-w-0 flex-1">
             {depth > 0 ? (
               <>
