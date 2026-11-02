@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { sharePost } from '@/lib/api/postApi';
-import { createShareLink } from '@/lib/api/shareApi';
+import { createShareLink, recordShare } from '@/lib/api/shareApi';
 
 function LinkIcon() {
   return (
@@ -172,8 +172,16 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
     };
   }, [profileUsername, profileId, reelId, postId, initialShareCode]);
 
+  function record(channel: string) {
+    // External taps only — reposts are counted server-side via reposts and
+    // must NOT also be recorded here (that would double-count them).
+    if (postId) void recordShare('post', postId, channel);
+    else if (reelId) void recordShare('reel', reelId, channel);
+  }
+
   function copyLink() {
     navigator.clipboard.writeText(url);
+    record('copy');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -184,6 +192,7 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
   }
 
   function shareWhatsApp() {
+    record('whatsapp');
     openAndClose(`https://wa.me/?text=${encodeURIComponent(url)}`);
   }
   // WhatsApp/Facebook don't expose a public web link that posts directly
@@ -191,21 +200,27 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
   // via native SDKs. This opens the app (where installed) with the link
   // ready to share; the user still has to tap "Add to status" themselves.
   function shareWhatsAppStatus() {
+    record('whatsapp_status');
     openAndClose(`whatsapp://send?text=${encodeURIComponent(url)}`);
   }
   function shareFacebook() {
+    record('facebook');
     openAndClose(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
   }
   function shareFacebookStatus() {
+    record('facebook_story');
     openAndClose(`fb://story/camera?attachment_url=${encodeURIComponent(url)}`);
   }
   function shareMessenger() {
+    record('messenger');
     openAndClose(`fb-messenger://share?link=${encodeURIComponent(url)}`);
   }
   function shareSms() {
+    record('sms');
     openAndClose(`sms:?body=${encodeURIComponent(url)}`);
   }
   function shareInternally() {
+    record('dm');
     onClose();
     window.location.href = `/messages/new?share=${encodeURIComponent(url)}`;
   }
