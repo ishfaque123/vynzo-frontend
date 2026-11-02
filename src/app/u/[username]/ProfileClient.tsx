@@ -62,6 +62,26 @@ function MoreIcon() {
   );
 }
 
+function HighlightCover({ highlight }: { highlight: any }) {
+  // FB-style: a failed image must never show a broken-image icon.
+  // Fall back to the highlight's current first item, then to the clean
+  // placeholder (same as the existing no-cover state). The highlight
+  // itself is never deleted or altered.
+  const [failedCount, setFailedCount] = useState(0);
+  const firstItemUrl = highlight.items?.find((i: any) => i?.mediaUrl)?.mediaUrl;
+  const candidates = [highlight.coverUrl, firstItemUrl].filter(Boolean).filter((url, i, arr) => arr.indexOf(url) === i);
+  const src = candidates[failedCount];
+  return (
+    <span className="h-16 w-16 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100">
+      {src ? (
+        <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailedCount((n) => n + 1)} />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center text-lg text-slate-400">✦</span>
+      )}
+    </span>
+  );
+}
+
 function ProfileSkeleton() {
   return (
     <div className="mx-auto max-w-xl pb-6" role="status" aria-label="Loading profile">
@@ -613,13 +633,7 @@ export default function ProfileClient() {
           )}
           {highlights.map((h) => (
             <button key={h.id} onClick={() => setViewHighlight(h)} className="flex w-16 shrink-0 flex-col items-center gap-1">
-              <span className="h-16 w-16 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100">
-                {h.coverUrl ? (
-                  <img src={h.coverUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-lg text-slate-400">✦</span>
-                )}
-              </span>
+              <HighlightCover highlight={h} />
               <span className="max-w-full truncate text-xs text-slate-600">{h.title}</span>
             </button>
           ))}
