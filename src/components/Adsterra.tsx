@@ -31,10 +31,12 @@ function AdsterraSlot({
   snippet,
   placementId,
   className,
+  minHeight,
 }: {
   snippet: string;
   placementId: string;
   className?: string;
+  minHeight?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasCode = snippet.trim().length > 0;
@@ -62,14 +64,15 @@ function AdsterraSlot({
       ref={ref}
       data-adsterra-placement={placementId}
       className={className ?? 'flex justify-center'}
+      style={minHeight ? { minHeight } : undefined}
     />
   );
 }
 
 const BANNERS = {
-  '728x90': { snippet: ADSTERRA_SNIPPETS.banner728x90, placementId: '31872375' },
-  '300x250': { snippet: ADSTERRA_SNIPPETS.banner300x250, placementId: '31872376' },
-  '320x50': { snippet: ADSTERRA_SNIPPETS.banner320x50, placementId: '31872377' },
+  '728x90': { snippet: ADSTERRA_SNIPPETS.banner728x90, placementId: '31872375', height: 90 },
+  '300x250': { snippet: ADSTERRA_SNIPPETS.banner300x250, placementId: '31872376', height: 250 },
+  '320x50': { snippet: ADSTERRA_SNIPPETS.banner320x50, placementId: '31872377', height: 50 },
 } as const;
 
 /** Reusable banner slot for the three approved banner sizes. */
@@ -86,6 +89,7 @@ export function AdsterraBanner({
       snippet={banner.snippet}
       placementId={banner.placementId}
       className={className}
+      minHeight={banner.height}
     />
   );
 }
