@@ -402,7 +402,7 @@ export default function HomePage() {
                   replyTo={replyTo} setReplyTo={setReplyTo}
                   onAddComment={handleAddComment} onCommentsChanged={loadComments}
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
-                {((index + 1) === 1 || ((index + 1) > 1 && ((index + 1) - 1) % 4 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex h-[50px] flex-col items-center justify-center px-4"><span className="text-[10px] uppercase tracking-wider text-slate-400">Ad</span><AdsterraBanner size="320x50" /></div>}
+                {((index + 1) === 1 || ((index + 1) > 1 && ((index + 1) - 1) % 4 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex h-[50px] flex-col items-center justify-center px-4"><AdsterraBanner size="320x50" /></div>}
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
                 {((index + 1) === 2 || (index + 1) === 8) && <div className="my-4 px-4"><SponsoredCard /></div>}
                 {(index + 1) % reelEvery === 0 && reels.length > 0 && <div className="my-4 px-4"><FeedReelCard reel={reels[Math.floor(index / reelEvery) % reels.length]} /></div>}

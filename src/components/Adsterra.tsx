@@ -40,22 +40,32 @@ function AdsterraSlot({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasCode = snippet.trim().length > 0;
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!hasCode || !ref.current) return;
     const el = ref.current;
-    el.innerHTML = snippet;
-    // Scripts inserted via innerHTML are inert — replace each with a fresh
-    // element (same attributes and body) so the browser executes it.
-    el.querySelectorAll('script').forEach((old) => {
-      const fresh = document.createElement('script');
-      Array.from(old.attributes).forEach((attr) =>
-        fresh.setAttribute(attr.name, attr.value),
-      );
-      fresh.textContent = old.textContent;
-      old.replaceWith(fresh);
-    });
-  }, [snippet, hasCode]);
+    const inject = () => {
+      el.innerHTML = snippet;
+      // Scripts inserted via innerHTML are inert — replace each with a fresh
+      // element (same attributes and body) so the browser executes it.
+      el.querySelectorAll('script').forEach((old) => {
+        const fresh = document.createElement('script');
+        Array.from(old.attributes).forEach((attr) =>
+          fresh.setAttribute(attr.name, attr.value),
+        );
+        fresh.textContent = old.textContent;
+        old.replaceWith(fresh);
+      });
+    };
+    inject();
+    // Retry once after 5s if no iframe filled the slot (slow network / no-fill
+    // on first try). One retry only — never a loop.
+    const timer = window.setTimeout(() => {
+      if (attempt === 0 && !el.querySelector('iframe')) setAttempt(1);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [snippet, hasCode, attempt]);
 
   if (!hasCode) return null;
 
@@ -79,18 +89,34 @@ const BANNERS = {
 export function AdsterraBanner({
   size,
   className,
+  showLabel = true,
 }: {
   size: keyof typeof BANNERS;
   className?: string;
+  showLabel?: boolean;
 }) {
-  const banner = BANNERS[size];
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const conn = (navigator as unknown as { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
+    if (conn && (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g')) setSlow(true);
+  }, []);
+  // Slow network: always serve the light 320x50 first (fastest to load).
+  const effectiveSize = slow ? '320x50' : size;
+  const banner = BANNERS[effectiveSize];
   return (
-    <AdsterraSlot
-      snippet={banner.snippet}
-      placementId={banner.placementId}
-      className={className}
-      minHeight={banner.height}
-    />
+    <div className="relative flex w-full flex-col items-center" style={{ minHeight: banner.height }}>
+      {showLabel && (
+        <span className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 rounded-b bg-black/40 px-1.5 py-px text-[10px] font-medium uppercase tracking-wider text-white/80">
+          Ad
+        </span>
+      )}
+      <AdsterraSlot
+        snippet={banner.snippet}
+        placementId={banner.placementId}
+        className={className}
+        minHeight={banner.height}
+      />
+    </div>
   );
 }
 
@@ -180,3 +206,4 @@ export function AdsterraSocialBar() {
     />
   );
 }
+
