@@ -744,7 +744,7 @@ export default function ProfileClient() {
                       <div className="mx-4 mb-4"><FeedReelCard reel={entry.item} /></div>
                     )}
                     {showAd && (
-                      <div className="my-4 flex h-[50px] w-full max-w-full justify-center overflow-hidden">
+                      <div className="my-4 flex w-full max-w-full justify-center overflow-hidden">
                         <AdsterraBanner size="320x50" />
                       </div>
                     )}

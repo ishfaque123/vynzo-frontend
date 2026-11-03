@@ -31,41 +31,29 @@ function AdsterraSlot({
   snippet,
   placementId,
   className,
-  minHeight,
 }: {
   snippet: string;
   placementId: string;
   className?: string;
-  minHeight?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasCode = snippet.trim().length > 0;
-  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!hasCode || !ref.current) return;
     const el = ref.current;
-    const inject = () => {
-      el.innerHTML = snippet;
-      // Scripts inserted via innerHTML are inert — replace each with a fresh
-      // element (same attributes and body) so the browser executes it.
-      el.querySelectorAll('script').forEach((old) => {
-        const fresh = document.createElement('script');
-        Array.from(old.attributes).forEach((attr) =>
-          fresh.setAttribute(attr.name, attr.value),
-        );
-        fresh.textContent = old.textContent;
-        old.replaceWith(fresh);
-      });
-    };
-    inject();
-    // Retry once after 5s if no iframe filled the slot (slow network / no-fill
-    // on first try). One retry only — never a loop.
-    const timer = window.setTimeout(() => {
-      if (attempt === 0 && !el.querySelector('iframe')) setAttempt(1);
-    }, 5000);
-    return () => window.clearTimeout(timer);
-  }, [snippet, hasCode, attempt]);
+    el.innerHTML = snippet;
+    // Scripts inserted via innerHTML are inert — replace each with a fresh
+    // element (same attributes and body) so the browser executes it.
+    el.querySelectorAll('script').forEach((old) => {
+      const fresh = document.createElement('script');
+      Array.from(old.attributes).forEach((attr) =>
+        fresh.setAttribute(attr.name, attr.value),
+      );
+      fresh.textContent = old.textContent;
+      old.replaceWith(fresh);
+    });
+  }, [snippet, hasCode]);
 
   if (!hasCode) return null;
 
@@ -74,49 +62,31 @@ function AdsterraSlot({
       ref={ref}
       data-adsterra-placement={placementId}
       className={className ?? 'flex justify-center'}
-      style={minHeight ? { minHeight } : undefined}
     />
   );
 }
 
 const BANNERS = {
-  '728x90': { snippet: ADSTERRA_SNIPPETS.banner728x90, placementId: '31872375', height: 90 },
-  '300x250': { snippet: ADSTERRA_SNIPPETS.banner300x250, placementId: '31872376', height: 250 },
-  '320x50': { snippet: ADSTERRA_SNIPPETS.banner320x50, placementId: '31872377', height: 50 },
+  '728x90': { snippet: ADSTERRA_SNIPPETS.banner728x90, placementId: '31872375' },
+  '300x250': { snippet: ADSTERRA_SNIPPETS.banner300x250, placementId: '31872376' },
+  '320x50': { snippet: ADSTERRA_SNIPPETS.banner320x50, placementId: '31872377' },
 } as const;
 
 /** Reusable banner slot for the three approved banner sizes. */
 export function AdsterraBanner({
   size,
   className,
-  showLabel = true,
 }: {
   size: keyof typeof BANNERS;
   className?: string;
-  showLabel?: boolean;
 }) {
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    const conn = (navigator as unknown as { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
-    if (conn && (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g')) setSlow(true);
-  }, []);
-  // Slow network: always serve the light 320x50 first (fastest to load).
-  const effectiveSize = slow ? '320x50' : size;
-  const banner = BANNERS[effectiveSize];
+  const banner = BANNERS[size];
   return (
-    <div className="relative flex w-full flex-col items-center" style={{ minHeight: banner.height }}>
-      {showLabel && (
-        <span className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 rounded-b bg-black/40 px-1.5 py-px text-[10px] font-medium uppercase tracking-wider text-white/80">
-          Ad
-        </span>
-      )}
-      <AdsterraSlot
-        snippet={banner.snippet}
-        placementId={banner.placementId}
-        className={className}
-        minHeight={banner.height}
-      />
-    </div>
+    <AdsterraSlot
+      snippet={banner.snippet}
+      placementId={banner.placementId}
+      className={className}
+    />
   );
 }
 
@@ -206,4 +176,3 @@ export function AdsterraSocialBar() {
     />
   );
 }
-
