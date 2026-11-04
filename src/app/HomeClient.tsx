@@ -14,7 +14,6 @@ import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import AdUnit from '@/components/AdUnit';
 import { AdsterraBanner } from '@/components/Adsterra';
-import SponsoredCard from '@/components/SponsoredCard';
 import { setPendingComposeImage } from '@/lib/pendingComposeImage';
 import { takePendingNewPost } from '@/lib/pendingNewPost';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
@@ -404,7 +403,6 @@ export default function HomePage() {
                   onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} offline={feedOffline} />
                 {((index + 1) === 1 || ((index + 1) > 1 && ((index + 1) - 1) % 4 === 0)) && <div key={`adsterra-feed-${post.id}`} className="my-4 flex justify-center px-4"><AdsterraBanner size="300x250" /></div>}
                 {(index + 1) % 5 === 0 && <div className="my-4 px-4"><AdUnit /></div>}
-                {((index + 1) === 2 || (index + 1) === 8) && <div className="my-4 px-4"><SponsoredCard /></div>}
                 {(index + 1) % reelEvery === 0 && reels.length > 0 && <div className="my-4 px-4"><FeedReelCard reel={reels[Math.floor(index / reelEvery) % reels.length]} /></div>}
               </div>
             ))}
