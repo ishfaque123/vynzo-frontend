@@ -128,7 +128,13 @@ export default function PrivacyPage() {
           Frianzo may display advertisements through advertising services. On the website,
           Google AdSense may be used. In the mobile app, advertisements are currently provided
           by Adsterra. Google AdMob is not currently used in the mobile app; it may be added
-          in the future, after approval, if an ad unit is added to the app. Advertising providers
+          in the future, after approval, if an ad unit is added to the app. When Google AdMob is
+          used, Google may process device identifiers, IP address, app activity and
+          advertising-related information to serve personalised or non-personalised ads.
+          For users in the European Economic Area, the United Kingdom and Switzerland, Frianzo
+          will use Google's User Messaging Platform (UMP) to request consent before loading
+          personalised ads, and ads will only be requested after the applicable consent
+          requirement has been satisfied. Advertising providers
           may process information such as IP address, cookies, device information, and
           advertising-related identifiers to provide, measure, and protect advertising services,
           subject to applicable settings, consent requirements, and the providers' policies.
@@ -246,7 +252,7 @@ export default function PrivacyPage() {
       <Section title="15. Data Controller and Privacy Contact">
         <p>
           Frianzo is the service described by this Privacy Policy. For privacy questions, access,
-          correction, deletion, or other privacy requests, contact:
+          correction, deletion, or other privacy requests, contact Ishfaque Ahmed at:
         </p>
         <p className="mt-3">
           <strong>Email:</strong>{" "}
