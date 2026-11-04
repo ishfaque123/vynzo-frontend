@@ -260,7 +260,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         `You need to try *Frianzo*!\n\n` +
         `It's like Facebook + Instagram + TikTok in one app \u2014 share posts, videos, go viral & connect with people worldwide \u{1F30D}\n\n` +
         `\u{1F525} I've already got *${Number(followers).toLocaleString()} followers* \u2014 come join the wave!\n\n` +
-        `Join Frianzo and share your moments with friends.\n\n` +
+        `\u26A1 New users can hit *10K followers in just one week!*\n\n` +
         `\u{1F4F2} Download free: ${link}`;
       setDrawerOpen(false);
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
