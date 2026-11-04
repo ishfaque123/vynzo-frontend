@@ -16,7 +16,8 @@ export default function ChildSafetyPage() {
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
             Child Safety Standards
           </h1>
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Last updated: September 16, 2026</p>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Last updated: November 4, 2026</p>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Frianzo is for users aged 13 and over. Users under 13 are not allowed on Frianzo.</p>
         </div>
 
         <div className="space-y-8 text-[15px] leading-7 text-slate-700 dark:text-slate-300">
@@ -37,7 +38,7 @@ export default function ChildSafetyPage() {
           <section>
             <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-white">Reporting child safety concerns</h2>
             <p>
-              Users can report child safety concerns through the reporting features available in Frianzo. Reports may be reviewed by our moderation team and appropriate action may include removing content, restricting accounts, or taking other enforcement action under our rules.
+              Users can report child safety concerns through the reporting features available in Frianzo, and can block a user from their profile. Reports may be reviewed by our moderation team and appropriate action may include removing content, restricting accounts, or taking other enforcement action under our rules.
             </p>
             <p className="mt-3">
               If you believe a child is in immediate danger, contact the appropriate emergency or child-protection authorities in your country.
@@ -65,10 +66,10 @@ export default function ChildSafetyPage() {
             </p>
             <p className="mt-3">
               <a
-                href="mailto:ishfaqshar70@gmail.com"
+                href="mailto:support@frianzo.online"
                 className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
-                ishfaqshar70@gmail.com
+                support@frianzo.online
               </a>
             </p>
           </section>

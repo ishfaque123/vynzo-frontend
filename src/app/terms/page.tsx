@@ -35,6 +35,9 @@ export default function TermsPage() {
       <h2 className="mt-6 mb-2 text-lg font-semibold">Changes to These Terms</h2>
       <p className="mb-4">We may update these terms from time to time. Continued use of the service means you accept the updated terms.</p>
 
+      <h2 className="mt-6 mb-2 text-lg font-semibold">Copyright and Takedown</h2>
+      <p className="mb-4">Do not post content you do not own or do not have permission to share. If you believe content on Frianzo infringes your copyright, email support@frianzo.online with: (1) a description of the work, (2) a link to the Frianzo post or reel, (3) your name and contact details, and (4) a statement that you believe in good faith the use is not authorised. We will review the report and remove content that infringes copyright, and may suspend repeat infringers. If you believe content was removed by mistake, reply to the same email with your reasons and we will review it.</p>
+
       <h2 className="mt-6 mb-2 text-lg font-semibold">Contact Us</h2>
       <p className="mb-4">If you have questions about these Terms, please email us at support@frianzo.online or visit our Contact page. We aim to reply within 2 business days.</p>
     </div>

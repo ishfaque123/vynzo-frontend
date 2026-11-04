@@ -202,10 +202,13 @@ export default function PrivacyPage() {
 
       <Section title="11. Children's Privacy">
         <p>
-          Frianzo is not intended for children below the minimum age permitted under applicable law.
-          We do not knowingly collect personal information from children where prohibited by law.
+          Frianzo is for users aged 13 and over. Users under 13 are not allowed on Frianzo,
+          and accounts found to be underage are removed.
+          We do not knowingly collect personal information from children under 13.
           If you believe a child has provided personal information in violation of applicable
           requirements, contact us at <a className="text-blue-600 underline" href="mailto:support@frianzo.online">support@frianzo.online</a>.
+          You can also report content or a user from inside the app, and you can block a user
+          from their profile.
         </p>
       </Section>
 

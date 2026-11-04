@@ -17,6 +17,8 @@ export default function CommunityGuidelinesPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 text-slate-700">
       <h1 className="mb-4 text-2xl font-bold text-slate-900">Community Guidelines</h1>
+      <p className="mb-4 text-sm text-slate-500">Last updated: November 4, 2026</p>
+      <p className="mb-4">Frianzo is for users aged 13 and over. Users under 13 are not allowed on Frianzo.</p>
 
       <p className="mb-8">
         Frianzo is a place for real connection. To keep it respectful for everyone, we
@@ -60,8 +62,8 @@ export default function CommunityGuidelinesPage() {
 
       <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Report content</h2>
       <p className="mb-4">
-        See something that breaks these rules? Use the report option on any post or comment.
-        Reports are reviewed and help keep Frianzo safe for everyone.
+        See something that breaks these rules? Use the report option on any post or comment, or block a user from their profile.
+        Reports are reviewed and help keep Frianzo safe for everyone. For help, contact support@frianzo.online.
       </p>
 
       <p className="mt-8 text-sm text-slate-500">

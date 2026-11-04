@@ -138,9 +138,10 @@ export default function HelpPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 text-slate-700">
       <h1 className="mb-2 text-2xl font-bold text-slate-900">Help Center</h1>
+      <p className="mb-2 text-sm text-slate-500">Last updated: November 4, 2026</p>
       <p className="mb-8">
         Quick answers to the most common questions about using Frianzo. Still stuck?{' '}
-        <a href="/contact" className="text-blue-600 underline">Contact us</a>.
+        <a href="/contact" className="text-blue-600 underline">Contact us</a> or email support@frianzo.online.
       </p>
 
       {SECTIONS.map((section) => (
