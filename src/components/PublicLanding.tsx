@@ -70,7 +70,7 @@ export default function PublicLanding() {
             <div className="mt-8 flex flex-col items-start gap-4">
               <GooglePlayButton size="lg" />
             </div>
-            <p className="mt-5 text-xs text-slate-500">Free forever.</p>
+            <p className="mt-5 text-xs text-slate-500">Free to download and use.</p>
           </div>
 
           <div className="relative mx-auto w-full max-w-md">
@@ -190,7 +190,7 @@ export default function PublicLanding() {
           <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
             <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Get Frianzo today</h2>
             <p className="mt-4 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">
-              Start sharing, discovering and connecting today. Free forever.
+              Start sharing, discovering and connecting today. Free to download and use.
             </p>
             <div className="mt-8">
               <GooglePlayButton size="lg" />

@@ -522,7 +522,7 @@ export const articles: BlogArticle[] = [
       {
         heading: 'Money: followers vs an actual path to earnings',
         paragraphs: [
-          'TikTok monetization in Pakistan is famously limited — no official creator fund payouts for most local creators. Frianzo is building its economics locally from the start: a referrals program that counts invites toward a monetization unlock, a monetization dashboard in Settings, leaderboards for top referrers, and a paid blue tick for creators who want the verified badge plus a feed boost. It is early days, but the direction is clear: the platform is designed for Pakistani users, with local realities in mind.',
+          'TikTok monetization in Pakistan is famously limited — no official creator fund payouts for most local creators. Frianzo is building its economics locally from the start: a referrals program that counts invites toward a monetization unlock, a monetization dashboard in Settings, leaderboards for top referrers, and a blue tick for established creators who earn the verified badge plus a feed boost. It is early days, but the direction is clear: the platform is designed for Pakistani users, with local realities in mind.',
         ],
       },
       {
@@ -751,14 +751,14 @@ export const articles: BlogArticle[] = [
     slug: 'blue-tick-verification',
     title: 'Blue tick on Frianzo: what verification means and how it works',
     description:
-      'What the blue tick on a Frianzo profile actually signals, the perks verified accounts receive, who is eligible for the free route, and how the paid route works.',
+      'What the blue tick on a Frianzo profile actually signals, the perks verified accounts receive, and who is eligible for the free route.',
     date: '2026-10-15',
     readingMinutes: 4,
     sections: [
       {
         heading: null,
         paragraphs: [
-          'The blue tick next to a name is the most recognised symbol on social media: this account is who it claims to be. On Frianzo the tick works the same way — but we want to be transparent about what it does, what it does not do, and the two routes to getting one.',
+          'The blue tick next to a name is the most recognised symbol on social media: this account is who it claims to be. On Frianzo the tick works the same way — but we want to be transparent about what it does, what it does not do, and how to get one.',
         ],
       },
       {
@@ -774,15 +774,15 @@ export const articles: BlogArticle[] = [
         ],
       },
       {
-        heading: 'Route 1: earn it free through eligibility',
+        heading: 'How to earn it: eligibility',
         paragraphs: [
           'Notable accounts can qualify for a free blue tick by meeting the eligibility criteria shown on the verification page in Settings: a complete, genuine profile and a track record of real activity and following. If you qualify, you submit a request from that page and the team reviews it. This route suits established creators, public figures and brands who are already active on the platform.',
         ],
       },
       {
-        heading: 'Route 2: the paid blue tick',
+        heading: 'Is there a paid route?',
         paragraphs: [
-          'Newer creators who do not meet the free eligibility criteria yet can get verified through the paid route — a simple subscription (currently Rs 400 for 30 days; watch the verification page for launch offers) arranged directly with the Frianzo team. A member of our team confirms your identity, activates the tick on your account, and your verification runs for the paid period. No forms disappear into a black hole: a real person handles your request and confirms it in chat.',
+          'No — not right now. The blue tick is not sold. Verification is earned by established accounts that meet the eligibility criteria above, and a request is reviewed by our team. If a paid option ever opens in the future, it will be announced on the verification page in Settings, with the price and terms shown there first — never through private chats or public posts asking for payment.',
         ],
       },
       {
@@ -794,7 +794,7 @@ export const articles: BlogArticle[] = [
       {
         heading: 'How to start',
         paragraphs: [
-          'Open Settings → Verification in the app. You will see your current status, the perks, and whether you qualify for the free route. If you want the paid route or have questions, message the official @frienzo account in the app — the team replies there, and payment details are only ever shared in that private chat, never in public posts.',
+          'Open Settings → Verification in the app. You will see your current status, the perks, and whether you qualify for the free route. If you have questions, message the official @frienzo account in the app — the team replies there.',
         ],
       },
     ],

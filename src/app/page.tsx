@@ -1,7 +1,9 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import HomeClient from './HomeClient';
+import { Suspense } from 'react';
 import PublicLanding from '@/components/PublicLanding';
+import CommunityPosts from '@/components/CommunityPosts';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -98,6 +100,9 @@ export default async function Page() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(appStructuredData) }}
       />
       <PublicLanding />
+      <Suspense fallback={null}>
+        <CommunityPosts />
+      </Suspense>
     </>
   );
 }

@@ -102,10 +102,6 @@ const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [
         a: 'Every Frianzo account has a personal referral link, available from your profile and dashboard. When a friend signs up through your link and becomes an active user, it counts toward your referrals. Share the link anywhere — WhatsApp status, other social profiles, or directly with friends.',
       },
       {
-        q: 'What is the wallet?',
-        a: 'Your wallet is an in-app section you can open from your dashboard. It does not pay you for referrals: referrals only count toward the 25-referral gate that unlocks monetization. If any earning applies to your account, its rules are shown inside the app itself, not promised here.',
-      },
-      {
         q: 'What is the blue tick and how do I get one?',
         a: 'The blue tick is a verification badge showing that a profile is genuine and established. It is not sold and cannot be requested by brand-new accounts: it is for accounts with a complete profile, real followers, real posts and a clean record. If your account qualifies, you will find the verification option in your settings. Our blog article on the blue tick explains the thinking in detail.',
       },

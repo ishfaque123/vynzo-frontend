@@ -3,8 +3,31 @@ import { articles } from '@/lib/blog';
 
 const SITE_URL = 'https://www.frianzo.online';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+async function topCreatorUsernames(): Promise<string[]> {
+  // Public creator profiles give Google real user-content URLs to crawl.
+  // Fail-soft: any error means only the official profile is listed.
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(
+      'https://api.frianzo.online/api/users/leaderboard?category=followers&limit=5',
+      { signal: controller.signal },
+    );
+    clearTimeout(timer);
+    if (!res.ok) return ['frienzo'];
+    const data = await res.json();
+    const names = (data?.data?.leaderboard ?? [])
+      .map((u: any) => u?.username)
+      .filter((u: any): u is string => typeof u === 'string' && u.length > 0);
+    return names.length > 0 ? names : ['frienzo'];
+  } catch {
+    return ['frienzo'];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const creators = await topCreatorUsernames();
 
   return [
     {
@@ -66,6 +89,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(`${a.date}T00:00:00Z`),
       changeFrequency: 'monthly' as const,
       priority: 0.6,
+    })),
+    ...creators.map((username) => ({
+      url: `${SITE_URL}/u/${encodeURIComponent(username)}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.5,
     })),
   ];
 }
