@@ -6,17 +6,49 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.frianzo.online';
 
 type Props = { params: Promise<{ username: string }> };
 
-async function getPublicProfile(username: string) {
+// Server-side fetch with a short timeout. Any failure returns null so the
+// page never breaks — ProfileClient then loads the same data in the browser
+// exactly as before (fail-soft).
+async function fetchJson(url: string, timeoutMs = 6000): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${API_URL}/api/users/${encodeURIComponent(username)}`, {
-      next: { revalidate: 300 },
-    });
+    const res = await fetch(url, { signal: controller.signal, next: { revalidate: 300 } });
     if (!res.ok) return null;
-    const result = await res.json();
-    return result?.success ? result.data?.user ?? null : null;
+    return await res.json();
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+async function getPublicProfile(username: string) {
+  const result = await fetchJson(`${API_URL}/api/users/${encodeURIComponent(username)}`);
+  return result?.success ? result.data?.user ?? null : null;
+}
+
+// Public posts for a profile, fetched server-side with NO login — the same
+// public endpoint the browser client uses. Only posts marked public are
+// passed through, and only for public (non-private) profiles: a private
+// profile's posts are never rendered server-side, so nothing leaks that the
+// client would hide behind its private view.
+async function getPublicProfilePosts(username: string, isPrivate: boolean): Promise<any[]> {
+  if (isPrivate) return [];
+  const result = await fetchJson(`${API_URL}/api/posts/user/${encodeURIComponent(username)}`);
+  const list: any[] = result?.data?.posts ?? [];
+  return list
+    .filter((p) => p?.visibility === 'public' || p?.visibility == null)
+    .slice(0, 10);
+}
+
+async function getFollowCounts(userId: string) {
+  const result = await fetchJson(`${API_URL}/api/follows/${encodeURIComponent(userId)}/counts`);
+  if (!result?.success) return null;
+  return {
+    followers: result.data?.followers ?? 0,
+    following: result.data?.following ?? 0,
+  };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -64,6 +96,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProfilePage() {
-  return <ProfileClient />;
+// Facebook-like: the profile header and the first public posts are rendered
+// by the SERVER, so the HTML Google (and any logged-out visitor) receives
+// already contains the real name, bio, counts and post text — not an empty
+// shell that only fills in after JavaScript runs. ProfileClient still owns
+// all interactivity (follow, tabs, comments, editing); it is simply seeded
+// with the same data so its first paint is the server content, and it
+// refreshes everything in the browser exactly as before.
+export default async function ProfilePage({ params }: Props) {
+  const { username } = await params;
+  const profile = await getPublicProfile(username);
+  if (!profile) return <ProfileClient />;
+
+  const [posts, counts] = await Promise.all([
+    getPublicProfilePosts(username, !!profile.isPrivate),
+    profile.id ? getFollowCounts(profile.id) : Promise.resolve(null),
+  ]);
+
+  return (
+    <ProfileClient
+      initialProfile={profile}
+      initialPosts={posts}
+      initialCounts={counts ?? undefined}
+    />
+  );
 }

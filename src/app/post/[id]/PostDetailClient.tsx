@@ -25,11 +25,11 @@ function playSubmitSound() {
   } catch {}
 }
 
-export default function PostDetailClient() {
+export default function PostDetailClient({ initialPost }: { initialPost?: any } = {}) {
   const params = useParams();
   const { user: currentUser } = useAuth();
-  const [post, setPost] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState<any>(initialPost ?? null);
+  const [loading, setLoading] = useState(!initialPost);
   const [openComments, setOpenComments] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');

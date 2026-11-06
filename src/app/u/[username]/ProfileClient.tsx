@@ -129,21 +129,25 @@ function BlockIcon() {
   );
 }
 
-export default function ProfileClient() {
+export default function ProfileClient({ initialProfile, initialPosts, initialCounts }: {
+  initialProfile?: any;
+  initialPosts?: any[];
+  initialCounts?: { followers: number; following: number };
+} = {}) {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
   const { user: currentUser } = useAuth();
   const [hasStrikes, setHasStrikes] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
-  const [counts, setCounts] = useState({ followers: 0, following: 0 });
-  const [friendStatus, setFriendStatus] = useState<string>('none');
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(initialProfile ?? null);
+  const [counts, setCounts] = useState(initialCounts ?? { followers: 0, following: 0 });
+  const [friendStatus, setFriendStatus] = useState<string>(initialProfile?.friendStatus || 'none');
+  const [loading, setLoading] = useState(!initialProfile);
   const [profileError, setProfileError] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
+  const [posts, setPosts] = useState<any[]>(initialPosts ?? []);
+  const [postsLoading, setPostsLoading] = useState(!initialPosts);
   const [reels, setReels] = useState<any[]>([]);
   const [reelsLoading, setReelsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'reels' | 'photos'>('all');
@@ -154,8 +158,8 @@ export default function ProfileClient() {
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
   const [shareProfileOpen, setShareProfileOpen] = useState(false);
   const [messaging, setMessaging] = useState(false);
-  const [blockedByMe, setBlockedByMe] = useState(false);
-  const [blockedByOther, setBlockedByOther] = useState(false);
+  const [blockedByMe, setBlockedByMe] = useState(!!initialProfile?.blockedByMe);
+  const [blockedByOther, setBlockedByOther] = useState(!!initialProfile?.blockedByOther);
   const [blockBusy, setBlockBusy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -214,7 +218,7 @@ export default function ProfileClient() {
       .catch(() => {});
 
     async function loadProfile() {
-      setLoading(true);
+      if (!initialProfile) setLoading(true);
       setProfileError(false);
       try {
         const result = await fetchUserProfile(username);
@@ -703,7 +707,7 @@ export default function ProfileClient() {
               {photoPosts.map((p) => (<img key={p.id} src={p.imageUrl} alt="" className="aspect-square w-full object-cover" />))}
             </div>
           )
-        ) : (postsLoading || reelsLoading) ? (
+        ) : ((postsLoading || reelsLoading) && posts.length === 0 && reels.length === 0) ? (
           <div className="flex justify-center py-6" role="status" aria-label="Loading posts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
         ) : posts.length === 0 && reels.length === 0 ? (
           <p className="px-4 text-slate-500">No posts yet.</p>
