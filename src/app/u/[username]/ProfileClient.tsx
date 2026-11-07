@@ -129,9 +129,10 @@ function BlockIcon() {
   );
 }
 
-export default function ProfileClient({ initialProfile, initialPosts, initialCounts }: {
+export default function ProfileClient({ initialProfile, initialPosts, initialReels, initialCounts }: {
   initialProfile?: any;
   initialPosts?: any[];
+  initialReels?: any[];
   initialCounts?: { followers: number; following: number };
 } = {}) {
   const params = useParams();
@@ -148,8 +149,8 @@ export default function ProfileClient({ initialProfile, initialPosts, initialCou
   const [retryKey, setRetryKey] = useState(0);
   const [posts, setPosts] = useState<any[]>(initialPosts ?? []);
   const [postsLoading, setPostsLoading] = useState(!initialPosts);
-  const [reels, setReels] = useState<any[]>([]);
-  const [reelsLoading, setReelsLoading] = useState(true);
+  const [reels, setReels] = useState<any[]>(initialReels ?? []);
+  const [reelsLoading, setReelsLoading] = useState(!initialReels);
   const [activeTab, setActiveTab] = useState<'all' | 'reels' | 'photos'>('all');
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});

@@ -38,8 +38,13 @@ async function getPublicProfilePosts(username: string, isPrivate: boolean): Prom
   const result = await fetchJson(`${API_URL}/api/posts/user/${encodeURIComponent(username)}`);
   const list: any[] = result?.data?.posts ?? [];
   return list
-    .filter((p) => p?.visibility === 'public' || p?.visibility == null)
-    .slice(0, 10);
+    .filter((p) => p?.visibility === 'public' || p?.visibility == null);
+}
+
+async function getPublicProfileReels(username: string, isPrivate: boolean): Promise<any[]> {
+  if (isPrivate) return [];
+  const result = await fetchJson(`${API_URL}/api/reels/user/${encodeURIComponent(username)}`);
+  return result?.data?.reels ?? [];
 }
 
 async function getFollowCounts(userId: string) {
@@ -108,8 +113,9 @@ export default async function ProfilePage({ params }: Props) {
   const profile = await getPublicProfile(username);
   if (!profile) return <ProfileClient />;
 
-  const [posts, counts] = await Promise.all([
+  const [posts, reels, counts] = await Promise.all([
     getPublicProfilePosts(username, !!profile.isPrivate),
+    getPublicProfileReels(username, !!profile.isPrivate),
     profile.id ? getFollowCounts(profile.id) : Promise.resolve(null),
   ]);
 
@@ -117,6 +123,7 @@ export default async function ProfilePage({ params }: Props) {
     <ProfileClient
       initialProfile={profile}
       initialPosts={posts}
+      initialReels={reels}
       initialCounts={counts ?? undefined}
     />
   );

@@ -102,12 +102,14 @@ export default function NewReelPage() {
   const [cropOpen, setCropOpen] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
+  const [templateFilter, setTemplateFilter] = useState('normal');
   const [letterbox, setLetterbox] = useState(false);
   const [filterThumb, setFilterThumb] = useState<string | null>(null);
-  const activeFilterCss = (REEL_FILTERS.find((f) => f.id === filter) || REEL_FILTERS[0]).css;
+  const effectiveFilter = filter !== 'normal' ? filter : templateFilter;
+  const activeFilterCss = (REEL_FILTERS.find((f) => f.id === effectiveFilter) || REEL_FILTERS[0]).css;
 
   function applyTemplate(t: { id: string; name: string; filter: string; speed: string; letterbox: boolean }) {
-    setFilter(t.filter);
+    setTemplateFilter(t.filter);
     setSpeed(t.speed);
     setLetterbox(t.letterbox);
     setActiveTemplate(t.id);
@@ -116,10 +118,20 @@ export default function NewReelPage() {
   }
 
   function clearTemplate() {
-    setFilter('normal');
+    setTemplateFilter('normal');
     setSpeed('1');
     setLetterbox(false);
     setActiveTemplate(null);
+  }
+
+  function changeSpeed(s: string) {
+    setSpeed(s);
+    // Slow Mo IS 0.5x (REEL_TEMPLATES slowmo, speed '0.5'): any other
+    // speed no longer matches it, so clear the template and its filter.
+    if (s !== '0.5' && activeTemplate === 'slowmo') {
+      setActiveTemplate(null);
+      setTemplateFilter('normal');
+    }
   }
 
   // Apply selected playback speed to the preview video
@@ -442,7 +454,7 @@ export default function NewReelPage() {
         ...(aiCategory ? { category: aiCategory } : {}),
         durationSec: selectedDuration,
         ...(trimChanged ? { trimStartSec: trimStart, trimEndSec: trimEnd } : {}),
-        ...(filter !== 'normal' ? { filter } : {}),
+        ...(effectiveFilter !== 'normal' ? { filter: effectiveFilter } : {}),
         ...(textOverlay.trim() ? { textOverlay: textOverlay.trim().slice(0, 100), textPosition } : {}),
         ...(speed !== '1' ? { speed } : {}),
         ...(letterbox ? { letterbox: 'true' } : {}),
@@ -839,7 +851,7 @@ export default function NewReelPage() {
           ref={videoRef}
           key={previewUrl}
           src={previewUrl}
-          controls={!trimOpen}
+          controls={!trimOpen && !trimApplied}
           playsInline
           preload="auto"
           className={"max-h-full max-w-full rounded-lg bg-black " + (crop !== "original" ? "object-cover h-full w-full" : "object-contain")}
@@ -857,6 +869,33 @@ export default function NewReelPage() {
             }
           }}
         />
+        {trimApplied && !trimOpen && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6">
+            <button
+              type="button"
+              aria-label={trimPlaying ? 'Pause' : 'Play'}
+              onClick={() => { const v = videoRef.current; if (!v) return; if (v.paused) v.play().catch(() => {}); else v.pause(); }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black"
+            >
+              {trimPlaying ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="ml-0.5 h-4 w-4 fill-current"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10.2-6.5a1 1 0 0 0 0-1.7L9.53 4.65A1 1 0 0 0 8 5.5Z" /></svg>
+              )}
+            </button>
+            <input
+              type="range"
+              aria-label="Seek trimmed video"
+              min={trimStart}
+              max={trimEnd}
+              step={0.1}
+              value={playheadTime}
+              onChange={(e) => { const t = parseFloat(e.currentTarget.value); if (videoRef.current) videoRef.current.currentTime = t; setCurrentTime(t); }}
+              className="min-w-0 flex-1 accent-white"
+            />
+            <span className="shrink-0 text-xs font-medium text-white">{formatTrimTime(playheadTime - trimStart)} / {formatTrimTime(selectedDuration)}</span>
+          </div>
+        )}
         {letterbox && (
           <>
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[12%] bg-black" />
@@ -1267,7 +1306,7 @@ export default function NewReelPage() {
             {(['0.5', '1', '1.5', '2'] as const).map((s) => (
               <button
                 key={s}
-                onClick={() => setSpeed(s)}
+                onClick={() => changeSpeed(s)}
                 className={`flex-1 rounded-lg px-3 py-3 text-sm font-semibold transition ${speed === s ? 'bg-emerald-400 text-black' : 'bg-white/10 text-white/70'}`}
               >
                 {s}x
