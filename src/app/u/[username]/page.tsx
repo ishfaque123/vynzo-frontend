@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import ProfileClient from './ProfileClient';
 
 const SITE_URL = 'https://www.frianzo.online';
@@ -9,11 +10,15 @@ type Props = { params: Promise<{ username: string }> };
 // Server-side fetch with a short timeout. Any failure returns null so the
 // page never breaks — ProfileClient then loads the same data in the browser
 // exactly as before (fail-soft).
-async function fetchJson(url: string, timeoutMs = 6000): Promise<any> {
+async function fetchJson(url: string, timeoutMs = 6000, extra?: { headers?: Record<string, string>; noStore?: boolean }): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal, next: { revalidate: 300 } });
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: extra?.headers,
+      ...(extra?.noStore ? { cache: 'no-store' } : { next: { revalidate: 300 } }),
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -43,7 +48,26 @@ async function getPublicProfilePosts(username: string, isPrivate: boolean): Prom
 
 async function getPublicProfileReels(username: string, isPrivate: boolean): Promise<any[]> {
   if (isPrivate) return [];
-  const result = await fetchJson(`${API_URL}/api/reels/user/${encodeURIComponent(username)}`);
+  // The reels endpoint is login-gated (authMiddleware): without a cookie it
+  // 401s, so the server seed was always [] and the Reels counter flashed 0
+  // on first paint. The auth cookie is scoped to .frianzo.online, so the
+  // Next.js server receives it too — forward the visitor's own cookie so a
+  // logged-in visitor's first paint already has their reels. This fetch is
+  // ALWAYS no-store: the response depends on the cookie, so it must never
+  // enter the Data Cache (a cached 401, or one user's reels, must never be
+  // served to anyone else). Logged-out visitors still get [] here, exactly
+  // as before — their client fetch 401s too, so 0 stays (no flash).
+  const cookieStore = await cookies();
+  const parts: string[] = [];
+  const authToken = cookieStore.get('vynzo_auth_token')?.value;
+  const legacyToken = cookieStore.get('vynzo_token')?.value;
+  if (authToken) parts.push(`vynzo_auth_token=${authToken}`);
+  if (legacyToken) parts.push(`vynzo_token=${legacyToken}`);
+  const result = await fetchJson(
+    `${API_URL}/api/reels/user/${encodeURIComponent(username)}`,
+    6000,
+    { headers: parts.length ? { Cookie: parts.join('; ') } : undefined, noStore: true },
+  );
   return result?.data?.reels ?? [];
 }
 
