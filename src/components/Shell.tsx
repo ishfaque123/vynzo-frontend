@@ -245,6 +245,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, [drawerOpen]);
 
+  // Tapping Home while already on / does nothing on its own (same route,
+  // no remount). Tell the home feed to refetch instead; on any other page
+  // the link navigates normally.
+  function handleHomeTap() {
+    if (currentPath === '/') {
+      window.dispatchEvent(new CustomEvent('frianzo:refresh-feed'));
+    }
+  }
+
   async function handleDrawerShare() {
     if (sharing) return;
     setSharing(true);
@@ -312,7 +321,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <MenuIcon />
             </button>
           )}
-          <Link href="/" className="text-xl font-bold tracking-tight text-blue-600">Frianzo</Link>
+          <Link href="/" onClick={handleHomeTap} className="text-xl font-bold tracking-tight text-blue-600">Frianzo</Link>
         </div>
 
         <div className="flex items-center gap-1">
@@ -337,7 +346,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
       {!hideChrome && <nav className="sticky top-0 z-10 shrink-0 border-t border-b bg-white">
         <div className="mx-auto flex max-w-xl md:max-w-5xl items-center justify-around py-2">
-          <Link href="/" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
+          <Link href="/" onClick={handleHomeTap} aria-label="Home" className="p-2"><HomeIcon active={currentPath === '/'} /></Link>
           <Link href="/reels" className="p-2"><ReelsIcon active={currentPath === '/reels'} /></Link>
           <Link href="/notifications" aria-label="Notifications" className="relative p-2">
             <BellIcon size={24} className={currentPath === '/notifications' ? 'text-slate-900' : 'text-slate-400'} />

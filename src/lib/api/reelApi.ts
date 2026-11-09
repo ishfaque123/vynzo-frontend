@@ -42,7 +42,7 @@ export async function fetchReelFeed(offset = 0, feed: 'foryou' | 'following' = '
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const excludeParam = excludeIds.length ? `&exclude=${encodeURIComponent(excludeIds.slice(0, 400).join(','))}` : ''; const res = await fetch(apiUrl(`/api/reels?offset=${Math.max(0, Math.floor(offset))}&feed=${feed}${excludeParam}`), { credentials: 'include', signal: controller.signal });
+    const excludeParam = excludeIds.length ? `&exclude=${encodeURIComponent(excludeIds.slice(0, 400).join(','))}` : ''; const res = await fetch(apiUrl(`/api/reels?offset=${Math.max(0, Math.floor(offset))}&feed=${feed}${excludeParam}`), { credentials: 'include', cache: 'no-store', signal: controller.signal });
     return await readResponse(res);
   } catch { return { success: false, error: { message: 'Unable to load reels.' } }; }
   finally { clearTimeout(timer); }

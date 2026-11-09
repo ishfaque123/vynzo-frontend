@@ -23,6 +23,15 @@ import FeedReelCard from '@/components/FeedReelCard';
 import PublicLanding from '@/components/PublicLanding';
 import Avatar from '@/components/Avatar';
 
+function RefreshIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10" />
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  );
+}
+
 function PlusIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -47,6 +56,7 @@ export default function HomePage() {
   const [feedOffline, setFeedOffline] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [autoRetrying, setAutoRetrying] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const autoRetryCountRef = useRef(0);
   const autoRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [openComments, setOpenComments] = useState<string | null>(null);
@@ -197,6 +207,29 @@ export default function HomePage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [isAuthenticated]);
+
+  async function handleManualRefresh() {
+    if (refreshing || feedOffline) return;
+    setRefreshing(true);
+    try { await loadFeed(); } finally { setRefreshing(false); }
+  }
+
+  // Tapping Home while already on / dispatches 'frianzo:refresh-feed'
+  // (see Shell). Same route = no remount, so without this the tap does
+  // nothing and the feed never refetches. Kept behind a ref so the
+  // listener always calls the latest handler without re-registering.
+  const handleManualRefreshRef = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => {
+    handleManualRefreshRef.current = handleManualRefresh;
+  });
+  useEffect(() => {
+    const handleRefreshFeed = () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      void handleManualRefreshRef.current();
+    };
+    window.addEventListener('frianzo:refresh-feed', handleRefreshFeed);
+    return () => window.removeEventListener('frianzo:refresh-feed', handleRefreshFeed);
+  }, []);
 
   async function loadMore(fromRetry = false) {
     if (loadingMore || !hasMore || offline || feedOffline) return;
@@ -374,6 +407,9 @@ export default function HomePage() {
         }} />
         <button onClick={() => { if (!feedOffline) galleryInputRef.current?.click(); }} disabled={feedOffline} aria-label="Add a photo or video" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
           <PlusIcon />
+        </button>
+        <button onClick={() => { void handleManualRefresh(); }} disabled={refreshing || feedLoading || feedOffline} aria-label="Refresh feed" title="Refresh feed" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm disabled:opacity-50">
+          <span className={refreshing ? 'animate-spin' : ''}><RefreshIcon /></span>
         </button>
       </div>
 
