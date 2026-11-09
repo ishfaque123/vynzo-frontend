@@ -173,7 +173,13 @@ export default function PublicLanding() {
               community you are building. Accounts
               that grow genuinely can work toward the blue tick — our verification badge for real,
               established profiles — while Data Saver mode keeps the whole experience usable on
-              slow connections and small data packages.
+              slow connections and small data packages. Approved creators earn $0.06 per 1,000
+              views of their own posts and reels, after 25 referrals — earning is for views of
+              your content, never for viewing ads.{' '}
+              <Link href="/terms" className="font-medium text-blue-600 hover:underline">
+                See the full rules in our Terms
+              </Link>
+              .
             </p>
             <p>
               And because a social platform is only as good as its guidance, the Frianzo blog

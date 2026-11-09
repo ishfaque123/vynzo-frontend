@@ -16,7 +16,7 @@ export default function ChildSafetyPage() {
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
             Child Safety Standards
           </h1>
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Last updated: November 4, 2026</p>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Last updated: November 10, 2026</p>
           <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Frianzo is for users aged 13 and over. Users under 13 are not allowed on Frianzo.</p>
         </div>
 
@@ -41,7 +41,22 @@ export default function ChildSafetyPage() {
               Users can report child safety concerns through the reporting features available in Frianzo, and can block a user from their profile. Reports may be reviewed by our moderation team and appropriate action may include removing content, restricting accounts, or taking other enforcement action under our rules.
             </p>
             <p className="mt-3">
-              If you believe a child is in immediate danger, contact the appropriate emergency or child-protection authorities in your country.
+              In Pakistan, suspected child sexual exploitation or abuse can also be reported to the
+              National Cyber Crime Investigation Agency (NCCIA) — the federal cybercrime agency,
+              which replaced the FIA Cyber Crime Wing / NR3C — through its online complaint portal{' '}
+              <a
+                href="https://complaint.nccia.gov.pk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                complaint.nccia.gov.pk
+              </a>{' '}
+              or its helpline 1799. (NCMEC is a United States reporting centre and does not take
+              reports for Pakistan.)
+            </p>
+            <p className="mt-3">
+              If you believe a child is in immediate danger, contact the appropriate emergency or child-protection authorities in your country. In Pakistan, call 15 in an emergency, or the national child helpline 1121.
             </p>
           </section>
 
@@ -65,12 +80,17 @@ export default function ChildSafetyPage() {
               For questions about Frianzo&apos;s child-safety practices, CSAE prevention, or compliance, contact our designated child-safety point of contact:
             </p>
             <p className="mt-3">
+              <strong>Child Safety Contact: </strong>
               <a
                 href="mailto:support@frianzo.online"
                 className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
                 support@frianzo.online
               </a>
+            </p>
+            <p className="mt-3">
+              Use &quot;Child Safety&quot; in the subject line so your message is prioritised. This
+              email is the named contact for all child-safety reports and questions about this page.
             </p>
           </section>
         </div>

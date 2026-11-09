@@ -25,9 +25,54 @@ async function topCreatorUsernames(): Promise<string[]> {
   }
 }
 
+async function topPublicPostIds(): Promise<string[]> {
+  // Crawlable per-post permalinks (/post/[id]) for Google: the top
+  // creators' recent public posts. Fail-soft: any error means no post
+  // URLs are listed (profiles above still are).
+  try {
+    const creators = await topCreatorUsernames();
+    const settled = await Promise.allSettled(
+      creators.slice(0, 5).map(async (username) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        try {
+          const res = await fetch(
+            `https://api.frianzo.online/api/posts/user/${encodeURIComponent(username)}`,
+            { signal: controller.signal },
+          );
+          if (!res.ok) return [];
+          const data = await res.json();
+          const list: any[] = data?.data?.posts ?? [];
+          return list
+            .filter(
+              (p) =>
+                p?.id &&
+                p?.visibility === 'public' &&
+                (String(p?.content ?? '').trim().length >= 30 || p?.imageUrl),
+            )
+            .slice(0, 3)
+            .map((p) => String(p.id));
+        } catch {
+          return [];
+        } finally {
+          clearTimeout(timer);
+        }
+      }),
+    );
+    const ids: string[] = [];
+    for (const result of settled) {
+      if (result.status === 'fulfilled') ids.push(...result.value);
+    }
+    return [...new Set(ids)].slice(0, 15);
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const creators = await topCreatorUsernames();
+  const postIds = await topPublicPostIds();
 
   return [
     {
@@ -92,6 +137,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...creators.map((username) => ({
       url: `${SITE_URL}/u/${encodeURIComponent(username)}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.5,
+    })),
+    ...postIds.map((id) => ({
+      url: `${SITE_URL}/post/${encodeURIComponent(id)}`,
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.5,

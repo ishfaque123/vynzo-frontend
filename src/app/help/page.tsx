@@ -102,6 +102,10 @@ const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [
         a: 'Every Frianzo account has a personal referral link, available from your profile and dashboard. When a friend signs up through your link and becomes an active user, it counts toward your referrals. Share the link anywhere — WhatsApp status, other social profiles, or directly with friends.',
       },
       {
+        q: 'How does earning from views work?',
+        a: 'Reaching 25 referrals unlocks monetization eligibility — it does not earn cash by itself. If your monetization application is approved, you earn $0.06 per 1,000 views of your own posts and reels, and you can withdraw once your wallet reaches $100. Earning is for views of your content only — never for viewing or clicking ads. Earnings are not guaranteed and depend on genuine views. See the Monetization section of our Terms of Service for the full rules.',
+      },
+      {
         q: 'What is the blue tick and how do I get one?',
         a: 'The blue tick is a verification badge showing that a profile is genuine and established. It is not sold and cannot be requested by brand-new accounts: it is for accounts with a complete profile, real followers, real posts and a clean record. If your account qualifies, you will find the verification option in your settings. Our blog article on the blue tick explains the thinking in detail.',
       },
@@ -134,7 +138,7 @@ export default function HelpPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 text-slate-700">
       <h1 className="mb-2 text-2xl font-bold text-slate-900">Help Center</h1>
-      <p className="mb-2 text-sm text-slate-500">Last updated: November 4, 2026</p>
+      <p className="mb-2 text-sm text-slate-500">Last updated: November 10, 2026</p>
       <p className="mb-8">
         Quick answers to the most common questions about using Frianzo. Still stuck?{' '}
         <a href="/contact" className="text-blue-600 underline">Contact us</a> or email support@frianzo.online.

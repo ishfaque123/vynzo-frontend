@@ -1,7 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import HomeClient from './HomeClient';
-import { Suspense } from 'react';
 import PublicLanding from '@/components/PublicLanding';
 import CommunityPosts from '@/components/CommunityPosts';
 
@@ -100,9 +99,11 @@ export default async function Page() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(appStructuredData) }}
       />
       <PublicLanding />
-      <Suspense fallback={null}>
-        <CommunityPosts />
-      </Suspense>
+      {/* CommunityPosts is awaited directly (not inside <Suspense>): the
+      real posts must be in the FIRST HTML a logged-out visitor or a
+      crawler receives. Inside Suspense it streams in afterwards, and the
+      text fetch Google's reviewer sees showed marketing copy only. */}
+      <CommunityPosts />
     </>
   );
 }

@@ -27,6 +27,55 @@ function FrianzoLogo() {
   );
 }
 
+// Static (non-interactive) login shell. It is rendered server-side — as the
+// <Suspense> fallback and while the auth check runs — so a logged-out
+// visitor or a crawler that never runs JavaScript still sees the login
+// form text (logo, "Continue with Google", "OR", email field, "Continue
+// with Email", Terms/Privacy) instead of a blank page. The real,
+// interactive form replaces it as soon as the client hydrates; in the
+// Android app the native loading overlay covers this stage, exactly as
+// the blank render was covered before. It has no buttons or links of its
+// own (except Terms/Privacy/About), so nothing here can be tapped dead.
+function LoginStatic() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6">
+      <div className="w-full max-w-sm">
+        <FrianzoLogo />
+        <p className="mt-8 flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+          <GoogleIcon />
+          Continue with Google
+        </p>
+        <div className="my-6 flex items-center gap-3 text-xs text-slate-400">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span>OR</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+        <div className="space-y-3">
+          <p className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400">
+            Enter your email
+          </p>
+          <p className="w-full rounded-xl bg-slate-900 px-6 py-3 text-center text-sm font-semibold text-white">
+            Continue with Email
+          </p>
+        </div>
+        <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
+          By continuing, you agree to Frianzo&apos;s{' '}
+          <a href="/terms" className="font-medium text-blue-600 hover:underline">Terms of Service</a>{' '}
+          and acknowledge that you have read our{' '}
+          <a href="/privacy" className="font-medium text-blue-600 hover:underline">Privacy Policy</a>.
+        </p>
+        <div className="mt-8 flex justify-center gap-4 text-xs text-slate-400">
+          <a href="/about" className="hover:underline">About</a>
+          <span>·</span>
+          <a href="/privacy" className="hover:underline">Privacy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:underline">Terms</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // No web loading screen here, on purpose: during the auth check the web
 // page renders nothing of its own. In the app the native 6-dots overlay
 // covers this stage until useAuth signals auth is done, so the user sees
@@ -164,7 +213,10 @@ function LoginForm() {
     }
   }
 
-  if (loading || (isAuthenticated && !isSwitching)) {
+  if (loading) {
+    return <LoginStatic />;
+  }
+  if (isAuthenticated && !isSwitching) {
     return null;
   }
 
@@ -280,7 +332,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoginStatic />}>
       <LoginForm />
     </Suspense>
   );
