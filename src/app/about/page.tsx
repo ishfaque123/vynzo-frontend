@@ -121,6 +121,10 @@ export default function AboutPage() {
         <a href="/contact" className="text-blue-600 underline">Contact page</a> or browse the{' '}
         <a href="/help" className="text-blue-600 underline">Help Center</a> for quick answers.
       </p>
+      <p className="mb-4">
+        Our business address is Village Haji Soof Khan, Tharimirwah, District Khairpur,
+        Sindh 66150, Pakistan.
+      </p>
 
     </div>
   );

@@ -59,6 +59,11 @@ export default function ContactPage() {
         with &quot;Business&quot; in the subject line and tell us about your proposal.
       </p>
 
+      <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Business Address</h2>
+      <p className="mb-4">
+        Village Haji Soof Khan, Tharimirwah, District Khairpur, Sindh 66150, Pakistan.
+      </p>
+
       <h2 className="mt-8 mb-2 text-lg font-semibold text-slate-900">Before You Write</h2>
       <p className="mb-4">
         Many common questions are answered in our{' '}

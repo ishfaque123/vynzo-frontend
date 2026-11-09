@@ -215,6 +215,7 @@ export default function PublicLanding() {
             <div>
               <div className="text-xl font-extrabold">Frianzo</div>
               <p className="mt-1 text-sm text-slate-400">Connect. Share. Discover.</p>
+              <p className="mt-2 text-xs text-slate-400">Village Haji Soof Khan, Tharimirwah, District Khairpur, Sindh 66150, Pakistan</p>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-300">
               <Link href="/about" className="transition hover:text-white">About</Link>

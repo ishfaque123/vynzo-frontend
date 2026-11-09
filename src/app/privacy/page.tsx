@@ -266,6 +266,10 @@ export default function PrivacyPage() {
             www.frianzo.online
           </a>
         </p>
+        <p className="mt-2">
+          <strong>Business Address:</strong>{" "}
+          Village Haji Soof Khan, Tharimirwah, District Khairpur, Sindh 66150, Pakistan.
+        </p>
       </Section>
 
       <Section title="16. How to Submit a Privacy Request">
