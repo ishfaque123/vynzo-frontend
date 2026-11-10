@@ -122,6 +122,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
+      // Country-feed fix 2026-11-02: stored values may be a full name
+      // (old) or a code (new); the select now stores the code.
+      const storedCountry = user.country || '';
+      const countryCode = COUNTRIES.find((c) => c.name === storedCountry)?.code || storedCountry;
       setForm({
         username: user.username || '',
         displayName: user.displayName || '',
@@ -131,7 +135,7 @@ export default function SettingsPage() {
         phone: user.phone || '',
         province: user.province || '',
         city: user.city || '',
-        country: user.country || '',
+        country: countryCode,
       });
       setAvatarUrl(user.profilePictureUrl || '');
       setCoverUrl(user.coverPhotoUrl || '');
@@ -230,7 +234,7 @@ export default function SettingsPage() {
           <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value, province: '', city: '' })} className="w-full rounded-lg border px-4 py-2">
             <option value="">Select your country</option>
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.name}>{c.name}</option>
+              <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -238,7 +242,7 @@ export default function SettingsPage() {
           <label className="mb-1 block text-sm text-slate-600">Province</label>
           <select value={form.province} onChange={(e) => setForm({ ...form, province: e.target.value, city: '' })} className="w-full rounded-lg border px-4 py-2">
             <option value="">Select</option>
-            {Object.keys(PROVINCES_BY_COUNTRY[form.country] || {}).map((p) => (<option key={p} value={p}>{p}</option>))}
+            {Object.keys(PROVINCES_BY_COUNTRY[COUNTRIES.find((c) => c.code === form.country)?.name || form.country] || {}).map((p) => (<option key={p} value={p}>{p}</option>))}
           </select>
         </div>
         {form.province && (
@@ -246,7 +250,7 @@ export default function SettingsPage() {
             <label className="mb-1 block text-sm text-slate-600">City</label>
             <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-lg border px-4 py-2">
               <option value="">Select</option>
-              {(PROVINCES_BY_COUNTRY[form.country]?.[form.province] || []).map((c) => (<option key={c} value={c}>{c}</option>))}
+              {(PROVINCES_BY_COUNTRY[COUNTRIES.find((c) => c.code === form.country)?.name || form.country]?.[form.province] || []).map((c) => (<option key={c} value={c}>{c}</option>))}
             </select>
           </div>
         )}
