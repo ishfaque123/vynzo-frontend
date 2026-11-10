@@ -308,19 +308,9 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
         >
           <p className="px-1 py-2 font-semibold">{profileUsername ? 'Share profile' : 'Share'}</p>
 
-          <div className="mb-4 rounded-lg border p-2.5">
-            {generating ? (
-              <p className="flex items-center gap-2 py-1 text-sm text-slate-500">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                Generating link…
-              </p>
-            ) : (
-              <p className="break-all text-sm leading-snug text-slate-600">{url}</p>
-            )}
-            <button onClick={copyLink} disabled={generating} className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
-              <LinkIcon /> {copied ? 'Copied!' : 'Copy link'}
-            </button>
-          </div>
+          <button onClick={copyLink} disabled={generating} className="mb-4 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">
+            <LinkIcon /> {copied ? 'Copied!' : 'Copy link'}
+          </button>
 
           <div className="mb-4 grid grid-cols-4 gap-y-4">
             <GridTile label="Frianzo DM" onClick={shareInternally}><VynzoLogo /></GridTile>
@@ -333,9 +323,8 @@ export default function ShareModal({ postId, reelId, profileUsername, profileId,
           </div>
 
           {postId && (
-            <button onClick={handleRepost} disabled={sharing} className="flex w-full items-center gap-3 border-t px-1 py-3 text-left active:bg-slate-100">
-              <span className="text-slate-600"><RepostIcon /></span>
-              <span className="text-slate-800">Repost to your feed</span>
+            <button onClick={handleRepost} disabled={sharing} className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">
+              <RepostIcon /> {sharing ? 'Sharing…' : 'Repost to your feed'}
             </button>
           )}
         </div>
