@@ -134,6 +134,19 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
   }
   function endPress() { clearTimeout(pressTimer.current); }
   function cancelPress() { endPress(); touchStartPos.current = null; }
+  function handleMove(e: React.TouchEvent | React.MouseEvent) {
+    // Hold-to-open must survive tiny finger jitter: only a real drag
+    // (beyond tap slop) cancels the picker timer. Previously ANY
+    // touchmove killed it, so the picker opened only when the finger
+    // was perfectly still — otherwise a plain like applied instead.
+    const start = touchStartPos.current;
+    if (!start) return;
+    const point = pointFrom(e);
+    if (!point) return;
+    const dx = point.x - start.x;
+    const dy = point.y - start.y;
+    if (dx * dx + dy * dy > TAP_SLOP_PX * TAP_SLOP_PX) endPress();
+  }
 
   const current = myReaction ? REACTIONS[myReaction] : null;
   const reactionKeys = Object.keys(REACTIONS);
@@ -198,7 +211,7 @@ export default function ReactionButton({ postId, myReaction, likeCount, onChange
         onTouchStart={startPress}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={cancelPress}
-        onTouchMove={endPress}
+        onTouchMove={handleMove}
         onContextMenu={(e) => e.preventDefault()}
         onMouseDown={startPress}
         onMouseUp={endPress}
