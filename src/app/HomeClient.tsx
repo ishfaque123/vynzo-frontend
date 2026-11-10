@@ -276,16 +276,25 @@ export default function HomePage() {
   }, [offset, hasMore, loadingMore]);
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
-    setPosts((prev) => prev.map((p) => {
-      if (p.id !== postId) return p;
-      const newCounts = { ...(p.reactionCounts || {}) };
-      if (p.myReaction) {
-        newCounts[p.myReaction] = Math.max(0, (newCounts[p.myReaction] || 0) - 1);
-        if (newCounts[p.myReaction] === 0) delete newCounts[p.myReaction];
-      }
-      if (reaction) newCounts[reaction] = (newCounts[reaction] || 0) + 1;
-      return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
-    }));
+    setPosts((prev) => {
+      const nextPosts = prev.map((p) => {
+        if (p.id !== postId) return p;
+        const newCounts = { ...(p.reactionCounts || {}) };
+        if (p.myReaction) {
+          newCounts[p.myReaction] = Math.max(0, (newCounts[p.myReaction] || 0) - 1);
+          if (newCounts[p.myReaction] === 0) delete newCounts[p.myReaction];
+        }
+        if (reaction) newCounts[reaction] = (newCounts[reaction] || 0) + 1;
+        return { ...p, myReaction: reaction, likeCount: count, reactionCounts: newCounts };
+      });
+      // LIKE FIX (2026-11-10): a like used to update screen state only —
+      // the offline cache kept the pre-like copy, so after reload the
+      // cache-first paint showed the post unliked, and SEEN RULE 2 hides
+      // the (viewed) post from the fresh feed, so the liked state never
+      // came back into view. Persist the reacted list so reload shows it.
+      if (user?.id) void saveOfflineFeed(user.id, nextPosts, hasMore);
+      return nextPosts;
+    });
   }
   function handlePostUpdated(postId: string, content: string, commentAudience: string) {
     setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content, commentAudience } : p)));
