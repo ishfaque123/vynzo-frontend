@@ -9,7 +9,7 @@ export default function FollowButton({ userId, status: initialStatus, compact = 
   const [loading, setLoading] = useState(false);
 
   if (status === 'self') return null;
-  if (status === 'friends') return <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold ${compact ? 'bg-[#e4e6eb] px-3 py-1 text-xs text-[#1e2530]' : 'border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-[13px] text-emerald-700'}`}>✓ Friends</span>;
+  if (status === 'friends') return <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full font-semibold ${compact ? 'bg-[#e4e6eb] px-3 py-1 text-xs text-[#1e2530]' : 'bg-[#e4e6eb] px-4 py-1.5 text-[13px] text-[#1e2530]'}`}>Friends</span>;
 
   async function handleClick() {
     setLoading(true);
