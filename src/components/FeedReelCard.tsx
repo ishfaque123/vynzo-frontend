@@ -213,7 +213,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
         <span className="text-sm font-semibold text-slate-800">{reel.author?.displayName}</span>
       </div>
       {reel.caption && <ReelCaption text={reel.caption} />}
-      <div ref={containerRef} className="relative aspect-[9/16] max-h-[420px] w-full bg-black">
+      <div ref={containerRef} className="relative h-[420px] w-full bg-black">
         <video
           ref={videoRef}
           src={`${reel.videoUrl}#t=0.1`}
@@ -222,7 +222,7 @@ export default function FeedReelCard({ reel }: { reel: any }) {
           loop
           playsInline
           preload="metadata"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
         <div className="absolute right-3 top-2">
           <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>

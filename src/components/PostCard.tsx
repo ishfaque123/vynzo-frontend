@@ -239,6 +239,16 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
 
   useEffect(() => {
     if (offline || !cardRef.current) return;
+    // VIEW FIX (2026-11-10, Maria-stuck root cause): re-arm the one-shot
+    // view flag whenever this effect runs — in particular when the signed-in
+    // viewer changes (currentUser?.id in the deps below). Account switching
+    // is a client-side transition with NO full page reload, and keyed
+    // PostCard instances are reused across re-renders, so without this reset
+    // a view recorded under the previous account leaves viewedRef=true and
+    // the observer never fires again under the new account: the post stays
+    // "unseen" for the new account and the NEWEST UNSEEN pin keeps it at #1
+    // on every refresh, no matter how often it is scrolled past or opened.
+    viewedRef.current = false;
     const el = cardRef.current;
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && !viewedRef.current) {
@@ -251,7 +261,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
     // means the post was shown; that is enough to count it as seen.
     observer.observe(el);
     return () => observer.disconnect();
-  }, [post.id, offline]);
+  }, [post.id, offline, currentUser?.id]);
 
   async function handleHideClick() {
     if (hiding) return;
