@@ -117,6 +117,17 @@ export async function reportPost(postId: string, reason: string = 'other', detai
 }
 
 export async function recordPostView(postId: string) {
+  // VIEW RULE (2026-11-10): retry once — a failed view POST used to vanish
+  // silently (no retry, and the card never tried again), so the server
+  // thought the post was never seen and showed it again on every refresh.
+  try {
+    const res = await fetch(`${API_URL}/api/posts/${postId}/view`, {
+      method: 'POST', credentials: 'include',
+    });
+    const data = await readJson(res);
+    if (data && data.success) return data;
+  } catch { /* fall through to retry */ }
+  await sleep(2000);
   const res = await fetch(`${API_URL}/api/posts/${postId}/view`, {
     method: 'POST', credentials: 'include',
   });

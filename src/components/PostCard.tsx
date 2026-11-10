@@ -245,7 +245,10 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         viewedRef.current = true;
         recordPostView(post.id).catch(() => { viewedRef.current = false; });
       }
-    }, { threshold: 0.6 });
+    }, { threshold: 0.25 }); // VIEW RULE (2026-11-10): 0.25, not 0.6 — a tall photo
+    // card can never be 60% visible on screen, so its view was never
+    // recorded and the post kept returning on every refresh. 25% visible
+    // means the post was shown; that is enough to count it as seen.
     observer.observe(el);
     return () => observer.disconnect();
   }, [post.id, offline]);
