@@ -148,7 +148,7 @@ export default async function CommunityPosts() {
                 <img
                   src={post.authorAvatar}
                   alt=""
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-10 w-10 rounded-full bg-slate-200 object-cover"
                   loading="lazy"
                 />
               ) : (
@@ -178,12 +178,14 @@ export default async function CommunityPosts() {
             </p>
             {post.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={post.imageUrl}
-                alt={`Photo shared by ${post.authorName}`}
-                className="mt-3 max-h-56 w-full rounded-2xl object-cover"
-                loading="lazy"
-              />
+              <div className="mt-3 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-200">
+                <img
+                  src={post.imageUrl}
+                  alt={`Photo shared by ${post.authorName}`}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
             ) : null}
             <p className="mt-4 text-sm font-semibold text-blue-600">
               <Link href={`/post/${encodeURIComponent(post.id)}`}>

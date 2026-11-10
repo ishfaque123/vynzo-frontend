@@ -82,6 +82,21 @@ function HighlightCover({ highlight }: { highlight: any }) {
   );
 }
 
+function GridThumb({ src }: { src: string }) {
+  // Photos tab: a loading cell must never be a blank white square.
+  // Grey shimmer while the photo loads, then a quick fade-in.
+  // A failed photo stays a plain grey cell — never a broken-image icon.
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className={`relative block aspect-square w-full overflow-hidden bg-slate-200 ${!loaded && !failed ? 'animate-pulse' : ''}`}>
+      {!failed && (
+        <img src={src} alt="" loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+      )}
+    </span>
+  );
+}
+
 function ProfileSkeleton() {
   return (
     <div className="mx-auto max-w-xl pb-6" role="status" aria-label="Loading profile">
@@ -705,7 +720,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
             <p className="px-4 py-8 text-center text-slate-500">No photos yet.</p>
           ) : (
             <div className="grid grid-cols-3 gap-1 px-1">
-              {photoPosts.map((p) => (<img key={p.id} src={p.imageUrl} alt="" className="aspect-square w-full object-cover" />))}
+              {photoPosts.map((p) => (<GridThumb key={p.id} src={p.imageUrl} />))}
             </div>
           )
         ) : ((postsLoading || reelsLoading) && posts.length === 0 && reels.length === 0) ? (

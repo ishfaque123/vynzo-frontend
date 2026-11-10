@@ -187,7 +187,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
             </div>
             {comment.mediaUrl && (
               <div className="mt-2">
-                <img src={comment.mediaUrl} alt="Comment image" className="max-h-48 rounded-xl border cursor-pointer hover:opacity-95" onClick={() => window.open(comment.mediaUrl, '_blank')} />
+                <img src={comment.mediaUrl} alt="Comment image" className="max-h-48 rounded-xl border bg-slate-200 cursor-pointer hover:opacity-95" onClick={() => window.open(comment.mediaUrl, '_blank')} />
               </div>
             )}
             {editing ? (
