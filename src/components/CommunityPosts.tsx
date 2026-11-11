@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SmartImage } from './PostCard';
 
 // Server-rendered "Latest from the community" for the public landing page.
 //
@@ -32,6 +33,7 @@ type CommunityPost = {
   id: string;
   content: string;
   imageUrl?: string | null;
+  imageThumbUrl?: string | null;
   createdAt?: string;
   authorName: string;
   authorUsername: string;
@@ -85,6 +87,7 @@ async function getCommunityPosts(): Promise<CommunityPost[]> {
         id: String(p.id),
         content,
         imageUrl: p?.imageUrl ?? null,
+        imageThumbUrl: p?.imageThumbUrl ?? null,
         createdAt: p?.createdAt,
         authorName:
           p?.author?.displayName || leader?.displayName || leader?.username || 'Frianzo user',
@@ -177,15 +180,15 @@ export default async function CommunityPosts() {
                 : post.content}
             </p>
             {post.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <div className="mt-3 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-200">
-                <img
-                  src={post.imageUrl}
-                  alt={`Photo shared by ${post.authorName}`}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
+              // Blur-up (2026-11-11): tiny thumb first, full photo sharpens
+              // in — same SmartImage as the feed. Old photos (no thumb) keep
+              // the previous grey-box + spinner behaviour.
+              <SmartImage
+                src={post.imageUrl}
+                thumbSrc={post.imageThumbUrl}
+                alt={`Photo shared by ${post.authorName}`}
+                className="mt-3 rounded-2xl"
+              />
             ) : null}
             <p className="mt-4 text-sm font-semibold text-blue-600">
               <Link href={`/post/${encodeURIComponent(post.id)}`}>

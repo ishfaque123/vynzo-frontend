@@ -82,16 +82,25 @@ function HighlightCover({ highlight }: { highlight: any }) {
   );
 }
 
-function GridThumb({ src }: { src: string }) {
+function GridThumb({ src, thumb }: { src: string; thumb?: string | null }) {
   // Photos tab: a loading cell must never be a blank white square.
   // Grey shimmer while the photo loads, then a quick fade-in.
   // A failed photo stays a plain grey cell — never a broken-image icon.
+  // Blur-up (2026-11-11): the ~320px thumb IS the grid image (cells are
+  // ~200px wide, so the thumb is already sharper than the display size) —
+  // no full-size download needed. Old photos without a thumb, or a thumb
+  // that 404s, fall back to the full photo once before giving up.
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [triedFull, setTriedFull] = useState(false);
+  const displaySrc = thumb && !triedFull ? thumb : src;
   return (
     <span className={`relative block aspect-square w-full overflow-hidden bg-slate-200 ${!loaded && !failed ? 'animate-pulse' : ''}`}>
       {!failed && (
-        <img src={src} alt="" loading="lazy" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+        <img src={displaySrc} alt="" loading="lazy" onLoad={() => setLoaded(true)} onError={() => {
+          if (thumb && !triedFull && displaySrc === thumb) setTriedFull(true);
+          else setFailed(true);
+        }} className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
       )}
     </span>
   );
@@ -720,7 +729,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
             <p className="px-4 py-8 text-center text-slate-500">No photos yet.</p>
           ) : (
             <div className="grid grid-cols-3 gap-1 px-1">
-              {photoPosts.map((p) => (<GridThumb key={p.id} src={p.imageUrl} />))}
+              {photoPosts.map((p) => (<GridThumb key={p.id} src={p.imageUrl} thumb={p.imageThumbUrl} />))}
             </div>
           )
         ) : ((postsLoading || reelsLoading) && posts.length === 0 && reels.length === 0) ? (

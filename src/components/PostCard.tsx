@@ -16,10 +16,17 @@ import Avatar from './Avatar';
  * Facebook-style image with shimmer placeholder and fade-in.
  * Prevents layout shift by reserving space with aspect-ratio.
  * Uses IntersectionObserver for smart lazy loading (only loads when visible).
+ *
+ * Blur-up (2026-11-11): when a ~320px thumb URL is passed, the tiny
+ * blurred thumb shows instantly (FB/Instagram style) and the full photo
+ * sharpens in on top of it. A missing thumb (old photos) keeps the
+ * previous grey-box + spinner behaviour; a thumb that 404s is ignored
+ * silently — only a failed FULL image shows the error state.
  */
-function SmartImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string; thumbSrc?: string | null; alt: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [thumbFailed, setThumbFailed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<string>('4/3');
   const [retryCount, setRetryCount] = useState(0);
@@ -28,6 +35,7 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
   function retry() {
     setLoaded(false);
     setFailed(false);
+    setThumbFailed(false);
     setRetryCount((c) => c + 1);
   }
 
@@ -85,14 +93,28 @@ function SmartImage({ src, alt, className = '' }: { src: string; alt: string; cl
     );
   }
 
+  const showThumb = visible && !!thumbSrc && !thumbFailed;
+
   return (
     <div
       ref={ref}
       className={`relative w-full overflow-hidden bg-slate-800 ${className}`}
       style={{ aspectRatio }}
     >
+      {/* Tiny blurred thumb first (instant) — the grey shimmer/spinner only
+          shows when there is no thumb to show (old photos). */}
+      {showThumb && (
+        <img
+          src={thumbSrc}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="absolute inset-0 h-full w-full scale-105 object-cover blur-md"
+          onError={() => setThumbFailed(true)}
+        />
+      )}
       {/* Shimmer placeholder */}
-      {!loaded && !failed && (
+      {!loaded && !failed && !showThumb && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500" />
         </div>
@@ -344,7 +366,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         ) : (
           <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
         ))}
-        {post.imageUrl && <SmartImage src={post.imageUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
+        {post.imageUrl && <SmartImage src={post.imageUrl} thumbSrc={post.imageThumbUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
       </div>
 
       {post.originalPost && (
@@ -373,7 +395,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             ) : (
               <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
             ))}
-            {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
+            {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} thumbSrc={post.originalPost.imageThumbUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
           </div>
         </div>
       )}
