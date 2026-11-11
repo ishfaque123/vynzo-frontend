@@ -11,11 +11,17 @@ import PostContent from './PostContent';
 import { hidePost, recordPostView } from '@/lib/api/postApi';
 import VerifiedBadge from './VerifiedBadge';
 import Avatar from './Avatar';
+import PhotoViewer from './PhotoViewer';
 
 /**
  * Facebook-style image with shimmer placeholder and fade-in.
- * Prevents layout shift by reserving space with aspect-ratio.
- * Uses IntersectionObserver for smart lazy loading (only loads when visible).
+ * FIXED BOX (2026-11-11): the photo box is ALWAYS 4/3, from first paint
+ * through full load — it never resizes. The old code switched the box to
+ * the photo's real aspect ratio in onLoad, so the box grew after load
+ * (the size jump the owner reported). The photo is cropped inside the
+ * fixed box (object-cover, FB-style); tapping it opens the real-size
+ * image in PhotoViewer. Uses IntersectionObserver for smart lazy loading
+ * (only loads when visible).
  *
  * Blur-up (2026-11-11): when a ~320px thumb URL is passed, the tiny
  * blurred thumb shows instantly (FB/Instagram style) and the full photo
@@ -23,12 +29,15 @@ import Avatar from './Avatar';
  * previous grey-box + spinner behaviour; a thumb that 404s is ignored
  * silently — only a failed FULL image shows the error state.
  */
+// The one fixed box size for every feed photo (see doc comment above).
+const FIXED_ASPECT_RATIO = '4/3';
+
 export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string; thumbSrc?: string | null; alt: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [thumbFailed, setThumbFailed] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState<string>('4/3');
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -81,7 +90,7 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
       <div
         onClick={(e) => { e.stopPropagation(); retry(); }}
         className={`flex w-full cursor-pointer flex-col items-center justify-center gap-2 bg-slate-800 py-12 text-slate-400 ${className}`}
-        style={{ aspectRatio }}
+        style={{ aspectRatio: FIXED_ASPECT_RATIO }}
         role="button"
         aria-label="Retry loading image"
       >
@@ -96,10 +105,14 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
   const showThumb = visible && !!thumbSrc && !thumbFailed;
 
   return (
+    <>
     <div
       ref={ref}
-      className={`relative w-full overflow-hidden bg-slate-800 ${className}`}
-      style={{ aspectRatio }}
+      className={`relative w-full cursor-pointer overflow-hidden bg-slate-800 ${className}`}
+      style={{ aspectRatio: FIXED_ASPECT_RATIO }}
+      onClick={(e) => { e.stopPropagation(); setViewerOpen(true); }}
+      role="button"
+      aria-label="View full photo"
     >
       {/* Tiny blurred thumb first (instant) — the grey shimmer/spinner only
           shows when there is no thumb to show (old photos).
@@ -136,17 +149,17 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
         decoding="async"
         onContextMenu={(e) => e.preventDefault()}
         style={{ WebkitTouchCallout: 'none' }}
-        onLoad={(e) => {
-          const img = e.currentTarget;
-          if (img.naturalWidth && img.naturalHeight) {
-            setAspectRatio(`${img.naturalWidth}/${img.naturalHeight}`);
-          }
+        onLoad={() => {
+          // FIXED BOX: the real ratio is deliberately NOT applied here —
+          // switching it in onLoad was what grew the box after load.
           setLoaded(true);
         }}
         onError={() => setFailed(true)}
       />
       )}
     </div>
+    {viewerOpen && <PhotoViewer src={src} alt={alt} onClose={() => setViewerOpen(false)} />}
+    </>
   );
 }
 
