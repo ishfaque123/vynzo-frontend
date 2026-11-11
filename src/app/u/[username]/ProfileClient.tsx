@@ -481,6 +481,20 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   if (!profile) return <p className="p-8 text-center text-slate-500">User not found.</p>;
 
   const isMe = profile ? currentUser?.username === profile.username : false;
+
+  // Profile completion (own profile only): 7 details, each counts the same.
+  const completionItems = [
+    { key: 'photo', label: 'Add a profile photo', done: !!profile.profilePictureUrl },
+    { key: 'cover', label: 'Add a cover photo', done: !!profile.coverPhotoUrl },
+    { key: 'name', label: 'Add your name', done: !!profile.displayName?.trim() },
+    { key: 'bio', label: 'Add your bio', done: !!profile.bio?.trim() },
+    { key: 'city', label: 'Add your city', done: !!profile.city?.trim() },
+    { key: 'country', label: 'Add your country', done: !!profile.country?.trim() },
+    { key: 'website', label: 'Add your website', done: !!profile.website?.trim() },
+  ];
+  const completionDone = completionItems.filter((i) => i.done).length;
+  const completionPct = Math.round((completionDone / completionItems.length) * 100);
+  const nextCompletion = completionItems.find((i) => !i.done);
   const photoPosts = posts.filter((p) => p.imageUrl);
   const openPost = posts.find((p) => p.id === openComments);
   const isPrivateView = !!profile.isPrivate && !isMe && friendStatus !== 'following' && friendStatus !== 'friends';
@@ -488,6 +502,19 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
 
   return (
     <div className="mx-auto max-w-xl pb-6">
+      {isMe && completionPct < 100 && nextCompletion && (
+        <Link href="/edit-profile" className="mx-3 mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-sm no-underline">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-extrabold text-white">F</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-bold text-slate-900">Complete your profile</span>
+            <span className="block truncate text-xs text-slate-500">Your profile is {completionPct}% complete · Next: {nextCompletion.label}</span>
+            <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-slate-200">
+              <span className="block h-full rounded-full bg-blue-600" style={{ width: `${completionPct}%` }} />
+            </span>
+          </span>
+          <span className="shrink-0 text-xs font-bold text-blue-600">Complete ›</span>
+        </Link>
+      )}
       <div className="relative">
         <div className="h-32 bg-cover bg-center bg-slate-200" style={{ backgroundImage: `url(${profile.coverPhotoUrl || '/images/default-cover.svg'})` }} />
         {isMe && (
