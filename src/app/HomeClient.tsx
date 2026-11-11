@@ -48,6 +48,11 @@ export default function HomePage() {
   // Adaptive feed mix: how often reels are injected among posts, based on the
   // user's actual consumption (reelRatio 0..1 from /api/posts/content-mix).
   const [reelEvery, setReelEvery] = useState(2);
+  // REEL REPEAT FIX (2026-11-10): whether the backend still has reels
+  // beyond the loaded set. Set from the first reel page's hasMore and
+  // from each pagination fetch; false stops further reel requests.
+  const [reelsHasMore, setReelsHasMore] = useState(true);
+  const loadingReelsRef = useRef(false);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -171,6 +176,9 @@ export default function HomePage() {
         return (b.likeCount || 0) - (a.likeCount || 0);
       });
       setReels(sortedReels);
+      // The first reel page reports whether more reels exist; a refresh
+      // resets the pagination state along with the reel list.
+      setReelsHasMore(reelPage1?.success ? !!reelPage1.data?.hasMore : true);
     } catch {
       // Only a genuinely offline device falls back to the cached feed.
       // A request error while online is a normal load error (the existing
@@ -274,6 +282,43 @@ export default function HomePage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [offset, hasMore, loadingMore]);
+
+  // REEL REPEAT FIX (2026-11-10): the home feed used to fetch reels once
+  // (page 1, <=10) and cycle them by modulo forever, so the same reels
+  // repeated in every batch. When the rendered reel slots get within 2 of
+  // the end of the loaded reels, fetch the next page (exclude-based, so
+  // already-shown reels are never re-served) and append it. Best-effort:
+  // a failed fetch just waits for the next trigger; nothing is shown to
+  // the user and post loading is untouched.
+  async function loadMoreReels() {
+    if (loadingReelsRef.current || !reelsHasMore) return;
+    const excludeIds = reels.map((r: any) => r?.id).filter((id: any) => typeof id === 'string' && id.length > 0);
+    if (excludeIds.length === 0) return;
+    loadingReelsRef.current = true;
+    try {
+      const result = await fetchReelFeed(0, 'foryou', 30000, excludeIds);
+      if (!result.success) return;
+      const incoming = (result.data?.reels || []).filter((r: any) => r && typeof r.id === 'string');
+      setReels((prev: any[]) => {
+        const existingIds = new Set(prev.map((r: any) => r.id));
+        const fresh = incoming.filter((r: any) => !existingIds.has(r.id));
+        return fresh.length ? [...prev, ...fresh] : prev;
+      });
+      // Exclude mode reports hasMore = paged.length < total. No new reels
+      // (or hasMore false) means the backend is exhausted — stop asking.
+      if (!incoming.length || !result.data?.hasMore) setReelsHasMore(false);
+    } finally {
+      loadingReelsRef.current = false;
+    }
+  }
+
+  useEffect(() => {
+    if (reels.length === 0 || !reelsHasMore) return;
+    // Reel slots rendered = floor(posts / reelEvery); the highest rendered
+    // reel index is slots - 1. Fetch when it is within 2 of the end.
+    const slots = Math.floor(posts.length / Math.max(1, reelEvery));
+    if (slots >= reels.length - 2) void loadMoreReels();
+  }, [posts.length, reels.length, reelEvery, reelsHasMore]);
 
   function handleReactionChange(postId: string, reaction: string | null, count: number) {
     setPosts((prev) => {

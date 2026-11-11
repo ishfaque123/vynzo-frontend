@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ShareModal from './ShareModal';
-import { toggleReelLike } from '@/lib/api/reelApi';
+import { toggleReelLike, recordReelView } from '@/lib/api/reelApi';
 import Avatar from './Avatar';
 
 function MuteIcon() {
@@ -164,6 +164,23 @@ export default function FeedReelCard({ reel }: { reel: any }) {
       setIsMuted(true);
     }
   }, [inView]);
+
+  // REEL REPEAT FIX (2026-11-10): record a view when a home-feed reel is
+  // watched, mirroring the full /reels viewer (reels/page.tsx). Without
+  // this the backend never learns the reel was seen, so its NO-REPEAT
+  // logic cannot exclude it. Best-effort only: recordReelView never
+  // throws and never surfaces an error; playback is untouched.
+  useEffect(() => {
+    if (!inView) return;
+    const startTime = Date.now();
+    void recordReelView(reel.id, 0);
+    return () => {
+      const watchSec = (Date.now() - startTime) / 1000;
+      if (watchSec >= 1) {
+        void recordReelView(reel.id, watchSec);
+      }
+    };
+  }, [inView, reel.id]);
 
   async function handleLike(e: React.MouseEvent) {
     e.preventDefault();
