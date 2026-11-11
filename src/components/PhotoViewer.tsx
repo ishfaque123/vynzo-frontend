@@ -24,12 +24,12 @@ export default function PhotoViewer({ src, alt, onClose }: { src: string; alt: s
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-      onClick={onClose}
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
       role="dialog"
       aria-label="Photo viewer"
     >
       <button
-        onClick={onClose}
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Close photo"
         className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
       >
