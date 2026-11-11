@@ -102,8 +102,13 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
       style={{ aspectRatio }}
     >
       {/* Tiny blurred thumb first (instant) — the grey shimmer/spinner only
-          shows when there is no thumb to show (old photos). */}
-      {showThumb && (
+          shows when there is no thumb to show (old photos).
+          BLUR FIX (2026-11-11): the thumb MUST unmount once the full photo
+          loads. The thumb is absolutely positioned, so by CSS painting order
+          it always paints ABOVE the in-flow full photo — without this
+          !loaded guard the sharp full photo stayed hidden under the blurred
+          thumb forever (live-verified 13:16–13:23 PKT). */}
+      {showThumb && !loaded && (
         <img
           src={thumbSrc}
           alt=""
@@ -125,7 +130,7 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
         key={retryCount}
         src={src}
         alt={alt}
-        className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         draggable={false}
         loading="lazy"
         decoding="async"
