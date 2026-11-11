@@ -40,6 +40,13 @@ function PlusIcon() {
   );
 }
 
+// REEL AUTHOR DIVERSITY (2026-11-11): author id of a home-feed reel object.
+// The backend returns userId at the top level and author.id inside author;
+// fall back to the reel id itself (unique, so it never blocks the greedy).
+function reelAuthorOf(r: any): string {
+  return r?.userId ?? r?.author?.id ?? r?.id ?? '';
+}
+
 export default function HomePage() {
   const { user, loading, isAuthenticated, offline } = useAuth();
   const router = useRouter();
@@ -175,7 +182,27 @@ export default function HomePage() {
         if (aFriend !== bFriend) return bFriend - aFriend;
         return (b.likeCount || 0) - (a.likeCount || 0);
       });
-      setReels(sortedReels);
+      // REEL AUTHOR DIVERSITY (2026-11-11): the backend diversifies, but
+      // this client sort (friends-first, then likes) re-bunches one
+      // author's reels together — a prolific author with high-like reels
+      // lands back-to-back on page 1. Re-run the same greedy
+      // no-same-author-back-to-back reorder after sorting, so the first
+      // page keeps the friends/likes bias approximately (the greedy picks
+      // the highest-ranked first, just skips same-author consecutively).
+      // Same greedy rule as the posts diversity fix.
+      const diversifiedReels: any[] = [];
+      const remainingReels = [...sortedReels];
+      while (remainingReels.length > 0) {
+        let pickIdx = 0;
+        if (diversifiedReels.length > 0) {
+          const lastAuthor = reelAuthorOf(diversifiedReels[diversifiedReels.length - 1]);
+          pickIdx = remainingReels.findIndex((r: any) => reelAuthorOf(r) !== lastAuthor);
+          if (pickIdx === -1) pickIdx = 0;
+        }
+        diversifiedReels.push(remainingReels[pickIdx]);
+        remainingReels.splice(pickIdx, 1);
+      }
+      setReels(diversifiedReels);
       // The first reel page reports whether more reels exist; a refresh
       // resets the pagination state along with the reel list.
       setReelsHasMore(reelPage1?.success ? !!reelPage1.data?.hasMore : true);
@@ -302,6 +329,21 @@ export default function HomePage() {
       setReels((prev: any[]) => {
         const existingIds = new Set(prev.map((r: any) => r.id));
         const fresh = incoming.filter((r: any) => !existingIds.has(r.id));
+        // Page-boundary join: if the first new reel shares the last shown
+        // reel's author, swap in the next new reel of a different author,
+        // so the boundary does not create a back-to-back pair the backend
+        // could not see (it knows the excluded ids, not their order).
+        if (prev.length > 0 && fresh.length > 1) {
+          const lastAuthor = reelAuthorOf(prev[prev.length - 1]);
+          if (reelAuthorOf(fresh[0]) === lastAuthor) {
+            const swapIdx = fresh.findIndex((r: any, i: number) => i > 0 && reelAuthorOf(r) !== lastAuthor);
+            if (swapIdx > 0) {
+              const tmp = fresh[0];
+              fresh[0] = fresh[swapIdx];
+              fresh[swapIdx] = tmp;
+            }
+          }
+        }
         return fresh.length ? [...prev, ...fresh] : prev;
       });
       // Exclude mode reports hasMore = paged.length < total. No new reels
