@@ -163,7 +163,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const router = useRouter();
   const username = params.username as string;
   const { user: currentUser } = useAuth();
-  const [hasStrikes, setHasStrikes] = useState(false);
   const [profile, setProfile] = useState<any>(initialProfile ?? null);
   const [counts, setCounts] = useState(initialCounts ?? { followers: 0, following: 0 });
   const [friendStatus, setFriendStatus] = useState<string>(initialProfile?.friendStatus || 'none');
@@ -236,11 +235,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
 
   useEffect(() => {
     let cancelled = false;
-    // Check own strikes for profile warning (only if viewing own profile)
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/strikes`, { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => { if (d.success && d.data.total > 0) setHasStrikes(true); })
-      .catch(() => {});
 
     async function loadProfile() {
       if (!initialProfile) setLoading(true);
@@ -610,13 +604,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         )}
         {(profile.city || profile.province) && (
           <p className="mt-1 text-sm text-slate-500">{[profile.city, profile.province].filter(Boolean).join(', ')}</p>
-        )}
-
-        {isMe && hasStrikes && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2">
-            <span className="text-amber-500">⚠️</span>
-            <p className="text-xs font-medium text-amber-700">Warning: guideline violation on your account</p>
-          </div>
         )}
 
         <div className="mt-4 flex border-y py-3 text-sm">
