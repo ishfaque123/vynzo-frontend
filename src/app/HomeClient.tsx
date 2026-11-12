@@ -136,7 +136,13 @@ export default function HomePage() {
     };
   }, []);
 
-  async function loadFeed(isAutoRetry = false) {
+  async function loadFeed(isAutoRetry = false, force = false) {
+    // HOME FEED SNAPSHOT GUARD (2026-11-12): once this mount restored the
+    // snapshot, no automatic trigger (mount-effect fallthrough when the
+    // auth offline flag flips, the window 'online' handler, an auto-retry
+    // timer) may replace the restored feed — only an explicit user
+    // refresh (force = true: manual refresh / Retry buttons) may.
+    if (snapshotRestoredRef.current && !force) return;
     // Optimistically prepend just-created post (Facebook/Instagram behavior)
     const pendingPost = takePendingNewPost();
     if (pendingPost) {
@@ -273,7 +279,11 @@ export default function HomePage() {
     if (!snapshotRestoredRef.current && snap && user?.id && snap.userId === user.id && snap.posts.length > 0) {
       snapshotRestoredRef.current = true;
       snapshotSaveReadyRef.current = true;
-      setPosts(snap.posts);
+      // A post created while away (compose flow) is normally prepended by
+      // loadFeed; since this mount skips loadFeed, prepend it here too so
+      // the user's new post is not missing from the restored feed.
+      const pendingPost = takePendingNewPost();
+      setPosts(pendingPost && !snap.posts.some((p: any) => p.id === pendingPost.id) ? [pendingPost, ...snap.posts] : snap.posts);
       setReels(snap.reels);
       setReelEvery(snap.reelEvery);
       setReelsHasMore(snap.reelsHasMore);
@@ -415,7 +425,7 @@ export default function HomePage() {
   async function handleManualRefresh() {
     if (refreshing || feedOffline) return;
     setRefreshing(true);
-    try { await loadFeed(); } finally { setRefreshing(false); }
+    try { await loadFeed(false, true); } finally { setRefreshing(false); }
   }
 
   // Tapping Home while already on / dispatches 'frianzo:refresh-feed'
@@ -686,7 +696,7 @@ export default function HomePage() {
           {feedError && (
             <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
               <p className="text-sm text-red-600">{autoRetrying ? 'Connection is slow, retrying…' : 'Could not refresh posts. Showing saved posts.'}</p>
-              <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(); }} className="shrink-0 rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Retry</button>
+              <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(false, true); }} className="shrink-0 rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Retry</button>
             </div>
           )}
           <div className="flex flex-col">
@@ -714,7 +724,7 @@ export default function HomePage() {
       ) : feedError ? (
         <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
           <p className="text-sm text-red-500">{autoRetrying ? 'Connection is slow, retrying…' : 'Failed to load posts. Please try again.'}</p>
-          <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(); }} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
+          <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(false, true); }} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
         </div>
       ) : (
         <p className="px-4 text-slate-500">No posts yet. Be the first to post!</p>
