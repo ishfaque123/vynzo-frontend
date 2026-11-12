@@ -370,12 +370,13 @@ export default function HomePage() {
       // SCROLL RESTORE v2 (2026-11-12): v1's fixed rAF + 50ms + 200ms
       // scrollTo retries fired while images/fonts were still settling
       // and the page height was still growing, so the scroll got clamped
-      // back to the top. Retry every 100ms for up to ~2.5s instead. Each
+      // back to the top. Retry every 100ms for up to ~4s instead. Each
       // attempt aims at the anchor post (the first visible post when the
       // user left): its document top minus the viewport offset it had
       // then — a target that stays correct as the page grows. Without an
-      // anchor, aim at the saved scrollY. Stop once the scroll lands
-      // within 4px of the target on two consecutive attempts, and cancel
+      // anchor, aim at the saved scrollY. Stop once the target itself has
+      // stopped moving and the scroll sits within 4px of it, on two
+      // consecutive attempts (v5), and cancel
       // instantly on any user scroll intent (wheel / touch / pointer /
       // key) so the routine never fights the user.
       if (snapshotScrollRestoreRef.current) {
@@ -387,6 +388,7 @@ export default function HomePage() {
       const restoreAnchorOffset = snap.anchorOffsetPx;
       let restoreAttempts = 0;
       let restoreHits = 0;
+      let restoreLastTarget: number | null = null;
       const cancelRestore = () => {
         if (snapshotScrollRestoreRef.current) {
           clearInterval(snapshotScrollRestoreRef.current);
@@ -407,13 +409,24 @@ export default function HomePage() {
           }
         }
         if (target < 0) target = 0;
-        window.scrollTo(0, target);
-        if (Math.abs(window.scrollY - target) <= 4) {
+        // SCROLL RESTORE v5 (2026-11-12): a stable scroll position alone
+        // no longer stops the routine — elements above the anchor (ad
+        // slots) can still change height after the scroll lands, moving
+        // the anchor's true position. Stop only when the target itself
+        // moved ≤4px since the previous attempt AND the scroll sits
+        // within 4px of it, on two consecutive attempts. Otherwise keep
+        // re-aiming at the (possibly moved) target.
+        const targetStable = restoreLastTarget !== null && Math.abs(target - restoreLastTarget) <= 4;
+        restoreLastTarget = target;
+        if (Math.abs(window.scrollY - target) > 4) {
+          window.scrollTo(0, target);
+        }
+        if (targetStable && Math.abs(window.scrollY - target) <= 4) {
           restoreHits += 1;
         } else {
           restoreHits = 0;
         }
-        if (restoreHits >= 2 || restoreAttempts >= 25) cancelRestore();
+        if (restoreHits >= 2 || restoreAttempts >= 40) cancelRestore();
       };
       window.addEventListener('wheel', cancelRestore, { once: true, passive: true });
       window.addEventListener('touchstart', cancelRestore, { once: true, passive: true });
