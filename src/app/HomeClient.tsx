@@ -38,6 +38,27 @@ function reelAuthorOf(r: any): string {
   return r?.userId ?? r?.author?.id ?? r?.id ?? '';
 }
 
+// HOME FEED SNAPSHOT (2026-11-12): Notifications/Profile are separate
+// routes, so this component unmounts on in-app navigation and used to
+// replay the offline cache + a fresh fetch on return — the feed visibly
+// reloaded, re-ordered, and lost the scroll position. Facebook instead
+// keeps the feed exactly where you left it. This module-scope snapshot
+// (memory only — a full page reload clears it and behaves exactly as
+// before) remembers the live feed state so a remount can restore it
+// untouched instead of running loadFeed.
+type HomeFeedSnapshot = {
+  userId: string;
+  posts: any[];
+  reels: any[];
+  reelEvery: number;
+  reelsHasMore: boolean;
+  hasMore: boolean;
+  offset: number;
+  feedOffline: boolean;
+  scrollY: number;
+};
+let homeFeedSnapshot: HomeFeedSnapshot | null = null;
+
 export default function HomePage() {
   const { user, loading, isAuthenticated, offline } = useAuth();
   const router = useRouter();
@@ -70,6 +91,12 @@ export default function HomePage() {
   const commentsSeqRef = useRef<Record<string, number>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  // HOME FEED SNAPSHOT (2026-11-12): snapshotRestoredRef stops the mount
+  // effect from restoring twice on one mount; snapshotSaveReadyRef stops
+  // the save effect from overwriting the snapshot with the empty initial
+  // state before the mount effect has restored or started a real load.
+  const snapshotRestoredRef = useRef(false);
+  const snapshotSaveReadyRef = useRef(false);
 
   // FB-style background auto-retry for a failed first load: up to 3 further
   // attempts (3s, 8s, 15s backoff). Manual Retry resets the counter.
@@ -216,9 +243,70 @@ export default function HomePage() {
     }
   }
 
+  // HOME FEED SNAPSHOT (2026-11-12): on (re)mount, if a snapshot from
+  // this same account exists, restore the exact list + scroll position
+  // and skip loadFeed entirely — returning from Notifications/Profile
+  // then shows the feed exactly where the user left it. With no usable
+  // snapshot (first visit, full page reload, different account) loadFeed
+  // runs exactly as before. A snapshot from another account is cleared.
   useEffect(() => {
-    if (isAuthenticated) loadFeed();
+    if (!isAuthenticated) return;
+    const snap = homeFeedSnapshot;
+    if (snap && user?.id && snap.userId !== user.id) homeFeedSnapshot = null;
+    if (!snapshotRestoredRef.current && snap && user?.id && snap.userId === user.id && snap.posts.length > 0) {
+      snapshotRestoredRef.current = true;
+      snapshotSaveReadyRef.current = true;
+      setPosts(snap.posts);
+      setReels(snap.reels);
+      setReelEvery(snap.reelEvery);
+      setReelsHasMore(snap.reelsHasMore);
+      setHasMore(snap.hasMore);
+      setOffset(snap.offset);
+      setFeedOffline(snap.feedOffline);
+      setFeedLoading(false);
+      const y = snap.scrollY;
+      requestAnimationFrame(() => window.scrollTo(0, y));
+      setTimeout(() => window.scrollTo(0, y), 50);
+      setTimeout(() => window.scrollTo(0, y), 200);
+      return;
+    }
+    snapshotSaveReadyRef.current = true;
+    loadFeed();
   }, [isAuthenticated, offline]);
+
+  // HOME FEED SNAPSHOT (2026-11-12): keep the snapshot in step with the
+  // live feed state, so leaving Home at any moment returns to exactly
+  // what was on screen. An explicit refresh (frianzo:refresh-feed ->
+  // handleManualRefresh -> loadFeed) replaces the state, and this effect
+  // then overwrites the snapshot with the fresh list on its own. Empty
+  // post lists are never saved: the pre-restore initial state must not
+  // clobber a good snapshot, and an empty feed simply loads as before.
+  useEffect(() => {
+    if (!snapshotSaveReadyRef.current || !user?.id || posts.length === 0) return;
+    homeFeedSnapshot = {
+      userId: user.id,
+      posts,
+      reels,
+      reelEvery,
+      reelsHasMore,
+      hasMore,
+      offset,
+      feedOffline,
+      scrollY: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.scrollY : window.scrollY,
+    };
+  }, [user?.id, posts, reels, reelEvery, reelsHasMore, hasMore, offset, feedOffline]);
+
+  // HOME FEED SNAPSHOT (2026-11-12): track the scroll position
+  // continuously so the snapshot always holds where the user left off.
+  useEffect(() => {
+    const handleScroll = () => {
+      if (homeFeedSnapshot && user?.id && homeFeedSnapshot.userId === user.id) {
+        homeFeedSnapshot.scrollY = window.scrollY;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [user?.id]);
 
   useEffect(() => {
     const handleOnline = () => {
