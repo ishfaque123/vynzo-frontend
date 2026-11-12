@@ -38,100 +38,6 @@ function reelAuthorOf(r: any): string {
   return r?.userId ?? r?.author?.id ?? r?.id ?? '';
 }
 
-// HOME FEED SNAPSHOT (2026-11-12): Notifications/Profile are separate
-// routes, so this component unmounts on in-app navigation and used to
-// replay the offline cache + a fresh fetch on return — the feed visibly
-// reloaded, re-ordered, and lost the scroll position. Facebook instead
-// keeps the feed exactly where you left it. This snapshot remembers the
-// live feed state so a remount can restore it untouched instead of
-// running loadFeed. SNAPSHOT v4 (2026-11-12): it lives in module memory
-// AND in sessionStorage, so even a full document load inside the same
-// tab can restore it; a 10-minute freshness cap (savedAt) stops a
-// stale snapshot from ever being restored.
-type HomeFeedSnapshot = {
-  userId: string;
-  posts: any[];
-  reels: any[];
-  reelEvery: number;
-  reelsHasMore: boolean;
-  hasMore: boolean;
-  offset: number;
-  feedOffline: boolean;
-  scrollY: number;
-  // SCROLL RESTORE v2 (2026-11-12): the anchor is the first at least
-  // partly visible post when the user leaves Home, plus that post's
-  // viewport-top offset (rect.top, may be negative). Raw scrollY alone
-  // is not a stable restore target while the page is still growing.
-  anchorPostId: string | null;
-  anchorOffsetPx: number;
-  // SNAPSHOT v4 (2026-11-12): when this snapshot was last written
-  // (Date.now()). Restores only happen within the freshness cap below,
-  // so an hours-old feed is never resurrected.
-  savedAt: number;
-};
-let homeFeedSnapshot: HomeFeedSnapshot | null = null;
-
-// SNAPSHOT v4 (2026-11-12): sessionStorage copy of the snapshot. The
-// module-scope copy dies with the document, and live tests showed the
-// first return in a session sometimes behaves like a full document
-// load — the old cache+fetch behaviour then came back. sessionStorage
-// survives full document loads inside the same tab, so the snapshot
-// does too. Every access is wrapped in try/catch: storage can be
-// blocked or over quota, and in that case the memory snapshot simply
-// carries on alone (exactly the pre-v4 behaviour).
-const HOME_SNAPSHOT_KEY = 'frianzo:home-feed-snapshot';
-const HOME_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1000;
-
-function isFreshHomeSnapshot(snap: HomeFeedSnapshot): boolean {
-  return typeof snap.savedAt === 'number' && Date.now() - snap.savedAt < HOME_SNAPSHOT_MAX_AGE_MS;
-}
-
-function persistHomeSnapshot() {
-  try {
-    if (homeFeedSnapshot) sessionStorage.setItem(HOME_SNAPSHOT_KEY, JSON.stringify(homeFeedSnapshot));
-  } catch {
-    // Quota exceeded or storage blocked: memory snapshot still works.
-  }
-}
-
-function clearHomeSnapshot() {
-  homeFeedSnapshot = null;
-  try {
-    sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
-  } catch {
-    // Storage unavailable: nothing persisted to clear.
-  }
-}
-
-// Load the sessionStorage copy into memory when memory is empty.
-// Accepts only a well-shaped, fresh snapshot; on any parse/shape
-// failure the stored key is removed and memory stays empty.
-function hydrateHomeSnapshot() {
-  if (homeFeedSnapshot) return;
-  let parsed: any = null;
-  try {
-    const raw = sessionStorage.getItem(HOME_SNAPSHOT_KEY);
-    if (!raw) return;
-    parsed = JSON.parse(raw);
-  } catch {
-    try { sessionStorage.removeItem(HOME_SNAPSHOT_KEY); } catch { /* storage unavailable */ }
-    return;
-  }
-  if (
-    parsed &&
-    typeof parsed === 'object' &&
-    typeof parsed.userId === 'string' &&
-    Array.isArray(parsed.posts) &&
-    parsed.posts.length > 0 &&
-    typeof parsed.savedAt === 'number' &&
-    Date.now() - parsed.savedAt < HOME_SNAPSHOT_MAX_AGE_MS
-  ) {
-    homeFeedSnapshot = parsed as HomeFeedSnapshot;
-  } else {
-    try { sessionStorage.removeItem(HOME_SNAPSHOT_KEY); } catch { /* storage unavailable */ }
-  }
-}
-
 export default function HomePage() {
   const { user, loading, isAuthenticated, offline } = useAuth();
   const router = useRouter();
@@ -164,23 +70,6 @@ export default function HomePage() {
   const commentsSeqRef = useRef<Record<string, number>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  // HOME FEED SNAPSHOT (2026-11-12): snapshotRestoredRef stops the mount
-  // effect from restoring twice on one mount; snapshotSaveReadyRef stops
-  // the save effect from overwriting the snapshot with the empty initial
-  // state before the mount effect has restored or started a real load.
-  const snapshotRestoredRef = useRef(false);
-  const snapshotSaveReadyRef = useRef(false);
-  // SCROLL RESTORE v2 (2026-11-12): the in-flight restore-retry interval,
-  // so it can be cleared on unmount and when a new restore starts.
-  const snapshotScrollRestoreRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    return () => {
-      if (snapshotScrollRestoreRef.current) {
-        clearInterval(snapshotScrollRestoreRef.current);
-        snapshotScrollRestoreRef.current = null;
-      }
-    };
-  }, []);
 
   // FB-style background auto-retry for a failed first load: up to 3 further
   // attempts (3s, 8s, 15s backoff). Manual Retry resets the counter.
@@ -203,13 +92,7 @@ export default function HomePage() {
     };
   }, []);
 
-  async function loadFeed(isAutoRetry = false, force = false) {
-    // HOME FEED SNAPSHOT GUARD (2026-11-12): once this mount restored the
-    // snapshot, no automatic trigger (mount-effect fallthrough when the
-    // auth offline flag flips, the window 'online' handler, an auto-retry
-    // timer) may replace the restored feed — only an explicit user
-    // refresh (force = true: manual refresh / Retry buttons) may.
-    if (snapshotRestoredRef.current && !force) return;
+  async function loadFeed(isAutoRetry = false) {
     // Optimistically prepend just-created post (Facebook/Instagram behavior)
     const pendingPost = takePendingNewPost();
     if (pendingPost) {
@@ -333,184 +216,9 @@ export default function HomePage() {
     }
   }
 
-  // HOME FEED SNAPSHOT (2026-11-12): on (re)mount, if a snapshot from
-  // this same account exists, restore the exact list + scroll position
-  // and skip loadFeed entirely — returning from Notifications/Profile
-  // then shows the feed exactly where the user left it. With no usable
-  // snapshot (first visit, different account, or — v4 — older than the
-  // 10-minute freshness cap) loadFeed runs exactly as before. A fresh
-  // snapshot survives even a full page reload via sessionStorage (v4).
   useEffect(() => {
-    if (!isAuthenticated) return;
-    // SNAPSHOT v4 (2026-11-12): memory is empty after a full document
-    // load — hydrate from sessionStorage before deciding. A snapshot
-    // from another account, or one past the freshness cap, is cleared
-    // (memory + storage) and loadFeed runs as normal.
-    hydrateHomeSnapshot();
-    let snap = homeFeedSnapshot;
-    if (snap && ((user?.id && snap.userId !== user.id) || !isFreshHomeSnapshot(snap))) {
-      clearHomeSnapshot();
-      snap = null;
-    }
-    if (!snapshotRestoredRef.current && snap && user?.id && snap.userId === user.id && snap.posts.length > 0 && isFreshHomeSnapshot(snap)) {
-      snapshotRestoredRef.current = true;
-      snapshotSaveReadyRef.current = true;
-      // A post created while away (compose flow) is normally prepended by
-      // loadFeed; since this mount skips loadFeed, prepend it here too so
-      // the user's new post is not missing from the restored feed.
-      const pendingPost = takePendingNewPost();
-      setPosts(pendingPost && !snap.posts.some((p: any) => p.id === pendingPost.id) ? [pendingPost, ...snap.posts] : snap.posts);
-      setReels(snap.reels);
-      setReelEvery(snap.reelEvery);
-      setReelsHasMore(snap.reelsHasMore);
-      setHasMore(snap.hasMore);
-      setOffset(snap.offset);
-      setFeedOffline(snap.feedOffline);
-      setFeedLoading(false);
-      // SCROLL RESTORE v2 (2026-11-12): v1's fixed rAF + 50ms + 200ms
-      // scrollTo retries fired while images/fonts were still settling
-      // and the page height was still growing, so the scroll got clamped
-      // back to the top. Retry every 100ms for up to ~4s instead. Each
-      // attempt aims at the anchor post (the first visible post when the
-      // user left): its document top minus the viewport offset it had
-      // then — a target that stays correct as the page grows. Without an
-      // anchor, aim at the saved scrollY. Stop once the target itself has
-      // stopped moving and the scroll sits within 4px of it, on two
-      // consecutive attempts (v5), and cancel
-      // instantly on any user scroll intent (wheel / touch / pointer /
-      // key) so the routine never fights the user.
-      if (snapshotScrollRestoreRef.current) {
-        clearInterval(snapshotScrollRestoreRef.current);
-        snapshotScrollRestoreRef.current = null;
-      }
-      const restoreScrollY = snap.scrollY;
-      const restoreAnchorId = snap.anchorPostId;
-      const restoreAnchorOffset = snap.anchorOffsetPx;
-      let restoreAttempts = 0;
-      let restoreHits = 0;
-      let restoreLastTarget: number | null = null;
-      const cancelRestore = () => {
-        if (snapshotScrollRestoreRef.current) {
-          clearInterval(snapshotScrollRestoreRef.current);
-          snapshotScrollRestoreRef.current = null;
-        }
-        window.removeEventListener('wheel', cancelRestore);
-        window.removeEventListener('touchstart', cancelRestore);
-        window.removeEventListener('pointerdown', cancelRestore);
-        window.removeEventListener('keydown', cancelRestore);
-      };
-      const attemptRestore = () => {
-        restoreAttempts += 1;
-        let target = restoreScrollY;
-        if (restoreAnchorId) {
-          const anchorEl = document.querySelector('[data-home-post="' + restoreAnchorId + '"]');
-          if (anchorEl) {
-            target = anchorEl.getBoundingClientRect().top + window.scrollY - restoreAnchorOffset;
-          }
-        }
-        if (target < 0) target = 0;
-        // SCROLL RESTORE v5 (2026-11-12): a stable scroll position alone
-        // no longer stops the routine — elements above the anchor (ad
-        // slots) can still change height after the scroll lands, moving
-        // the anchor's true position. Stop only when the target itself
-        // moved ≤4px since the previous attempt AND the scroll sits
-        // within 4px of it, on two consecutive attempts. Otherwise keep
-        // re-aiming at the (possibly moved) target.
-        const targetStable = restoreLastTarget !== null && Math.abs(target - restoreLastTarget) <= 4;
-        restoreLastTarget = target;
-        if (Math.abs(window.scrollY - target) > 4) {
-          window.scrollTo(0, target);
-        }
-        if (targetStable && Math.abs(window.scrollY - target) <= 4) {
-          restoreHits += 1;
-        } else {
-          restoreHits = 0;
-        }
-        if (restoreHits >= 2 || restoreAttempts >= 40) cancelRestore();
-      };
-      window.addEventListener('wheel', cancelRestore, { once: true, passive: true });
-      window.addEventListener('touchstart', cancelRestore, { once: true, passive: true });
-      window.addEventListener('pointerdown', cancelRestore, { once: true });
-      window.addEventListener('keydown', cancelRestore, { once: true });
-      attemptRestore();
-      snapshotScrollRestoreRef.current = setInterval(attemptRestore, 100);
-      return;
-    }
-    snapshotSaveReadyRef.current = true;
-    loadFeed();
+    if (isAuthenticated) loadFeed();
   }, [isAuthenticated, offline]);
-
-  // HOME FEED SNAPSHOT (2026-11-12): keep the snapshot in step with the
-  // live feed state, so leaving Home at any moment returns to exactly
-  // what was on screen. An explicit refresh (frianzo:refresh-feed ->
-  // handleManualRefresh -> loadFeed) replaces the state, and this effect
-  // then overwrites the snapshot with the fresh list on its own. Empty
-  // post lists are never saved: the pre-restore initial state must not
-  // clobber a good snapshot, and an empty feed simply loads as before.
-  useEffect(() => {
-    if (!snapshotSaveReadyRef.current || !user?.id || posts.length === 0) return;
-    homeFeedSnapshot = {
-      userId: user.id,
-      posts,
-      reels,
-      reelEvery,
-      reelsHasMore,
-      hasMore,
-      offset,
-      feedOffline,
-      scrollY: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.scrollY : window.scrollY,
-      anchorPostId: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.anchorPostId : null,
-      anchorOffsetPx: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.anchorOffsetPx : 0,
-      savedAt: Date.now(),
-    };
-    persistHomeSnapshot();
-  }, [user?.id, posts, reels, reelEvery, reelsHasMore, hasMore, offset, feedOffline]);
-
-  // HOME FEED SNAPSHOT (2026-11-12): track the scroll position
-  // continuously so the snapshot always holds where the user left off.
-  // SCROLL RESTORE v2 (2026-11-12): also record the anchor — the first
-  // post whose bottom edge is still on screen, and its viewport-top
-  // offset. Throttled by a rAF flag so it runs at most once per frame.
-  useEffect(() => {
-    let anchorFrame = 0;
-    // SNAPSHOT v4 (2026-11-12): persist only when the anchor post
-    // changes, so the stored copy stays fresh without stringifying
-    // the whole feed on every scroll frame.
-    let lastAnchorId: string | null = null;
-    const recordAnchor = () => {
-      anchorFrame = 0;
-      if (!homeFeedSnapshot || !user?.id || homeFeedSnapshot.userId !== user.id) return;
-      const els = document.querySelectorAll('[data-home-post]');
-      for (let i = 0; i < els.length; i++) {
-        const rect = els[i].getBoundingClientRect();
-        if (rect.bottom > 0) {
-          const anchorId = els[i].getAttribute('data-home-post');
-          homeFeedSnapshot.anchorPostId = anchorId;
-          homeFeedSnapshot.anchorOffsetPx = rect.top;
-          if (anchorId !== lastAnchorId) {
-            lastAnchorId = anchorId;
-            // The user is on Home right now: refresh savedAt too, so
-            // the freshness cap measures the time since he left Home,
-            // not the time since the feed state last changed.
-            homeFeedSnapshot.savedAt = Date.now();
-            persistHomeSnapshot();
-          }
-          break;
-        }
-      }
-    };
-    const handleScroll = () => {
-      if (homeFeedSnapshot && user?.id && homeFeedSnapshot.userId === user.id) {
-        homeFeedSnapshot.scrollY = window.scrollY;
-        if (!anchorFrame) anchorFrame = requestAnimationFrame(recordAnchor);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (anchorFrame) cancelAnimationFrame(anchorFrame);
-    };
-  }, [user?.id]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -529,7 +237,7 @@ export default function HomePage() {
   async function handleManualRefresh() {
     if (refreshing || feedOffline) return;
     setRefreshing(true);
-    try { await loadFeed(false, true); } finally { setRefreshing(false); }
+    try { await loadFeed(); } finally { setRefreshing(false); }
   }
 
   // Tapping Home while already on / dispatches 'frianzo:refresh-feed'
@@ -800,12 +508,12 @@ export default function HomePage() {
           {feedError && (
             <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
               <p className="text-sm text-red-600">{autoRetrying ? 'Connection is slow, retrying…' : 'Could not refresh posts. Showing saved posts.'}</p>
-              <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(false, true); }} className="shrink-0 rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Retry</button>
+              <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(); }} className="shrink-0 rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white">Retry</button>
             </div>
           )}
           <div className="flex flex-col">
             {posts.map((post, index) => (
-              <div key={post.id} data-home-post={post.id}>
+              <div key={post.id}>
                 <PostCard post={post} currentUser={user}
                   onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
                   isOpen={false} comments={comments[post.id]}
@@ -828,7 +536,7 @@ export default function HomePage() {
       ) : feedError ? (
         <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
           <p className="text-sm text-red-500">{autoRetrying ? 'Connection is slow, retrying…' : 'Failed to load posts. Please try again.'}</p>
-          <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(false, true); }} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
+          <button onClick={() => { autoRetryCountRef.current = 0; void loadFeed(); }} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Retry</button>
         </div>
       ) : (
         <p className="px-4 text-slate-500">No posts yet. Be the first to post!</p>
