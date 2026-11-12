@@ -56,6 +56,12 @@ type HomeFeedSnapshot = {
   offset: number;
   feedOffline: boolean;
   scrollY: number;
+  // SCROLL RESTORE v2 (2026-11-12): the anchor is the first at least
+  // partly visible post when the user leaves Home, plus that post's
+  // viewport-top offset (rect.top, may be negative). Raw scrollY alone
+  // is not a stable restore target while the page is still growing.
+  anchorPostId: string | null;
+  anchorOffsetPx: number;
 };
 let homeFeedSnapshot: HomeFeedSnapshot | null = null;
 
@@ -97,6 +103,17 @@ export default function HomePage() {
   // state before the mount effect has restored or started a real load.
   const snapshotRestoredRef = useRef(false);
   const snapshotSaveReadyRef = useRef(false);
+  // SCROLL RESTORE v2 (2026-11-12): the in-flight restore-retry interval,
+  // so it can be cleared on unmount and when a new restore starts.
+  const snapshotScrollRestoreRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (snapshotScrollRestoreRef.current) {
+        clearInterval(snapshotScrollRestoreRef.current);
+        snapshotScrollRestoreRef.current = null;
+      }
+    };
+  }, []);
 
   // FB-style background auto-retry for a failed first load: up to 3 further
   // attempts (3s, 8s, 15s backoff). Manual Retry resets the counter.
@@ -264,10 +281,60 @@ export default function HomePage() {
       setOffset(snap.offset);
       setFeedOffline(snap.feedOffline);
       setFeedLoading(false);
-      const y = snap.scrollY;
-      requestAnimationFrame(() => window.scrollTo(0, y));
-      setTimeout(() => window.scrollTo(0, y), 50);
-      setTimeout(() => window.scrollTo(0, y), 200);
+      // SCROLL RESTORE v2 (2026-11-12): v1's fixed rAF + 50ms + 200ms
+      // scrollTo retries fired while images/fonts were still settling
+      // and the page height was still growing, so the scroll got clamped
+      // back to the top. Retry every 100ms for up to ~2.5s instead. Each
+      // attempt aims at the anchor post (the first visible post when the
+      // user left): its document top minus the viewport offset it had
+      // then — a target that stays correct as the page grows. Without an
+      // anchor, aim at the saved scrollY. Stop once the scroll lands
+      // within 4px of the target on two consecutive attempts, and cancel
+      // instantly on any user scroll intent (wheel / touch / pointer /
+      // key) so the routine never fights the user.
+      if (snapshotScrollRestoreRef.current) {
+        clearInterval(snapshotScrollRestoreRef.current);
+        snapshotScrollRestoreRef.current = null;
+      }
+      const restoreScrollY = snap.scrollY;
+      const restoreAnchorId = snap.anchorPostId;
+      const restoreAnchorOffset = snap.anchorOffsetPx;
+      let restoreAttempts = 0;
+      let restoreHits = 0;
+      const cancelRestore = () => {
+        if (snapshotScrollRestoreRef.current) {
+          clearInterval(snapshotScrollRestoreRef.current);
+          snapshotScrollRestoreRef.current = null;
+        }
+        window.removeEventListener('wheel', cancelRestore);
+        window.removeEventListener('touchstart', cancelRestore);
+        window.removeEventListener('pointerdown', cancelRestore);
+        window.removeEventListener('keydown', cancelRestore);
+      };
+      const attemptRestore = () => {
+        restoreAttempts += 1;
+        let target = restoreScrollY;
+        if (restoreAnchorId) {
+          const anchorEl = document.querySelector('[data-home-post="' + restoreAnchorId + '"]');
+          if (anchorEl) {
+            target = anchorEl.getBoundingClientRect().top + window.scrollY - restoreAnchorOffset;
+          }
+        }
+        if (target < 0) target = 0;
+        window.scrollTo(0, target);
+        if (Math.abs(window.scrollY - target) <= 4) {
+          restoreHits += 1;
+        } else {
+          restoreHits = 0;
+        }
+        if (restoreHits >= 2 || restoreAttempts >= 25) cancelRestore();
+      };
+      window.addEventListener('wheel', cancelRestore, { once: true, passive: true });
+      window.addEventListener('touchstart', cancelRestore, { once: true, passive: true });
+      window.addEventListener('pointerdown', cancelRestore, { once: true });
+      window.addEventListener('keydown', cancelRestore, { once: true });
+      attemptRestore();
+      snapshotScrollRestoreRef.current = setInterval(attemptRestore, 100);
       return;
     }
     snapshotSaveReadyRef.current = true;
@@ -293,19 +360,42 @@ export default function HomePage() {
       offset,
       feedOffline,
       scrollY: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.scrollY : window.scrollY,
+      anchorPostId: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.anchorPostId : null,
+      anchorOffsetPx: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.anchorOffsetPx : 0,
     };
   }, [user?.id, posts, reels, reelEvery, reelsHasMore, hasMore, offset, feedOffline]);
 
   // HOME FEED SNAPSHOT (2026-11-12): track the scroll position
   // continuously so the snapshot always holds where the user left off.
+  // SCROLL RESTORE v2 (2026-11-12): also record the anchor — the first
+  // post whose bottom edge is still on screen, and its viewport-top
+  // offset. Throttled by a rAF flag so it runs at most once per frame.
   useEffect(() => {
+    let anchorFrame = 0;
+    const recordAnchor = () => {
+      anchorFrame = 0;
+      if (!homeFeedSnapshot || !user?.id || homeFeedSnapshot.userId !== user.id) return;
+      const els = document.querySelectorAll('[data-home-post]');
+      for (let i = 0; i < els.length; i++) {
+        const rect = els[i].getBoundingClientRect();
+        if (rect.bottom > 0) {
+          homeFeedSnapshot.anchorPostId = els[i].getAttribute('data-home-post');
+          homeFeedSnapshot.anchorOffsetPx = rect.top;
+          break;
+        }
+      }
+    };
     const handleScroll = () => {
       if (homeFeedSnapshot && user?.id && homeFeedSnapshot.userId === user.id) {
         homeFeedSnapshot.scrollY = window.scrollY;
+        if (!anchorFrame) anchorFrame = requestAnimationFrame(recordAnchor);
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (anchorFrame) cancelAnimationFrame(anchorFrame);
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -601,7 +691,7 @@ export default function HomePage() {
           )}
           <div className="flex flex-col">
             {posts.map((post, index) => (
-              <div key={post.id}>
+              <div key={post.id} data-home-post={post.id}>
                 <PostCard post={post} currentUser={user}
                   onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
                   isOpen={false} comments={comments[post.id]}
