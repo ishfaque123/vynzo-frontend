@@ -42,10 +42,12 @@ function reelAuthorOf(r: any): string {
 // routes, so this component unmounts on in-app navigation and used to
 // replay the offline cache + a fresh fetch on return — the feed visibly
 // reloaded, re-ordered, and lost the scroll position. Facebook instead
-// keeps the feed exactly where you left it. This module-scope snapshot
-// (memory only — a full page reload clears it and behaves exactly as
-// before) remembers the live feed state so a remount can restore it
-// untouched instead of running loadFeed.
+// keeps the feed exactly where you left it. This snapshot remembers the
+// live feed state so a remount can restore it untouched instead of
+// running loadFeed. SNAPSHOT v4 (2026-11-12): it lives in module memory
+// AND in sessionStorage, so even a full document load inside the same
+// tab can restore it; a 10-minute freshness cap (savedAt) stops a
+// stale snapshot from ever being restored.
 type HomeFeedSnapshot = {
   userId: string;
   posts: any[];
@@ -62,8 +64,73 @@ type HomeFeedSnapshot = {
   // is not a stable restore target while the page is still growing.
   anchorPostId: string | null;
   anchorOffsetPx: number;
+  // SNAPSHOT v4 (2026-11-12): when this snapshot was last written
+  // (Date.now()). Restores only happen within the freshness cap below,
+  // so an hours-old feed is never resurrected.
+  savedAt: number;
 };
 let homeFeedSnapshot: HomeFeedSnapshot | null = null;
+
+// SNAPSHOT v4 (2026-11-12): sessionStorage copy of the snapshot. The
+// module-scope copy dies with the document, and live tests showed the
+// first return in a session sometimes behaves like a full document
+// load — the old cache+fetch behaviour then came back. sessionStorage
+// survives full document loads inside the same tab, so the snapshot
+// does too. Every access is wrapped in try/catch: storage can be
+// blocked or over quota, and in that case the memory snapshot simply
+// carries on alone (exactly the pre-v4 behaviour).
+const HOME_SNAPSHOT_KEY = 'frianzo:home-feed-snapshot';
+const HOME_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1000;
+
+function isFreshHomeSnapshot(snap: HomeFeedSnapshot): boolean {
+  return typeof snap.savedAt === 'number' && Date.now() - snap.savedAt < HOME_SNAPSHOT_MAX_AGE_MS;
+}
+
+function persistHomeSnapshot() {
+  try {
+    if (homeFeedSnapshot) sessionStorage.setItem(HOME_SNAPSHOT_KEY, JSON.stringify(homeFeedSnapshot));
+  } catch {
+    // Quota exceeded or storage blocked: memory snapshot still works.
+  }
+}
+
+function clearHomeSnapshot() {
+  homeFeedSnapshot = null;
+  try {
+    sessionStorage.removeItem(HOME_SNAPSHOT_KEY);
+  } catch {
+    // Storage unavailable: nothing persisted to clear.
+  }
+}
+
+// Load the sessionStorage copy into memory when memory is empty.
+// Accepts only a well-shaped, fresh snapshot; on any parse/shape
+// failure the stored key is removed and memory stays empty.
+function hydrateHomeSnapshot() {
+  if (homeFeedSnapshot) return;
+  let parsed: any = null;
+  try {
+    const raw = sessionStorage.getItem(HOME_SNAPSHOT_KEY);
+    if (!raw) return;
+    parsed = JSON.parse(raw);
+  } catch {
+    try { sessionStorage.removeItem(HOME_SNAPSHOT_KEY); } catch { /* storage unavailable */ }
+    return;
+  }
+  if (
+    parsed &&
+    typeof parsed === 'object' &&
+    typeof parsed.userId === 'string' &&
+    Array.isArray(parsed.posts) &&
+    parsed.posts.length > 0 &&
+    typeof parsed.savedAt === 'number' &&
+    Date.now() - parsed.savedAt < HOME_SNAPSHOT_MAX_AGE_MS
+  ) {
+    homeFeedSnapshot = parsed as HomeFeedSnapshot;
+  } else {
+    try { sessionStorage.removeItem(HOME_SNAPSHOT_KEY); } catch { /* storage unavailable */ }
+  }
+}
 
 export default function HomePage() {
   const { user, loading, isAuthenticated, offline } = useAuth();
@@ -270,13 +337,22 @@ export default function HomePage() {
   // this same account exists, restore the exact list + scroll position
   // and skip loadFeed entirely — returning from Notifications/Profile
   // then shows the feed exactly where the user left it. With no usable
-  // snapshot (first visit, full page reload, different account) loadFeed
-  // runs exactly as before. A snapshot from another account is cleared.
+  // snapshot (first visit, different account, or — v4 — older than the
+  // 10-minute freshness cap) loadFeed runs exactly as before. A fresh
+  // snapshot survives even a full page reload via sessionStorage (v4).
   useEffect(() => {
     if (!isAuthenticated) return;
-    const snap = homeFeedSnapshot;
-    if (snap && user?.id && snap.userId !== user.id) homeFeedSnapshot = null;
-    if (!snapshotRestoredRef.current && snap && user?.id && snap.userId === user.id && snap.posts.length > 0) {
+    // SNAPSHOT v4 (2026-11-12): memory is empty after a full document
+    // load — hydrate from sessionStorage before deciding. A snapshot
+    // from another account, or one past the freshness cap, is cleared
+    // (memory + storage) and loadFeed runs as normal.
+    hydrateHomeSnapshot();
+    let snap = homeFeedSnapshot;
+    if (snap && ((user?.id && snap.userId !== user.id) || !isFreshHomeSnapshot(snap))) {
+      clearHomeSnapshot();
+      snap = null;
+    }
+    if (!snapshotRestoredRef.current && snap && user?.id && snap.userId === user.id && snap.posts.length > 0 && isFreshHomeSnapshot(snap)) {
       snapshotRestoredRef.current = true;
       snapshotSaveReadyRef.current = true;
       // A post created while away (compose flow) is normally prepended by
@@ -372,7 +448,9 @@ export default function HomePage() {
       scrollY: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.scrollY : window.scrollY,
       anchorPostId: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.anchorPostId : null,
       anchorOffsetPx: homeFeedSnapshot && homeFeedSnapshot.userId === user.id ? homeFeedSnapshot.anchorOffsetPx : 0,
+      savedAt: Date.now(),
     };
+    persistHomeSnapshot();
   }, [user?.id, posts, reels, reelEvery, reelsHasMore, hasMore, offset, feedOffline]);
 
   // HOME FEED SNAPSHOT (2026-11-12): track the scroll position
@@ -382,6 +460,10 @@ export default function HomePage() {
   // offset. Throttled by a rAF flag so it runs at most once per frame.
   useEffect(() => {
     let anchorFrame = 0;
+    // SNAPSHOT v4 (2026-11-12): persist only when the anchor post
+    // changes, so the stored copy stays fresh without stringifying
+    // the whole feed on every scroll frame.
+    let lastAnchorId: string | null = null;
     const recordAnchor = () => {
       anchorFrame = 0;
       if (!homeFeedSnapshot || !user?.id || homeFeedSnapshot.userId !== user.id) return;
@@ -389,8 +471,17 @@ export default function HomePage() {
       for (let i = 0; i < els.length; i++) {
         const rect = els[i].getBoundingClientRect();
         if (rect.bottom > 0) {
-          homeFeedSnapshot.anchorPostId = els[i].getAttribute('data-home-post');
+          const anchorId = els[i].getAttribute('data-home-post');
+          homeFeedSnapshot.anchorPostId = anchorId;
           homeFeedSnapshot.anchorOffsetPx = rect.top;
+          if (anchorId !== lastAnchorId) {
+            lastAnchorId = anchorId;
+            // The user is on Home right now: refresh savedAt too, so
+            // the freshness cap measures the time since he left Home,
+            // not the time since the feed state last changed.
+            homeFeedSnapshot.savedAt = Date.now();
+            persistHomeSnapshot();
+          }
           break;
         }
       }
