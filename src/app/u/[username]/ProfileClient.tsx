@@ -603,7 +603,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           </div>
         </div>
 
-        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.loginStreak > 0 && <StreakBadge streak={profile.loginStreak} />}</h1>
+        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.loginStreak > 0 && <StreakBadge streak={profile.loginStreak} />}{isMe && showBoostEntry && (<Link href="/boost" className="ml-1 shrink-0 rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">Boost</Link>)}</h1>
         <button
           onClick={() => {
             navigator.clipboard.writeText(`@${profile.username}`).catch(() => {});
@@ -656,9 +656,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
             <div className="mt-4 flex gap-2">
               <Link href="/edit-profile" className="flex-1 rounded-lg bg-slate-900 py-2 text-center text-sm font-semibold text-white">Edit Profile</Link>
               <Link href="/settings-menu/dashboard" className="flex-1 rounded-lg border py-2 text-center text-sm font-medium text-slate-700">Dashboard</Link>
-              {showBoostEntry && (
-                <Link href="/boost" className="flex-1 rounded-lg bg-blue-600 py-2 text-center text-sm font-semibold text-white">Boost</Link>
-              )}
             </div>
             {showBoostEntry && (
               <Link href="/boost/my" className="mt-2 flex items-center justify-center rounded-lg border border-blue-600 py-2 text-sm font-semibold text-blue-600">My Boosts</Link>

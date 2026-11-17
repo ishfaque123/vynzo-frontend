@@ -7,7 +7,7 @@ import { toggleReelLike, recordReelView } from '@/lib/api/reelApi';
 import Avatar from './Avatar';
 import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
 import { isBoostCountryPk } from '@/lib/api/boostApi';
-import { BoostedBadge, BoostButton, boostHref } from './BoostBits';
+import { BoostedBadge, boostHref } from './BoostBits';
 
 function MuteIcon() {
   return (
@@ -237,7 +237,7 @@ export default function FeedReelCard({ reel, currentUser }: { reel: any; current
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center gap-2 px-3 py-2">
         <Avatar url={reel.author?.profilePictureUrl} name={reel.author?.displayName} px={32} />
-        <span className="text-sm font-semibold text-slate-800">{reel.author?.displayName}</span>
+        <span className="text-sm font-semibold text-slate-800">{reel.author?.displayName}</span>{showBoost && (<><span className="text-slate-400">·</span><Link href={boostHref('reel', reel.id)} className="text-sm font-semibold text-blue-600">Boost</Link></>)}
       </div>
       {reel.caption && <ReelCaption text={reel.caption} />}
       <div ref={containerRef} className="relative h-[420px] w-full bg-black">
@@ -282,11 +282,6 @@ export default function FeedReelCard({ reel, currentUser }: { reel: any; current
           Share
         </button>
       </div>
-      {showBoost && (
-        <div className="border-t border-slate-100 px-2 py-2">
-          <BoostButton href={boostHref('reel', reel.id)} className="w-full" />
-        </div>
-      )}
     </div>
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />}
     </>

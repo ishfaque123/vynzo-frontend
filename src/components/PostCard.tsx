@@ -14,7 +14,7 @@ import Avatar from './Avatar';
 import PhotoViewer from './PhotoViewer';
 import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
 import { isBoostCountryPk } from '@/lib/api/boostApi';
-import { BoostedBadge, BoostButton, boostHref } from './BoostBits';
+import { BoostedBadge, boostHref } from './BoostBits';
 
 /**
  * Facebook-style image with shimmer placeholder and fade-in.
@@ -261,7 +261,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
   const [hiding, setHiding] = useState(false);
   const [countDelta, setCountDelta] = useState(0);
   const router = useRouter();
-  // Boost (app-only): the blue Boost button under the action row shows
+  // Boost (app-only): the blue Boost link next to the author name shows
   // only inside the frianzo-app WebView, on the signed-in user's OWN
   // original posts (reposts cannot be boosted), when their country is
   // PK. The Boosted badge is app-only too (owner rule).
@@ -339,7 +339,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
                 <Link href={`/u/${post.author.username}`} title={post.author.displayName}
                   className="min-w-0 max-w-[60%] truncate text-[15px] font-semibold text-slate-900"
                 >
-                  {post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}
+                  {post.author.displayName}</Link>{post.author.isVerified && <span className="shrink-0"><VerifiedBadge /></span>}{showBoost && (<><span className="shrink-0 text-slate-400">·</span><Link href={boostHref('post', post.id)} className="shrink-0 whitespace-nowrap text-[15px] font-semibold text-blue-600">Boost</Link></>)}
                 {!isOwner && !offline && (
                   <span className="shrink-0 whitespace-nowrap">
                     <FollowButton userId={post.author.id} status={post.friendStatus} />
@@ -439,11 +439,6 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           <ShareIcon />
         </button>
       </div>
-      {showBoost && (
-        <div className="border-t border-slate-100 px-3 py-2">
-          <BoostButton href={boostHref('post', post.id)} className="w-full" />
-        </div>
-      )}
     </div>
   );
 }
