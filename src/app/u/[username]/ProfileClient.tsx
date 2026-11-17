@@ -661,7 +661,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
               )}
             </div>
             {showBoostEntry && (
-              <Link href="/boost/my" className="mt-2 flex items-center justify-center rounded-lg border border-blue-600 py-2 text-sm font-semibold text-blue-600">🚀 My Boosts</Link>
+              <Link href="/boost/my" className="mt-2 flex items-center justify-center rounded-lg border border-blue-600 py-2 text-sm font-semibold text-blue-600">My Boosts</Link>
             )}
           </>
         ) : blockedByOther ? (
