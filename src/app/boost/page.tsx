@@ -289,7 +289,7 @@ function BoostPage() {
           <span className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-green-100 text-green-600">
             <CheckIcon size={48} />
           </span>
-          <p className="mt-4 text-base font-semibold text-slate-900">Request bhej di gayi hai — approve hone par boost chal jayega</p>
+          <p className="mt-4 text-base font-semibold text-slate-900">Request sent — your boost will start once it is approved</p>
           <Link href="/boost/my" className="mt-6 flex h-12 items-center rounded-full bg-blue-600 px-6 text-sm font-semibold text-white">
             My Boosts
           </Link>
@@ -428,7 +428,7 @@ function BoostPage() {
                                   <span className="text-[22px] font-bold leading-none text-blue-600">Rs {fmt(trialPrice ?? plan.amountPkr)}</span>
                                   {trialPrice !== null && (
                                     <>
-                                      <span className="rounded-md bg-blue-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">Pehla boost</span>
+                                      <span className="rounded-md bg-blue-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">First boost</span>
                                       <span className="text-[13px] text-slate-500 line-through">Rs {fmt(plan.amountPkr)}</span>
                                     </>
                                   )}

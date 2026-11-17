@@ -9,7 +9,7 @@ import { fetchMyBoosts, boostPurposeLabel, type Boost } from '@/lib/api/boostApi
 
 // My Boosts (web) — mirrors the native MyBoostsScreen: status chips,
 // the admin note on rejections, the results line (views + new
-// followers during the boost window) and "Dobara Boost" on finished
+// followers during the boost window) and "Boost Again" on finished
 // boosts, which reopens the Boost page with the item, purpose and plan
 // preselected, landing on the payment step.
 //
@@ -51,7 +51,7 @@ function StatusChip({ b }: { b: Boost }) {
     case 'rejected':
       return <span className="shrink-0 whitespace-nowrap rounded-md bg-red-100 px-2 py-[3px] text-[11px] font-semibold text-red-800">Rejected</span>;
     case 'expired':
-      return <span className="shrink-0 whitespace-nowrap rounded-md bg-slate-100 px-2 py-[3px] text-[11px] font-semibold text-slate-500">Khatam</span>;
+      return <span className="shrink-0 whitespace-nowrap rounded-md bg-slate-100 px-2 py-[3px] text-[11px] font-semibold text-slate-500">Ended</span>;
     default:
       return <span className="shrink-0 whitespace-nowrap rounded-md bg-slate-100 px-2 py-[3px] text-[11px] font-semibold text-slate-500">{b.status}</span>;
   }
@@ -87,7 +87,7 @@ function BoostRow({ b }: { b: Boost }) {
           href={againHref}
           className="mt-2 inline-flex h-11 items-center rounded-full border border-slate-300 px-4 text-[13px] font-medium text-blue-600"
         >
-          Dobara Boost
+          Boost Again
         </Link>
       )}
     </div>
