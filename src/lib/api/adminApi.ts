@@ -123,6 +123,29 @@ export function reviewAdminVerificationRequest(requestId: string, action: 'appro
 }
 
 
+export function fetchAdminBoostRequests(params: { page?: number; search?: string; status?: string } = {}) {
+  const query = new URLSearchParams();
+  query.set('page', String(params.page || 1));
+  query.set('limit', '20');
+  if (params.search) query.set('search', params.search);
+  if (params.status) query.set('status', params.status);
+  return request(`/boost-requests?${query.toString()}`);
+}
+
+export async function fetchAdminPendingBoostCount() {
+  const result = await request('/boost-requests?status=pending&page=1&limit=1');
+  return result?.success ? Number(result.data?.pagination?.total || 0) : 0;
+}
+
+export function reviewAdminBoostRequest(requestId: string, action: 'approve' | 'reject', adminNote?: string) {
+  return request(`/boost-requests/${requestId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, adminNote: adminNote || '' }),
+  });
+}
+
+
 export function clearAllAdminMessages() {
   return request('/messages/clear-all', { method: 'DELETE' });
 }
