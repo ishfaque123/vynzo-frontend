@@ -12,6 +12,9 @@ import { hidePost, recordPostView } from '@/lib/api/postApi';
 import VerifiedBadge from './VerifiedBadge';
 import Avatar from './Avatar';
 import PhotoViewer from './PhotoViewer';
+import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
+import { isBoostCountryPk } from '@/lib/api/boostApi';
+import { BoostedBadge, BoostButton, boostHref } from './BoostBits';
 
 /**
  * Facebook-style image with shimmer placeholder and fade-in.
@@ -258,6 +261,12 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
   const [hiding, setHiding] = useState(false);
   const [countDelta, setCountDelta] = useState(0);
   const router = useRouter();
+  // Boost (app-only): the blue Boost button under the action row shows
+  // only inside the frianzo-app WebView, on the signed-in user's OWN
+  // original posts (reposts cannot be boosted), when their country is
+  // PK. The Boosted badge is app-only too (owner rule).
+  const inApp = useInFrianzoApp();
+  const showBoost = inApp && isOwner && !offline && !post.originalPost && isBoostCountryPk(currentUser?.country);
   // Tap-to-open guard: PostContent copies text on a 500ms long-press, so a
   // press held >= 500ms must NOT navigate (it was a copy, not a tap).
   const pressStartRef = useRef(0);
@@ -350,6 +359,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
               )}
               <span className="text-xs text-slate-500">{timeAgo(post.createdAt)}{post.location && <> · {post.location}</>}
                 {post.isPinned && <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">📌 Pinned</span>}
+                {post.isBoosted && inApp && <span className="ml-1.5 inline-flex"><BoostedBadge /></span>}
               </span>
             </div>
           </div>
@@ -429,6 +439,11 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
           <ShareIcon />
         </button>
       </div>
+      {showBoost && (
+        <div className="border-t border-slate-100 px-3 py-2">
+          <BoostButton href={boostHref('post', post.id)} className="w-full" />
+        </div>
+      )}
     </div>
   );
 }

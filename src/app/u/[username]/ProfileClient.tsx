@@ -23,6 +23,8 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
+import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
+import { isBoostCountryPk } from '@/lib/api/boostApi';
 
 function playSubmitSound() {
   try {
@@ -163,6 +165,11 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const router = useRouter();
   const username = params.username as string;
   const { user: currentUser } = useAuth();
+  // Boost (app-only): profile Boost button + My Boosts entry show only
+  // inside the frianzo-app WebView, on the user's OWN profile, when
+  // their country is PK.
+  const inApp = useInFrianzoApp();
+  const showBoostEntry = inApp && isBoostCountryPk(currentUser?.country);
   const [profile, setProfile] = useState<any>(initialProfile ?? null);
   const [counts, setCounts] = useState(initialCounts ?? { followers: 0, following: 0 });
   const [friendStatus, setFriendStatus] = useState<string>(initialProfile?.friendStatus || 'none');
@@ -645,10 +652,18 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         </div>
 
         {isMe ? (
-          <div className="mt-4 flex gap-2">
-            <Link href="/edit-profile" className="flex-1 rounded-lg bg-slate-900 py-2 text-center text-sm font-semibold text-white">Edit Profile</Link>
-            <Link href="/settings-menu/dashboard" className="flex-1 rounded-lg border py-2 text-center text-sm font-medium text-slate-700">Dashboard</Link>
-          </div>
+          <>
+            <div className="mt-4 flex gap-2">
+              <Link href="/edit-profile" className="flex-1 rounded-lg bg-slate-900 py-2 text-center text-sm font-semibold text-white">Edit Profile</Link>
+              <Link href="/settings-menu/dashboard" className="flex-1 rounded-lg border py-2 text-center text-sm font-medium text-slate-700">Dashboard</Link>
+              {showBoostEntry && (
+                <Link href="/boost" className="flex-1 rounded-lg bg-blue-600 py-2 text-center text-sm font-semibold text-white">Boost</Link>
+              )}
+            </div>
+            {showBoostEntry && (
+              <Link href="/boost/my" className="mt-2 flex items-center justify-center rounded-lg border border-blue-600 py-2 text-sm font-semibold text-blue-600">🚀 My Boosts</Link>
+            )}
+          </>
         ) : blockedByOther ? (
           <p className="mt-4 rounded-lg bg-slate-100 py-2.5 text-center text-sm text-slate-500">This user is unavailable.</p>
         ) : blockedByMe ? (
@@ -784,7 +799,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
                         onReactionChange={handleReactionChange} onToggleComments={handleToggleComments} onShare={setShareModalPost}
                         onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
                     ) : (
-                      <div className="mx-4 mb-4"><FeedReelCard reel={entry.item} /></div>
+                      <div className="mx-4 mb-4"><FeedReelCard reel={entry.item} currentUser={currentUser} /></div>
                     )}
                     {showAd && (
                       <div className="my-4 flex w-full max-w-full justify-center overflow-hidden">

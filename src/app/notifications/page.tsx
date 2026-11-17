@@ -54,6 +54,7 @@ const NEVER_GROUP = new Set([
   'account_banned',
   'verification_approved',
   'verification_rejected',
+  'boost_approved',
 ]);
 
 // Group same-actor + same-type notifications wherever they appear in the
@@ -180,6 +181,16 @@ function CheckIcon() {
     </svg>
   );
 }
+function RocketIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z" />
+      <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </svg>
+  );
+}
 
 function iconFor(type: string) {
   switch (type) {
@@ -204,6 +215,8 @@ function iconFor(type: string) {
       return { icon: <BellEmptyIcon />, bg: 'bg-red-100', color: 'text-red-600' };
     case 'verification_approved':
       return { icon: <CheckIcon />, bg: 'bg-green-100', color: 'text-green-600' };
+    case 'boost_approved':
+      return { icon: <RocketIcon />, bg: 'bg-blue-100', color: 'text-blue-600' };
     case 'verification_rejected':
     case 'account_restricted':
     case 'account_banned':
@@ -250,6 +263,8 @@ function messageFor(n: Notification): string {
       return n.detail ? `Messaging restricted: ${n.detail}` : 'Messaging restricted';
     case 'verification_approved':
       return 'Your account has been verified';
+    case 'boost_approved':
+      return n.reelId ? 'Your reel boost is approved 🚀' : 'Your post boost is approved 🚀';
     case 'verification_rejected':
       return 'Your verification request was rejected';
     case 'account_restricted':
@@ -281,6 +296,8 @@ function hrefFor(n: Notification, viewerUsername?: string | null): string | null
       return n.postId ? `/post/${n.postId}` : null;
     case 'verification_approved':
       return viewerUsername ? `/u/${viewerUsername}` : '/settings-menu/verification';
+    case 'boost_approved':
+      return n.reelId ? `/reels?id=${n.reelId}` : n.postId ? `/post/${n.postId}` : null;
     case 'verification_rejected':
       return '/settings-menu/verification';
     case 'account_restricted':

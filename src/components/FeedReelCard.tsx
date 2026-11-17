@@ -5,6 +5,9 @@ import Link from 'next/link';
 import ShareModal from './ShareModal';
 import { toggleReelLike, recordReelView } from '@/lib/api/reelApi';
 import Avatar from './Avatar';
+import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
+import { isBoostCountryPk } from '@/lib/api/boostApi';
+import { BoostedBadge, BoostButton, boostHref } from './BoostBits';
 
 function MuteIcon() {
   return (
@@ -129,7 +132,14 @@ function ReelCaption({ text }: { text: string }) {
   );
 }
 
-export default function FeedReelCard({ reel }: { reel: any }) {
+export default function FeedReelCard({ reel, currentUser }: { reel: any; currentUser?: any }) {
+  // Boost (app-only): badge + blue Boost button show only inside the
+  // frianzo-app WebView; the button only on the signed-in user's OWN
+  // reels when their country is PK. Call sites that do not pass
+  // currentUser simply never show the button.
+  const inApp = useInFrianzoApp();
+  const isMine = !!currentUser && !!reel.author?.username && currentUser.username === reel.author.username;
+  const showBoost = inApp && isMine && isBoostCountryPk(currentUser?.country);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
@@ -244,6 +254,11 @@ export default function FeedReelCard({ reel }: { reel: any }) {
         <div className="absolute right-3 top-2">
           <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">Reel</span>
         </div>
+        {reel.isBoosted && inApp && (
+          <div className="absolute left-3 top-2">
+            <BoostedBadge overlay />
+          </div>
+        )}
         <button
           type="button"
           onClick={toggleMute}
@@ -267,6 +282,11 @@ export default function FeedReelCard({ reel }: { reel: any }) {
           Share
         </button>
       </div>
+      {showBoost && (
+        <div className="border-t border-slate-100 px-2 py-2">
+          <BoostButton href={boostHref('reel', reel.id)} className="w-full" />
+        </div>
+      )}
     </div>
     {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />}
     </>

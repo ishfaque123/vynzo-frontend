@@ -1,0 +1,175 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Boost (web, frianzo-app only): manual-payment post/reel boosts.
+// Prices, estimates, purposes and payment details are NEVER hardcoded
+// in the UI — they come from GET /api/boosts/config (DESIGN.md §9).
+// Amounts are never sent by the client: the server re-derives the
+// charged amount from the chosen plan. Error responses keep their
+// `error.code` so callers can map the known codes (BOOST_LIMIT_REACHED,
+// BOOST_ALREADY_ACTIVE_OR_PENDING, INVALID_BOOST_PURPOSE, ...) to
+// clear user messages.
+
+async function readJson(res: Response) {
+  if (res.status === 204 || res.status === 304) return { success: false, error: { message: `Empty server response (HTTP ${res.status}).` } };
+  const text = await res.text();
+  if (!text) return { success: false, error: { message: `Request failed (HTTP ${res.status}).` } };
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { success: false, error: { message: `Invalid server response (HTTP ${res.status}).` } };
+  }
+}
+
+export interface BoostPlan {
+  days: number;
+  amountPkr: number;
+  estViewsMin: number;
+  estViewsMax: number;
+  estClicksMin: number;
+  estClicksMax: number;
+}
+
+export interface BoostTrial {
+  available: boolean;
+  planDays: number;
+  amountPkr: number;
+}
+
+export interface BoostPurpose {
+  id: string;
+  label?: string;
+  description?: string;
+}
+
+export interface BoostPaymentMethod {
+  id: string;
+  label?: string;
+  accountTitle?: string;
+  accountNumber?: string;
+  instructions?: string;
+}
+
+export interface BoostConfig {
+  eligible: boolean;
+  country?: string | null;
+  plans: BoostPlan[];
+  firstBoostTrial?: BoostTrial | null;
+  purposes: BoostPurpose[];
+  paymentMethods: BoostPaymentMethod[];
+}
+
+export interface BoostResults {
+  views: number | null;
+  followers: number;
+}
+
+export interface Boost {
+  id: string;
+  contentType: 'post' | 'reel';
+  postId?: string | null;
+  reelId?: string | null;
+  userId: string;
+  purpose: string;
+  planDays: number;
+  amountPkr: number;
+  paymentMethod: string;
+  transactionId?: string | null;
+  screenshotUrl: string;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  adminNote?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  post?: { id: string; content?: string | null; imageUrl?: string | null; createdAt: string } | null;
+  reel?: { id: string; caption?: string | null; thumbnailUrl?: string | null; videoUrl?: string | null; createdAt: string } | null;
+  results?: BoostResults | null;
+}
+
+export async function fetchBoostConfig(): Promise<any> {
+  const res = await fetch(`${API_URL}/api/boosts/config`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
+}
+
+export async function createBoostRequest(body: {
+  contentType: 'post' | 'reel';
+  postId?: string | null;
+  reelId?: string | null;
+  purpose: string;
+  planDays: number;
+  paymentMethod: string;
+  transactionId?: string | null;
+  screenshotUrl: string;
+}): Promise<any> {
+  const res = await fetch(`${API_URL}/api/boosts`, {
+    method: 'POST',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return readJson(res);
+}
+
+export async function fetchMyBoosts(): Promise<any> {
+  const res = await fetch(`${API_URL}/api/boosts/mine`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
+}
+
+// Content previews for the Boost page (DESIGN.md §9.2): the same reads
+// the rest of the site already uses.
+export async function fetchBoostPostPreview(postId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/api/posts/${encodeURIComponent(postId)}`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
+}
+
+export async function fetchBoostReelPreview(reelId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/api/reels/${encodeURIComponent(reelId)}`, { credentials: 'include', cache: 'no-store' });
+  return readJson(res);
+}
+
+/** PK gate for every Boost UI element (owner rule, DESIGN.md §9.1):
+ *  the signed-in user's own country from GET /api/users/me, normalized
+ *  the same way the backend does (normalizeCountry) — stored values are
+ *  a 2-letter code ("PK") or a legacy full name ("Pakistan"). */
+export function isBoostCountryPk(raw: string | null | undefined): boolean {
+  const t = (raw || '').trim();
+  return t.toUpperCase() === 'PK' || t.toLowerCase() === 'pakistan';
+}
+
+export function boostPurposeLabel(id: string | null | undefined): string {
+  switch (id) {
+    case 'followers_gain':
+      return 'Followers Gain';
+    case 'views_gain':
+      return 'Views Gain';
+    case 'business_promotion':
+      return 'Business Promotion';
+    default:
+      return 'Boost';
+  }
+}
+
+export function boostErrorMessage(result: any): string {
+  const code = result?.error?.code;
+  switch (code) {
+    case 'BOOST_LIMIT_REACHED':
+      return 'You already have 3 boosts running. Wait for one to finish before starting another.';
+    case 'BOOST_ALREADY_ACTIVE_OR_PENDING':
+      return 'This post already has a boost request pending or running.';
+    case 'INVALID_BOOST_PURPOSE':
+      return 'Please choose a purpose for this boost.';
+    case 'BOOST_COUNTRY_NOT_ELIGIBLE':
+      return 'Boost is available for users in Pakistan only.';
+    case 'FORBIDDEN':
+      return 'You can only boost your own posts and reels.';
+    case 'POST_NOT_PUBLIC':
+      return 'Only public posts can be boosted.';
+    case 'REPOST_NOT_BOOSTABLE':
+      return 'Reposts cannot be boosted — boost the original post instead.';
+    default:
+      return result?.error?.message || 'Something went wrong. Please try again.';
+  }
+}
