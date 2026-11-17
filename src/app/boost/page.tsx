@@ -435,10 +435,10 @@ function BoostPage() {
                                 </span>
                                 <span className="mt-1 block text-[13px] text-slate-500">{plan.days === 1 ? '1 day' : `${plan.days} days`}</span>
                                 <span className="mt-1.5 block text-xs text-slate-500">
-                                  Andazan views: {fmt(plan.estViewsMin)} - {fmt(plan.estViewsMax)}
+                                  Estimated views: {fmt(plan.estViewsMin)} - {fmt(plan.estViewsMax)}
                                 </span>
                                 <span className="block text-xs text-slate-500">
-                                  Andazan clicks: {fmt(plan.estClicksMin)} - {fmt(plan.estClicksMax)}
+                                  Estimated clicks: {fmt(plan.estClicksMin)} - {fmt(plan.estClicksMax)}
                                 </span>
                               </span>
                               {sel && (
