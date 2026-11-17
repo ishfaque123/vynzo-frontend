@@ -264,7 +264,7 @@ function messageFor(n: Notification): string {
     case 'verification_approved':
       return 'Your account has been verified';
     case 'boost_approved':
-      return n.reelId ? 'Your reel boost is approved 🚀' : 'Your post boost is approved 🚀';
+      return n.reelId ? 'Your reel boost is approved' : 'Your post boost is approved';
     case 'verification_rejected':
       return 'Your verification request was rejected';
     case 'account_restricted':

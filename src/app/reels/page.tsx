@@ -132,7 +132,7 @@ function ReelMoreOptionsSheet({ isMine, favorited, loading, onBoost, onIntereste
               <button type="button" onClick={onSaveVideo} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200"><span className="text-slate-600"><ReelOptionIcon type="download" /></span><span>Save video</span></button>
               <button type="button" onClick={onCopyLink} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-slate-900 hover:bg-slate-100 active:bg-slate-200"><span className="text-slate-600"><ReelOptionIcon type="copy" /></span><span>Copy link</span></button>
               {onBoost && (
-                <button type="button" onClick={onBoost} className="flex w-full items-center gap-3 rounded-xl bg-blue-600 px-3.5 py-3.5 text-left text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800"><span>🚀</span><span>Boost</span></button>
+                <button type="button" onClick={onBoost} className="flex w-full items-center gap-3 rounded-xl bg-blue-600 px-3.5 py-3.5 text-left text-sm font-semibold text-white hover:bg-blue-700 active:bg-blue-800"><span>Boost</span></button>
               )}
               {isMine ? (
                 <button type="button" onClick={onDelete} className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 active:bg-red-100"><span><ReelOptionIcon type="delete" /></span><span>Delete reel</span></button>
