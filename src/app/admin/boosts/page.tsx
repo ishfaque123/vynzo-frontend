@@ -10,6 +10,9 @@ type BoostRequestItem = {
   purpose: string;
   planDays: number;
   amountPkr: number;
+  dailyBudget?: number | null;
+  linkUrl?: string | null;
+  buttonText?: string | null;
   paymentMethod: string;
   transactionId?: string | null;
   screenshotUrl: string;
@@ -104,7 +107,7 @@ export default function BoostsPage() {
     <div className="space-y-5">
       <div>
         <h2 className="text-2xl font-bold">Boost Requests</h2>
-        <p className="mt-1 text-sm text-slate-500">Review paid boosts for posts and reels. Approving starts the boost immediately for the plan&apos;s days.</p>
+        <p className="mt-1 text-sm text-slate-500">Review paid boosts for posts and reels. Approving starts the boost immediately for its chosen days.</p>
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm md:flex-row">
@@ -153,13 +156,22 @@ export default function BoostsPage() {
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[item.status] || 'bg-slate-100 text-slate-500'}`}>{item.status}</span>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 lg:grid-cols-5">
+              <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</p><p className="mt-1 font-semibold text-slate-800">{item.planDays} day{item.planDays > 1 ? 's' : ''}</p></div>
+                <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Daily Budget</p><p className="mt-1 font-semibold text-slate-800">{item.dailyBudget ? `Rs ${item.dailyBudget}` : '—'}</p></div>
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p><p className="mt-1 font-semibold text-slate-800">Rs {item.amountPkr}</p></div>
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Method</p><p className="mt-1 font-semibold capitalize text-slate-800">{item.paymentMethod}</p></div>
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Purpose</p><p className="mt-1 font-semibold text-slate-800">{PURPOSE_LABELS[item.purpose] || item.purpose}</p></div>
                 <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction ID</p><p className="mt-1 break-all font-semibold text-slate-800">{item.transactionId || '—'}</p></div>
               </div>
+
+              {item.linkUrl && (
+                <div className="mt-3 rounded-xl bg-slate-50 p-4 text-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Boost Link Button</p>
+                  <p className="mt-1 font-semibold text-slate-800">{item.buttonText || 'Learn More'}</p>
+                  <a href={item.linkUrl} target="_blank" rel="noreferrer" className="mt-0.5 block break-all text-blue-600 hover:underline">{item.linkUrl}</a>
+                </div>
+              )}
 
               {item.contentType === 'reel' && item.reel ? (
                 <div className="mt-3 rounded-xl bg-slate-50 p-4">

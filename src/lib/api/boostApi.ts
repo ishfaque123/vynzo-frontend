@@ -33,6 +33,16 @@ export interface BoostTrial {
   available: boolean;
   planDays: number;
   amountPkr: number;
+  dailyBudget?: number;
+  days?: number;
+}
+
+export interface BoostEstimateFactors {
+  reachPerRupeeMin: number;
+  reachPerRupeeMax: number;
+  impressionsPerRupeeMin: number;
+  impressionsPerRupeeMax: number;
+  clicksPerReach: number;
 }
 
 export interface BoostPurpose {
@@ -54,6 +64,11 @@ export interface BoostConfig {
   country?: string | null;
   plans: BoostPlan[];
   firstBoostTrial?: BoostTrial | null;
+  // Boost v2 pricing model: daily-budget slider + separate duration.
+  budget?: { min: number; max: number; step: number };
+  durations?: number[];
+  buttonTexts?: string[];
+  estimateFactors?: BoostEstimateFactors;
   purposes: BoostPurpose[];
   paymentMethods: BoostPaymentMethod[];
 }
@@ -72,6 +87,9 @@ export interface Boost {
   purpose: string;
   planDays: number;
   amountPkr: number;
+  dailyBudget?: number | null;
+  linkUrl?: string | null;
+  buttonText?: string | null;
   paymentMethod: string;
   transactionId?: string | null;
   screenshotUrl: string;
@@ -98,7 +116,13 @@ export async function createBoostRequest(body: {
   postId?: string | null;
   reelId?: string | null;
   purpose: string;
-  planDays: number;
+  // Boost v2 sends dailyBudget + days; planDays stays in the type only
+  // for older callers — the server derives the amount either way.
+  planDays?: number;
+  dailyBudget?: number;
+  days?: number;
+  linkUrl?: string | null;
+  buttonText?: string | null;
   paymentMethod: string;
   transactionId?: string | null;
   screenshotUrl: string;
@@ -161,6 +185,14 @@ export function boostErrorMessage(result: any): string {
       return 'This post already has a boost request pending or running.';
     case 'INVALID_BOOST_PURPOSE':
       return 'Please choose a purpose for this boost.';
+    case 'INVALID_BOOST_BUDGET':
+      return 'Choose a daily budget between Rs 100 and Rs 1,000.';
+    case 'INVALID_BOOST_DURATION':
+      return 'Choose how many days the boost should run.';
+    case 'INVALID_BOOST_LINK':
+      return 'Enter a valid link starting with http:// or https://.';
+    case 'INVALID_BOOST_BUTTON':
+      return 'Choose a button text for your link.';
     case 'BOOST_COUNTRY_NOT_ELIGIBLE':
       return 'Boost is available for users in Pakistan only.';
     case 'FORBIDDEN':

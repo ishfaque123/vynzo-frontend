@@ -7,7 +7,7 @@ import { toggleReelLike, recordReelView } from '@/lib/api/reelApi';
 import Avatar from './Avatar';
 import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
 import { isBoostCountryPk } from '@/lib/api/boostApi';
-import { BoostedBadge, boostHref } from './BoostBits';
+import { BoostedBadge, BoostCtaButton, boostHref } from './BoostBits';
 
 function MuteIcon() {
   return (
@@ -268,6 +268,11 @@ export default function FeedReelCard({ reel, currentUser }: { reel: any; current
           {isMuted ? <MuteIcon /> : <UnmuteIcon />}
         </button>
       </div>
+      {reel.isBoosted && inApp && reel.boostButton && !isMine && (
+        <div className="border-t border-slate-100 pt-2.5">
+          <BoostCtaButton button={reel.boostButton} authorId={reel.author?.id} friendStatus={reel.friendStatus} />
+        </div>
+      )}
       <div className="flex items-center border-t border-slate-100 px-2 py-1">
         <button type="button" onClick={handleLike} disabled={liking} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium active:bg-slate-100 ${liked ? 'text-rose-500' : 'text-slate-600'}`}>
           <svg width="21" height="21" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z" /></svg>

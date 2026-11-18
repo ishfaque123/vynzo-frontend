@@ -14,7 +14,7 @@ import Avatar from './Avatar';
 import PhotoViewer from './PhotoViewer';
 import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
 import { isBoostCountryPk } from '@/lib/api/boostApi';
-import { BoostedBadge, boostHref } from './BoostBits';
+import { BoostedBadge, BoostCtaButton, boostHref } from './BoostBits';
 
 /**
  * Facebook-style image with shimmer placeholder and fade-in.
@@ -426,6 +426,10 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} thumbSrc={post.originalPost.imageThumbUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
           </div>
         </div>
+      )}
+
+      {post.isBoosted && inApp && post.boostButton && !isOwner && (
+        <BoostCtaButton button={post.boostButton} authorId={post.author.id} friendStatus={post.friendStatus} />
       )}
 
       <ReactionSummary post={post} countDelta={countDelta} />

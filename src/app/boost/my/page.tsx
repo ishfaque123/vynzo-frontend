@@ -10,8 +10,8 @@ import { fetchMyBoosts, boostPurposeLabel, type Boost } from '@/lib/api/boostApi
 // My Boosts (web) — mirrors the native MyBoostsScreen: status chips,
 // the admin note on rejections, the results line (views + new
 // followers during the boost window) and "Boost Again" on finished
-// boosts, which reopens the Boost page with the item, purpose and plan
-// preselected, landing on the payment step.
+// boosts, which reopens the Boost page with the item, purpose, daily
+// budget and duration preselected.
 //
 // APP GATE (owner rule): same as /boost — renders nothing until the
 // FrianzoNative bridge check resolves, and redirects home in a normal
@@ -63,7 +63,7 @@ function BoostRow({ b }: { b: Boost }) {
   const rawText = isReel ? b.reel?.caption : b.post?.content;
   const text = rawText && rawText.trim() ? rawText : isReel ? 'Reel' : 'Post';
   const contentId = (isReel ? b.reelId : b.postId) || '';
-  const againHref = `/boost?type=${b.contentType}&id=${encodeURIComponent(contentId)}&purpose=${encodeURIComponent(b.purpose)}&days=${b.planDays}&step=payment`;
+  const againHref = `/boost?type=${b.contentType}&id=${encodeURIComponent(contentId)}&purpose=${encodeURIComponent(b.purpose)}&days=${b.planDays}${b.dailyBudget ? `&budget=${b.dailyBudget}` : ''}`;
   return (
     <div className="border-b border-slate-100 px-4 py-3">
       <div className="flex items-center gap-3">
@@ -71,8 +71,15 @@ function BoostRow({ b }: { b: Boost }) {
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-sm text-slate-900">{text}</p>
           <p className="mt-0.5 truncate text-xs text-slate-500">
-            {b.planDays === 1 ? '1 day' : `${b.planDays} days`} · Rs {fmt(b.amountPkr)} · {boostPurposeLabel(b.purpose)}
+            {b.dailyBudget
+              ? `Rs ${fmt(b.dailyBudget)}/day · ${b.planDays === 1 ? '1 day' : `${b.planDays} days`} · Rs ${fmt(b.amountPkr)} · ${boostPurposeLabel(b.purpose)}`
+              : `${b.planDays === 1 ? '1 day' : `${b.planDays} days`} · Rs {fmt(b.amountPkr)} · ${boostPurposeLabel(b.purpose)}`}
           </p>
+          {b.linkUrl && (
+            <p className="mt-0.5 truncate text-xs text-slate-500">
+              Button: {b.buttonText || 'Learn More'} · {b.linkUrl}
+            </p>
+          )}
         </div>
         <StatusChip b={b} />
       </div>
