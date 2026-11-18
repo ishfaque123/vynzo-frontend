@@ -122,6 +122,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <script
+          // Boot watchdog (2026-11-18 blank-screen fix): if the app bundle
+          // fails to boot — e.g. a phone WebView still holds a stale cached
+          // shell whose script chunks no longer exist after a deploy — the
+          // page renders as an empty dark screen and never recovers (the
+          // native app's load-error page only covers network failures, and
+          // its loading overlay hides on onPageFinished). This inline script
+          // is not part of the bundle, so it still runs in that state: after
+          // 12s, if the body has no text and almost no elements, it clears
+          // the service worker + caches and reloads ONCE per session.
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{setTimeout(function(){try{var KEY='frianzo_boot_heal';if(sessionStorage.getItem(KEY))return;var text=document.body?(document.body.innerText||'').trim():'';if(text.length>0)return;if(document.querySelectorAll('body *').length>10)return;sessionStorage.setItem(KEY,'1');var done=false;var go=function(){if(done)return;done=true;try{location.reload();}catch(e){}};var tasks=[];if('serviceWorker' in navigator){tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}).catch(function(){}));}if(window.caches&&caches.keys){tasks.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}).catch(function(){}));}if(tasks.length){Promise.all(tasks).then(go,go);setTimeout(go,1500);}else{go();}}catch(e){}},12000);}catch(e){}})();",
+          }}
+        />
+        <script
           // Google AdSense site-verification / loader script. This MUST live
           // in the root layout <head> so it is present in the served HTML of
           // every page (including the homepage). It previously existed only
