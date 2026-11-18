@@ -14,14 +14,14 @@ export function boostHref(contentType: 'post' | 'reel', contentId: string): stri
   return `/boost?type=${contentType}&id=${encodeURIComponent(contentId)}`;
 }
 
-/** "Boosted" pill, FrianzoBlue (#2563EB = Tailwind blue-600, the
+/** "Sponsored" pill (owner, 2026-11-18: the label on boosted content reads Sponsored, like Facebook — never "Boosted"), FrianzoBlue (#2563EB = Tailwind blue-600, the
  *  same blue the native badge and the site's primary buttons use). */
 export function BoostedBadge({ overlay = false }: { overlay?: boolean }) {
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white ${overlay ? 'shadow' : ''}`}
     >
-      Boosted
+      Sponsored
     </span>
   );
 }

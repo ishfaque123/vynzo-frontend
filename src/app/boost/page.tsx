@@ -178,9 +178,8 @@ function FullPreview({
                 <VerifiedBadge />
               </span>
             )}
-            <span className="shrink-0 font-semibold text-blue-600">· Boost</span>
           </div>
-          <div className="text-xs text-slate-500">Boosted · Public</div>
+          <div className="text-xs text-slate-500">Sponsored · Public</div>
         </div>
       </div>
 
