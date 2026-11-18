@@ -151,10 +151,10 @@ function SmallPreviewCard({ item }: { item: ChosenItem }) {
   );
 }
 
-/** The full preview: the content as people will see it in the feed,
- *  including the button the chosen goal puts on it (none for Views
- *  Gain, Follow for Followers Gain, the link button for Business
- *  Promotion when a link is added). */
+/** The full preview: the content as people will see it in the feed.
+ *  Only a Business Promotion boost puts a button on the content (the
+ *  link button, when a link is added) — Views Gain and Followers Gain
+ *  boosts look completely normal (owner rule, 2026-11-18). */
 function FullPreview({
   item,
   purpose,
@@ -213,12 +213,6 @@ function FullPreview({
         <span>{fmt(item.shareCount)} Shares</span>
       </div>
 
-      {purpose === 'followers_gain' && (
-        <div className="mt-1 flex items-center justify-between border-t border-slate-100 pt-2">
-          <span className="text-xs text-slate-500">People can follow you from this {item.contentType === 'reel' ? 'reel' : 'post'}</span>
-          <span className="rounded-lg bg-blue-600 px-4 py-1.5 text-[13px] font-semibold text-white">Follow</span>
-        </div>
-      )}
       {purpose === 'business_promotion' && hasLink && (
         <div className="mt-1 flex items-center justify-between border-t border-slate-100 pt-2">
           <span className="text-xs text-slate-500">Your link</span>

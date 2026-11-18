@@ -429,7 +429,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
       )}
 
       {post.isBoosted && inApp && post.boostButton && !isOwner && (
-        <BoostCtaButton button={post.boostButton} authorId={post.author.id} friendStatus={post.friendStatus} />
+        <BoostCtaButton button={post.boostButton} />
       )}
 
       <ReactionSummary post={post} countDelta={countDelta} />

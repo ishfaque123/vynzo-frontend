@@ -270,7 +270,7 @@ export default function FeedReelCard({ reel, currentUser }: { reel: any; current
       </div>
       {reel.isBoosted && inApp && reel.boostButton && !isMine && (
         <div className="border-t border-slate-100 pt-2.5">
-          <BoostCtaButton button={reel.boostButton} authorId={reel.author?.id} friendStatus={reel.friendStatus} />
+          <BoostCtaButton button={reel.boostButton} />
         </div>
       )}
       <div className="flex items-center border-t border-slate-100 px-2 py-1">
