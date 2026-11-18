@@ -535,7 +535,7 @@ function BoostPage() {
                             )}
 
                             <label className="mt-3 block">
-                              <span className="mb-1 block text-sm font-medium text-slate-700">Transaction ID (optional)</span>
+                              <span className="mb-1 block text-sm font-medium text-slate-700">Transaction ID</span>
                               <input
                                 value={txnId}
                                 onChange={(e) => setTxnId(e.target.value)}
