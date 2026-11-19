@@ -65,6 +65,13 @@ html.dark .bg-blue-50 {
   background-color: #1e3a5f;
 }
 
+/* The Blue Tick perks card uses the opacity variant bg-blue-50/60,
+   which the plain-class override above does not match; without this
+   it stays pale in dark mode and swallows its light remapped text. */
+html.dark .bg-blue-50\/60 {
+  background-color: rgba(30, 58, 95, 0.6);
+}
+
 /* Pressed/hover state colors (the hover:, active: and focus: variants)
    are separate classes that the plain-class overrides above do not
    remap. Without dark versions they keep their light-mode near-white
