@@ -80,8 +80,13 @@ function VideoStatusPlayer({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false);
+  // The video stays hidden until its first frame is actually ready to be
+  // seen (onLoadedData) — while it loads, only a blurred poster (or a dark
+  // loading state) shows, never a half-loaded / partially rendered video.
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    setReady(false);
     const video = videoRef.current;
     if (!video) return;
     video.muted = false;
@@ -108,6 +113,10 @@ function VideoStatusPlayer({
     onProgress(video.currentTime / video.duration);
   }
 
+  function handleReady() {
+    setReady(true);
+  }
+
   function toggleMute(e: React.MouseEvent) {
     e.stopPropagation();
     const video = videoRef.current;
@@ -117,15 +126,24 @@ function VideoStatusPlayer({
   }
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center">
+    <div className="absolute inset-0 bg-black">
+      {!ready &&
+        (poster ? (
+          <img src={poster} alt="" className="absolute inset-0 h-full w-full object-contain opacity-70 blur-xl" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          </div>
+        ))}
       <video
         ref={videoRef}
         src={src}
         poster={poster || undefined}
         playsInline
         onTimeUpdate={handleTimeUpdate}
+        onLoadedData={handleReady}
         onEnded={onEnded}
-        className="max-h-full max-w-full object-contain"
+        className={`absolute inset-0 h-full w-full object-contain ${ready ? 'opacity-100' : 'opacity-0'}`}
       />
       <button
         onClick={toggleMute}
@@ -134,6 +152,71 @@ function VideoStatusPlayer({
       >
         {isMuted ? <MuteIcon /> : <UnmuteIcon />}
       </button>
+    </div>
+  );
+}
+
+// A photo status is fitted into the FULL viewer area (absolute inset-0 +
+// object-contain, black around it — the Facebook/Instagram pattern), so the
+// entire photo is always visible, top to bottom, whatever its shape.
+// The photo itself stays hidden until it has fully loaded (onLoad): while
+// it loads, a blurred thumbnail shows if the status has one, otherwise a
+// dark screen with a small spinner — never a half-downloaded image painting
+// in piece by piece. onReady also tells the parent it may start the
+// auto-advance timer, so a slow photo is never skipped before it is seen.
+// A failed load counts as ready too, so a broken URL can never freeze the
+// viewer on the spinner.
+function PhotoStatusImage({
+  src,
+  thumb,
+  onReady,
+}: {
+  src: string;
+  thumb?: string;
+  onReady: () => void;
+}) {
+  const [ready, setReady] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    setReady(false);
+  }, [src]);
+
+  // If the image was already fully cached, its load event can fire before
+  // React attaches onLoad — check the element directly so a cached photo
+  // still reveals (and still starts the timer).
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setReady(true);
+      onReady();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
+
+  function handleReady() {
+    setReady(true);
+    onReady();
+  }
+
+  return (
+    <div className="absolute inset-0 bg-black">
+      {!ready &&
+        (thumb ? (
+          <img src={thumb} alt="" className="absolute inset-0 h-full w-full object-contain opacity-70 blur-xl" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          </div>
+        ))}
+      <img
+        ref={imgRef}
+        src={src}
+        alt=""
+        onLoad={handleReady}
+        onError={handleReady}
+        className={`absolute inset-0 h-full w-full object-contain ${ready ? 'opacity-100' : 'opacity-0'}`}
+      />
     </div>
   );
 }
@@ -176,6 +259,10 @@ export default function StatusViewer({
   const [viewers, setViewers] = useState<any[]>([]);
   const [likedOverrides, setLikedOverrides] = useState<Record<string, boolean>>({});
   const [viewCountOverrides, setViewCountOverrides] = useState<Record<string, number>>({});
+  // True once the current photo has fully loaded (text statuses need no
+  // media, so they are never gated on this). The auto-advance timer below
+  // waits for it, so a photo is never shown half-loaded or skipped unseen.
+  const [mediaReady, setMediaReady] = useState(false);
   const viewedRef = useRef<Set<string>>(new Set());
   const frameRef = useRef<number>(0);
   const startRef = useRef<number>(0);
@@ -190,6 +277,10 @@ export default function StatusViewer({
     setMuted(!!group?.muted);
     setMenuOpen(false);
   }, [groupIndex]);
+
+  useEffect(() => {
+    setMediaReady(false);
+  }, [groupIndex, itemIndex]);
   const isVideo = item?.mediaType === 'video';
   const viewCount = item ? viewCountOverrides[item.id] ?? item.viewCount ?? 0 : 0;
 
@@ -225,10 +316,14 @@ export default function StatusViewer({
 
   // Progress timer for photo/text items only — video items drive their own
   // progress from the <video> element's playback (see VideoStatusPlayer).
+  // A photo's 5 seconds only start once the photo has fully loaded and is
+  // actually on screen (mediaReady, set by PhotoStatusImage) — before that
+  // the viewer shows the loading placeholder and the bar stays at 0.
   useEffect(() => {
     setProgress(0);
     elapsedRef.current = 0;
     if (isVideo) return;
+    if (item?.mediaType !== 'text' && !mediaReady) return;
     if (paused) return;
     startRef.current = performance.now();
 
@@ -245,7 +340,7 @@ export default function StatusViewer({
     frameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupIndex, itemIndex, paused, isVideo]);
+  }, [groupIndex, itemIndex, paused, isVideo, mediaReady]);
 
   function pause() {
     cancelAnimationFrame(frameRef.current);
@@ -395,7 +490,7 @@ export default function StatusViewer({
           ) : item.mediaType === 'video' ? (
             <VideoStatusPlayer key={item.id} src={item.mediaUrl} poster={item.thumbnailUrl} paused={paused} onProgress={setProgress} onEnded={goNextItem} />
           ) : (
-            <img src={item.mediaUrl} alt="" className="max-h-full max-w-full object-contain" />
+            <PhotoStatusImage key={item.id} src={item.mediaUrl} thumb={item.thumbnailUrl} onReady={() => setMediaReady(true)} />
           )}
           <StoryStickers
             stickers={item.stickers || []}
