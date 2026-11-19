@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import ProfileClient from './ProfileClient';
 
 const SITE_URL = 'https://www.frianzo.online';
@@ -44,31 +43,6 @@ async function getPublicProfilePosts(username: string, isPrivate: boolean): Prom
   const list: any[] = result?.data?.posts ?? [];
   return list
     .filter((p) => p?.visibility === 'public' || p?.visibility == null);
-}
-
-async function getPublicProfileReels(username: string, isPrivate: boolean): Promise<any[]> {
-  if (isPrivate) return [];
-  // The reels endpoint is login-gated (authMiddleware): without a cookie it
-  // 401s, so the server seed was always [] and the Reels counter flashed 0
-  // on first paint. The auth cookie is scoped to .frianzo.online, so the
-  // Next.js server receives it too — forward the visitor's own cookie so a
-  // logged-in visitor's first paint already has their reels. This fetch is
-  // ALWAYS no-store: the response depends on the cookie, so it must never
-  // enter the Data Cache (a cached 401, or one user's reels, must never be
-  // served to anyone else). Logged-out visitors still get [] here, exactly
-  // as before — their client fetch 401s too, so 0 stays (no flash).
-  const cookieStore = await cookies();
-  const parts: string[] = [];
-  const authToken = cookieStore.get('vynzo_auth_token')?.value;
-  const legacyToken = cookieStore.get('vynzo_token')?.value;
-  if (authToken) parts.push(`vynzo_auth_token=${authToken}`);
-  if (legacyToken) parts.push(`vynzo_token=${legacyToken}`);
-  const result = await fetchJson(
-    `${API_URL}/api/reels/user/${encodeURIComponent(username)}`,
-    6000,
-    { headers: parts.length ? { Cookie: parts.join('; ') } : undefined, noStore: true },
-  );
-  return result?.data?.reels ?? [];
 }
 
 async function getFollowCounts(userId: string) {
@@ -132,14 +106,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // all interactivity (follow, tabs, comments, editing); it is simply seeded
 // with the same data so its first paint is the server content, and it
 // refreshes everything in the browser exactly as before.
+// Reels are intentionally NOT seeded by the server: the reels endpoint is
+// login-gated and no-store, so seeding it forced this route to render
+// dynamically on every visit (and showed the route loading skeleton on
+// every revisit). ProfileClient fetches reels itself right after mount.
 export default async function ProfilePage({ params }: Props) {
   const { username } = await params;
   const profile = await getPublicProfile(username);
   if (!profile) return <ProfileClient />;
 
-  const [posts, reels, counts] = await Promise.all([
+  const [posts, counts] = await Promise.all([
     getPublicProfilePosts(username, !!profile.isPrivate),
-    getPublicProfileReels(username, !!profile.isPrivate),
     profile.id ? getFollowCounts(profile.id) : Promise.resolve(null),
   ]);
 
@@ -147,7 +124,6 @@ export default async function ProfilePage({ params }: Props) {
     <ProfileClient
       initialProfile={profile}
       initialPosts={posts}
-      initialReels={reels}
       initialCounts={counts ?? undefined}
     />
   );
