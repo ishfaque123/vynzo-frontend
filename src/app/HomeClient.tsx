@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { fetchFeed, fetchContentMix } from '@/lib/api/postApi';
 import { fetchReelsConfig, fetchReelFeed } from '@/lib/api/reelApi';
 import { getOfflineFeed, saveOfflineFeed } from '@/lib/offline/feedCache';
+import { readFeedSnapshot, saveFeedSnapshot } from '@/lib/offline/feedSnapshot';
 import { fetchComments, addComment } from '@/lib/api/commentApi';
 import { playCommentSound } from '@/lib/sounds';
 import ShareModal from '@/components/ShareModal';
@@ -59,6 +60,10 @@ export default function HomePage() {
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [autoRetrying, setAutoRetrying] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Which user's instant-open snapshot has been applied during render
+  // (see the render-phase block further down). Tracked per user id so
+  // an account change re-applies the correct account's snapshot.
+  const [snapshotUserId, setSnapshotUserId] = useState<string | null>(null);
   const autoRetryCountRef = useRef(0);
   const autoRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [openComments, setOpenComments] = useState<string | null>(null);
@@ -67,6 +72,16 @@ export default function HomePage() {
   const [replyTo, setReplyTo] = useState<{ postId: string; commentId: string; name: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
   const commentsSeqRef = useRef<Record<string, number>>({});
+  // CACHE-FIRST STARTUP (2026-11-19): whether the on-screen list was
+  // painted from the localStorage snapshot (see the render-phase block
+  // further down), and whether the user has scrolled away from the top
+  // since. Together they drive the swap rule in loadFeed(): a fresh
+  // first page replaces the painted list only while the user is still
+  // at the top; once they are reading, the list is never yanked away —
+  // the fresh page is saved to the caches for the next open instead.
+  const paintedSnapshotRef = useRef(false);
+  const userScrolledRef = useRef(false);
+  const ignoreScrollUntilRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,22 +134,30 @@ export default function HomePage() {
 
     // Cache-first startup: show the last successful feed immediately when
     // available. Network refresh happens afterwards, so reopening the app
-    // does not force the user through a skeleton every time.
+    // does not force the user through a skeleton every time. When the
+    // localStorage snapshot was already painted during render (see the
+    // render-phase block below), skip this IndexedDB paint: the snapshot
+    // is the same first page, read synchronously, and painting the
+    // IndexedDB copy over it would only swap one cached list for another
+    // before the network answer arrives. The IndexedDB copy is still
+    // read for the offline early-return below.
     let cachedPosts: any[] | null = null;
     try {
       const cached = await getOfflineFeed(user.id);
       if (cached?.posts?.length) {
         cachedPosts = cached.posts;
-        setPosts(cached.posts);
-        setHasMore(!!cached.hasMore);
-        setOffset(cached.posts.length);
-        setFeedOffline(false);
-        setFeedLoading(false);
-      } else if (posts.length === 0) {
+        if (!paintedSnapshotRef.current) {
+          setPosts(cached.posts);
+          setHasMore(!!cached.hasMore);
+          setOffset(cached.posts.length);
+          setFeedOffline(false);
+          setFeedLoading(false);
+        }
+      } else if (posts.length === 0 && !paintedSnapshotRef.current) {
         setFeedLoading(true);
       }
     } catch {
-      if (posts.length === 0) setFeedLoading(true);
+      if (posts.length === 0 && !paintedSnapshotRef.current) setFeedLoading(true);
     }
 
     if ((offline || feedOffline) && !navigator.onLine) {
@@ -161,11 +184,21 @@ export default function HomePage() {
       if (result.success) {
         autoRetryCountRef.current = 0;
         setAutoRetrying(false);
-        setPosts(result.data.posts);
-        setHasMore(!!result.data.hasMore);
-        setOffset(result.data.posts.length);
+        // SWAP RULE (2026-11-19): replace the on-screen list with the
+        // fresh first page only while the user is still at the top.
+        // If they already scrolled into the painted snapshot, keep
+        // their list untouched — replacing it would yank away the post
+        // they are reading. The fresh page is saved to both caches
+        // either way, so the next open (or a manual refresh, which
+        // resets the scroll flag) shows it.
+        if (!userScrolledRef.current) {
+          setPosts(result.data.posts);
+          setHasMore(!!result.data.hasMore);
+          setOffset(result.data.posts.length);
+        }
         setFeedOffline(false);
         await saveOfflineFeed(user.id, result.data.posts, !!result.data.hasMore);
+        saveFeedSnapshot(user.id, result.data.posts, !!result.data.hasMore);
       } else {
         setFeedError(true);
         scheduleAutoRetry();
@@ -241,8 +274,27 @@ export default function HomePage() {
     };
   }, [isAuthenticated]);
 
+  // Swap-rule scroll tracking: any scroll away from the top counts as
+  // "the user is reading" and blocks the background swap in loadFeed().
+  // Scroll events are ignored for a second after a manual refresh
+  // starts: tapping Home first smooth-scrolls to the top, and those
+  // animation events must not re-block the very swap the tap asked for.
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > 8 && Date.now() > ignoreScrollUntilRef.current) {
+        userScrolledRef.current = true;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   async function handleManualRefresh() {
     if (refreshing || feedOffline) return;
+    // A manual refresh is an explicit "show me fresh": allow the swap
+    // again and ignore the scroll-to-top animation's scroll events.
+    userScrolledRef.current = false;
+    ignoreScrollUntilRef.current = Date.now() + 1000;
     setRefreshing(true);
     try { await loadFeed(); } finally { setRefreshing(false); }
   }
@@ -294,6 +346,7 @@ export default function HomePage() {
           const fresh = result.data.posts.filter((p: any) => !existingIds.has(p.id));
           const nextPosts = [...prev, ...fresh];
           void saveOfflineFeed(user.id, nextPosts, !!result.data.hasMore);
+          saveFeedSnapshot(user.id, nextPosts, !!result.data.hasMore);
           return nextPosts;
         });
         setHasMore(!!result.data.hasMore);
@@ -392,7 +445,12 @@ export default function HomePage() {
       // cache-first paint showed the post unliked, and SEEN RULE 2 hides
       // the (viewed) post from the fresh feed, so the liked state never
       // came back into view. Persist the reacted list so reload shows it.
-      if (user?.id) void saveOfflineFeed(user.id, nextPosts, hasMore);
+      // The localStorage snapshot is the paint source now, so it gets
+      // the same reacted list (its first page) for the same reason.
+      if (user?.id) {
+        void saveOfflineFeed(user.id, nextPosts, hasMore);
+        saveFeedSnapshot(user.id, nextPosts, hasMore);
+      }
       return nextPosts;
     });
   }
@@ -444,6 +502,39 @@ export default function HomePage() {
   useEffect(() => {
     if (!loading && !user && isNativeApp) router.replace('/login');
   }, [loading, user, isNativeApp, router]);
+
+  // INSTANT-OPEN SNAPSHOT PAINT (2026-11-19): the first render that
+  // knows the user applies the saved first page from localStorage
+  // right here — synchronously, before this render commits — so a
+  // reopened app shows the feed in the very first visible frame
+  // instead of the skeleton, and loadFeed()'s background fetch then
+  // applies the swap rule. This is React's render-phase state
+  // adjustment pattern: the setState calls re-render this component
+  // before anything is painted. Guarded per user id: if the verified
+  // user turns out to be a different account than the optimistic
+  // cached one and that account has no snapshot, the previous
+  // account's painted posts are dropped back to the loading state
+  // rather than shown to the wrong user. Any snapshot problem reads
+  // as "no snapshot" (readFeedSnapshot never throws) and startup
+  // continues with the normal network load, exactly as before.
+  if (user?.id && snapshotUserId !== user.id) {
+    setSnapshotUserId(user.id);
+    const snap = readFeedSnapshot(user.id);
+    if (snap) {
+      paintedSnapshotRef.current = true;
+      setPosts(snap.posts);
+      setHasMore(snap.hasMore);
+      setOffset(snap.posts.length);
+      setFeedOffline(false);
+      setFeedLoading(false);
+    } else if (paintedSnapshotRef.current) {
+      paintedSnapshotRef.current = false;
+      setPosts([]);
+      setOffset(0);
+      setHasMore(true);
+      setFeedLoading(true);
+    }
+  }
 
   // No web loading screen here, on purpose: during the auth check the web
   // page renders nothing of its own. In the app the native 6-dots overlay
