@@ -5,6 +5,7 @@ import { fetchDashboard, fetchLeaderboard } from '@/lib/api/userApi';
 import { fetchPayoutMethods, addPayoutMethod, deletePayoutMethod, setDefaultPayoutMethod, fetchEarnings } from '@/lib/api/payoutApi';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 function MonetizationIcon() {
   return (
@@ -296,31 +297,35 @@ export default function MonetizationPage() {
                 <a
                   key={e.username}
                   href={`/u/${e.username}`}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50"
+                  className={`flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50 ${
+                    e.rank === 1 ? 'bg-amber-50' : e.rank === 2 ? 'bg-slate-100' : e.rank === 3 ? 'bg-orange-50' : ''
+                  }`}
                 >
-                  <span
-                    className={`w-6 text-center text-sm font-bold ${
-                      e.rank === 1 ? 'text-amber-500' : e.rank === 2 ? 'text-slate-400' : e.rank === 3 ? 'text-amber-700' : 'text-slate-400'
-                    }`}
-                  >
-                    {e.rank}
-                  </span>
-                  {e.avatar ? (
-                    <img src={e.avatar} alt={e.username} className="h-9 w-9 rounded-full object-cover" />
+                  {e.rank <= 3 ? (
+                    <span
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                        e.rank === 1 ? 'bg-amber-500' : e.rank === 2 ? 'bg-slate-400' : 'bg-amber-700'
+                      }`}
+                    >
+                      {e.rank}
+                    </span>
                   ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">
-                      {e.username.charAt(0).toUpperCase()}
+                    <span className="w-6 shrink-0 text-center text-sm font-bold text-slate-400">{e.rank}</span>
+                  )}
+                  {e.avatar ? (
+                    <img src={e.avatar} alt={e.displayName || e.username} loading="lazy" className="h-10 w-10 shrink-0 rounded-full bg-slate-200 object-cover" />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-500">
+                      {(e.displayName || e.username).charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-900">
-                      @{e.username}
-                      {e.isVerified && <span className="ml-1 text-blue-500">✓</span>}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">{e.displayName || ''}</p>
+                  <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold text-slate-900">{e.displayName || e.username}</p>
+                    {e.isVerified && <VerifiedBadge size="sm" />}
                   </div>
-                  <span className="text-xs font-semibold text-slate-700">
-                    {e.count.toLocaleString()} {LEADERBOARD_TABS.find((t) => t.key === activeTab)?.unit}
+                  <span className="shrink-0 text-right">
+                    <span className="block text-xs font-bold text-slate-800">{e.count.toLocaleString()}</span>
+                    <span className="block text-[10px] text-slate-500">{LEADERBOARD_TABS.find((t) => t.key === activeTab)?.unit}</span>
                   </span>
                 </a>
               ))}
