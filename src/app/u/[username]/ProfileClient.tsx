@@ -154,6 +154,24 @@ function BlockIcon() {
   );
 }
 
+// NAVIGATION MEMORY (2026-11-19): profiles already visited in this
+// session paint instantly from this cache on return visits — no full
+// skeleton, no refetch from zero. Entries older than 60s still paint
+// instantly and revalidate quietly in the background. Bounded to the
+// last 10 profiles. Changes made on the page itself (follow, avatar,
+// cover) are written back by the sync effect inside the component, so
+// the cache never serves a state the user has already changed.
+const PROFILE_CACHE_FRESH_MS = 60_000;
+type ProfileCacheEntry = {
+  profile: any;
+  counts: { followers: number; following: number };
+  friendStatus: string;
+  posts: any[];
+  reels: any[];
+  savedAt: number;
+};
+const profileCache = new Map<string, ProfileCacheEntry>();
+
 export default function ProfileClient({ initialProfile, initialPosts, initialReels, initialCounts }: {
   initialProfile?: any;
   initialPosts?: any[];
@@ -169,17 +187,19 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   // their country is PK.
   const inApp = useInFrianzoApp();
   const showBoostEntry = inApp && isBoostCountryPk(currentUser?.country);
-  const [profile, setProfile] = useState<any>(initialProfile ?? null);
-  const [counts, setCounts] = useState(initialCounts ?? { followers: 0, following: 0 });
-  const [friendStatus, setFriendStatus] = useState<string>(initialProfile?.friendStatus || 'none');
-  const [loading, setLoading] = useState(!initialProfile);
+  const cachedEntry = profileCache.get(username);
+  const firstProfile = cachedEntry?.profile ?? initialProfile ?? null;
+  const [profile, setProfile] = useState<any>(firstProfile);
+  const [counts, setCounts] = useState(cachedEntry?.counts ?? initialCounts ?? { followers: 0, following: 0 });
+  const [friendStatus, setFriendStatus] = useState<string>(cachedEntry?.friendStatus || firstProfile?.friendStatus || 'none');
+  const [loading, setLoading] = useState(!firstProfile);
   const [profileError, setProfileError] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
-  const [posts, setPosts] = useState<any[]>(initialPosts ?? []);
-  const [postsLoading, setPostsLoading] = useState(!initialPosts);
-  const [reels, setReels] = useState<any[]>(initialReels ?? []);
-  const [reelsLoading, setReelsLoading] = useState(!initialReels);
+  const [posts, setPosts] = useState<any[]>(cachedEntry?.posts ?? initialPosts ?? []);
+  const [postsLoading, setPostsLoading] = useState(!cachedEntry && !initialPosts);
+  const [reels, setReels] = useState<any[]>(cachedEntry?.reels ?? initialReels ?? []);
+  const [reelsLoading, setReelsLoading] = useState(!cachedEntry && !initialReels);
   const [activeTab, setActiveTab] = useState<'all' | 'reels' | 'photos'>('all');
   const [openComments, setOpenComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, any[]>>({});
@@ -188,8 +208,8 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const [shareModalPost, setShareModalPost] = useState<string | null>(null);
   const [shareProfileOpen, setShareProfileOpen] = useState(false);
   const [messaging, setMessaging] = useState(false);
-  const [blockedByMe, setBlockedByMe] = useState(!!initialProfile?.blockedByMe);
-  const [blockedByOther, setBlockedByOther] = useState(!!initialProfile?.blockedByOther);
+  const [blockedByMe, setBlockedByMe] = useState(!!firstProfile?.blockedByMe);
+  const [blockedByOther, setBlockedByOther] = useState(!!firstProfile?.blockedByOther);
   const [blockBusy, setBlockBusy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -254,10 +274,20 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   }
 
   useEffect(() => {
+    const cached = profileCache.get(username);
+    if (retryKey === 0 && cached && Date.now() - cached.savedAt < PROFILE_CACHE_FRESH_MS) {
+      // Fresh enough: the initializers already painted the cached
+      // profile, so skip the whole refetch round. Highlights are not
+      // cached; load just those quietly.
+      fetchHighlights(username).then((result) => {
+        if (result.success) setHighlights(result.data.highlights || []);
+      }).catch(() => {});
+      return;
+    }
     let cancelled = false;
 
     async function loadProfile() {
-      if (!initialProfile) setLoading(true);
+      if (!firstProfile) setLoading(true);
       setProfileError(false);
       try {
         const result = await fetchUserProfile(username);
@@ -313,6 +343,17 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
 
     return () => { cancelled = true; };
   }, [username, retryKey]);
+
+  // Write the on-screen state back to the navigation cache, so the
+  // next visit paints exactly this (follow state and counts included).
+  useEffect(() => {
+    if (!profile || profile.username?.toLowerCase() !== username.toLowerCase()) return;
+    profileCache.set(username, { profile, counts, friendStatus, posts, reels, savedAt: Date.now() });
+    if (profileCache.size > 10) {
+      const oldest = profileCache.keys().next().value;
+      if (oldest && oldest !== username) profileCache.delete(oldest);
+    }
+  }, [username, profile, counts, friendStatus, posts, reels]);
 
   async function handleFollow() {
     if (!profile || followBusy) return;

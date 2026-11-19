@@ -23,6 +23,28 @@ import FeedReelCard from '@/components/FeedReelCard';
 import PublicLanding from '@/components/PublicLanding';
 import Avatar from '@/components/Avatar';
 
+// NAVIGATION MEMORY (2026-11-19): the home feed keeps its loaded state
+// in module scope, so leaving for a profile and coming back restores
+// the exact list, order and scroll position instead of refetching
+// page 1 from zero. A return within FEED_MEMORY_FRESH_MS does not
+// refetch at all; a later return still paints instantly and refreshes
+// quietly in the background WITHOUT replacing the list on screen.
+// Manual refresh (Home tap / pull-to-refresh) always loads a whole
+// new feed, exactly as before.
+const FEED_MEMORY_FRESH_MS = 60_000;
+type FeedMemory = {
+  userId: string;
+  posts: any[];
+  reels: any[];
+  reelEvery: number;
+  reelsHasMore: boolean;
+  offset: number;
+  hasMore: boolean;
+  scrollY: number;
+  savedAt: number;
+};
+let feedMemory: FeedMemory | null = null;
+
 function PlusIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -82,6 +104,8 @@ export default function HomePage() {
   const paintedSnapshotRef = useRef(false);
   const userScrolledRef = useRef(false);
   const ignoreScrollUntilRef = useRef(0);
+  const loadInFlightRef = useRef(false);
+  const didInitRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -121,9 +145,14 @@ export default function HomePage() {
     });
   }
 
-  async function loadFeed(isAutoRetry = false) {
+  async function loadFeed(isAutoRetry = false, keepList = false) {
     prependPendingPost();
     if (!user?.id) return;
+    // Never stack a second full load on top of one already running:
+    // overlapping triggers (mount, online event, auto-retry) collapse
+    // into the single in-flight load.
+    if (loadInFlightRef.current) return;
+    loadInFlightRef.current = true;
     if (!isAutoRetry) {
       autoRetryCountRef.current = 0;
       setAutoRetrying(false);
@@ -168,6 +197,7 @@ export default function HomePage() {
         setFeedError(true);
       }
       setFeedLoading(false);
+      loadInFlightRef.current = false;
       return;
     }
 
@@ -191,7 +221,7 @@ export default function HomePage() {
         // they are reading. The fresh page is saved to both caches
         // either way, so the next open (or a manual refresh, which
         // resets the scroll flag) shows it.
-        if (!userScrolledRef.current) {
+        if (!keepList && !userScrolledRef.current) {
           setPosts(result.data.posts);
           setHasMore(!!result.data.hasMore);
           setOffset(result.data.posts.length);
@@ -199,7 +229,7 @@ export default function HomePage() {
         setFeedOffline(false);
         await saveOfflineFeed(user.id, result.data.posts, !!result.data.hasMore);
         saveFeedSnapshot(user.id, result.data.posts, !!result.data.hasMore);
-      } else {
+      } else if (!keepList) {
         setFeedError(true);
         scheduleAutoRetry();
       }
@@ -233,42 +263,77 @@ export default function HomePage() {
         diversifiedReels.push(remainingReels[pickIdx]);
         remainingReels.splice(pickIdx, 1);
       }
-      setReels(diversifiedReels);
-      // The first reel page reports whether more reels exist; a refresh
-      // resets the pagination state along with the reel list.
-      setReelsHasMore(reelPage1?.success ? !!reelPage1.data?.hasMore : true);
+      if (!keepList) {
+        setReels(diversifiedReels);
+        // The first reel page reports whether more reels exist; a refresh
+        // resets the pagination state along with the reel list.
+        setReelsHasMore(reelPage1?.success ? !!reelPage1.data?.hasMore : true);
+      }
     } catch {
-      // Only a genuinely offline device falls back to the cached feed.
-      // A request error while online is a normal load error (the existing
-      // error/Retry state), never the end of the feed.
-      const cached = !navigator.onLine ? await getOfflineFeed(user.id) : null;
-      if (cached?.posts?.length) {
-        setPosts(cached.posts);
-        setHasMore(false);
-        setOffset(cached.posts.length);
-        setFeedOffline(true);
-      } else {
-        setFeedError(true);
-        scheduleAutoRetry();
+      // With keepList the remembered feed is already on screen: a failed
+      // background refresh changes nothing and shows no error.
+      if (!keepList) {
+        // Only a genuinely offline device falls back to the cached feed.
+        // A request error while online is a normal load error (the existing
+        // error/Retry state), never the end of the feed.
+        const cached = !navigator.onLine ? await getOfflineFeed(user.id) : null;
+        if (cached?.posts?.length) {
+          setPosts(cached.posts);
+          setHasMore(false);
+          setOffset(cached.posts.length);
+          setFeedOffline(true);
+        } else {
+          setFeedError(true);
+          scheduleAutoRetry();
+        }
       }
     } finally {
       setFeedLoading(false);
+      loadInFlightRef.current = false;
     }
   }
 
   useEffect(() => {
-    if (isAuthenticated) loadFeed();
-  }, [isAuthenticated, offline]);
+    if (!isAuthenticated || !user?.id || didInitRef.current) return;
+    didInitRef.current = true;
+    const mem = feedMemory;
+    if (mem && mem.userId === user.id && mem.posts.length) {
+      // Returning to Home: the render-phase block below already painted
+      // the remembered list. Put the scroll position back once the
+      // content has height, and refetch only when the memory is stale
+      // (quietly, keeping the list on screen).
+      const y = mem.scrollY;
+      if (y > 0) {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, y);
+          setTimeout(() => {
+            if (window.scrollY < y - 4) window.scrollTo(0, y);
+          }, 250);
+        });
+      }
+      if (Date.now() - mem.savedAt > FEED_MEMORY_FRESH_MS) void loadFeed(false, true);
+      return;
+    }
+    void loadFeed();
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
+    let onlineTimer: ReturnType<typeof setTimeout> | null = null;
     const handleOnline = () => {
       setFeedOffline(false);
-      if (isAuthenticated) loadFeed();
+      if (!isAuthenticated) return;
+      // A flaky connection can flap offline/online several times in a
+      // few seconds; collapse that storm into ONE reload 1.5s after
+      // the last 'online' event (loadFeed also refuses to stack on a
+      // load already in flight).
+      if (onlineTimer) clearTimeout(onlineTimer);
+      onlineTimer = setTimeout(() => { void loadFeed(); }, 1500);
     };
     const handleOffline = () => setFeedOffline(true);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
+      if (onlineTimer) clearTimeout(onlineTimer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
@@ -284,10 +349,28 @@ export default function HomePage() {
       if (window.scrollY > 8 && Date.now() > ignoreScrollUntilRef.current) {
         userScrolledRef.current = true;
       }
+      if (feedMemory) feedMemory.scrollY = window.scrollY;
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Keep the navigation memory in sync with what is on screen, so a
+  // return visit restores exactly this list (likes/edits included).
+  useEffect(() => {
+    if (!user?.id || posts.length === 0) return;
+    feedMemory = {
+      userId: user.id,
+      posts,
+      reels,
+      reelEvery,
+      reelsHasMore,
+      offset,
+      hasMore,
+      scrollY: feedMemory?.userId === user.id ? feedMemory.scrollY : 0,
+      savedAt: Date.now(),
+    };
+  }, [posts, reels, reelEvery, reelsHasMore, offset, hasMore, user?.id]);
 
   async function handleManualRefresh() {
     if (refreshing || feedOffline) return;
@@ -519,8 +602,22 @@ export default function HomePage() {
   // continues with the normal network load, exactly as before.
   if (user?.id && snapshotUserId !== user.id) {
     setSnapshotUserId(user.id);
-    const snap = readFeedSnapshot(user.id);
-    if (snap) {
+    const mem = feedMemory && feedMemory.userId === user.id && feedMemory.posts.length ? feedMemory : null;
+    const snap = mem ? null : readFeedSnapshot(user.id);
+    if (mem) {
+      // Navigation memory is newer than the stored snapshot (it holds
+      // the exact list, pagination and scroll the user left): paint it.
+      paintedSnapshotRef.current = true;
+      userScrolledRef.current = mem.scrollY > 8;
+      setPosts(mem.posts);
+      setReels(mem.reels);
+      setReelEvery(mem.reelEvery);
+      setReelsHasMore(mem.reelsHasMore);
+      setHasMore(mem.hasMore);
+      setOffset(mem.offset);
+      setFeedOffline(false);
+      setFeedLoading(false);
+    } else if (snap) {
       paintedSnapshotRef.current = true;
       setPosts(snap.posts);
       setHasMore(snap.hasMore);
