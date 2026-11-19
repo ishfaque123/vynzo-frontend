@@ -5,6 +5,36 @@ import Link from 'next/link';
 
 const SEE_MORE_LIMIT = 280;
 
+const URL_PART_RE = /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i;
+
+// Splits sentence punctuation that directly follows a URL (a full stop, a
+// comma, an unmatched closing bracket, ...) off the link target, so the
+// href stays the address the author actually typed while the punctuation
+// still renders as plain text right behind the link.
+function splitUrlTrailingPunctuation(raw: string): { url: string; trailing: string } {
+  let url = raw;
+  let trailing = '';
+  for (;;) {
+    const punct = url.match(/[.,;:!?'"”’»]+$/);
+    if (punct) {
+      trailing = punct[0] + trailing;
+      url = url.slice(0, -punct[0].length);
+      continue;
+    }
+    if (url.endsWith(')') && url.split(')').length > url.split('(').length) {
+      trailing = ')' + trailing;
+      url = url.slice(0, -1);
+      continue;
+    }
+    if (url.endsWith(']') && url.split(']').length > url.split('[').length) {
+      trailing = ']' + trailing;
+      url = url.slice(0, -1);
+      continue;
+    }
+    return { url, trailing };
+  }
+}
+
 export default function PostContent({ text, className }: { text: string; className?: string }) {
   const [expanded, setExpanded] = useState(false);
   const [overflowsLines, setOverflowsLines] = useState(false);
@@ -15,7 +45,7 @@ export default function PostContent({ text, className }: { text: string; classNa
     ? text.slice(0, SEE_MORE_LIMIT).replace(/\s+\S*$/, '') + '\u2026'
     : text;
   const displayText = expanded || !isLong ? text : truncated;
-  const parts = displayText.split(/(#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/g);
+  const parts = displayText.split(/(https?:\/\/[^\s]+|www\.[^\s]+|#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/g);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const copiedRef = useRef(false);
 
@@ -77,6 +107,27 @@ export default function PostContent({ text, className }: { text: string; classNa
     >
       <span ref={textRef} className={expanded ? undefined : 'line-clamp-5'}>
         {parts.map((part, i) => {
+          if (URL_PART_RE.test(part) && !part.includes('\u2026')) {
+            // A URL carrying the truncation ellipsis was cut off by the
+            // collapsed "See more" view, so its address is incomplete:
+            // leave it as plain text here; the full text links it.
+            const { url, trailing } = splitUrlTrailingPunctuation(part);
+            const href = /^www\./i.test(url) ? `https://${url}` : url;
+            return (
+              <span key={i}>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-blue-600 break-all hover:underline"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                >
+                  {url}
+                </a>
+                {trailing}
+              </span>
+            );
+          }
           if (/^#[a-zA-Z0-9_]+$/.test(part)) {
             const tag = part.slice(1);
             return (

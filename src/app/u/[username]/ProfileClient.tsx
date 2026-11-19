@@ -18,7 +18,6 @@ import ShareModal from '@/components/ShareModal';
 import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
-import { AdsterraBanner } from '@/components/Adsterra';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
@@ -764,31 +763,11 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           <p className="px-4 text-slate-500">No posts yet.</p>
         ) : (
           <div>
-            {/* Thin banner at the very top of the All tab, directly
-                under the tabs divider (owner-approved, 2026-10-23).
-                The fixed-height wrapper reserves the slot so the layout
-                never shifts whether the ad fills or not. */}
-            <div className="mt-2 flex h-[50px] w-full items-center justify-center overflow-hidden">
-              <AdsterraBanner size="320x50" />
-            </div>
             {(() => {
               const entries = [...posts.map((p) => ({ kind: 'post' as const, item: p })), ...reels.map((r) => ({ kind: 'reel' as const, item: r }))]
                 .sort((a, b) => Number(b.item.isPinned || false) - Number(a.item.isPinned || false) || new Date(b.item.createdAt).getTime() - new Date(a.item.createdAt).getTime());
-              // Thin banner ads between posts (owner-approved pattern,
-              // 2026-10-23): after post #1, #5 and #11, then every 6 posts
-              // (17, 23, ...). Only actual posts advance the counter —
-              // interleaved reels do not. The 320x50 unit is used at every
-              // viewport width: the profile column is max-w-xl (576px), so
-              // the 728x90 unit could never render at its full size here
-              // and would clip — the owner requires ads to show at their
-              // correct size, centered and fully contained. The wrapper is
-              // full-width with overflow hidden so an ad can never push the
-              // page sideways.
-              let postsSeen = 0;
               return entries.map((entry) => {
                 const isPost = entry.kind === 'post';
-                if (isPost) postsSeen += 1;
-                const showAd = isPost && (postsSeen === 1 || postsSeen === 5 || postsSeen === 11 || (postsSeen > 11 && (postsSeen - 11) % 6 === 0));
                 return (
                   <Fragment key={isPost ? `post-${entry.item.id}` : `reel-${entry.item.id}`}>
                     {isPost ? (
@@ -797,11 +776,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
                         onUpdated={handlePostUpdated} onDeleted={handlePostDeleted} />
                     ) : (
                       <div className="mx-4 mb-4"><FeedReelCard reel={entry.item} currentUser={currentUser} /></div>
-                    )}
-                    {showAd && (
-                      <div className="my-4 flex w-full max-w-full justify-center overflow-hidden">
-                        <AdsterraBanner size="320x50" />
-                      </div>
                     )}
                   </Fragment>
                 );
