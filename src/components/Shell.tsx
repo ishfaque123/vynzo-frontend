@@ -11,6 +11,7 @@ import { logoutRequest } from '@/lib/api/authApi';
 import { fetchDashboard, fetchFollowCounts } from '@/lib/api/userApi';
 import UsageTracker from '@/components/UsageTracker';
 import PushRegistrar from '@/components/PushRegistrar';
+import Avatar from '@/components/Avatar';
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -131,6 +132,15 @@ function FriendsIcon() {
   );
 }
 
+function AiVideoIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+      <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" />
+    </svg>
+  );
+}
+
 function IsaiIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -154,6 +164,7 @@ const drawerLinks = [
   { label: 'Your Activity', href: '/settings-menu/activity', Icon: ActivityIcon },
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: DashboardIcon },
   { label: 'Close Friends', href: '/settings-menu/close-friends', Icon: FriendsIcon },
+  { label: 'AI Video Generator', href: '/ai-video', Icon: AiVideoIcon },
   { label: 'ISAI Assistant', href: '/ai-assistant', Icon: IsaiIcon },
 ];
 
@@ -372,10 +383,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
           <Link href={profileHref} onClick={() => setDrawerOpen(false)} className="flex items-center gap-3 border-b px-4 py-4 hover:bg-slate-50">
             <span className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
-              {user?.profilePictureUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.profilePictureUrl} alt="" className="h-full w-full object-cover" />
-              ) : null}
+              <Avatar url={user?.profilePictureUrl} name={user?.displayName || user?.username} px={48} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold text-slate-900">{user?.displayName || user?.username || 'Your profile'}</span>

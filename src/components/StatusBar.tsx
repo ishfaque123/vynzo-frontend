@@ -8,6 +8,7 @@ import { useDraggableStickers, DraggableStickerLayer } from './useDraggableStick
 import StickerSheets, { SheetKind } from './StickerSheets';
 import { StickerFaceIcon } from './StickerIcons';
 import Toast from './Toast';
+import { avatarThumbUrl } from './Avatar';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
 
@@ -145,10 +146,16 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
                 myGroup && myGroup.items.length > 0 ? 'bg-slate-300' : ''
               }`}
             >
-              <span
-                className="h-full w-full rounded-full border-2 border-white bg-slate-200 bg-cover bg-center"
-                style={user.profilePictureUrl ? { backgroundImage: `url(${user.profilePictureUrl})` } : {}}
-              />
+              <span className="relative block h-full w-full overflow-hidden rounded-full border-2 border-white bg-slate-200">
+                {user.profilePictureUrl && (
+                  <img
+                    src={avatarThumbUrl(user.profilePictureUrl) || user.profilePictureUrl}
+                    alt=""
+                    onError={(e) => { const img = e.currentTarget; const full = user.profilePictureUrl; if (full && img.src !== full) img.src = full; }}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                )}
+              </span>
             </span>
             <PlusBadge />
           </span>
@@ -162,10 +169,16 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
                 g.hasUnseen ? 'bg-gradient-to-tr from-amber-400 to-pink-600' : 'bg-slate-300'
               }`}
             >
-              <span
-                className="h-full w-full rounded-full border-2 border-white bg-slate-200 bg-cover bg-center"
-                style={g.user?.profilePictureUrl ? { backgroundImage: `url(${g.user.profilePictureUrl})` } : {}}
-              />
+              <span className="relative block h-full w-full overflow-hidden rounded-full border-2 border-white bg-slate-200">
+                {g.user?.profilePictureUrl && (
+                  <img
+                    src={avatarThumbUrl(g.user.profilePictureUrl) || g.user.profilePictureUrl}
+                    alt=""
+                    onError={(e) => { const img = e.currentTarget; const full = g.user?.profilePictureUrl; if (full && img.src !== full) img.src = full; }}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                )}
+              </span>
             </span>
             <span className="max-w-[60px] truncate text-[11px] text-slate-600">{g.user?.displayName}</span>
           </button>

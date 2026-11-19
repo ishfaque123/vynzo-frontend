@@ -6,6 +6,7 @@ import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
 import { useAuth } from '@/lib/auth/useAuth';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import Avatar from '@/components/Avatar';
 
 function formatConversationTime(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -412,13 +413,7 @@ export default function MessagesPage() {
                 </span>
               )}
               <div className="relative flex-shrink-0">
-                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
-                  {c.otherUser?.profilePictureUrl ? (
-                    <img src={c.otherUser.profilePictureUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    c.otherUser?.displayName?.[0]?.toUpperCase() || '?'
-                  )}
-                </div>
+                <Avatar url={c.otherUser?.profilePictureUrl} name={c.otherUser?.displayName || c.otherUser?.username} px={48} />
                 {c.otherUser?.isOnline && (
                   <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
                 )}

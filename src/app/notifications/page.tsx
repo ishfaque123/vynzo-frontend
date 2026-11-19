@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/notificationApi';
 import SkeletonNotificationRow from '@/components/SkeletonNotificationRow';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import Avatar from '@/components/Avatar';
 import { useAuth } from '@/lib/auth/useAuth';
 import { saveOfflineNotifications, getOfflineNotifications } from '@/lib/offline/feedCache';
 
@@ -466,11 +467,7 @@ function NotificationRow({
       )}
       {n.actor?.profilePictureUrl ? (
         <span className="relative flex-shrink-0">
-          <img
-            src={n.actor.profilePictureUrl}
-            alt={n.actor.displayName || n.actor.username || ''}
-            className="h-9 w-9 rounded-full object-cover"
-          />
+          <Avatar url={n.actor.profilePictureUrl} name={n.actor.displayName || n.actor.username} px={36} />
           {n.actor.isVerified && (
             <span className="absolute -bottom-0.5 -right-0.5">
               <VerifiedBadge size="sm" />
