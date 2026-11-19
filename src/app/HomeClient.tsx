@@ -367,7 +367,7 @@ export default function HomePage() {
       reelsHasMore,
       offset,
       hasMore,
-      scrollY: feedMemory?.userId === user.id ? feedMemory.scrollY : 0,
+      scrollY: feedMemory?.userId === user.id ? (feedMemory?.scrollY ?? 0) : 0,
       savedAt: Date.now(),
     };
   }, [posts, reels, reelEvery, reelsHasMore, offset, hasMore, user?.id]);
