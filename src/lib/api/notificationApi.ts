@@ -11,8 +11,14 @@ async function readJson(res: Response) {
   }
 }
 
-export async function fetchNotifications() {
-  const res = await fetch(`${API_URL}/api/notifications`, { credentials: 'include', cache: 'no-store' });
+export async function fetchNotifications(params?: { offset?: number; limit?: number }) {
+  // With no params the request URL is exactly the historical one; the server
+  // then returns the first page (newest 50) plus a hasMore flag.
+  const query = new URLSearchParams();
+  if (params?.offset !== undefined) query.set('offset', String(params.offset));
+  if (params?.limit !== undefined) query.set('limit', String(params.limit));
+  const qs = query.toString();
+  const res = await fetch(`${API_URL}/api/notifications${qs ? `?${qs}` : ''}`, { credentials: 'include', cache: 'no-store' });
   return readJson(res);
 }
 

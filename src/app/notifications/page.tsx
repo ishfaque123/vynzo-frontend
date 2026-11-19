@@ -334,6 +334,7 @@ const LONG_PRESS_MS = 500;
 const SWIPE_THRESHOLD = -80; // px dragged left to trigger delete
 const MAX_DRAG = -110; // px, how far the row can visually slide before release
 const UNDO_WINDOW_MS = 4000;
+const PAGE_SIZE = 50; // matches the server's default page size
 
 // Blocks the browser's native long-press callout/selection menu without
 // touching normal vertical scrolling.
@@ -519,22 +520,41 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [filter, setFilter] = useState<'all' | 'likes' | 'comments' | 'follows'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [pendingUndo, setPendingUndo] = useState<{ key: string; ids: string[]; items: Notification[]; timer: ReturnType<typeof setTimeout> } | null>(null);
+  // Pagination bookkeeping lives in refs so the scroll observer and the
+  // load-more callback never act on stale state.
+  const offsetRef = useRef(0);
+  const hasMoreRef = useRef(false);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
     (async () => {
       try {
         const result = await fetchNotifications();
         if (cancelled) return;
         if (result.success) {
-          setNotifications(result.data.notifications);
+          const rows: Notification[] = result.data.notifications;
+          setNotifications(rows);
           setOfflineMode(false);
+          offsetRef.current = rows.length;
+          const more = rows.length > 0 && !!result.data.hasMore;
+          hasMoreRef.current = more;
+          setHasMore(more);
           if (user?.id) saveOfflineNotifications(user.id, result.data.notifications).catch(() => {});
         } else {
           throw new Error('fetch failed');
@@ -542,19 +562,70 @@ export default function NotificationsPage() {
       } catch {
         if (cancelled) return;
         // Offline: show cached notifications like Facebook does
+        let shownFromCache = false;
         if (user?.id) {
           const cached = await getOfflineNotifications<Notification>(user.id);
           if (cached && cached.length > 0) {
             setNotifications(cached);
             setOfflineMode(true);
+            shownFromCache = true;
           }
         }
+        // Nothing to show and the fetch failed: this is an error, not an
+        // empty list — the page renders a retry state for it below.
+        if (!shownFromCache) setLoadError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, retryCount]);
+
+  // Fetch the next page and append it. Grouping and filters run over the
+  // loaded rows, so appended rows join existing groups automatically. The
+  // server marks exactly the returned rows read, so older pages stay unread
+  // until they have actually been loaded here.
+  async function loadMore() {
+    if (loadingMoreRef.current || !hasMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setLoadMoreError(false);
+    try {
+      const result = await fetchNotifications({ offset: offsetRef.current, limit: PAGE_SIZE });
+      if (!result.success) throw new Error('load more failed');
+      const rows: Notification[] = result.data.notifications;
+      offsetRef.current += rows.length;
+      const more = rows.length > 0 && !!result.data.hasMore;
+      hasMoreRef.current = more;
+      setHasMore(more);
+      if (rows.length > 0) {
+        setNotifications((prev) => {
+          const seen = new Set(prev.map((n) => n.id));
+          return [...prev, ...rows.filter((n) => !seen.has(n.id))];
+        });
+      }
+    } catch {
+      setLoadMoreError(true);
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }
+  loadMoreRef.current = loadMore;
+
+  // Load the next page as the bottom sentinel scrolls into view.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreRef.current();
+      },
+      { rootMargin: '400px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading, filter, notifications.length, hasMore]);
 
   async function handleRowTap(ids: string[]) {
     const unreadIds = notifications.filter((n) => ids.includes(n.id) && !n.read).map((n) => n.id);
@@ -668,6 +739,23 @@ export default function NotificationsPage() {
     setPendingUndo(null);
   }
 
+  // Bottom-of-list pagination UI: an invisible sentinel the observer watches,
+  // a spinner while the next page loads, and a manual retry if it failed.
+  const loadMoreFooter = (
+    <>
+      <div ref={sentinelRef} />
+      {loadingMore && <p className="py-4 text-center text-sm text-slate-400">Loading more...</p>}
+      {loadMoreError && !loadingMore && (
+        <div className="py-4 text-center">
+          <p className="text-sm text-slate-500">Couldn&apos;t load more notifications.</p>
+          <button onClick={() => loadMoreRef.current()} className="mt-1 text-sm font-medium text-blue-600">
+            Retry
+          </button>
+        </div>
+      )}
+    </>
+  );
+
   if (loading) {
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-0.5 px-2 py-2" role="status" aria-label="Loading notifications">
@@ -680,11 +768,47 @@ export default function NotificationsPage() {
     );
   }
 
+  // The fetch failed and there is nothing cached to show: say so and offer a
+  // retry instead of pretending the list is empty.
+  if (loadError && notifications.length === 0 && !pendingUndo) {
+    return (
+      <div className="mx-auto max-w-xl px-2 py-2 pb-20">
+        <div className="flex items-center justify-between px-2 py-2">
+          <h1 className="text-lg font-semibold">Notifications</h1>
+        </div>
+        <div className="flex min-h-[50vh] flex-col items-center justify-center px-4 text-center">
+          <div className="text-slate-300">
+            <BellEmptyIcon />
+          </div>
+          <p className="mt-2 text-slate-500">
+            Couldn&apos;t load your notifications. Check your connection and try again.
+          </p>
+          <button
+            onClick={() => setRetryCount((c) => c + 1)}
+            className="mt-4 rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (visibleGroups.length === 0 && !pendingUndo && !loading) {
     return (
       <div className="mx-auto max-w-xl px-2 py-2 pb-20">
         <div className="flex items-center justify-between px-2 py-2">
           <h1 className="text-lg font-semibold">Notifications</h1>
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <button onClick={handleMarkAllRead} className="text-sm font-medium text-blue-600">
+                Mark all read
+              </button>
+            )}
+            <button onClick={handleDeleteAll} className="text-sm font-medium text-red-600">
+              Clear all
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 overflow-x-auto px-2 py-1">
           {FILTERS.map((f) => (
@@ -707,6 +831,7 @@ export default function NotificationsPage() {
             {filter === 'all' ? "You're all caught up. New activity will show up here." : `No ${filter} notifications yet.`}
           </p>
         </div>
+        {loadMoreFooter}
       </div>
     );
   }
@@ -774,6 +899,8 @@ export default function NotificationsPage() {
           );
         })}
       </div>
+
+      {loadMoreFooter}
 
       {selectMode && (
         <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white p-3">
