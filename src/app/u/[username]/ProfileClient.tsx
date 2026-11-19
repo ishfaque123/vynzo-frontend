@@ -909,13 +909,13 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
       )}
       {photoViewer && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
+          className="fixed inset-0 h-[100dvh] w-[100vw] z-[100] flex items-center justify-center bg-black/90"
           role="dialog"
           aria-modal="true"
           aria-label={photoViewer.alt}
           onClick={() => setPhotoViewer(null)}
         >
-          <img src={photoViewer.url} alt={photoViewer.alt} className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+          <img src={photoViewer.url} alt={photoViewer.alt} className="max-h-[100dvh] max-w-[100vw] h-auto w-auto object-contain" onClick={(e) => e.stopPropagation()} />
           <button
             type="button"
             onClick={() => setPhotoViewer(null)}
