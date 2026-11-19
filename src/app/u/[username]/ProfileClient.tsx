@@ -197,6 +197,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [confirmUnfollow, setConfirmUnfollow] = useState(false);
+  const [photoViewer, setPhotoViewer] = useState<{ url: string; alt: string } | null>(null);
   const [followBusy, setFollowBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [highlights, setHighlights] = useState<any[]>([]);
@@ -208,6 +209,19 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const [hlSaving, setHlSaving] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // Full-screen photo viewer: close on Escape and lock page scroll while open.
+  useEffect(() => {
+    if (!photoViewer) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPhotoViewer(null); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [photoViewer]);
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -522,7 +536,11 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         </Link>
       )}
       <div className="relative">
-        <div className="h-32 bg-cover bg-center bg-slate-200" style={{ backgroundImage: `url(${profile.coverPhotoUrl || '/images/default-cover.svg'})` }} />
+        {profile.coverPhotoUrl ? (
+          <button type="button" onClick={() => setPhotoViewer({ url: profile.coverPhotoUrl, alt: 'Cover photo' })} aria-label="View cover photo" className="block h-32 w-full cursor-pointer bg-cover bg-center bg-slate-200" style={{ backgroundImage: `url(${profile.coverPhotoUrl})` }} />
+        ) : (
+          <div className="h-32 bg-cover bg-center bg-slate-200" style={{ backgroundImage: `url(/images/default-cover.svg)` }} />
+        )}
         {isMe && (
           <>
             <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
@@ -540,11 +558,13 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
       <div className="px-4">
         <div className="-mt-10 mb-2 flex items-end justify-between">
           <div className="relative h-20 w-20 flex-shrink-0">
-            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200 bg-cover bg-center" style={profile.profilePictureUrl ? { backgroundImage: `url(${profile.profilePictureUrl})` } : {}}>
-              {!profile.profilePictureUrl && (
+            {profile.profilePictureUrl ? (
+              <button type="button" onClick={() => setPhotoViewer({ url: profile.profilePictureUrl, alt: 'Profile photo' })} aria-label="View profile photo" className="h-20 w-20 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-slate-200 bg-cover bg-center" style={{ backgroundImage: `url(${profile.profilePictureUrl})` }} />
+            ) : (
+              <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-slate-200">
                 <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">{profile.displayName?.[0]?.toUpperCase() || '?'}</span>
-              )}
-            </div>
+              </div>
+            )}
             {!isMe && profile.isOnline && (
               <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" aria-label="Online" />
             )}
@@ -885,6 +905,25 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
               {hlSaving ? 'Creating...' : `Create (${hlSelected.length} selected)`}
             </button>
           </div>
+        </div>
+      )}
+      {photoViewer && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
+          role="dialog"
+          aria-modal="true"
+          aria-label={photoViewer.alt}
+          onClick={() => setPhotoViewer(null)}
+        >
+          <img src={photoViewer.url} alt={photoViewer.alt} className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+          <button
+            type="button"
+            onClick={() => setPhotoViewer(null)}
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
         </div>
       )}
     </div>
