@@ -3,9 +3,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
-import { playPostSound } from '@/lib/sounds';
 import { takePendingComposeImage } from '@/lib/pendingComposeImage';
-import { setPendingNewPost } from '@/lib/pendingNewPost';
+import { startPendingPostUpload } from '@/lib/pendingPostUpload';
 import { setPendingReelVideo } from '@/lib/pendingReelVideo';
 import { fetchReelsConfig, fetchMyReelStatus } from '@/lib/api/reelApi';
 import { compressImageFile } from '@/lib/compressImage';
@@ -144,7 +143,6 @@ function ComposeForm() {
   const [backgroundPickerOpen, setBackgroundPickerOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -385,8 +383,6 @@ function ComposeForm() {
   function handleSubmit() {
     if ((!content.trim() && !image) || submitting) return;
 
-    setSubmitting(true);
-    setProgress(0);
     setSubmitError(null);
 
     const formData = new FormData();
@@ -398,39 +394,18 @@ function ComposeForm() {
     if (location) formData.append('location', location);
     if (image) formData.append('image', image);
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${API_URL}/api/posts`);
-    xhr.withCredentials = true;
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        setProgress(Math.round((event.loaded / event.total) * 100));
-      }
-    };
-
-    xhr.onload = () => {
-      let result: any = null;
-      try { result = JSON.parse(xhr.responseText); } catch {}
-      if (xhr.status >= 200 && xhr.status < 300 && result?.success) {
-        setProgress(100);
-        playPostSound();
-        // Save for optimistic prepend on home feed
-        if (result.data?.post) setPendingNewPost(result.data.post);
-        setTimeout(() => router.push('/'), 400);
-      } else {
-        setSubmitError(result?.error?.message || 'Failed to create post');
-        setSubmitting(false);
-        setProgress(0);
-      }
-    };
-
-    xhr.onerror = () => {
-      setSubmitError('Network error. Please try again.');
+    // Facebook-style handoff: the Shell-level holder in
+    // lib/pendingPostUpload runs the upload in the background (its
+    // progress shows in the Shell posting bar), and the user goes
+    // straight to the feed instead of waiting on this page. The local
+    // submitting flag stays as this composer's double-submit guard.
+    setSubmitting(true);
+    if (!startPendingPostUpload(formData, imagePreview)) {
       setSubmitting(false);
-      setProgress(0);
-    };
-
-    xhr.send(formData);
+      setSubmitError('A post is already being published. Please wait for it to finish.');
+      return;
+    }
+    router.push('/');
   }
 
   const currentAudience = AUDIENCE_OPTIONS.find((a) => a.value === visibility)!;
@@ -451,12 +426,6 @@ function ComposeForm() {
           {submitting ? 'Posting...' : 'Post'}
         </button>
       </div>
-
-      {submitting && (
-        <div className="h-1 w-full bg-slate-100">
-          <div className="h-full bg-blue-600 transition-all duration-150" style={{ width: `${progress}%` }} />
-        </div>
-      )}
 
       {submitError && (
         <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700">

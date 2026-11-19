@@ -11,6 +11,7 @@ import { logoutRequest } from '@/lib/api/authApi';
 import { fetchDashboard, fetchFollowCounts } from '@/lib/api/userApi';
 import UsageTracker from '@/components/UsageTracker';
 import PushRegistrar from '@/components/PushRegistrar';
+import PostingBar from '@/components/PostingBar';
 import Avatar from '@/components/Avatar';
 
 function HomeIcon({ active }: { active: boolean }) {
@@ -362,6 +363,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </nav>}
 
       <main className={isReels ? 'relative min-h-0 flex-1' : 'flex-1'}>{children}</main>
+
+      {/* Background post upload progress (composer hands off and goes
+          straight to the feed; this bar is the posting feedback). */}
+      <PostingBar />
 
       {/* Professional side-drawer menu (replaces the old full-page hamburger menu) */}
       <div className={`fixed inset-0 z-40 ${drawerOpen ? '' : 'pointer-events-none'}`} aria-hidden={!drawerOpen}>

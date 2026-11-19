@@ -92,15 +92,23 @@ export default function HomePage() {
     };
   }, []);
 
-  async function loadFeed(isAutoRetry = false) {
-    // Optimistically prepend just-created post (Facebook/Instagram behavior)
+  // Prepend the just-published post held by pendingNewPost
+  // (Facebook/Instagram behavior). loadFeed() calls this on every load;
+  // the 'frianzo:post-published' listener below calls it when a
+  // background upload finishes while this feed is already on screen —
+  // the normal case now that the composer hands the upload off and
+  // navigates here before the upload completes.
+  function prependPendingPost() {
     const pendingPost = takePendingNewPost();
-    if (pendingPost) {
-      setPosts((prev: any[]) => {
-        if (prev.some((p: any) => p.id === pendingPost.id)) return prev;
-        return [pendingPost, ...prev];
-      });
-    }
+    if (!pendingPost) return;
+    setPosts((prev: any[]) => {
+      if (prev.some((p: any) => p.id === pendingPost.id)) return prev;
+      return [pendingPost, ...prev];
+    });
+  }
+
+  async function loadFeed(isAutoRetry = false) {
+    prependPendingPost();
     if (!user?.id) return;
     if (!isAutoRetry) {
       autoRetryCountRef.current = 0;
@@ -255,6 +263,21 @@ export default function HomePage() {
     };
     window.addEventListener('frianzo:refresh-feed', handleRefreshFeed);
     return () => window.removeEventListener('frianzo:refresh-feed', handleRefreshFeed);
+  }, []);
+
+  // A background post upload (see lib/pendingPostUpload) dispatches
+  // 'frianzo:post-published' when it finishes; prepend the new post to
+  // the feed already on screen. Kept behind a ref so the listener
+  // always calls the latest handler without re-registering, same as
+  // the refresh-feed listener above.
+  const prependPendingPostRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    prependPendingPostRef.current = prependPendingPost;
+  });
+  useEffect(() => {
+    const handlePostPublished = () => prependPendingPostRef.current();
+    window.addEventListener('frianzo:post-published', handlePostPublished);
+    return () => window.removeEventListener('frianzo:post-published', handlePostPublished);
   }, []);
 
   async function loadMore(fromRetry = false) {
