@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createVerificationRequest, fetchMyVerificationRequest } from '@/lib/api/userApi';
+import { createPayFastBlueTickPayment, payfastErrorMessage, submitPayFastCheckout } from '@/lib/api/payfastApi';
 import Toast from '@/components/Toast';
 
 type Requirement = { current: number | string; required: number | string; met: boolean };
@@ -40,6 +41,7 @@ export default function VerificationPage() {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [payfastBusy, setPayfastBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   async function load() {
@@ -55,6 +57,16 @@ export default function VerificationPage() {
   }
 
   useEffect(() => {
+    // Returning from PayFast's hosted page: the backend return
+    // endpoints redirect here with ?payfast=success|failed. The tick
+    // itself is activated only by the verified server callback, so a
+    // success flag can land a few moments before the badge shows.
+    const flag = new URLSearchParams(window.location.search).get('payfast');
+    if (flag === 'success') {
+      setToast({ message: 'Payment received. If your Blue Tick is not active yet, it will activate within a few moments.', type: 'success' });
+    } else if (flag === 'failed') {
+      setToast({ message: 'Your payment was not completed. You can try again, or use the manual EasyPaisa option.', type: 'error' });
+    }
     load();
   }, []);
 
@@ -73,6 +85,18 @@ export default function VerificationPage() {
     setEligibility(result.data.eligibility || eligibility);
     setReason('');
     setToast({ message: 'Verification request submitted successfully.', type: 'success' });
+  }
+
+  async function payWithPayFast() {
+    setPayfastBusy(true);
+    const result = await createPayFastBlueTickPayment();
+    if (!result.success) {
+      setPayfastBusy(false);
+      setToast({ message: payfastErrorMessage(result), type: 'error' });
+      return;
+    }
+    // Navigates the browser/WebView away to PayFast's payment page.
+    submitPayFastCheckout(result.data.checkout);
   }
 
   if (loading) {
@@ -167,6 +191,29 @@ export default function VerificationPage() {
           </ul>
         </div>
 
+        <div className="mt-4 rounded-2xl border border-slate-200 p-4">
+          <p className="text-sm font-semibold text-slate-900">Get the Blue Tick now</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Skip the requirements: get the Blue Tick for <span className="font-semibold text-slate-900">Rs 400 for 1 month</span>. It activates automatically as soon as your payment is confirmed.
+          </p>
+          <button
+            type="button"
+            disabled={payfastBusy}
+            onClick={payWithPayFast}
+            className="mt-3 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {payfastBusy ? 'Opening secure payment...' : 'Pay with PayFast'}
+          </button>
+          <p className="mt-2 text-center text-xs text-slate-400">Pay by card, JazzCash, Easypaisa, bank account or Raast on PayFast&apos;s secure page.</p>
+
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Or pay manually</p>
+            <p className="mt-1.5 text-sm text-slate-600">
+              Send <span className="font-semibold text-slate-900">Rs 400</span> by EasyPaisa to Till ID <span className="font-semibold text-slate-900">990001988</span> (account title: SHAHI COMMUNICATION), then send your payment screenshot and transaction ID to the Frianzo team. Your Blue Tick is activated after the payment is reviewed.
+            </p>
+          </div>
+        </div>
+
         <div className="mt-4 divide-y rounded-2xl border px-4">
           {requirementItems.map(({ label, item, suffix, icon }) => (
             <RequirementRow key={label} label={label} item={item} suffix={suffix} icon={icon} />
@@ -220,3 +267,4 @@ export default function VerificationPage() {
     </div>
   );
 }
+
