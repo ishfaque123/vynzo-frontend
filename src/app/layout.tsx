@@ -4,6 +4,7 @@ import Shell from '@/components/Shell';
 import ThemeProvider from '@/components/ThemeProvider';
 import { FollowProvider } from '@/contexts/FollowContext';
 import OfflineServiceWorker from '@/components/OfflineServiceWorker';
+import AppReadySignal from '@/components/AppReadySignal';
 import { fetchSeoSettings } from '@/lib/api/settingsApi';
 
 const SITE_URL = 'https://www.frianzo.online';
@@ -150,6 +151,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <OfflineServiceWorker />
+        <AppReadySignal />
         <ThemeProvider>
           <FollowProvider>
             <Shell>{children}</Shell>
