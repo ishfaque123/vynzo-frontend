@@ -172,6 +172,12 @@ type ProfileCacheEntry = {
 };
 const profileCache = new Map<string, ProfileCacheEntry>();
 
+function formatCount(n: number) {
+  if (n < 1000) return `${n}`;
+  if (n < 1000000) { const k = n / 1000; return `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
+  const m = n / 1000000; return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
+}
+
 export default function ProfileClient({ initialProfile, initialPosts, initialReels, initialCounts }: {
   initialProfile?: any;
   initialPosts?: any[];
@@ -838,6 +844,10 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
                     <video src={`${r.videoUrl}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                   )}
                   <svg className="absolute right-1.5 top-1.5 h-4 w-4 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-[11px] font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]">
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                    {formatCount(r.viewCount || 0)}
+                  </span>
                 </Link>
               ))}
             </div>
