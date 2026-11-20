@@ -8,6 +8,7 @@ import { useDraggableStickers, DraggableStickerLayer } from './useDraggableStick
 import StickerSheets, { SheetKind } from './StickerSheets';
 import { StickerFaceIcon } from './StickerIcons';
 import Toast from './Toast';
+import VerifiedBadge from './VerifiedBadge';
 import { avatarThumbUrl } from './Avatar';
 
 const BG_COLORS = ['#1e293b', '#7c3aed', '#be185d', '#0369a1', '#15803d', '#b45309'];
@@ -180,7 +181,10 @@ export default function StatusBar({ user, offline = false }: { user: any; offlin
                 )}
               </span>
             </span>
-            <span className="max-w-[60px] truncate text-[11px] text-slate-600">{g.user?.displayName}</span>
+            <span className="flex max-w-[68px] items-center gap-0.5">
+              <span className="truncate text-[11px] text-slate-600">{g.user?.displayName}</span>
+              {g.user?.isVerified && <VerifiedBadge size="xs" />}
+            </span>
           </button>
         ))}
       </div>

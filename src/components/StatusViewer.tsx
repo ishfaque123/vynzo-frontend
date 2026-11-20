@@ -6,6 +6,7 @@ import { viewStatus, fetchStatusViewers, deleteStatus, toggleStatusLike, muteSto
 import { createConversation } from '@/lib/api/messageApi';
 import { setPendingMessageText } from '@/lib/pendingMessageText';
 import StoryStickers from './StoryStickers';
+import VerifiedBadge from './VerifiedBadge';
 
 const ITEM_DURATION_MS = 5000; // photo / text statuses only
 
@@ -428,7 +429,7 @@ export default function StatusViewer({
               className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-slate-600 bg-cover bg-center"
               style={group.user?.profilePictureUrl ? { backgroundImage: `url(${group.user.profilePictureUrl})` } : {}}
             />
-            <span className="text-sm font-medium text-white">{isMine ? 'Your status' : group.user?.displayName}</span>
+            <span className="flex items-center gap-1 text-sm font-medium text-white">{isMine ? 'Your status' : group.user?.displayName}{!isMine && group.user?.isVerified && <VerifiedBadge size="sm" />}</span>
             <span className="text-xs text-white/60">{timeAgo(item.createdAt)}</span>
           </div>
           <div className="flex items-center gap-3">
@@ -570,7 +571,7 @@ export default function StatusViewer({
                         className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200 bg-cover bg-center"
                         style={v.profilePictureUrl ? { backgroundImage: `url(${v.profilePictureUrl})` } : {}}
                       />
-                      <span className="flex-1 text-sm text-slate-800">{v.displayName || v.username}</span>
+                      <span className="flex flex-1 items-center gap-1 text-sm text-slate-800">{v.displayName || v.username}{v.isVerified && <VerifiedBadge size="xs" />}</span>
                       {v.liked && <HeartIcon filled />}
                     </div>
                   ))}

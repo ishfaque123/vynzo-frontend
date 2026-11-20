@@ -1,5 +1,5 @@
-export default function VerifiedBadge({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizeClass = size === 'lg' ? 'h-5 w-5' : 'h-4 w-4';
+export default function VerifiedBadge({ size = 'sm' }: { size?: 'xs' | 'sm' | 'md' | 'lg' }) {
+  const sizeClass = size === 'lg' ? 'h-5 w-5' : size === 'xs' ? 'h-3 w-3' : 'h-4 w-4';
   return (
     <span title="Verified" aria-label="Verified" className={`inline-flex shrink-0 items-center justify-center ${sizeClass}`}>
       <svg viewBox="0 0 24 24" className="h-full w-full" aria-hidden="true">
