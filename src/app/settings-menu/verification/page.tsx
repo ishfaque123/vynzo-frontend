@@ -11,6 +11,9 @@ type Eligibility = {
   eligible: boolean;
   isVerified: boolean;
   verifiedUntil?: string | null;
+  verifiedAt?: string | null;
+  username?: string | null;
+  displayName?: string | null;
   freeMonthClaimed?: boolean;
   requirements: {
     referrals: Requirement;
@@ -133,23 +136,79 @@ export default function VerificationPage() {
   }
 
   if (eligibility.isVerified) {
+    const formatDate = (iso?: string | null) =>
+      iso ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso)) : null;
+    const verifiedSince = formatDate(eligibility.verifiedAt);
+    const expiresOn = formatDate(eligibility.verifiedUntil);
+    const daysLeft = eligibility.verifiedUntil
+      ? Math.max(0, Math.ceil((new Date(eligibility.verifiedUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : null;
+    const benefits = [
+      'Verified badge on your profile and posts',
+      'Reach boost for your posts',
+      'Search priority in results',
+      'Every post in feed',
+      'Bold follow button',
+      'Human support',
+    ];
+    const detailRow = (label: string, value: React.ReactNode, sub?: string | null) => (
+      <div className="py-3.5">
+        <p className="text-[13px] font-semibold text-[#93a5b1]">{label}</p>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[17px] font-bold text-white">{value}</div>
+        {sub && <p className="mt-0.5 text-[13px] text-[#93a5b1]">{sub}</p>}
+      </div>
+    );
     return (
-      <div className="mx-auto max-w-xl px-4 py-6">
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white">
-              <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
+        <div className="font-manrope rounded-[28px] bg-[#0c1115] px-5 pb-6 pt-8 sm:px-6">
+          <div className="flex justify-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2f89ff] text-white">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900">You’re Verified</h1>
-              <p className="text-sm text-blue-700">Your account is verified.</p>
-              {eligibility.verifiedUntil && (
-                <p className="text-sm text-blue-700">Active until {new Date(eligibility.verifiedUntil).toLocaleDateString()}.</p>
-              )}
-            </div>
+            </span>
           </div>
+          <h1 className="mt-5 text-center text-[30px] font-extrabold leading-tight text-white">You’re Verified</h1>
+          <p className="mt-1.5 text-center text-[16px] text-[#c4cfd6]">Your account is verified.</p>
+
+          <div className="mt-7 divide-y divide-[#344452] rounded-[26px] bg-[#1b2833] px-6 py-2">
+            {detailRow('Account', (
+              <>
+                {eligibility.displayName || eligibility.username || 'Your account'}
+                <VerifiedBadge size="sm" />
+              </>
+            ))}
+            {detailRow('Status', (
+              <>
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                Active
+              </>
+            ))}
+            {verifiedSince && detailRow('Verified since', verifiedSince)}
+            {detailRow('Plan', 'Verified')}
+            {detailRow('Expires', expiresOn || 'No expiry', expiresOn && daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : null)}
+          </div>
+
+          <h2 className="mt-8 text-[20px] font-bold text-white">Your benefits</h2>
+          <div className="mt-4 space-y-3.5">
+            {benefits.map((b) => (
+              <div key={b} className="flex items-center gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2f89ff] text-white">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                </span>
+                <span className="text-[16px] text-[#c4cfd6]">{b}</span>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-8 text-center text-[14px] text-[#93a5b1]">
+            Questions? Contact{' '}
+            <a href="mailto:support@frianzo.online" className="font-semibold text-[#2f89ff] no-underline">
+              support@frianzo.online
+            </a>
+          </p>
         </div>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
