@@ -119,7 +119,7 @@ export default function PostContent({ text, className }: { text: string; classNa
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-blue-600 break-all hover:underline"
+                  className="font-medium text-blue-600 break-all no-underline"
                   onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                   {url}
