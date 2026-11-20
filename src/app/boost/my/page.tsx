@@ -39,7 +39,7 @@ function BackIcon() {
 function StatusChip({ b }: { b: Boost }) {
   switch (b.status) {
     case 'pending':
-      return <span className="shrink-0 whitespace-nowrap rounded-md bg-amber-100 px-2 py-[3px] text-[11px] font-semibold text-amber-800">Pending</span>;
+      return <span className="shrink-0 whitespace-nowrap rounded-md bg-amber-100 px-2 py-[3px] text-[11px] font-semibold text-amber-800">In Review</span>;
     case 'approved': {
       const ends = dateLabel(b.endsAt);
       return (
