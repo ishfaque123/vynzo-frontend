@@ -23,6 +23,7 @@ import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
 import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
 import { isBoostCountryPk } from '@/lib/api/boostApi';
+import { useFollowStatus } from '@/contexts/FollowContext';
 
 function playSubmitSound() {
   try {
@@ -191,6 +192,23 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const [profile, setProfile] = useState<any>(firstProfile);
   const [counts, setCounts] = useState(cachedEntry?.counts ?? initialCounts ?? { followers: 0, following: 0 });
   const [friendStatus, setFriendStatus] = useState<string>(cachedEntry?.friendStatus || firstProfile?.friendStatus || 'none');
+  // True only after the viewer's own posts/reels data has loaded. The
+  // first paint carries no viewer state (no "my reaction", no real
+  // follow status), so it must never be written back into the cache.
+  const postsAuthedRef = useRef(false);
+  const reelsAuthedRef = useRef(false);
+  // Keep every Follow button for this profile's owner in step with the
+  // header state. Post and reel cards read the shared follow status, so
+  // syncing it here ends the "header says Friend, card says Follow" gap.
+  const { setStatus: setSharedFollowStatus } = useFollowStatus(profile?.id || '', friendStatus);
+  const lastSyncedFollowRef = useRef('');
+  useEffect(() => {
+    if (!profile?.id || profile.id === currentUser?.id) return;
+    const key = `${profile.id}:${friendStatus}`;
+    if (lastSyncedFollowRef.current === key) return;
+    lastSyncedFollowRef.current = key;
+    setSharedFollowStatus(friendStatus);
+  });
   const [loading, setLoading] = useState(!firstProfile);
   const [profileError, setProfileError] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
@@ -276,10 +294,20 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
     const cached = profileCache.get(username);
     if (retryKey === 0 && cached && Date.now() - cached.savedAt < PROFILE_CACHE_FRESH_MS) {
       // Fresh enough: the initializers already painted the cached
-      // profile, so skip the whole refetch round. Highlights are not
-      // cached; load just those quietly.
+      // profile, so skip the profile refetch. Posts and reels still
+      // refresh quietly — they carry the viewer's own like/follow
+      // state, which must never sit stale behind the cached paint.
+      // Highlights are not cached; load those quietly too.
       fetchHighlights(username).then((result) => {
         if (result.success) setHighlights(result.data.highlights || []);
+      }).catch(() => {});
+      if ((cached.posts?.length ?? 0) === 0 && (cached.reels?.length ?? 0) === 0) setPostsLoading(true);
+      fetchUserPosts(username).then((result) => {
+        if (result.success) { postsAuthedRef.current = true; setPosts(result.data.posts); }
+        setPostsLoading(false);
+      }).catch(() => setPostsLoading(false));
+      fetchUserReels(username).then((result) => {
+        if (result.success) { reelsAuthedRef.current = true; setReels(result.data.reels); }
       }).catch(() => {});
       return;
     }
@@ -324,13 +352,13 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
     loadProfile();
 
     fetchUserPosts(username).then((result) => {
-      if (result.success) setPosts(result.data.posts);
+      if (result.success) { postsAuthedRef.current = true; setPosts(result.data.posts); }
       if (!cancelled) setPostsLoading(false);
     }).catch(() => {
       if (!cancelled) setPostsLoading(false);
     });
     fetchUserReels(username).then((result) => {
-      if (result.success) setReels(result.data.reels);
+      if (result.success) { reelsAuthedRef.current = true; setReels(result.data.reels); }
       if (!cancelled) setReelsLoading(false);
     }).catch(() => {
       if (!cancelled) setReelsLoading(false);
@@ -347,7 +375,15 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   // next visit paints exactly this (follow state and counts included).
   useEffect(() => {
     if (!profile || profile.username?.toLowerCase() !== username.toLowerCase()) return;
-    profileCache.set(username, { profile, counts, friendStatus, posts, reels, savedAt: Date.now() });
+    // Only cache posts/reels once the viewer's own data has loaded;
+    // the first-paint lists carry no viewer state and must not be
+    // restored later as if they were current.
+    profileCache.set(username, {
+      profile, counts, friendStatus,
+      posts: postsAuthedRef.current ? posts : [],
+      reels: reelsAuthedRef.current ? reels : [],
+      savedAt: Date.now(),
+    });
     if (profileCache.size > 10) {
       const oldest = profileCache.keys().next().value;
       if (oldest && oldest !== username) profileCache.delete(oldest);
