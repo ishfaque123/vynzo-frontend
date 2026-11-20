@@ -34,6 +34,7 @@ type CommunityPost = {
   content: string;
   imageUrl?: string | null;
   imageThumbUrl?: string | null;
+  imageMediumUrl?: string | null;
   createdAt?: string;
   authorName: string;
   authorUsername: string;
@@ -88,6 +89,7 @@ async function getCommunityPosts(): Promise<CommunityPost[]> {
         content,
         imageUrl: p?.imageUrl ?? null,
         imageThumbUrl: p?.imageThumbUrl ?? null,
+        imageMediumUrl: p?.imageMediumUrl ?? null,
         createdAt: p?.createdAt,
         authorName:
           p?.author?.displayName || leader?.displayName || leader?.username || 'Frianzo user',
@@ -185,6 +187,7 @@ export default async function CommunityPosts() {
               // the previous grey-box + spinner behaviour.
               <SmartImage
                 src={post.imageUrl}
+                mediumSrc={post.imageMediumUrl}
                 thumbSrc={post.imageThumbUrl}
                 alt={`Photo shared by ${post.authorName}`}
                 className="mt-3 rounded-2xl"

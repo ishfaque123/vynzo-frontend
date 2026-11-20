@@ -31,14 +31,22 @@ import { BoostedBadge, BoostCtaButton, boostHref } from './BoostBits';
  * sharpens in on top of it. A missing thumb (old photos) keeps the
  * previous grey-box + spinner behaviour; a thumb that 404s is ignored
  * silently — only a failed FULL image shows the error state.
+ *
+ * Medium feed image (2026-11-19): when the DTO provides a ~720px medium
+ * variant (mediumSrc), the feed box loads THAT instead of the full
+ * original — the box is ~480px wide, so the medium stays sharp while
+ * cutting most of the bytes. A medium that is missing or 404s (posts
+ * whose backfill has not run yet) falls back to the full original once.
+ * PhotoViewer always opens the full original (src), never the medium.
  */
 // The one fixed box size for every feed photo (see doc comment above).
 const FIXED_ASPECT_RATIO = '4/3';
 
-export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string; thumbSrc?: string | null; alt: string; className?: string }) {
+export function SmartImage({ src, mediumSrc, thumbSrc, alt, className = '' }: { src: string; mediumSrc?: string | null; thumbSrc?: string | null; alt: string; className?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [thumbFailed, setThumbFailed] = useState(false);
+  const [mediumFailed, setMediumFailed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -48,6 +56,7 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
     setLoaded(false);
     setFailed(false);
     setThumbFailed(false);
+    setMediumFailed(false);
     setRetryCount((c) => c + 1);
   }
 
@@ -85,7 +94,7 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
     if (!visible || loaded || failed) return;
     const t = setTimeout(() => setFailed(true), 20000);
     return () => clearTimeout(t);
-  }, [visible, loaded, failed]);
+  }, [visible, loaded, failed, mediumFailed]);
 
   if (failed) {
     // FB-style: tapping ANYWHERE on the box retries (not just the button).
@@ -106,6 +115,11 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
   }
 
   const showThumb = visible && !!thumbSrc && !thumbFailed;
+
+  // Feed source: the 720px medium when the DTO provides one and it has
+  // not failed; otherwise the full original (see header comment). The
+  // PhotoViewer below always uses src (the original), never feedSrc.
+  const feedSrc = mediumSrc && !mediumFailed ? mediumSrc : src;
 
   return (
     <>
@@ -143,8 +157,8 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
       {/* Only load image when visible (smart lazy loading) */}
       {visible && !failed && (
       <img
-        key={retryCount}
-        src={src}
+        key={`${retryCount}:${feedSrc}`}
+        src={feedSrc}
         alt={alt}
         className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         draggable={false}
@@ -157,7 +171,12 @@ export function SmartImage({ src, thumbSrc, alt, className = '' }: { src: string
           // switching it in onLoad was what grew the box after load.
           setLoaded(true);
         }}
-        onError={() => setFailed(true)}
+        onError={() => {
+          // Medium missing/404 (backfill pending) → fall back to the full
+          // original once; only a failed ORIGINAL shows the error state.
+          if (mediumSrc && !mediumFailed) setMediumFailed(true);
+          else setFailed(true);
+        }}
       />
       )}
     </div>
@@ -394,7 +413,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
         ) : (
           <PostContent text={post.content} className="whitespace-pre-wrap px-3 pb-2 text-[15px] leading-snug text-slate-900" />
         ))}
-        {post.imageUrl && <SmartImage src={post.imageUrl} thumbSrc={post.imageThumbUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
+        {post.imageUrl && <SmartImage src={post.imageUrl} mediumSrc={post.imageMediumUrl} thumbSrc={post.imageThumbUrl} alt={post.content ? post.content.slice(0, 120) : `Photo by ${post.author.displayName}`} />}
       </div>
 
       {post.originalPost && (
@@ -423,7 +442,7 @@ export default function PostCard({ post, currentUser, onReactionChange, onToggle
             ) : (
               <PostContent text={post.originalPost.content} className="mt-2 whitespace-pre-wrap text-sm text-slate-800" />
             ))}
-            {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} thumbSrc={post.originalPost.imageThumbUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
+            {post.originalPost.imageUrl && <SmartImage src={post.originalPost.imageUrl} mediumSrc={post.originalPost.imageMediumUrl} thumbSrc={post.originalPost.imageThumbUrl} alt={post.originalPost.content ? post.originalPost.content.slice(0, 120) : `Photo by ${post.originalPost.author.displayName}`} className="mt-2 rounded-lg" />}
           </div>
         </div>
       )}
