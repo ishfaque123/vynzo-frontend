@@ -699,15 +699,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         </div>
 
         <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}</h1>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(`@${profile.username}`).catch(() => {});
-          }}
-          className="cursor-pointer text-slate-500 transition-colors hover:text-slate-700 active:text-slate-900"
-          title="Tap to copy username"
-        >
-          @{profile.username}
-        </button>
         {!isMe && profile.isOnline && (
           <p className="mt-1 flex items-center gap-1.5 text-sm text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500" /> Active now
