@@ -11,6 +11,7 @@ import { logoutRequest } from '@/lib/api/authApi';
 import { fetchDashboard, fetchFollowCounts } from '@/lib/api/userApi';
 import UsageTracker from '@/components/UsageTracker';
 import PushRegistrar from '@/components/PushRegistrar';
+import ReviewPrompter from '@/components/ReviewPrompter';
 import PostingBar from '@/components/PostingBar';
 import Avatar from '@/components/Avatar';
 
@@ -301,6 +302,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <div className={`flex flex-col bg-slate-50 ${isReels ? 'fixed inset-0 overflow-hidden' : 'min-h-screen'}`}>
       <UsageTracker />
       <PushRegistrar />
+      <ReviewPrompter />
       {!hideHeader && <header className={`sticky top-0 z-10 flex shrink-0 bg-white px-4 py-3 transition-transform duration-300 ${headerHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="mx-auto flex w-full max-w-xl md:max-w-5xl items-center justify-between">
         <div className="flex items-center gap-1">
