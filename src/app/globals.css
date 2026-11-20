@@ -228,3 +228,15 @@ input, textarea, [contenteditable="true"] {
 img {
   -webkit-touch-callout: none;
 }
+
+/* Manrope (self-hosted variable font) — used by the Frianzo Verified plan screen */
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope-variable.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+.font-manrope {
+  font-family: 'Manrope', ui-sans-system, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

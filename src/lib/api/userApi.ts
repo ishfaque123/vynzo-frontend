@@ -147,3 +147,11 @@ export async function createVerificationRequest(reason: string) {
   });
   return res.json();
 }
+
+export async function claimFreeVerificationMonth() {
+  const res = await fetch(`${API_URL}/api/users/me/verification-free-month`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}

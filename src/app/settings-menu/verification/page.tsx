@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchMyVerificationRequest } from '@/lib/api/userApi';
+import { fetchMyVerificationRequest, claimFreeVerificationMonth } from '@/lib/api/userApi';
 import { createPayFastBlueTickPayment, payfastErrorMessage, submitPayFastCheckout } from '@/lib/api/payfastApi';
 import Toast from '@/components/Toast';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -10,6 +10,8 @@ type Requirement = { current: number | string; required: number | string; met: b
 type Eligibility = {
   eligible: boolean;
   isVerified: boolean;
+  verifiedUntil?: string | null;
+  freeMonthClaimed?: boolean;
   requirements: {
     referrals: Requirement;
     followers: Requirement;
@@ -45,9 +47,9 @@ function RequirementRow({ label, item, suffix = '' }: { label: string; item: Req
 
 function PlanFeature({ children, icon }: { children: React.ReactNode; icon: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="shrink-0 text-slate-200">{icon}</span>
-      <span className="text-sm text-white">{children}</span>
+    <div className="flex items-center gap-3.5">
+      <span className="shrink-0 text-slate-100">{icon}</span>
+      <span className="text-[17px] text-white">{children}</span>
     </div>
   );
 }
@@ -57,6 +59,7 @@ export default function VerificationPage() {
   const [eligibility, setEligibility] = useState<Eligibility | null>(null);
   const [loading, setLoading] = useState(true);
   const [payfastBusy, setPayfastBusy] = useState(false);
+  const [claimBusy, setClaimBusy] = useState(false);
   const [step, setStep] = useState<'requirements' | 'plan'>('requirements');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -98,6 +101,18 @@ export default function VerificationPage() {
     submitPayFastCheckout(result.data.checkout);
   }
 
+  async function claimFreeMonth() {
+    setClaimBusy(true);
+    const result = await claimFreeVerificationMonth();
+    setClaimBusy(false);
+    if (!result.success) {
+      setToast({ message: result.error?.message || 'Could not activate verification. Please try again.', type: 'error' });
+      return;
+    }
+    setToast({ message: 'You are now verified for 30 days.', type: 'success' });
+    await load();
+  }
+
   if (loading) {
     return <div className="flex justify-center py-10" role="status" aria-label="Loading verification"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>;
   }
@@ -129,10 +144,14 @@ export default function VerificationPage() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-slate-900">You’re Verified</h1>
-              <p className="text-sm text-blue-700">Your account already has the Frianzo Blue Tick.</p>
+              <p className="text-sm text-blue-700">Your account is verified.</p>
+              {eligibility.verifiedUntil && (
+                <p className="text-sm text-blue-700">Active until {new Date(eligibility.verifiedUntil).toLocaleDateString()}.</p>
+              )}
             </div>
           </div>
         </div>
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     );
   }
@@ -152,85 +171,124 @@ export default function VerificationPage() {
   const pending = request?.status === 'pending';
 
   if (step === 'plan') {
+    const freeAvailable = !eligibility.freeMonthClaimed;
     return (
       <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
-        <button
-          type="button"
-          onClick={() => setStep('requirements')}
-          className="mb-3 text-sm font-medium text-blue-600"
-        >
-          ← Back to requirements
-        </button>
+        <div className="font-manrope rounded-[28px] bg-[#0c1115] px-5 pb-6 pt-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => setStep('requirements')}
+            aria-label="Back to requirements"
+            className="text-white"
+          >
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
 
-        <div className="rounded-3xl bg-[#0d141c] px-4 py-6 sm:px-5">
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-center text-2xl font-bold text-white">Frianzo Blue Tick</h1>
-            <VerifiedBadge size="lg" />
-          </div>
-          <p className="mt-1.5 text-center text-sm text-slate-300">Get verified and stand out.</p>
-          <p className="mt-4 text-center text-xs font-medium uppercase tracking-wide text-slate-400">Your plan</p>
+          <h1 className="mt-3 text-center text-[34px] font-extrabold leading-tight text-white">Frianzo Verified</h1>
+          <p className="mt-1.5 text-center text-[17px] text-[#c4cfd6]">Stand out with a verified profile</p>
 
-          <div className="mt-3 rounded-[18px] bg-[#17242f] p-5">
-            <p className="text-[17px] font-bold text-white">Blue Tick</p>
-            <p className="mt-1 text-sm text-slate-300">The verified badge for your Frianzo profile</p>
-            <p className="mt-0.5 text-sm text-slate-400">PKR400.00/month</p>
+          <div className="mt-7 rounded-[26px] bg-[#1b2833] p-6">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[20px] font-bold text-white">Verified</p>
+              <p className="text-[15px] font-semibold text-[#2f89ff]">Recommended</p>
+            </div>
+            <p className="mt-3 text-[17px] leading-snug text-white">Get next level insights. Reach new audiences.</p>
+            {freeAvailable ? (
+              <p className="mt-3 text-[17px]">
+                <span className="font-medium text-[#93a5b1]">PKR <span className="line-through">400</span></span>{' '}
+                <span className="font-bold text-white">0/month</span>
+              </p>
+            ) : (
+              <p className="mt-3 text-[17px] font-medium text-[#93a5b1]">PKR 400/month</p>
+            )}
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-6 space-y-6">
               <PlanFeature
                 icon={
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                     <circle cx="12" cy="12" r="9" />
                     <path d="M8.5 12.5l2.4 2.4 4.6-5.4" />
                   </svg>
                 }
               >
-                Verified badge on your profile, posts and comments
+                Verified badge
               </PlanFeature>
               <PlanFeature
                 icon={
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-                    <path d="M4 19V10M9.5 19V5M15 19v-8M20 19V7" />
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M4 16.5l4-5 3.5 3L17 8" />
+                    <path d="M13.5 8H17v3.5" />
                   </svg>
                 }
               >
-                Reach boost for your posts and reels
+                Reach boost
               </PlanFeature>
               <PlanFeature
                 icon={
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                     <circle cx="11" cy="11" r="6.5" />
                     <path d="M16 16l4.5 4.5" />
                   </svg>
                 }
               >
-                Appear first in search results
+                Search priority
               </PlanFeature>
               <PlanFeature
                 icon={
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
                     <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
                     <path d="M3.5 10h17M8 3v4M16 3v4" />
                   </svg>
                 }
               >
-                Valid for 1 month from activation
+                30 days
+              </PlanFeature>
+              <PlanFeature
+                icon={
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <rect x="3.5" y="5" width="17" height="14" rx="3" />
+                    <circle cx="8.5" cy="10" r="1.3" fill="currentColor" stroke="none" />
+                    <path d="M7 15.5h10" />
+                  </svg>
+                }
+              >
+                Every post in feed
+              </PlanFeature>
+              <PlanFeature
+                icon={
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="10" cy="8" r="3.5" />
+                    <path d="M4.5 19c.6-3 2.8-4.5 5.5-4.5 1 0 1.9.2 2.7.6" />
+                    <path d="M17.5 15v6M14.5 18h6" />
+                  </svg>
+                }
+              >
+                Bold follow button
+              </PlanFeature>
+              <PlanFeature
+                icon={
+                  <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M4.5 15v-2.5a7.5 7.5 0 0115 0V15" />
+                    <rect x="3.5" y="14" width="4" height="6" rx="2" />
+                    <rect x="16.5" y="14" width="4" height="6" rx="2" />
+                  </svg>
+                }
+              >
+                Human support
               </PlanFeature>
             </div>
-
-            <button
-              type="button"
-              disabled={payfastBusy}
-              onClick={payWithPayFast}
-              className="mt-5 w-full rounded-full bg-white/10 py-3 text-sm font-semibold text-[#57abff] transition disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {payfastBusy ? 'Opening secure payment...' : 'Get Blue Tick'}
-            </button>
-            <p className="mt-2.5 text-center text-[11px] leading-relaxed text-slate-400">
-              Your verification request is submitted only after your payment is completed.
-              <br />
-              Pay by card, JazzCash, Easypaisa, bank account or Raast on PayFast&apos;s secure page.
-            </p>
           </div>
+
+          <button
+            type="button"
+            disabled={claimBusy || payfastBusy}
+            onClick={freeAvailable ? claimFreeMonth : payWithPayFast}
+            className="mt-5 w-full rounded-full bg-[#1877f2] py-3.5 text-[17px] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {claimBusy || payfastBusy ? 'Please wait...' : 'Get Verified'}
+          </button>
         </div>
 
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -244,7 +302,7 @@ export default function VerificationPage() {
         <div className="flex items-center gap-3">
           <VerifiedBadge size="lg" />
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Frianzo Blue Tick</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Frianzo Verified</h1>
             <p className="text-sm text-slate-500">Get verified and stand out.</p>
           </div>
         </div>
@@ -294,7 +352,7 @@ export default function VerificationPage() {
             </button>
             {!eligibility.eligible && (
               <p className="mt-2 text-center text-xs text-slate-400">
-                Complete all requirements above to continue to the Blue Tick plan.
+                Complete all requirements above to continue to the plan.
               </p>
             )}
           </>
