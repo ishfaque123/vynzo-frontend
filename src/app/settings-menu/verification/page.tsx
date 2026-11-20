@@ -178,7 +178,12 @@ export default function VerificationPage() {
                 <VerifiedBadge size="sm" />
               </>
             ))}
-            {detailRow('Status', (
+            {detailRow('Status', daysLeft !== null && daysLeft <= 7 ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                Expiring Soon
+              </>
+            ) : (
               <>
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Active
