@@ -191,7 +191,7 @@ export default function VerificationPage() {
             ))}
             {verifiedSince && detailRow('Verified since', verifiedSince)}
             {detailRow('Plan', 'Verified')}
-            {detailRow('Expires', expiresOn || 'No expiry', expiresOn && daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : null)}
+            {detailRow('Expires', expiresOn || 'No expiry')}
           </div>
 
           <h2 className="mt-6 text-[15px] font-bold text-[#0f172a] dark:text-[#ffffff]">Your benefits</h2>
