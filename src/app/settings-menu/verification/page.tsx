@@ -82,7 +82,7 @@ export default function VerificationPage() {
     // success flag can land a few moments before the badge shows.
     const flag = new URLSearchParams(window.location.search).get('payfast');
     if (flag === 'success') {
-      setToast({ message: 'Payment received. If your Blue Tick is not active yet, it will activate within a few moments.', type: 'success' });
+      setToast({ message: 'Payment received. If your verification is not active yet, it will activate within a few moments.', type: 'success' });
     } else if (flag === 'failed') {
       setToast({ message: 'Your payment was not completed. You can try again.', type: 'error' });
     }

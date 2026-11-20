@@ -1,6 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// PayFast (Pakistan) hosted checkout for the paid Blue Tick.
+// PayFast (Pakistan) hosted checkout for the paid Verified plan.
 // The price is NEVER sent by the client — the server fixes it
 // (Rs 400 for 1 month) and returns a one-time checkout form payload;
 // this module just submits that form to PayFast's own page, where
@@ -71,7 +71,7 @@ export function payfastErrorMessage(result: any): string {
     case 'PAYFAST_COUNTRY_NOT_ELIGIBLE':
       return 'PayFast payment is available for users in Pakistan only. Please use the manual EasyPaisa option below.';
     case 'BLUE_TICK_ALREADY_ACTIVE':
-      return 'Your Blue Tick is already active.';
+      return 'You are already verified.';
     case 'PAYFAST_CUSTOMER_DETAILS_MISSING':
       return 'Add your email address and mobile number to your profile before paying online.';
     case 'PAYFAST_TOKEN_FAILED':
