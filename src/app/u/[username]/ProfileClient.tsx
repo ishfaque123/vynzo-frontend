@@ -19,7 +19,6 @@ import FeedReelCard from '@/components/FeedReelCard';
 import CommentsModal from '@/components/CommentsModal';
 import PostCard from '@/components/PostCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import { StreakBadge } from '@/components/AchievementIcons';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
 import { useInFrianzoApp } from '@/lib/useInFrianzoApp';
@@ -663,7 +662,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           </div>
         </div>
 
-        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{profile.loginStreak > 0 && <StreakBadge streak={profile.loginStreak} />}{isMe && showBoostEntry && (<Link href="/boost" className="ml-1 shrink-0 rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">Boost</Link>)}</h1>
+        <h1 className="flex items-center gap-1.5 text-xl font-semibold">{profile.displayName}{profile.isVerified && <VerifiedBadge size="lg" />}{isMe && showBoostEntry && (<Link href="/boost" className="ml-1 shrink-0 rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">Boost</Link>)}</h1>
         <button
           onClick={() => {
             navigator.clipboard.writeText(`@${profile.username}`).catch(() => {});
