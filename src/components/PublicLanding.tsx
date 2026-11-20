@@ -231,6 +231,7 @@ export default function PublicLanding() {
               <Link href="/community-guidelines" className="transition hover:text-white">Community Guidelines</Link>
               <Link href="/privacy" className="transition hover:text-white">Privacy Policy</Link>
               <Link href="/terms" className="transition hover:text-white">Terms</Link>
+              <Link href="/refund-policy" className="transition hover:text-white">Refund Policy</Link>
               <a href="mailto:support@frianzo.online" className="transition hover:text-white">Support</a>
             </div>
           </div>
