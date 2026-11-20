@@ -705,12 +705,12 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           </p>
         )}
         {!isMe && profile.mutualCount > 0 && (
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-[13px] text-slate-400">
             Followed by{' '}
             {profile.mutualFollowers.slice(0, 2).map((m: any, i: number) => (
               <span key={i}>
                 {i > 0 && ', '}
-                <Link href={`/u/${encodeURIComponent(m.username)}`} className="font-medium text-slate-700 no-underline">
+                <Link href={`/u/${encodeURIComponent(m.username)}`} className="text-slate-500 no-underline">
                   {m.displayName || `@${m.username}`}
                 </Link>
               </span>
