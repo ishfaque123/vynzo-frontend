@@ -56,6 +56,7 @@ const NEVER_GROUP = new Set([
   'verification_approved',
   'verification_rejected',
   'boost_approved',
+  'account_activated',
 ]);
 
 // Group same-actor + same-type notifications wherever they appear in the
@@ -216,6 +217,8 @@ function iconFor(type: string) {
       return { icon: <BellEmptyIcon />, bg: 'bg-red-100', color: 'text-red-600' };
     case 'verification_approved':
       return { icon: <CheckIcon />, bg: 'bg-green-100', color: 'text-green-600' };
+    case 'account_activated':
+      return { icon: <CheckIcon />, bg: 'bg-green-100', color: 'text-green-600' };
     case 'boost_approved':
       return { icon: <RocketIcon />, bg: 'bg-blue-100', color: 'text-blue-600' };
     case 'verification_rejected':
@@ -264,6 +267,8 @@ function messageFor(n: Notification): string {
       return n.detail ? `Messaging restricted: ${n.detail}` : 'Messaging restricted';
     case 'verification_approved':
       return 'Your account has been verified';
+    case 'account_activated':
+      return n.detail ? n.detail : 'Your account is active again';
     case 'boost_approved':
       return n.reelId ? 'Your reel boost is approved' : 'Your post boost is approved';
     case 'verification_rejected':
@@ -297,6 +302,8 @@ function hrefFor(n: Notification, viewerUsername?: string | null): string | null
       return n.postId ? `/post/${n.postId}` : null;
     case 'verification_approved':
       return viewerUsername ? `/u/${viewerUsername}` : '/settings-menu/verification';
+    case 'account_activated':
+      return viewerUsername ? `/u/${viewerUsername}` : null;
     case 'boost_approved':
       return n.reelId ? `/reels?id=${n.reelId}` : n.postId ? `/post/${n.postId}` : null;
     case 'verification_rejected':
