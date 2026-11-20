@@ -178,6 +178,61 @@ function formatCount(n: number) {
   const m = n / 1000000; return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
 }
 
+
+// ---- Profile Intro helpers (2026-11-21) ----
+const INTRO_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function formatBornDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getUTCDate()} ${INTRO_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+function socialHref(platform: string, value: string): string {
+  const v = value.trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  const handle = v.replace(/^@/, '');
+  if (platform === 'facebook') return `https://www.facebook.com/${handle}`;
+  if (platform === 'instagram') return `https://www.instagram.com/${handle}`;
+  if (platform === 'youtube') return `https://www.youtube.com/${v.startsWith('@') ? v : `@${handle}`}`;
+  if (platform === 'tiktok') return `https://www.tiktok.com/@${handle}`;
+  return v;
+}
+
+function linkLabel(value: string): string {
+  return value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
+}
+
+function IntroIcon({ kind }: { kind: string }) {
+  const common = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, className: 'shrink-0 text-slate-400' };
+  switch (kind) {
+    case 'category':
+      return (<svg {...common}><rect x="3" y="7.5" width="18" height="12" rx="2" /><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5" /><path d="M3 12.5h18" /></svg>);
+    case 'home':
+      return (<svg {...common}><path d="M4 11l8-7 8 7" /><path d="M6 9.5V20h12V9.5" /></svg>);
+    case 'cake':
+      return (<svg {...common}><path d="M4 21h16" /><path d="M5 21v-5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5" /><path d="M8 14v-3" /><path d="M12 14v-3" /><path d="M16 14v-3" /><path d="M8 8h.01" /><path d="M12 8h.01" /><path d="M16 8h.01" /></svg>);
+    case 'person':
+      return (<svg {...common}><circle cx="12" cy="8" r="3.5" /><path d="M5 20c1.2-3.2 3.8-4.5 7-4.5s5.8 1.3 7 4.5" /></svg>);
+    case 'globe':
+      return (<svg {...common}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.7 2.6 4 5.6 4 9s-1.3 6.4-4 9c-2.7-2.6-4-5.6-4-9s1.3-6.4 4-9z" /></svg>);
+    case 'facebook':
+      return (<svg {...common}><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M15.5 8.5H14A1.5 1.5 0 0 0 12.5 10v1.5h3l-.5 3h-2.5V20" /></svg>);
+    case 'instagram':
+      return (<svg {...common}><rect x="4" y="4" width="16" height="16" rx="4.5" /><circle cx="12" cy="12" r="3.5" /><circle cx="17" cy="7" r="0.8" fill="currentColor" stroke="none" /></svg>);
+    case 'youtube':
+      return (<svg {...common}><rect x="3" y="6" width="18" height="12" rx="3.5" /><path d="M10.5 9.8v4.4L14.5 12z" fill="currentColor" stroke="none" /></svg>);
+    case 'music':
+      return (<svg {...common}><path d="M10 18.5V6l10-2v11.5" /><circle cx="7" cy="18.5" r="3" /><circle cx="17" cy="15.5" r="3" /></svg>);
+    case 'phone':
+      return (<svg {...common}><path d="M5 4h4l1.5 4.5L8.2 10a12.5 12.5 0 0 0 5.8 5.8l1.5-2.3L20 15v4a1.5 1.5 0 0 1-1.6 1.5C10.2 20.2 3.8 13.8 3.5 5.6A1.5 1.5 0 0 1 5 4z" /></svg>);
+    case 'mail':
+      return (<svg {...common}><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3.5 7l8.5 6 8.5-6" /></svg>);
+    default:
+      return null;
+  }
+}
+
 export default function ProfileClient({ initialProfile, initialPosts, initialReels, initialCounts }: {
   initialProfile?: any;
   initialPosts?: any[];
@@ -602,6 +657,48 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const isPrivateView = !!profile.isPrivate && !isMe && friendStatus !== 'following' && friendStatus !== 'friends';
   const isBlockedView = blockedByMe || blockedByOther;
 
+  // Intro rows: only fields the server sent (locked fields never arrive for
+  // other viewers) and only when they hold a value.
+  const intro = (profile as any).intro ?? {};
+  const introRows: { key: string; icon: string; content: React.ReactNode }[] = [];
+  if (intro.category) {
+    introRows.push({ key: 'category', icon: 'category', content: <span className="font-semibold text-slate-900">{intro.category}</span> });
+  }
+  if (intro.city || intro.province) {
+    introRows.push({
+      key: 'location', icon: 'home',
+      content: (<><span className="text-slate-500">Lives in </span><span className="font-semibold text-slate-900">{[intro.city, intro.province].filter(Boolean).join(', ')}</span></>),
+    });
+  }
+  if (intro.dateOfBirth) {
+    introRows.push({
+      key: 'dateOfBirth', icon: 'cake',
+      content: (<><span className="text-slate-500">Born </span><span className="font-semibold text-slate-900">{formatBornDate(intro.dateOfBirth)}</span></>),
+    });
+  }
+  if (intro.gender) {
+    introRows.push({ key: 'gender', icon: 'person', content: <span className="text-slate-700">{intro.gender.charAt(0).toUpperCase() + intro.gender.slice(1)}</span> });
+  }
+  if (intro.website) {
+    const href = /^https?:\/\//i.test(intro.website) ? intro.website : `https://${intro.website}`;
+    introRows.push({ key: 'website', icon: 'globe', content: <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 no-underline">{linkLabel(intro.website)}</a> });
+  }
+  for (const platform of ['facebook', 'instagram', 'youtube', 'tiktok'] as const) {
+    const value = intro[platform];
+    if (value) {
+      introRows.push({
+        key: platform, icon: platform === 'tiktok' ? 'music' : platform,
+        content: <a href={socialHref(platform, value)} target="_blank" rel="noopener noreferrer" className="text-blue-600 no-underline">{linkLabel(value)}</a>,
+      });
+    }
+  }
+  if (intro.phone) {
+    introRows.push({ key: 'phone', icon: 'phone', content: <a href={`tel:${intro.phone}`} className="text-slate-700 no-underline">{intro.phone}</a> });
+  }
+  if (intro.email) {
+    introRows.push({ key: 'email', icon: 'mail', content: <a href={`mailto:${intro.email}`} className="text-slate-700 no-underline">{intro.email}</a> });
+  }
+
   return (
     <div className="mx-auto max-w-xl pb-6">
       {isMe && completionPct < 100 && nextCompletion && (
@@ -725,12 +822,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           </p>
         )}
         {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
-        {profile.website && (
-          <a href={profile.website} target="_blank" rel="noopener noreferrer" className="mt-1 block text-sm text-blue-600 hover:underline">{profile.website}</a>
-        )}
-        {(profile.city || profile.province) && (
-          <p className="mt-1 text-sm text-slate-500">{[profile.city, profile.province].filter(Boolean).join(', ')}</p>
-        )}
         {profile.createdAt && (
           <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></svg>
@@ -790,6 +881,20 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
               <span className="max-w-full truncate text-xs text-slate-600">{h.title}</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {!isBlockedView && !isPrivateView && introRows.length > 0 && (
+        <div className="mt-5 px-4">
+          <h2 className="text-[17px] font-bold text-slate-900">Intro</h2>
+          <div className="mt-3 space-y-3">
+            {introRows.map((row) => (
+              <div key={row.key} className="flex items-center gap-3 text-[15px]">
+                <IntroIcon kind={row.icon} />
+                <div className="min-w-0 break-words">{row.content}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
