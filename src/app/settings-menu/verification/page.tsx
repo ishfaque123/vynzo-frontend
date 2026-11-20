@@ -153,14 +153,14 @@ export default function VerificationPage() {
     ];
     const detailRow = (label: string, value: React.ReactNode, sub?: string | null) => (
       <div className="py-2">
-        <p className="text-[12px] font-semibold text-[#93a5b1]">{label}</p>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[15px] font-bold text-white">{value}</div>
-        {sub && <p className="mt-0.5 text-[12px] text-[#93a5b1]">{sub}</p>}
+        <p className="text-[12px] font-semibold text-[#64748b] dark:text-[#93a5b1]">{label}</p>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[15px] font-bold text-[#0f172a] dark:text-[#ffffff]">{value}</div>
+        {sub && <p className="mt-0.5 text-[12px] text-[#64748b] dark:text-[#93a5b1]">{sub}</p>}
       </div>
     );
     return (
       <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
-        <div className="font-manrope rounded-[28px] bg-[#0c1115] px-3.5 pb-6 pt-8 sm:px-6">
+        <div className="font-manrope rounded-[28px] border border-[#e2e8f0] bg-[#ffffff] px-3.5 pb-6 pt-8 dark:border-transparent dark:bg-[#0c1115] sm:px-6">
           <div className="flex justify-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2f89ff] text-white">
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -168,10 +168,10 @@ export default function VerificationPage() {
               </svg>
             </span>
           </div>
-          <h1 className="mt-4 text-center text-[25px] font-extrabold leading-tight text-white">You’re Verified</h1>
-          <p className="mt-1.5 text-center text-[14px] text-[#c4cfd6]">Your account is verified.</p>
+          <h1 className="mt-4 text-center text-[25px] font-extrabold leading-tight text-[#0f172a] dark:text-[#ffffff]">You’re Verified</h1>
+          <p className="mt-1.5 text-center text-[14px] text-[#64748b] dark:text-[#c4cfd6]">Your account is verified.</p>
 
-          <div className="mt-7 divide-y divide-[#344452] rounded-[26px] bg-[#1b2833] px-5 py-2">
+          <div className="mt-7 divide-y divide-[#e2e8f0] rounded-[26px] border border-[#e2e8f0] bg-[#f8fafc] px-5 py-2 dark:divide-[#344452] dark:border-transparent dark:bg-[#1b2833]">
             {detailRow('Account', (
               <>
                 {eligibility.displayName || eligibility.username || 'Your account'}
@@ -189,7 +189,7 @@ export default function VerificationPage() {
             {detailRow('Expires', expiresOn || 'No expiry', expiresOn && daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : null)}
           </div>
 
-          <h2 className="mt-6 text-[15px] font-bold text-white">Your benefits</h2>
+          <h2 className="mt-6 text-[15px] font-bold text-[#0f172a] dark:text-[#ffffff]">Your benefits</h2>
           <div className="mt-1.5 space-y-2.5">
             {benefits.map((b) => (
               <div key={b} className="flex items-center gap-2.5">
@@ -198,12 +198,12 @@ export default function VerificationPage() {
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
                 </span>
-                <span className="text-[14px] text-[#c4cfd6]">{b}</span>
+                <span className="text-[14px] text-[#475569] dark:text-[#c4cfd6]">{b}</span>
               </div>
             ))}
           </div>
 
-          <p className="mt-6 text-center text-[12px] text-[#93a5b1]">
+          <p className="mt-6 text-center text-[12px] text-[#94a3b8] dark:text-[#93a5b1]">
             Questions? Contact{' '}
             <a href="mailto:support@frianzo.online" className="font-semibold text-[#2f89ff] no-underline">
               support@frianzo.online
