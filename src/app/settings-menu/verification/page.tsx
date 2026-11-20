@@ -109,7 +109,7 @@ export default function VerificationPage() {
       setToast({ message: result.error?.message || 'Could not activate verification. Please try again.', type: 'error' });
       return;
     }
-    setToast({ message: 'You are now verified for 30 days.', type: 'success' });
+    setToast({ message: 'Your verification request has been submitted successfully. The Frianzo team will review and verify your account within 24 hours.', type: 'success' });
     await load();
   }
 
@@ -281,14 +281,31 @@ export default function VerificationPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            disabled={claimBusy || payfastBusy}
-            onClick={freeAvailable ? claimFreeMonth : payWithPayFast}
-            className="mt-5 w-full rounded-full bg-[#1877f2] py-3.5 text-[17px] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {claimBusy || payfastBusy ? 'Please wait...' : 'Get Verified'}
-          </button>
+          {pending ? (
+            <>
+              <div className="mt-5 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-center">
+                <p className="text-[15px] leading-relaxed text-emerald-100">
+                  Your verification request has been submitted successfully. The Frianzo team will review and verify your account within 24 hours.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="mt-5 w-full rounded-full bg-[#1877f2] py-3.5 text-[17px] font-bold text-white opacity-50"
+              >
+                Request Submitted
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={claimBusy || payfastBusy}
+              onClick={freeAvailable ? claimFreeMonth : payWithPayFast}
+              className="mt-5 w-full rounded-full bg-[#1877f2] py-3.5 text-[17px] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {claimBusy || payfastBusy ? 'Please wait...' : 'Get Verified'}
+            </button>
+          )}
         </div>
 
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
