@@ -203,6 +203,24 @@ function linkLabel(value: string): string {
   return value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
 }
 
+function websiteLabel(value: string): string {
+  return value.trim().replace(/^https?:\/\//i, '').split('/')[0];
+}
+
+function shortSocialLabel(platform: string, value: string): string {
+  const v = value.trim();
+  if (!/^https?:\/\//i.test(v)) return v;
+  const parts = v.replace(/\/$/, '').split('/').filter(Boolean);
+  const last = parts[parts.length - 1] || '';
+  if (!last || last.includes('.')) {
+    if (platform === 'facebook') return 'Facebook';
+    if (platform === 'instagram') return 'Instagram';
+    if (platform === 'youtube') return 'YouTube';
+    return 'TikTok';
+  }
+  return last;
+}
+
 function IntroIcon({ kind }: { kind: string }) {
   const common = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, className: 'shrink-0 text-slate-400' };
   switch (kind) {
@@ -299,6 +317,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   const [followBusy, setFollowBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [highlights, setHighlights] = useState<any[]>([]);
+  const [introExpanded, setIntroExpanded] = useState(false);
   const [viewHighlight, setViewHighlight] = useState<any | null>(null);
   const [createHlOpen, setCreateHlOpen] = useState(false);
   const [myStatuses, setMyStatuses] = useState<any[]>([]);
@@ -664,6 +683,9 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   if (intro.category) {
     introRows.push({ key: 'category', icon: 'category', content: <span className="font-semibold text-slate-900">{intro.category}</span> });
   }
+  if (intro.gender) {
+    introRows.push({ key: 'gender', icon: 'person', content: <span className="text-slate-700">{intro.gender.charAt(0).toUpperCase() + intro.gender.slice(1)}</span> });
+  }
   if (intro.city || intro.province) {
     introRows.push({
       key: 'location', icon: 'home',
@@ -676,19 +698,16 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
       content: (<><span className="text-slate-500">Born </span><span className="font-semibold text-slate-900">{formatBornDate(intro.dateOfBirth)}</span></>),
     });
   }
-  if (intro.gender) {
-    introRows.push({ key: 'gender', icon: 'person', content: <span className="text-slate-700">{intro.gender.charAt(0).toUpperCase() + intro.gender.slice(1)}</span> });
-  }
   if (intro.website) {
     const href = /^https?:\/\//i.test(intro.website) ? intro.website : `https://${intro.website}`;
-    introRows.push({ key: 'website', icon: 'globe', content: <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 no-underline">{linkLabel(intro.website)}</a> });
+    introRows.push({ key: 'website', icon: 'globe', content: <a href={href} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 no-underline">{websiteLabel(intro.website)}</a> });
   }
   for (const platform of ['facebook', 'instagram', 'youtube', 'tiktok'] as const) {
     const value = intro[platform];
     if (value) {
       introRows.push({
         key: platform, icon: platform === 'tiktok' ? 'music' : platform,
-        content: <a href={socialHref(platform, value)} target="_blank" rel="noopener noreferrer" className="text-blue-600 no-underline">{linkLabel(value)}</a>,
+        content: <a href={socialHref(platform, value)} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 no-underline">{shortSocialLabel(platform, value)}</a>,
       });
     }
   }
@@ -822,12 +841,6 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           </p>
         )}
         {profile.bio && <p className="mt-2 text-slate-700">{profile.bio}</p>}
-        {profile.createdAt && (
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></svg>
-            Joined {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(profile.createdAt))}
-          </p>
-        )}
 
         <div className="mt-4 flex border-y py-3 text-sm">
           <span className="flex flex-1 flex-col items-center"><b>{posts.length}</b> <span className="text-xs text-slate-500">Posts</span></span>
@@ -886,16 +899,31 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
 
       {!isBlockedView && !isPrivateView && introRows.length > 0 && (
         <div className="mt-5 px-4">
-          <h2 className="text-[17px] font-bold text-slate-900">Intro</h2>
-          <div className="mt-3 space-y-3">
-            {introRows.map((row) => (
-              <div key={row.key} className="flex items-center gap-3 text-[15px]">
-                <IntroIcon kind={row.icon} />
-                <div className="min-w-0 break-words">{row.content}</div>
-              </div>
-            ))}
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+            <h2 className="text-[17px] font-bold text-slate-900">Personal Details</h2>
+            <div className="mt-1 divide-y divide-slate-100">
+              {(introExpanded ? introRows : introRows.slice(0, 4)).map((row) => (
+                <div key={row.key} className="flex items-center gap-3 py-[9px] text-[15px]">
+                  <IntroIcon kind={row.icon} />
+                  <div className="min-w-0 break-words">{row.content}</div>
+                </div>
+              ))}
+            </div>
+            {introRows.length > 4 && (
+              <button onClick={() => setIntroExpanded((v) => !v)} className="mt-1 flex items-center gap-1 text-sm font-semibold text-slate-600">
+                {introExpanded ? 'See less' : 'See more'}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={introExpanded ? 'rotate-180' : ''}><path d="M6 9l6 6 6-6" /></svg>
+              </button>
+            )}
           </div>
         </div>
+      )}
+
+      {!isBlockedView && !isPrivateView && profile.createdAt && (
+        <p className="mt-3 flex items-center gap-1.5 px-4 text-sm text-slate-500">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></svg>
+          Joined {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(profile.createdAt))}
+        </p>
       )}
 
       {isBlockedView ? (

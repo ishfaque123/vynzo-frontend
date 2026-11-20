@@ -176,8 +176,8 @@ export default function EditProfilePage() {
         </div>
 
         <div className="border-t border-slate-200 pt-4">
-          <h2 className="text-base font-semibold text-slate-900">Intro</h2>
-          <p className="mt-0.5 text-xs text-slate-400">These details appear in the Intro section of your profile. Set each one to Public or Locked — locked details are never shown to anyone.</p>
+          <h2 className="text-base font-semibold text-slate-900">Personal Details</h2>
+          <p className="mt-0.5 text-xs text-slate-400">These details appear in the Personal Details section of your profile. Set each one to Public or Locked — locked details are never shown to anyone.</p>
 
           <div className="mt-4">
             <div className="mb-1 flex items-center justify-between">
