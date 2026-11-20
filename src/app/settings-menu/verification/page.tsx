@@ -152,26 +152,26 @@ export default function VerificationPage() {
       'Human support',
     ];
     const detailRow = (label: string, value: React.ReactNode, sub?: string | null) => (
-      <div className="py-3.5">
-        <p className="text-[13px] font-semibold text-[#93a5b1]">{label}</p>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[17px] font-bold text-white">{value}</div>
-        {sub && <p className="mt-0.5 text-[13px] text-[#93a5b1]">{sub}</p>}
+      <div className="py-2">
+        <p className="text-[12px] font-semibold text-[#93a5b1]">{label}</p>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[15px] font-bold text-white">{value}</div>
+        {sub && <p className="mt-0.5 text-[12px] text-[#93a5b1]">{sub}</p>}
       </div>
     );
     return (
       <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
-        <div className="font-manrope rounded-[28px] bg-[#0c1115] px-5 pb-6 pt-8 sm:px-6">
+        <div className="font-manrope rounded-[28px] bg-[#0c1115] px-3.5 pb-6 pt-8 sm:px-6">
           <div className="flex justify-center">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2f89ff] text-white">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2f89ff] text-white">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </span>
           </div>
-          <h1 className="mt-5 text-center text-[30px] font-extrabold leading-tight text-white">You’re Verified</h1>
-          <p className="mt-1.5 text-center text-[16px] text-[#c4cfd6]">Your account is verified.</p>
+          <h1 className="mt-4 text-center text-[25px] font-extrabold leading-tight text-white">You’re Verified</h1>
+          <p className="mt-1.5 text-center text-[14px] text-[#c4cfd6]">Your account is verified.</p>
 
-          <div className="mt-7 divide-y divide-[#344452] rounded-[26px] bg-[#1b2833] px-6 py-2">
+          <div className="mt-7 divide-y divide-[#344452] rounded-[26px] bg-[#1b2833] px-5 py-2">
             {detailRow('Account', (
               <>
                 {eligibility.displayName || eligibility.username || 'Your account'}
@@ -180,7 +180,7 @@ export default function VerificationPage() {
             ))}
             {detailRow('Status', (
               <>
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Active
               </>
             ))}
@@ -189,21 +189,21 @@ export default function VerificationPage() {
             {detailRow('Expires', expiresOn || 'No expiry', expiresOn && daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : null)}
           </div>
 
-          <h2 className="mt-8 text-[20px] font-bold text-white">Your benefits</h2>
-          <div className="mt-4 space-y-3.5">
+          <h2 className="mt-6 text-[15px] font-bold text-white">Your benefits</h2>
+          <div className="mt-1.5 space-y-2.5">
             {benefits.map((b) => (
-              <div key={b} className="flex items-center gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2f89ff] text-white">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+              <div key={b} className="flex items-center gap-2.5">
+                <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#2f89ff] text-white">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
                 </span>
-                <span className="text-[16px] text-[#c4cfd6]">{b}</span>
+                <span className="text-[14px] text-[#c4cfd6]">{b}</span>
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-center text-[14px] text-[#93a5b1]">
+          <p className="mt-6 text-center text-[12px] text-[#93a5b1]">
             Questions? Contact{' '}
             <a href="mailto:support@frianzo.online" className="font-semibold text-[#2f89ff] no-underline">
               support@frianzo.online
