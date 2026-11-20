@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createVerificationRequest, fetchMyVerificationRequest } from '@/lib/api/userApi';
+import { fetchMyVerificationRequest } from '@/lib/api/userApi';
 import { createPayFastBlueTickPayment, payfastErrorMessage, submitPayFastCheckout } from '@/lib/api/payfastApi';
 import Toast from '@/components/Toast';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 type Requirement = { current: number | string; required: number | string; met: boolean };
 type Eligibility = {
@@ -19,10 +20,17 @@ type Eligibility = {
   };
 };
 
-function RequirementRow({ label, item, suffix = '', icon }: { label: string; item: Requirement; suffix?: string; icon: string }) {
+function RequirementRow({ label, item, suffix = '' }: { label: string; item: Requirement; suffix?: string }) {
   return (
     <div className="flex items-center gap-3 py-3.5">
-      <div>
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+          item.met ? 'bg-emerald-500 text-white' : 'border-2 border-slate-300 text-transparent'
+        }`}
+      >
+        ✓
+      </span>
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-slate-800">{label}</p>
         <p className="text-xs text-slate-500">
           {item.current}{suffix} / {item.required}{suffix}{typeof item.required === 'number' ? ' required' : ''}
@@ -35,13 +43,21 @@ function RequirementRow({ label, item, suffix = '', icon }: { label: string; ite
   );
 }
 
+function PlanFeature({ children, icon }: { children: React.ReactNode; icon: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="shrink-0 text-slate-200">{icon}</span>
+      <span className="text-sm text-white">{children}</span>
+    </div>
+  );
+}
+
 export default function VerificationPage() {
   const [request, setRequest] = useState<any>(null);
   const [eligibility, setEligibility] = useState<Eligibility | null>(null);
-  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [payfastBusy, setPayfastBusy] = useState(false);
+  const [step, setStep] = useState<'requirements' | 'plan'>('requirements');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   async function load() {
@@ -65,27 +81,10 @@ export default function VerificationPage() {
     if (flag === 'success') {
       setToast({ message: 'Payment received. If your Blue Tick is not active yet, it will activate within a few moments.', type: 'success' });
     } else if (flag === 'failed') {
-      setToast({ message: 'Your payment was not completed. You can try again, or use the manual EasyPaisa option.', type: 'error' });
+      setToast({ message: 'Your payment was not completed. You can try again.', type: 'error' });
     }
     load();
   }, []);
-
-  async function submit() {
-    if (!reason.trim() || !eligibility?.eligible) return;
-    setBusy(true);
-    const result = await createVerificationRequest(reason.trim());
-    setBusy(false);
-
-    if (!result.success) {
-      setToast({ message: result.error?.message || 'Could not submit verification request.', type: 'error' });
-      return;
-    }
-
-    setRequest(result.data.request);
-    setEligibility(result.data.eligibility || eligibility);
-    setReason('');
-    setToast({ message: 'Verification request submitted successfully.', type: 'success' });
-  }
 
   async function payWithPayFast() {
     setPayfastBusy(true);
@@ -142,34 +141,117 @@ export default function VerificationPage() {
   // Fallbacks keep this page alive even if the API shape ever changes again —
   // a missing requirement must show as "not met", never crash the page.
   const requirementItems = [
-    { label: 'Referrals invited', item: r.referrals || { current: 0, required: 25, met: false }, icon: '01' },
-    { label: 'Followers', item: r.followers || { current: 0, required: 100, met: false }, icon: '02' },
-    { label: 'Account age', item: r.accountAge || { current: 0, required: 30, met: false }, suffix: ' days', icon: '03' },
-    { label: 'Posts uploaded', item: r.posts || { current: 0, required: 5, met: false }, icon: '04' },
-    { label: 'Profile complete', item: r.profile || { current: 'Incomplete', required: 'Photo + Bio', met: false }, icon: '05' },
-    { label: 'Clean record', item: r.cleanRecord || { current: 'Clean', required: 'No violations (90d)', met: false }, icon: '06' },
+    { label: 'Referrals invited', item: r.referrals || { current: 0, required: 25, met: false } },
+    { label: 'Followers', item: r.followers || { current: 0, required: 100, met: false } },
+    { label: 'Account age', item: r.accountAge || { current: 0, required: 30, met: false }, suffix: ' days' },
+    { label: 'Profile complete', item: r.profile || { current: 'Incomplete', required: 'Photo + Bio', met: false } },
+    { label: 'Clean record', item: r.cleanRecord || { current: 'Clean', required: 'No violations (90d)', met: false } },
   ];
   const completedCount = requirementItems.filter(({ item }) => item.met).length;
   const progress = Math.round((completedCount / requirementItems.length) * 100);
   const pending = request?.status === 'pending';
 
+  if (step === 'plan') {
+    return (
+      <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
+        <button
+          type="button"
+          onClick={() => setStep('requirements')}
+          className="mb-3 text-sm font-medium text-blue-600"
+        >
+          ← Back to requirements
+        </button>
+
+        <div className="rounded-3xl bg-[#0d141c] px-4 py-6 sm:px-5">
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-center text-2xl font-bold text-white">Frianzo Blue Tick</h1>
+            <VerifiedBadge size="lg" />
+          </div>
+          <p className="mt-1.5 text-center text-sm text-slate-300">Get verified and stand out.</p>
+          <p className="mt-4 text-center text-xs font-medium uppercase tracking-wide text-slate-400">Your plan</p>
+
+          <div className="mt-3 rounded-[18px] bg-[#17242f] p-5">
+            <p className="text-[17px] font-bold text-white">Blue Tick</p>
+            <p className="mt-1 text-sm text-slate-300">The verified badge for your Frianzo profile</p>
+            <p className="mt-0.5 text-sm text-slate-400">PKR400.00/month</p>
+
+            <div className="mt-4 space-y-3">
+              <PlanFeature
+                icon={
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M8.5 12.5l2.4 2.4 4.6-5.4" />
+                  </svg>
+                }
+              >
+                Verified badge on your profile, posts and comments
+              </PlanFeature>
+              <PlanFeature
+                icon={
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M4 19V10M9.5 19V5M15 19v-8M20 19V7" />
+                  </svg>
+                }
+              >
+                Reach boost for your posts and reels
+              </PlanFeature>
+              <PlanFeature
+                icon={
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="M16 16l4.5 4.5" />
+                  </svg>
+                }
+              >
+                Appear first in search results
+              </PlanFeature>
+              <PlanFeature
+                icon={
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+                    <path d="M3.5 10h17M8 3v4M16 3v4" />
+                  </svg>
+                }
+              >
+                Valid for 1 month from activation
+              </PlanFeature>
+            </div>
+
+            <button
+              type="button"
+              disabled={payfastBusy}
+              onClick={payWithPayFast}
+              className="mt-5 w-full rounded-full bg-white/10 py-3 text-sm font-semibold text-[#57abff] transition disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {payfastBusy ? 'Opening secure payment...' : 'Get Blue Tick'}
+            </button>
+            <p className="mt-2.5 text-center text-[11px] leading-relaxed text-slate-400">
+              Your verification request is submitted only after your payment is completed.
+              <br />
+              Pay by card, JazzCash, Easypaisa, bank account or Raast on PayFast&apos;s secure page.
+            </p>
+          </div>
+        </div>
+
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-            <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 3l7 3.5v5.2c0 4.4-3 7.6-7 9.3-4-1.7-7-4.9-7-9.3V6.5L12 3z" />
-              <path d="M9 12l2 2 4-4" />
-            </svg>
-          </div>
+          <VerifiedBadge size="lg" />
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Verification</h1>
-            <p className="text-sm text-slate-500">Apply for the Frianzo Blue Tick.</p>
+            <h1 className="text-xl font-semibold text-slate-900">Frianzo Blue Tick</h1>
+            <p className="text-sm text-slate-500">Get verified and stand out.</p>
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p className="mt-5 text-sm font-semibold text-slate-900">Step 1 of 2 — Complete the requirements</p>
+
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">Eligibility progress</p>
@@ -182,45 +264,14 @@ export default function VerificationPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-          <p className="text-sm font-semibold text-slate-900">Blue Tick perks</p>
-          <ul className="mt-3 space-y-2.5 text-sm text-slate-600">
-            <li className="flex items-start gap-2"><span className="text-blue-600">✓</span> Your reels and posts get a reach boost in feeds</li>
-            <li className="flex items-start gap-2"><span className="text-blue-600">✓</span> Your profile appears first in search results</li>
-            <li className="flex items-start gap-2"><span className="text-blue-600">✓</span> Verified badge on your profile, posts and comments</li>
-          </ul>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-900">Get the Blue Tick now</p>
-          <p className="mt-1 text-sm text-slate-600">
-            Skip the requirements: get the Blue Tick for <span className="font-semibold text-slate-900">Rs 400 for 1 month</span>. It activates automatically as soon as your payment is confirmed.
-          </p>
-          <button
-            type="button"
-            disabled={payfastBusy}
-            onClick={payWithPayFast}
-            className="mt-3 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {payfastBusy ? 'Opening secure payment...' : 'Pay with PayFast'}
-          </button>
-          <p className="mt-2 text-center text-xs text-slate-400">Pay by card, JazzCash, Easypaisa, bank account or Raast on PayFast&apos;s secure page.</p>
-        </div>
-
         <div className="mt-4 divide-y rounded-2xl border px-4">
-          {requirementItems.map(({ label, item, suffix, icon }) => (
-            <RequirementRow key={label} label={label} item={item} suffix={suffix} icon={icon} />
+          {requirementItems.map(({ label, item, suffix }) => (
+            <RequirementRow key={label} label={label} item={item} suffix={suffix} />
           ))}
         </div>
 
-        {!eligibility.eligible && !request?.status?.includes('pending') && (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            Complete all requirements above before you can submit a verification request.
-          </div>
-        )}
-
-        {request?.status === 'pending' && (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        {pending && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             Your verification request is pending review. You cannot submit another request while this one is pending.
           </div>
         )}
@@ -231,33 +282,26 @@ export default function VerificationPage() {
           </div>
         )}
 
-        {request?.status !== 'pending' && eligibility.eligible && (
-          <div className="mt-5">
-            <label className="mb-2 block text-sm font-medium text-slate-700">Why should your account be verified?</label>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              maxLength={1000}
-              rows={5}
-              placeholder="Tell the Frianzo team about your account and why you are requesting verification."
-              className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-blue-500"
-            />
-            <div className="mt-2 text-right text-xs text-slate-400">{reason.length}/1000</div>
+        {!pending && (
+          <>
             <button
               type="button"
-              disabled={busy || !reason.trim()}
-              onClick={submit}
-              className="mt-2 w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!eligibility.eligible}
+              onClick={() => setStep('plan')}
+              className="mt-5 w-full rounded-full bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {busy ? 'Submitting...' : 'Request Verification'}
+              Next
             </button>
-          </div>
+            {!eligibility.eligible && (
+              <p className="mt-2 text-center text-xs text-slate-400">
+                Complete all requirements above to continue to the Blue Tick plan.
+              </p>
+            )}
+          </>
         )}
-
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
-
