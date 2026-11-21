@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { fetchDashboard } from '@/lib/api/userApi';
 import Toast from '@/components/Toast';
@@ -76,6 +77,43 @@ type DashboardData = {
 };
 
 const RANGES = [7, 30, 90] as const;
+
+
+function fbTrend(v: number | null | undefined) {
+  if (v === null || v === undefined) return null;
+  return {
+    text: v >= 0 ? `↑ ${v}%` : `↓ ${v}%`,
+    cls: v >= 0 ? 'text-emerald-500' : 'text-red-500',
+  };
+}
+
+function AnalyticsCard({ label, value, trend }: { label: string; value: string; trend?: number | null }) {
+  const t = fbTrend(trend);
+  return (
+    <div className="rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
+      <p className="text-sm text-slate-500">{label}</p>
+      <div className="mt-1 flex items-baseline justify-between gap-2">
+        <p className="text-[22px] font-bold">{value}</p>
+        {t ? (
+          <p className={`text-sm font-bold ${t.cls}`}>{t.text}</p>
+        ) : (
+          <p className="text-sm text-slate-400">--</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OtherTile({ href, label, children }: { href: string; label: string; children: ReactNode }) {
+  return (
+    <Link href={href} className="rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-500 text-slate-600">
+        {children}
+      </div>
+      <p className="mt-3 text-[15px] font-semibold">{label}</p>
+    </Link>
+  );
+}
 
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -195,135 +233,58 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-xl px-4 py-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Dashboard</h1>
-        <div className="flex rounded-lg bg-slate-100 p-0.5">
+      </div>
+
+      <StrikesSection />
+
+      <div className="mt-5">
+        <p className="text-lg font-bold">
+          Analytics <span className="text-slate-400">›</span>
+        </p>
+        <div className="mt-3 flex gap-2">
           {RANGES.map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${range === r ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+              className={
+                range === r
+                  ? 'rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white'
+                  : 'rounded-full px-4 py-1.5 text-sm text-slate-500'
+              }
             >
-              {r}d
+              {r} days
             </button>
           ))}
         </div>
       </div>
 
-      <StrikesSection />
-      <WeeklyGoals goals={(dashboard as any).goals} allGoalsMet={(dashboard as any).allGoalsMet} newAchievement={(dashboard as any).newAchievement} />
-      <AchievementsSection />
-
-      <div className="mb-3 py-4">
-        <p className="text-sm text-slate-600">Earnings</p>
-        <p className="mt-1 text-2xl font-semibold">${dashboard.earnings.toFixed(2)}</p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <AnalyticsCard label="Views" value={stats.views.toLocaleString()} trend={stats.viewsTrendPct} />
+        <AnalyticsCard label="Earnings" value={`$${dashboard.earnings.toFixed(2)}`} />
+        <AnalyticsCard label="Engagement" value={stats.engagement.toLocaleString()} trend={stats.engagementTrendPct} />
+        <AnalyticsCard label="Follows" value={stats.newFollowers.toLocaleString()} trend={stats.followersTrendPct} />
       </div>
 
-      {monetization && monetization.status === 'eligible' && (
-        <div className="mb-3 py-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-700">Monetization</p>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${monetization.status === 'eligible' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-              {monetization.status === 'eligible' ? 'Eligible' : 'Locked'}
-            </span>
+      {stats.engagementBreakdown && (
+        <div className="mt-4 grid grid-cols-4 gap-3 text-center">
+          <div>
+            <p className="text-base font-semibold">{stats.engagementBreakdown.likes.toLocaleString()}</p>
+            <p className="text-xs text-slate-400">Likes</p>
           </div>
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>{monetization.referrals} / {monetization.requiredReferrals} referrals</span>
-              <span>{monetization.progress}%</span>
-            </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: `${monetization.progress}%` }} />
-            </div>
+          <div>
+            <p className="text-base font-semibold">{stats.engagementBreakdown.comments.toLocaleString()}</p>
+            <p className="text-xs text-slate-400">Comments</p>
           </div>
-          <button
-            onClick={copyReferralLink}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700 active:bg-slate-50"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
-            Copy referral link
-          </button>
+          <div>
+            <p className="text-base font-semibold">{stats.engagementBreakdown.shares.toLocaleString()}</p>
+            <p className="text-xs text-slate-400">Shares</p>
+          </div>
+          <div>
+            <p className="text-base font-semibold">{stats.content.toLocaleString()}</p>
+            <p className="text-xs text-slate-400">Content</p>
+          </div>
         </div>
       )}
-
-      <div className="mb-3 grid grid-cols-2 gap-3">
-        <div className="py-2">
-          <p className="text-sm text-slate-600">Views</p>
-          <p className="mt-1 text-xl font-semibold">{stats.views.toLocaleString()}</p>
-          {trendText && (
-            <p className={`mt-1 text-sm font-semibold ${trend! >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{trendText}</p>
-          )}
-        </div>
-        <div className="py-2">
-          <p className="text-sm text-slate-600">Engagement</p>
-          <p className="mt-1 text-xl font-semibold">{stats.engagement.toLocaleString()}</p>
-          {engTrendText && (
-            <p className={`mt-1 text-sm font-semibold ${engTrend! >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{engTrendText}</p>
-          )}
-          {stats.engagementBreakdown && (
-            <div className="mt-2 text-xs">
-              <div className="flex items-center justify-between py-2">
-                <span className="text-slate-500">Likes</span>
-                <span className="font-semibold text-slate-700">{stats.engagementBreakdown.likes.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-slate-500">Comments</span>
-                <span className="font-semibold text-slate-700">{stats.engagementBreakdown.comments.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-slate-500">Shares</span>
-                <span className="font-semibold text-slate-700">{stats.engagementBreakdown.shares.toLocaleString()}</span>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="py-2">
-          <p className="text-sm text-slate-600">New followers</p>
-          <p className="mt-1 text-xl font-semibold">{stats.newFollowers.toLocaleString()}</p>
-          {trendLabel(stats.followersTrendPct) && (
-            <p className={trendClass(stats.followersTrendPct!)}>{trendLabel(stats.followersTrendPct)}</p>
-          )}
-        </div>
-        <div className="py-2">
-          <p className="text-sm text-slate-600">Content</p>
-          <p className="mt-1 text-xl font-semibold">{stats.content.toLocaleString()}</p>
-          {trendLabel(stats.contentTrendPct) && (
-            <p className={trendClass(stats.contentTrendPct!)}>{trendLabel(stats.contentTrendPct)}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-3 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm text-slate-600">Top performing content</p>
-            <p className="mt-1 text-xs text-slate-400">This month, by views</p>
-          </div>
-          {stats?.topPerforming && (
-            <p className="text-sm font-semibold">{stats.topPerforming.views.toLocaleString()} views</p>
-          )}
-        </div>
-        {stats?.topPerforming && topLink ? (
-          <Link href={topLink} className="mt-3 flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-slate-50 active:bg-slate-100">
-            {stats.topPerforming.mediaUrl ? (
-              <img
-                src={stats.topPerforming.mediaUrl}
-                alt=""
-                className="h-14 w-14 shrink-0 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
-                {stats.topPerforming.type === 'reel' ? 'Reel' : 'Post'}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium uppercase text-slate-400">{stats.topPerforming.type}</p>
-              <p className="truncate text-sm text-slate-700">{stats.topPerforming.title}</p>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-slate-400"><path d="M9 18l6-6-6-6" /></svg>
-          </Link>
-        ) : (
-          <p className="mt-3 text-sm text-slate-400">No content views this month yet.</p>
-        )}
-      </div>
 
       <div className="py-4">
         <div className="mb-1 flex items-baseline justify-between">
@@ -456,6 +417,100 @@ export default function DashboardPage() {
           Check monetization availability
         </Link>
       )}
+
+      {monetization && monetization.status === 'eligible' && (
+        <div className="mb-3 py-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-700">Monetization</p>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${monetization.status === 'eligible' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+              {monetization.status === 'eligible' ? 'Eligible' : 'Locked'}
+            </span>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>{monetization.referrals} / {monetization.requiredReferrals} referrals</span>
+              <span>{monetization.progress}%</span>
+            </div>
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: `${monetization.progress}%` }} />
+            </div>
+          </div>
+          <button
+            onClick={copyReferralLink}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700 active:bg-slate-50"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" /></svg>
+            Copy referral link
+          </button>
+        </div>
+      )}
+
+      <div className="mt-5">
+        <p className="text-lg font-bold">
+          Content <span className="text-slate-400">›</span>
+        </p>
+        <p className="mt-1 text-sm text-slate-400">Top performing</p>
+        {stats?.topPerforming && topLink ? (
+          <Link href={topLink} className="mt-3 flex items-center gap-3 rounded-2xl bg-[#f0f2f5] p-3 dark:bg-[#333436]">
+            {stats.topPerforming.mediaUrl ? (
+              <img
+                src={stats.topPerforming.mediaUrl}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-xs text-slate-400">
+                {stats.topPerforming.type === 'reel' ? 'Reel' : 'Post'}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase text-slate-400">{stats.topPerforming.type}</p>
+              <p className="truncate text-sm font-medium">{stats.topPerforming.title}</p>
+            </div>
+            <span className="shrink-0 rounded-lg bg-black/5 px-2 py-1 text-xs font-semibold dark:bg-white/10">
+              {stats.topPerforming.views.toLocaleString()} views
+            </span>
+          </Link>
+        ) : (
+          <p className="mt-3 text-sm text-slate-400">No content views this month yet.</p>
+        )}
+      </div>
+
+      <div className="mt-5">
+        <WeeklyGoals goals={(dashboard as any).goals} allGoalsMet={(dashboard as any).allGoalsMet} newAchievement={(dashboard as any).newAchievement} />
+        <AchievementsSection />
+      </div>
+
+      <div className="mt-5">
+        <p className="text-lg font-bold">Other</p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <OtherTile href="/boost/my" label="Ads Manager">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" stroke="none" />
+            </svg>
+          </OtherTile>
+          <OtherTile href="/settings-menu/monetization" label="Monetization">
+            <span className="text-lg font-bold">$</span>
+          </OtherTile>
+          <OtherTile href="/settings-menu" label="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h13M20 17h0" />
+              <circle cx="16" cy="7" r="2" fill="currentColor" stroke="none" />
+              <circle cx="10" cy="12" r="2" fill="currentColor" stroke="none" />
+              <circle cx="18" cy="17" r="2" fill="currentColor" stroke="none" />
+            </svg>
+          </OtherTile>
+          <OtherTile href="/settings-menu" label="Other tools">
+            <span className="grid grid-cols-2 gap-[3px]">
+              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
+              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
+              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
+              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
+            </span>
+          </OtherTile>
+        </div>
+      </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>

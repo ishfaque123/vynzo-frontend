@@ -45,34 +45,42 @@ export default function StrikesSection() {
   }, []);
 
   if (loading) {
-    return <div className="mb-3 h-16 animate-pulse rounded-lg bg-slate-100" />;
+    return <div className="mb-3 h-[86px] animate-pulse rounded-2xl bg-slate-100" />;
   }
 
   const total = strikes.length + removals.length;
 
-  // Good standing: minimal clean display
+  // Good standing banner (Facebook Business Dashboard style)
   if (total === 0) {
     return (
-      <div className="mb-3 flex items-center justify-between py-3">
-        <p className="text-sm font-medium text-slate-700">Account health</p>
-        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Good</span>
+      <div className="mb-3 flex items-center gap-3 rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
+            <path d="M4 12.5l5 5L20 6.5" />
+          </svg>
+        </span>
+        <div>
+          <p className="text-[15px] font-medium">Your account is in good standing.</p>
+          <p className="text-sm text-slate-500">No strikes or warnings on your account.</p>
+        </div>
       </div>
     );
   }
 
-  // Has violations: show warning + list
+  // Has violations: risk banner + the detail list underneath
   return (
-    <div className="mb-3 py-4">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-700">Account health</p>
-        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">Warning</span>
-      </div>
-      {total >= 3 && (
-        <p className="mb-3 text-xs text-amber-700">
-          Your profile is at risk of being suspended because it repeatedly didn't follow the rules.
+    <div className="mb-3">
+      <div className="flex items-center gap-3 rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
+        <svg width="34" height="34" viewBox="0 0 24 24" className="shrink-0">
+          <path d="M12 3L22 20H2z" fill="#f5c518" />
+          <rect x="11.1" y="9" width="1.8" height="6" rx="0.9" fill="#1c1e21" />
+          <circle cx="12" cy="17.4" r="1.1" fill="#1c1e21" />
+        </svg>
+        <p className="text-[15px] font-medium">
+          Your profile is at risk of being suspended because it repeatedly didn&apos;t follow the rules.
         </p>
-      )}
-      <div className="space-y-2">
+      </div>
+      <div className="mt-2 space-y-1 px-1">
         {strikes.map((s) => (
           <div key={s.id} className="flex items-center justify-between py-2">
             <div>
