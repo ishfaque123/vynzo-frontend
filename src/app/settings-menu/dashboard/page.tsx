@@ -289,7 +289,7 @@ export default function DashboardPage() {
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="text-lg font-semibold">Business Dashboard</h1>
+        <h1 className="text-lg font-semibold">Dashboard</h1>
       </div>
 
       <div className="mt-3 flex gap-2 overflow-x-auto">
