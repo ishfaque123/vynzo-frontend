@@ -187,6 +187,7 @@ export default function BlockedPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [unblockTarget, setUnblockTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -217,8 +218,14 @@ export default function BlockedPage() {
     else setSelectedIds(new Set(entries.map((e) => e.user.id)));
   }
 
-  async function handleUnblock(id: string) {
-    if (!confirm('Unblock this account? They will be able to see your profile and interact with you again.')) return;
+  function handleUnblock(id: string) {
+    setUnblockTarget(id);
+  }
+
+  async function confirmUnblock() {
+    const id = unblockTarget;
+    if (!id) return;
+    setUnblockTarget(null);
     setBusyId(id);
     const result = await unblockUser(id);
     setBusyId(null);
@@ -301,6 +308,19 @@ export default function BlockedPage() {
             <TrashIcon />
             {deleting ? 'Deleting...' : `Delete (${selectedIds.size})`}
           </button>
+        </div>
+      )}
+
+      {unblockTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setUnblockTarget(null)}>
+          <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-slate-900">Unblock this account?</h3>
+            <p className="mt-1 text-sm text-slate-500">They will be able to see your profile and interact with you again.</p>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setUnblockTarget(null)} className="flex-1 rounded-xl bg-slate-100 py-2.5 text-sm font-semibold text-slate-700 active:scale-95">Cancel</button>
+              <button onClick={confirmUnblock} className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white active:scale-95">Unblock</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
