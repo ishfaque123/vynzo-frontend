@@ -217,7 +217,7 @@ export default function DashboardPage() {
         <p className="mt-1 text-2xl font-semibold">${dashboard.earnings.toFixed(2)}</p>
       </div>
 
-      {monetization && (
+      {monetization && monetization.status === 'eligible' && (
         <div className="mb-3 py-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-slate-700">Monetization</p>
@@ -447,6 +447,15 @@ export default function DashboardPage() {
           <div className="flex h-[168px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
         )}
       </div>
+
+      {monetization && monetization.status !== 'eligible' && (
+        <Link
+          href="/settings-menu/monetization"
+          className="mb-3 flex w-full items-center justify-center rounded-full bg-blue-600 py-3 text-sm font-semibold text-white active:opacity-90"
+        >
+          Check monetization availability
+        </Link>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
