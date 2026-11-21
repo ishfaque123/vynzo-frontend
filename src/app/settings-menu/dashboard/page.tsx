@@ -442,9 +442,6 @@ export default function DashboardPage() {
                 })()}
               </svg>
             </div>
-            <div className="mt-1 flex h-6 items-center justify-center">
-              <p className="text-[11px] text-slate-400">Tap a point for daily breakdown</p>
-            </div>
           </>
         ) : (
           <div className="flex h-[168px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
