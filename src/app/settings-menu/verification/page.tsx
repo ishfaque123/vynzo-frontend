@@ -14,6 +14,7 @@ type Eligibility = {
   verifiedAt?: string | null;
   username?: string | null;
   displayName?: string | null;
+  country?: string | null;
   freeMonthClaimed?: boolean;
   requirements: {
     referrals: Requirement;
@@ -23,6 +24,14 @@ type Eligibility = {
     profile: Requirement;
     cleanRecord: Requirement;
   };
+};
+
+// Display price for the Verified plan in the viewer's own country
+// currency. Display only — charging still happens in PKR.
+const PLAN_PRICE_BY_COUNTRY: Record<string, { prefix: string; amount: number }> = {
+  PK: { prefix: 'PKR ', amount: 400 },
+  IN: { prefix: '₹', amount: 129 },
+  BD: { prefix: '৳', amount: 170 },
 };
 
 function RequirementRow({ label, item, suffix = '' }: { label: string; item: Requirement; suffix?: string }) {
@@ -236,6 +245,7 @@ export default function VerificationPage() {
 
   if (step === 'plan') {
     const freeAvailable = !eligibility.freeMonthClaimed;
+    const planPrice = PLAN_PRICE_BY_COUNTRY[(eligibility.country || 'PK').toUpperCase()] || PLAN_PRICE_BY_COUNTRY.PK;
     return (
       <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
         <div className="font-manrope rounded-[28px] bg-[#0c1115] px-5 pb-6 pt-4 sm:px-6">
@@ -261,11 +271,11 @@ export default function VerificationPage() {
             <p className="mt-3 text-[17px] leading-snug text-white">Get next level insights. Reach new audiences.</p>
             {freeAvailable ? (
               <p className="mt-3 text-[17px]">
-                <span className="font-medium text-[#93a5b1]">PKR <span className="line-through">400</span></span>{' '}
+                <span className="font-medium text-[#93a5b1]">{planPrice.prefix}<span className="line-through">{planPrice.amount}</span></span>{' '}
                 <span className="font-bold text-white">0/month</span>
               </p>
             ) : (
-              <p className="mt-3 text-[17px] font-medium text-[#93a5b1]">PKR 400/month</p>
+              <p className="mt-3 text-[17px] font-medium text-[#93a5b1]">{planPrice.prefix}{planPrice.amount}/month</p>
             )}
 
             <div className="mt-6 space-y-6">
