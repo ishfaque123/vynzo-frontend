@@ -899,7 +899,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
 
       {!isBlockedView && !isPrivateView && introRows.length > 0 && (
         <div className="mt-5 px-4">
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+          <div className="rounded-2xl bg-white px-4 py-4">
             <h2 className="text-[17px] font-bold text-slate-900">Personal Details</h2>
             <div className="mt-1 divide-y divide-slate-100">
               {(introExpanded ? introRows : introRows.slice(0, 4)).map((row) => (
