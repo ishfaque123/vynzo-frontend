@@ -14,6 +14,7 @@ interface Account {
   username: string | null;
   displayName: string | null;
   profilePictureUrl: string | null;
+  unreadNotifications?: number;
 }
 
 function MonetizationIcon() {
@@ -561,15 +562,21 @@ export default function SettingsMenuPage() {
                   const isActive = acc.id === activeId;
                   return (
                     <button key={acc.id} onClick={() => !isActive && handleSelectAccount(acc.id)} disabled={isActive || switchingId !== null} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60">
-                      <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
-                        {acc.profilePictureUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                      <span className="relative h-9 w-9 flex-shrink-0">
+                        <span className="block h-full w-full overflow-hidden rounded-full bg-slate-200">
+                          {acc.profilePictureUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                          )}
+                        </span>
+                        {acc.unreadNotifications != null && acc.unreadNotifications > 0 && (
+                          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f02849] px-1 text-[10px] font-semibold text-white">
+                            {acc.unreadNotifications > 99 ? '99+' : acc.unreadNotifications}
+                          </span>
                         )}
                       </span>
                       <span className="flex-1">
                         <span className="block text-sm font-medium text-slate-800">{acc.displayName || acc.username || 'Vynzo user'}</span>
-                        {acc.username && <span className="block text-xs text-slate-500">@{acc.username}</span>}
                       </span>
                       {isActive && <span className="text-xs font-medium text-slate-400">Active</span>}
                       {switchingId === acc.id && <span className="text-xs text-slate-400">Switching...</span>}
@@ -582,7 +589,7 @@ export default function SettingsMenuPage() {
             {switchError && <p className="mb-2 text-center text-sm text-red-600">{switchError}</p>}
             <div className="flex gap-2">
               <button onClick={() => setSwitchSheetOpen(false)} className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700">Cancel</button>
-              <button onClick={handleAddAccount} disabled={addingAccount} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-60">{addingAccount ? 'Waiting for login...' : '+ Add account'}</button>
+              <button onClick={handleAddAccount} disabled={addingAccount || accounts.length >= 5} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-60">{accounts.length >= 5 ? 'Maximum 5 accounts' : addingAccount ? 'Waiting for login...' : '+ Add account'}</button>
             </div>
           </div>
         </div>

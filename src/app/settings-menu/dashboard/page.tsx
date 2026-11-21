@@ -15,6 +15,7 @@ type SwitchAccount = {
   username: string | null;
   displayName: string | null;
   profilePictureUrl: string | null;
+  unreadNotifications?: number;
 };
 import Toast from '@/components/Toast';
 
@@ -79,6 +80,9 @@ type DashboardData = {
     content: number;
     contentTrendPct?: number | null;
     dailyViews: DailyView[];
+    dailyEngagement?: DailyView[];
+    dailyFollows?: DailyView[];
+    viewsBreakdown?: { posts: number; reels: number };
     viewsTrendPct: number | null;
     topPerforming: TopPerforming | null;
     days?: number;
@@ -122,6 +126,31 @@ function AnalyticsCard({ label, value, trend }: { label: string; value: string; 
   );
 }
 
+function MetricCard({ label, value, trend, selected, onClick }: { label: string; value: string; trend?: number | null; selected: boolean; onClick: () => void }) {
+  const t = fbTrend(trend);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl p-4 text-left ${
+        selected
+          ? 'border-2 border-blue-600 bg-white dark:bg-[#242526]'
+          : 'border-2 border-transparent bg-[#f0f2f5] dark:bg-[#333436]'
+      }`}
+    >
+      <p className="text-sm text-slate-500">{label}</p>
+      <div className="mt-1 flex items-baseline justify-between gap-2">
+        <p className="text-[22px] font-bold">{value}</p>
+        {t ? (
+          <p className={`text-sm font-bold ${t.cls}`}>{t.text}</p>
+        ) : (
+          <p className="text-sm text-slate-400">--</p>
+        )}
+      </div>
+    </button>
+  );
+}
+
 function OtherTile({ href, label, children }: { href: string; label: string; children: ReactNode }) {
   return (
     <Link href={href} className="rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
@@ -161,6 +190,7 @@ export default function DashboardPage() {
   const [range, setRange] = useState<number>(30);
   const router = useRouter();
   const [tab, setTab] = useState<DashTab>('analytics');
+  const [metric, setMetric] = useState<'views' | 'engagement' | 'follows' | 'earnings'>('views');
   const { user } = useAuth();
 
   const [switchOpen, setSwitchOpen] = useState(false);
@@ -300,7 +330,12 @@ export default function DashboardPage() {
   const stats = dashboard.stats;
   const monetization = dashboard.monetization;
   const dailyViews = stats?.dailyViews || [];
-  const maxViews = Math.max(1, ...dailyViews.map((d) => d.views));
+  const series =
+    metric === 'engagement' ? stats?.dailyEngagement || [] : metric === 'follows' ? stats?.dailyFollows || [] : dailyViews;
+  const metricTitle =
+    metric === 'views' ? 'Total views' : metric === 'engagement' ? 'Total engagement' : metric === 'follows' ? 'New follows' : 'Total earnings';
+  const metricUnit = metric === 'engagement' ? 'engagement' : metric === 'follows' ? 'follows' : 'views';
+  const maxViews = Math.max(1, ...series.map((d) => d.views));
   // Chart geometry (approved example, 2026-11-21): light gridlines with
   // value labels on the side, small points, date labels under the axis,
   // and a taller plot so the shape is easy to read.
@@ -309,14 +344,14 @@ export default function DashboardPage() {
   const yMax = tickStep * 3;
   const ticks = [0, tickStep, tickStep * 2, tickStep * 3];
   const chartX = (i: number) =>
-    dailyViews.length > 1 ? CH.left + (i / (dailyViews.length - 1)) * (CH.w - CH.left - CH.right) : CH.left;
+    series.length > 1 ? CH.left + (i / (series.length - 1)) * (CH.w - CH.left - CH.right) : CH.left;
   const chartY = (v: number) => CH.top + (1 - v / yMax) * CH.plotH;
   // Smooth curve through the points (Catmull-Rom as cubic Beziers) plus a
   // matching filled area underneath — extras approved by the owner
   // (2026-11-21: filled area, smooth line, gentle draw-in animation).
   const linePath = (() => {
-    if (dailyViews.length === 0) return '';
-    const pts = dailyViews.map((d, i) => ({ x: chartX(i), y: chartY(d.views) }));
+    if (series.length === 0) return '';
+    const pts = series.map((d, i) => ({ x: chartX(i), y: chartY(d.views) }));
     if (pts.length === 1) return `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
     let path = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -333,16 +368,37 @@ export default function DashboardPage() {
     return path;
   })();
   const areaPath =
-    linePath && dailyViews.length > 1
-      ? `${linePath} L ${chartX(dailyViews.length - 1).toFixed(1)},${chartY(0)} L ${chartX(0).toFixed(1)},${chartY(0)} Z`
+    linePath && series.length > 1
+      ? `${linePath} L ${chartX(series.length - 1).toFixed(1)},${chartY(0)} L ${chartX(0).toFixed(1)},${chartY(0)} Z`
       : '';
   const labelIdx =
-    dailyViews.length > 1
-      ? [...new Set([0, Math.round((dailyViews.length - 1) / 4), Math.round((dailyViews.length - 1) / 2), Math.round(((dailyViews.length - 1) * 3) / 4), dailyViews.length - 1])]
+    series.length > 1
+      ? [...new Set([0, Math.round((series.length - 1) / 4), Math.round((series.length - 1) / 2), Math.round(((series.length - 1) * 3) / 4), series.length - 1])]
       : [];
-  const totalViews30d = dailyViews.reduce((sum, d) => sum + d.views, 0);
-  const selectedView = selectedDay === null ? null : dailyViews[selectedDay] || null;
-  const trend = stats?.viewsTrendPct;
+  const seriesTotal = series.reduce((sum, d) => sum + d.views, 0);
+  const selectedView = selectedDay === null ? null : series[selectedDay] || null;
+  const trend =
+    metric === 'views'
+      ? stats?.viewsTrendPct
+      : metric === 'engagement'
+        ? stats?.engagementTrendPct
+        : metric === 'follows'
+          ? stats?.followersTrendPct
+          : null;
+  const breakdownRows =
+    metric === 'views'
+      ? [
+          { label: 'Post views', value: stats?.viewsBreakdown?.posts ?? 0 },
+          { label: 'Reel views', value: stats?.viewsBreakdown?.reels ?? 0 },
+        ]
+      : metric === 'engagement' && stats?.engagementBreakdown
+        ? [
+            { label: 'Likes', value: stats.engagementBreakdown.likes },
+            { label: 'Comments', value: stats.engagementBreakdown.comments },
+            { label: 'Shares', value: stats.engagementBreakdown.shares },
+          ]
+        : [];
+  const breakdownMax = Math.max(1, ...breakdownRows.map((r) => r.value));
   const trendText =
     trend === null || trend === undefined
       ? null
@@ -429,40 +485,19 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <AnalyticsCard label="Views" value={stats.views.toLocaleString()} trend={stats.viewsTrendPct} />
-        <AnalyticsCard label="Earnings" value={`$${dashboard.earnings.toFixed(2)}`} />
-        <AnalyticsCard label="Engagement" value={stats.engagement.toLocaleString()} trend={stats.engagementTrendPct} />
-        <AnalyticsCard label="Follows" value={stats.newFollowers.toLocaleString()} trend={stats.followersTrendPct} />
+        <MetricCard label="Views" value={stats.views.toLocaleString()} trend={stats.viewsTrendPct} selected={metric === 'views'} onClick={() => { setMetric('views'); setSelectedDay(null); }} />
+        <MetricCard label="Earnings" value={`$${dashboard.earnings.toFixed(2)}`} selected={metric === 'earnings'} onClick={() => { setMetric('earnings'); setSelectedDay(null); }} />
+        <MetricCard label="Engagement" value={stats.engagement.toLocaleString()} trend={stats.engagementTrendPct} selected={metric === 'engagement'} onClick={() => { setMetric('engagement'); setSelectedDay(null); }} />
+        <MetricCard label="Follows" value={stats.newFollowers.toLocaleString()} trend={stats.followersTrendPct} selected={metric === 'follows'} onClick={() => { setMetric('follows'); setSelectedDay(null); }} />
       </div>
-
-      {stats.engagementBreakdown && (
-        <div className="mt-4 grid grid-cols-4 gap-3 text-center">
-          <div>
-            <p className="text-base font-semibold">{stats.engagementBreakdown.likes.toLocaleString()}</p>
-            <p className="text-xs text-slate-400">Likes</p>
-          </div>
-          <div>
-            <p className="text-base font-semibold">{stats.engagementBreakdown.comments.toLocaleString()}</p>
-            <p className="text-xs text-slate-400">Comments</p>
-          </div>
-          <div>
-            <p className="text-base font-semibold">{stats.engagementBreakdown.shares.toLocaleString()}</p>
-            <p className="text-xs text-slate-400">Shares</p>
-          </div>
-          <div>
-            <p className="text-base font-semibold">{stats.content.toLocaleString()}</p>
-            <p className="text-xs text-slate-400">Content</p>
-          </div>
-        </div>
-      )}
 
       <div className="py-4">
         <div className="mb-1 flex items-baseline justify-between">
-          <p className="text-sm font-medium text-slate-700">Content views</p>
+          <p className="text-sm font-medium text-slate-700">{metricTitle}</p>
           <p className="text-xs text-slate-400">Last {range} days</p>
         </div>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-2xl font-semibold text-slate-900">{totalViews30d.toLocaleString()}</span>
+          <span className="text-2xl font-semibold text-slate-900">{metric === 'earnings' ? `$${dashboard.earnings.toFixed(2)}` : seriesTotal.toLocaleString()}</span>
           {typeof trend === 'number' && (
             <>
               <span
@@ -476,7 +511,14 @@ export default function DashboardPage() {
             </>
           )}
         </div>
-        {dailyViews.length > 1 ? (
+        {metric === 'earnings' ? (
+          <div className="flex h-[168px] flex-col items-center justify-center gap-3 text-center">
+            <p className="text-sm text-slate-500">Your full earnings details are on the Monetization page.</p>
+            <Link href="/settings-menu/monetization" className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white">
+              Open Monetization
+            </Link>
+          </div>
+        ) : series.length > 1 ? (
           <>
             <div className="relative">
               <style>{`
@@ -487,13 +529,13 @@ export default function DashboardPage() {
                 .chart-tip { animation: chartFade 0.15s ease-out; }
               `}</style>
               <svg
-                key={range}
+                key={`${range}-${metric}`}
                 viewBox={`0 0 ${CH.w} ${CH.h}`}
                 className="w-full"
                 style={{ height: 168 }}
                 onClick={() => setSelectedDay(null)}
                 role="img"
-                aria-label={`Views over the last ${range} days. Tap a point to see that day's views.`}
+                aria-label={`${metricTitle} over the last ${range} days. Tap a point to see that day.`}
               >
                 {ticks.map((t) => (
                   <g key={t}>
@@ -518,7 +560,7 @@ export default function DashboardPage() {
                     strokeDasharray="3 4"
                   />
                 )}
-                {dailyViews.map((d, i) => {
+                {series.map((d, i) => {
                   const x = chartX(i);
                   const y = chartY(d.views);
                   const selected = selectedDay === i;
@@ -542,19 +584,19 @@ export default function DashboardPage() {
                 })}
                 {labelIdx.map((i) => (
                   <text
-                    key={dailyViews[i].date}
+                    key={series[i].date}
                     x={chartX(i)}
                     y={CH.labelY}
-                    textAnchor={i === 0 ? 'start' : i === dailyViews.length - 1 ? 'end' : 'middle'}
+                    textAnchor={i === 0 ? 'start' : i === series.length - 1 ? 'end' : 'middle'}
                     fontSize="9"
                     fill="#94a3b8"
                   >
-                    {i === dailyViews.length - 1 ? 'Today' : shortDate(dailyViews[i].date)}
+                    {i === series.length - 1 ? 'Today' : shortDate(series[i].date)}
                   </text>
                 ))}
                 {selectedView && selectedDay !== null && (() => {
                   const dateLabel = shortDate(selectedView.date);
-                  const viewsLabel = `${selectedView.views.toLocaleString()} views`;
+                  const viewsLabel = `${selectedView.views.toLocaleString()} ${metricUnit}`;
                   const w = Math.max(64, viewsLabel.length * 6.2 + 20);
                   const cx = Math.min(Math.max(chartX(selectedDay), CH.left + w / 2), CH.w - CH.right - w / 2);
                   const above = chartY(selectedView.views) > 56;
@@ -578,6 +620,25 @@ export default function DashboardPage() {
           <div className="flex h-[168px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
         )}
       </div>
+
+      {breakdownRows.length > 0 && (
+        <div className="py-2">
+          <p className="text-lg font-bold">Breakdown</p>
+          <div className="mt-3 space-y-4">
+            {breakdownRows.map((row) => (
+              <div key={row.label}>
+                <div className="flex items-baseline justify-between">
+                  <p className="text-sm text-slate-600">{row.label}</p>
+                  <p className="text-sm font-semibold">{row.value.toLocaleString()}</p>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.max(2, Math.round((row.value / breakdownMax) * 100))}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {monetization && monetization.status === 'eligible' && (
         <div className="mb-3 py-4">
@@ -769,15 +830,21 @@ export default function DashboardPage() {
                   const isActive = acc.id === activeId;
                   return (
                     <button key={acc.id} onClick={() => !isActive && handleSelectAccount(acc.id)} disabled={isActive || switchingId !== null} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60">
-                      <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
-                        {acc.profilePictureUrl && (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                      <span className="relative h-9 w-9 flex-shrink-0">
+                        <span className="block h-full w-full overflow-hidden rounded-full bg-slate-200">
+                          {acc.profilePictureUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                          )}
+                        </span>
+                        {acc.unreadNotifications != null && acc.unreadNotifications > 0 && (
+                          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f02849] px-1 text-[10px] font-semibold text-white">
+                            {acc.unreadNotifications > 99 ? '99+' : acc.unreadNotifications}
+                          </span>
                         )}
                       </span>
                       <span className="flex-1">
                         <span className="block text-sm font-medium text-slate-800">{acc.displayName || acc.username || 'Frianzo user'}</span>
-                        {acc.username && <span className="block text-xs text-slate-500">@{acc.username}</span>}
                       </span>
                       {isActive && <span className="text-xs font-medium text-slate-400">Active</span>}
                       {switchingId === acc.id && <span className="text-xs text-slate-400">Switching...</span>}
@@ -790,7 +857,7 @@ export default function DashboardPage() {
             {switchError && <p className="mb-2 text-center text-sm text-red-600">{switchError}</p>}
             <div className="flex gap-2">
               <button onClick={() => setSwitchOpen(false)} className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700">Cancel</button>
-              <button onClick={handleAddAccount} disabled={addingAccount} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-60">{addingAccount ? 'Waiting for login...' : '+ Add account'}</button>
+              <button onClick={handleAddAccount} disabled={addingAccount || accounts.length >= 5} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-60">{accounts.length >= 5 ? 'Maximum 5 accounts' : addingAccount ? 'Waiting for login...' : '+ Add account'}</button>
             </div>
           </div>
         </div>
