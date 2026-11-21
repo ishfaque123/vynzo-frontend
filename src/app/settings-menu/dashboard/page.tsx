@@ -429,7 +429,7 @@ export default function DashboardPage() {
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="text-xl font-bold">Business Dashboard</h1>
+        <h1 className="text-xl font-bold">Dashboard</h1>
         <div className="ml-auto flex items-center gap-1">
           <Link href="/search" aria-label="Search" className="rounded-full p-2 text-slate-700">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
