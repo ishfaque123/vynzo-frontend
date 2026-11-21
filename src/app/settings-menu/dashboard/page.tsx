@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { fetchDashboard } from '@/lib/api/userApi';
@@ -123,16 +123,29 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [range, setRange] = useState<number>(30);
 
+  const hasDataRef = useRef(false);
+
   function load(days: number) {
-    setLoading(true);
+    // Silent refresh: the full-page loading screen is only for the very
+    // first load. After that the current numbers stay on screen and are
+    // replaced in place when the new range arrives (Facebook style).
     setError(false);
     setSelectedDay(null);
     fetchDashboard(days)
       .then((result) => {
-        if (result.success) setDashboard(result.data);
-        else setError(true);
+        if (result.success) {
+          hasDataRef.current = true;
+          setDashboard(result.data);
+        } else if (!hasDataRef.current) {
+          setError(true);
+        } else {
+          setToast({ message: 'Could not refresh the dashboard. Please try again.', type: 'error' });
+        }
       })
-      .catch(() => setError(true))
+      .catch(() => {
+        if (!hasDataRef.current) setError(true);
+        else setToast({ message: 'Could not refresh the dashboard. Please try again.', type: 'error' });
+      })
       .finally(() => setLoading(false));
   }
 
