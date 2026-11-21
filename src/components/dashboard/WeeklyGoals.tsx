@@ -68,7 +68,7 @@ export default function WeeklyGoals({ goals, allGoalsMet, newAchievement }: {
   if (!goals) return null;
 
   return (
-    <div className="mb-3 rounded-lg border bg-white p-4">
+    <div className="mb-3 py-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-800">Weekly goals</p>
         {allGoalsMet && (

@@ -53,7 +53,7 @@ export default function StrikesSection() {
   // Good standing: minimal clean display
   if (total === 0) {
     return (
-      <div className="mb-3 flex items-center justify-between rounded-lg border bg-white px-4 py-3">
+      <div className="mb-3 flex items-center justify-between py-3">
         <p className="text-sm font-medium text-slate-700">Account health</p>
         <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Good</span>
       </div>
@@ -62,7 +62,7 @@ export default function StrikesSection() {
 
   // Has violations: show warning + list
   return (
-    <div className="mb-3 rounded-lg border border-amber-200 bg-white p-4">
+    <div className="mb-3 py-4">
       <div className="mb-2 flex items-center justify-between">
         <p className="text-sm font-medium text-slate-700">Account health</p>
         <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">Warning</span>
@@ -74,7 +74,7 @@ export default function StrikesSection() {
       )}
       <div className="space-y-2">
         {strikes.map((s) => (
-          <div key={s.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+          <div key={s.id} className="flex items-center justify-between py-2">
             <div>
               <p className="text-xs font-medium text-slate-700">{s.reason}</p>
               <p className="text-[11px] text-slate-400">{timeAgo(s.createdAt)}</p>
@@ -83,7 +83,7 @@ export default function StrikesSection() {
           </div>
         ))}
         {removals.map((r) => (
-          <div key={r.id} className="rounded-lg bg-slate-50 px-3 py-2">
+          <div key={r.id} className="py-2">
             <p className="text-xs font-medium text-slate-700">
               {r.type === 'comment_removed' ? 'Comment removed' : r.type === 'post_removed' ? 'Post removed' : 'Reel removed'}
             </p>

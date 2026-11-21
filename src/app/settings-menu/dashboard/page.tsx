@@ -10,7 +10,7 @@ import WeeklyGoals from '@/components/dashboard/WeeklyGoals';
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg bg-slate-100 p-4">
+    <div className="py-2">
       <p className="text-sm text-slate-600">{label}</p>
       <p className="mt-1 text-xl font-semibold">{typeof value === 'number' ? value.toLocaleString() : value}</p>
     </div>
@@ -173,13 +173,13 @@ export default function DashboardPage() {
       <WeeklyGoals goals={(dashboard as any).goals} allGoalsMet={(dashboard as any).allGoalsMet} newAchievement={(dashboard as any).newAchievement} />
       <AchievementsSection />
 
-      <div className="mb-3 rounded-lg border bg-white p-4">
+      <div className="mb-3 py-4">
         <p className="text-sm text-slate-600">Earnings</p>
         <p className="mt-1 text-2xl font-semibold">${dashboard.earnings.toFixed(2)}</p>
       </div>
 
       {monetization && (
-        <div className="mb-3 rounded-lg border bg-white p-4">
+        <div className="mb-3 py-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-slate-700">Monetization</p>
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${monetization.status === 'eligible' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -206,14 +206,14 @@ export default function DashboardPage() {
       )}
 
       <div className="mb-3 grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-slate-100 p-4">
+        <div className="py-2">
           <p className="text-sm text-slate-600">Views</p>
           <p className="mt-1 text-xl font-semibold">{stats.views.toLocaleString()}</p>
           {trendText && (
             <p className={`mt-1 text-sm font-semibold ${trend! >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{trendText}</p>
           )}
         </div>
-        <div className="rounded-lg bg-slate-100 p-4">
+        <div className="py-2">
           <p className="text-sm text-slate-600">Engagement</p>
           <p className="mt-1 text-xl font-semibold">{stats.engagement.toLocaleString()}</p>
           {engTrendText && (
@@ -236,14 +236,14 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-        <div className="rounded-lg bg-slate-100 p-4">
+        <div className="py-2">
           <p className="text-sm text-slate-600">New followers</p>
           <p className="mt-1 text-xl font-semibold">{stats.newFollowers.toLocaleString()}</p>
           {trendLabel(stats.followersTrendPct) && (
             <p className={trendClass(stats.followersTrendPct!)}>{trendLabel(stats.followersTrendPct)}</p>
           )}
         </div>
-        <div className="rounded-lg bg-slate-100 p-4">
+        <div className="py-2">
           <p className="text-sm text-slate-600">Content</p>
           <p className="mt-1 text-xl font-semibold">{stats.content.toLocaleString()}</p>
           {trendLabel(stats.contentTrendPct) && (
@@ -252,7 +252,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mb-3 rounded-lg border bg-white p-4">
+      <div className="mb-3 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm text-slate-600">Top performing content</p>
@@ -286,7 +286,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="rounded-lg border bg-white p-4">
+      <div className="py-4">
         <div className="mb-1 flex items-baseline justify-between">
           <p className="text-sm font-medium text-slate-700">Content views</p>
           <p className="text-xs text-slate-400">Last {range} days</p>

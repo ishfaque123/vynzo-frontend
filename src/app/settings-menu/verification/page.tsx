@@ -498,7 +498,7 @@ export default function VerificationPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
-      <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <div>
         <div className="flex items-center gap-3">
           <VerifiedBadge size="lg" />
           <div>
@@ -509,7 +509,7 @@ export default function VerificationPage() {
 
         <p className="mt-5 text-sm font-semibold text-slate-900">Step 1 of 2 — Complete the requirements</p>
 
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">Eligibility progress</p>
@@ -522,7 +522,7 @@ export default function VerificationPage() {
           </div>
         </div>
 
-        <div className="mt-4 divide-y rounded-2xl border px-4">
+        <div className="mt-4">
           {requirementItems.map(({ label, item, suffix }) => (
             <RequirementRow key={label} label={label} item={item} suffix={suffix} />
           ))}
