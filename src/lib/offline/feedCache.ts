@@ -100,6 +100,16 @@ export async function getOfflineProfile<T = any>(username: string): Promise<T | 
 
 export async function clearOfflineCache() {
   try {
+    // Page caches (Dashboard / Monetization / account standing) live in
+    // localStorage; clear them too so a different account never sees the
+    // previous account's numbers.
+    localStorage.removeItem('frianzo:monetizationCache');
+    localStorage.removeItem('frianzo:strikesCache');
+    for (const days of [7, 30, 90]) localStorage.removeItem(`frianzo:dashboardCache:${days}`);
+  } catch {
+    // Best-effort cleanup.
+  }
+  try {
     const db = await openOfflineDb();
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');

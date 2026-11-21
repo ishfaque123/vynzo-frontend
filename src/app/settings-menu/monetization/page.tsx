@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchDashboard } from '@/lib/api/userApi';
 import {
   fetchPayoutMethods, addPayoutMethod, deletePayoutMethod, setDefaultPayoutMethod,
@@ -103,6 +103,26 @@ function payoutDateLabel(iso: string): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+const MONETIZATION_CACHE_KEY = 'frianzo:monetizationCache';
+
+function readMonetizationCache(): Record<string, any> | null {
+  try {
+    const raw = localStorage.getItem(MONETIZATION_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMonetizationCache(patch: Record<string, unknown>) {
+  try {
+    const current = readMonetizationCache() || {};
+    localStorage.setItem(MONETIZATION_CACHE_KEY, JSON.stringify({ ...current, ...patch }));
+  } catch {
+    // Best-effort only.
+  }
+}
+
 export default function MonetizationPage() {
   const [data, setData] = useState<ReferralData | null>(null);
   const [earnings, setEarnings] = useState<{ total: number; totalPaid: number } | null>(null);
@@ -119,13 +139,34 @@ export default function MonetizationPage() {
   const [referralsData, setReferralsData] = useState<{ invited: number; activeDaily: number; referrals: ReferralUser[] } | null>(null);
   const [contentEarnings, setContentEarnings] = useState<ContentEarning[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const hasDataRef = useRef(false);
 
   function load() {
-    setLoading(true);
+    // Only the very first load shows the full-page skeleton; later refreshes
+    // keep the current content on screen and update it silently.
+    if (!hasDataRef.current) setLoading(true);
     setError(false);
+    if (!hasDataRef.current) {
+      // Cache-first: paint the last data instantly on reload, then refresh
+      // it silently in the background.
+      const cached = readMonetizationCache();
+      if (cached) {
+        if (cached.data) setData(cached.data);
+        if (cached.earnings) setEarnings(cached.earnings);
+        if (cached.methods) setMethods(cached.methods);
+        if (cached.allowed) setAllowed(cached.allowed);
+        if ('userCountry' in cached) setUserCountry(cached.userCountry);
+        if (cached.referralsData) setReferralsData(cached.referralsData);
+        if (cached.contentEarnings) setContentEarnings(cached.contentEarnings);
+        if (cached.payouts) setPayouts(cached.payouts);
+        hasDataRef.current = true;
+        setLoading(false);
+      }
+    }
     Promise.all([fetchDashboard(), fetchPayoutMethods(), fetchEarnings(), fetchReferralsList(), fetchEarningsByContent(), fetchPayoutHistory()])
       .then(([dResult, mResult, eResult, rResult, cResult, hResult]) => {
-        if (dResult.success) setData(dResult.data?.monetization ?? null);
+        if (dResult.success) { setData(dResult.data?.monetization ?? null); hasDataRef.current = true; }
+        else if (hasDataRef.current) { setToast({ message: 'Could not refresh. Please try again.', type: 'error' }); return; }
         else { setError(true); return; }
         if (mResult.success) {
           setMethods(mResult.data.methods || []);
@@ -136,8 +177,19 @@ export default function MonetizationPage() {
         if (rResult.success) setReferralsData(rResult.data);
         if (cResult.success) setContentEarnings(cResult.data.items || []);
         if (hResult.success) setPayouts(hResult.data.payouts || []);
+        const patch: Record<string, unknown> = {};
+        if (dResult.success) patch.data = dResult.data?.monetization ?? null;
+        if (mResult.success) { patch.methods = mResult.data.methods || []; patch.allowed = mResult.data.allowed || {}; patch.userCountry = mResult.data.country || null; }
+        if (eResult.success) patch.earnings = { total: eResult.data.total ?? 0, totalPaid: eResult.data.totalPaid ?? 0 };
+        if (rResult.success) patch.referralsData = rResult.data;
+        if (cResult.success) patch.contentEarnings = cResult.data.items || [];
+        if (hResult.success) patch.payouts = hResult.data.payouts || [];
+        if (Object.keys(patch).length) writeMonetizationCache(patch);
       })
-      .catch(() => setError(true))
+      .catch(() => {
+        if (hasDataRef.current) setToast({ message: 'Could not refresh. Please try again.', type: 'error' });
+        else setError(true);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -282,10 +334,10 @@ export default function MonetizationPage() {
       {/* Referral link + share */}
       <div className="mb-6">
         <p className="text-base font-semibold text-slate-900">Your referral link</p>
-        <div className="mt-3 flex gap-2">
-          <button type="button" disabled={!link} onClick={handleCopy} className="flex-1 rounded-lg bg-blue-600 py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
-            Copy Link
-          </button>
+        <button type="button" disabled={!link} onClick={handleCopy} className="mt-3 w-full rounded-xl bg-blue-600 py-3.5 text-[15px] font-semibold text-white disabled:opacity-40">
+          Copy Link
+        </button>
+        <div className="mt-2 flex gap-2">
           <button type="button" disabled={!link} onClick={shareWhatsApp} className="flex-1 rounded-lg bg-[#25d366] py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
             WhatsApp
           </button>
@@ -325,7 +377,7 @@ export default function MonetizationPage() {
       )}
 
       {/* Your referrals */}
-      <div className="mb-6">
+      <div id="referrals" className="mb-6 scroll-mt-4">
         <p className="text-base font-semibold text-slate-900">Your referrals</p>
         {!referralsData || referralsData.referrals.length === 0 ? (
           <p className="mt-2 text-xs text-slate-500">No referrals yet.</p>

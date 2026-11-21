@@ -115,6 +115,25 @@ function OtherTile({ href, label, children }: { href: string; label: string; chi
   );
 }
 
+const DASHBOARD_CACHE_PREFIX = 'frianzo:dashboardCache:';
+
+function readDashboardCache(days: number): DashboardData | null {
+  try {
+    const raw = localStorage.getItem(`${DASHBOARD_CACHE_PREFIX}${days}`);
+    return raw ? (JSON.parse(raw) as DashboardData) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDashboardCache(days: number, data: DashboardData) {
+  try {
+    localStorage.setItem(`${DASHBOARD_CACHE_PREFIX}${days}`, JSON.stringify(data));
+  } catch {
+    // Best-effort only.
+  }
+}
+
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,11 +150,22 @@ export default function DashboardPage() {
     // replaced in place when the new range arrives (Facebook style).
     setError(false);
     setSelectedDay(null);
+    if (!hasDataRef.current) {
+      // Cache-first: paint the last numbers instantly on reload, then
+      // refresh them silently in the background.
+      const cached = readDashboardCache(days);
+      if (cached) {
+        hasDataRef.current = true;
+        setDashboard(cached);
+        setLoading(false);
+      }
+    }
     fetchDashboard(days)
       .then((result) => {
         if (result.success) {
           hasDataRef.current = true;
           setDashboard(result.data);
+          writeDashboardCache(days, result.data);
         } else if (!hasDataRef.current) {
           setError(true);
         } else {
@@ -248,7 +278,9 @@ export default function DashboardPage() {
         <h1 className="text-xl font-semibold">Dashboard</h1>
       </div>
 
-      <StrikesSection />
+      <div id="account-status" className="scroll-mt-4">
+        <StrikesSection />
+      </div>
 
       <div className="mt-5">
         <p className="text-lg font-bold">
@@ -481,8 +513,12 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-5">
-        <WeeklyGoals goals={(dashboard as any).goals} allGoalsMet={(dashboard as any).allGoalsMet} newAchievement={(dashboard as any).newAchievement} />
-        <AchievementsSection />
+        <div id="weekly-goals" className="scroll-mt-4">
+          <WeeklyGoals goals={(dashboard as any).goals} allGoalsMet={(dashboard as any).allGoalsMet} newAchievement={(dashboard as any).newAchievement} />
+        </div>
+        <div id="achievements" className="scroll-mt-4">
+          <AchievementsSection />
+        </div>
       </div>
 
       <div className="mt-5">
@@ -497,6 +533,32 @@ export default function DashboardPage() {
           <OtherTile href="/settings-menu/monetization" label="Monetization">
             <span className="text-lg font-bold">$</span>
           </OtherTile>
+          <OtherTile href="/settings-menu/monetization#referrals" label="Referrals">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="9" cy="8" r="3.5" />
+              <path d="M2.5 20c.6-3.2 3.2-5 6.5-5s5.9 1.8 6.5 5" />
+              <path d="M16 5.2a3.5 3.5 0 010 6.3M18.6 15.3c1.6.9 2.6 2.4 2.9 4.7" />
+            </svg>
+          </OtherTile>
+          <OtherTile href="#account-status" label="Account Status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 3l7 2.8v5.4c0 4.4-2.9 8.1-7 9.8-4.1-1.7-7-5.4-7-9.8V5.8z" />
+              <path d="M9 11.8l2.2 2.2 4-4.2" />
+            </svg>
+          </OtherTile>
+          <OtherTile href="#achievements" label="Achievements">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 21h8M12 17.5V21M7 4h10v4.5a5 5 0 01-10 0z" />
+              <path d="M7 5.5H4.2A2.7 2.7 0 007 10M17 5.5h2.8A2.7 2.7 0 0117 10" />
+            </svg>
+          </OtherTile>
+          <OtherTile href="#weekly-goals" label="Weekly Goals">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="5" />
+              <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+            </svg>
+          </OtherTile>
           <OtherTile href="/settings-menu" label="Settings">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h13M20 17h0" />
@@ -504,14 +566,6 @@ export default function DashboardPage() {
               <circle cx="10" cy="12" r="2" fill="currentColor" stroke="none" />
               <circle cx="18" cy="17" r="2" fill="currentColor" stroke="none" />
             </svg>
-          </OtherTile>
-          <OtherTile href="/settings-menu" label="Other tools">
-            <span className="grid grid-cols-2 gap-[3px]">
-              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
-              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
-              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
-              <span className="h-[7px] w-[7px] rounded-[2px] bg-current" />
-            </span>
           </OtherTile>
         </div>
       </div>

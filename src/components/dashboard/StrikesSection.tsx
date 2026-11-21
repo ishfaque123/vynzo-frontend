@@ -31,12 +31,30 @@ export default function StrikesSection() {
 
   useEffect(() => {
     let cancelled = false;
+    // Cache-first: show the last known standing instantly on reload, then
+    // refresh it silently.
+    try {
+      const raw = localStorage.getItem('frianzo:strikesCache');
+      if (raw) {
+        const cached = JSON.parse(raw);
+        setStrikes(cached.strikes || []);
+        setRemovals(cached.removals || []);
+        setLoading(false);
+      }
+    } catch {
+      // Best-effort only.
+    }
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/strikes`, { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => {
         if (!cancelled && d.success) {
           setStrikes(d.data.strikes || []);
           setRemovals(d.data.removals || []);
+          try {
+            localStorage.setItem('frianzo:strikesCache', JSON.stringify({ strikes: d.data.strikes || [], removals: d.data.removals || [] }));
+          } catch {
+            // Best-effort only.
+          }
         }
       })
       .catch(() => {})
