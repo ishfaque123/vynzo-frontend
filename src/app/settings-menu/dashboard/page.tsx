@@ -259,16 +259,16 @@ export default function DashboardPage() {
             <p className={`mt-1 text-sm font-semibold ${engTrend! >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{engTrendText}</p>
           )}
           {stats.engagementBreakdown && (
-            <div className="mt-2 divide-y divide-slate-200 border-t border-slate-200 text-xs">
-              <div className="flex items-center justify-between py-1.5">
+            <div className="mt-2 text-xs">
+              <div className="flex items-center justify-between py-2">
                 <span className="text-slate-500">Likes</span>
                 <span className="font-semibold text-slate-700">{stats.engagementBreakdown.likes.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-between py-1.5">
+              <div className="flex items-center justify-between py-2">
                 <span className="text-slate-500">Comments</span>
                 <span className="font-semibold text-slate-700">{stats.engagementBreakdown.comments.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-between py-1.5">
+              <div className="flex items-center justify-between py-2">
                 <span className="text-slate-500">Shares</span>
                 <span className="font-semibold text-slate-700">{stats.engagementBreakdown.shares.toLocaleString()}</span>
               </div>
