@@ -393,6 +393,24 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
     }
     let cancelled = false;
 
+    // Cold start (full reload or first visit, nothing painted yet):
+    // show the last saved copy of this profile instantly instead of
+    // sitting on the full-page skeleton, and let the fetch below
+    // refresh it silently — the same cache-first behaviour as the
+    // Dashboard. Contact fields are stripped from the painted copy;
+    // they refill from the live fetch only for a viewer who is
+    // allowed to see them.
+    if (!firstProfile) {
+      getOfflineProfile<any>(username).then((cachedProfile) => {
+        if (cancelled || !cachedProfile) return;
+        const safeProfile = cachedProfile.intro
+          ? { ...cachedProfile, email: undefined, intro: { ...cachedProfile.intro, phone: undefined, email: undefined } }
+          : { ...cachedProfile, email: undefined };
+        setProfile((prev: any) => prev ?? safeProfile);
+        setLoading(false);
+      }).catch(() => {});
+    }
+
     async function loadProfile() {
       if (!firstProfile) setLoading(true);
       setProfileError(false);
@@ -416,10 +434,14 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         }
       } catch {
         if (cancelled) return;
-        // Offline: show cached profile like Facebook does
-        const cached = await getOfflineProfile(username);
+        // Offline: show cached profile like Facebook does (contact
+        // fields stripped, same as the cold-start paint above)
+        const cached = await getOfflineProfile<any>(username);
         if (cached) {
-          setProfile(cached);
+          const safeCached = cached.intro
+            ? { ...cached, email: undefined, intro: { ...cached.intro, phone: undefined, email: undefined } }
+            : { ...cached, email: undefined };
+          setProfile(safeCached);
           setOfflineMode(true);
         } else {
           setProfileError(true);
