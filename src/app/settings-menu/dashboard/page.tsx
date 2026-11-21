@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { fetchDashboard } from '@/lib/api/userApi';
 import Toast from '@/components/Toast';
 
@@ -75,6 +76,15 @@ type DashboardData = {
 
 const RANGES = [7, 30, 90] as const;
 
+const DASH_TABS = [
+  { key: 'analytics', label: 'Analytics' },
+  { key: 'content', label: 'Content' },
+  { key: 'community', label: 'Community' },
+  { key: 'interactions', label: 'Interactions' },
+] as const;
+
+type DashTab = (typeof DASH_TABS)[number]['key'];
+
 
 function fbTrend(v: number | null | undefined) {
   if (v === null || v === undefined) return null;
@@ -138,6 +148,8 @@ export default function DashboardPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [range, setRange] = useState<number>(30);
+  const router = useRouter();
+  const [tab, setTab] = useState<DashTab>('analytics');
 
   const hasDataRef = useRef(false);
 
@@ -271,10 +283,31 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+      <div className="flex items-center gap-1 px-1 py-1">
+        <button type="button" onClick={() => router.back()} aria-label="Back" className="rounded-full p-2 text-slate-700">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <h1 className="text-lg font-semibold">Business Dashboard</h1>
       </div>
 
+      <div className="mt-3 flex gap-2 overflow-x-auto">
+        {DASH_TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium ${
+              tab === t.key ? 'bg-blue-600 text-white' : 'bg-[#f0f2f5] text-slate-600 dark:bg-[#333436]'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'analytics' && (
+        <>
       <div>
         <p className="text-lg font-bold">
           Analytics <span className="text-slate-400">›</span>
@@ -535,6 +568,88 @@ export default function DashboardPage() {
           </OtherTile>
         </div>
       </div>
+
+        </>
+      )}
+
+      {tab === 'content' && (
+        <div className="mt-5">
+          <p className="text-lg font-bold">
+            Content <span className="text-slate-400">›</span>
+          </p>
+          <p className="mt-1 text-sm text-slate-400">Top performing</p>
+          {stats?.topPerforming && topLink ? (
+            <Link href={topLink} className="mt-3 flex items-center gap-3 rounded-2xl bg-[#f0f2f5] p-3 dark:bg-[#333436]">
+              {stats.topPerforming.mediaUrl ? (
+                <img
+                  src={stats.topPerforming.mediaUrl}
+                  alt=""
+                  className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-xs text-slate-400">
+                  {stats.topPerforming.type === 'reel' ? 'Reel' : 'Post'}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium uppercase text-slate-400">{stats.topPerforming.type}</p>
+                <p className="truncate text-sm font-medium">{stats.topPerforming.title}</p>
+              </div>
+              <span className="shrink-0 rounded-lg bg-black/5 px-2 py-1 text-xs font-semibold dark:bg-white/10">
+                {stats.topPerforming.views.toLocaleString()} views
+              </span>
+            </Link>
+          ) : (
+            <p className="mt-3 text-sm text-slate-400">No content views this month yet.</p>
+          )}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <AnalyticsCard label="Content" value={stats.content.toLocaleString()} trend={stats.contentTrendPct} />
+            <AnalyticsCard label="Views" value={stats.views.toLocaleString()} trend={stats.viewsTrendPct} />
+          </div>
+        </div>
+      )}
+
+      {tab === 'community' && (
+        <div className="mt-5">
+          <p className="text-lg font-bold">
+            Community <span className="text-slate-400">›</span>
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <AnalyticsCard label="Follows" value={stats.newFollowers.toLocaleString()} trend={stats.followersTrendPct} />
+            <AnalyticsCard label="Engagement" value={stats.engagement.toLocaleString()} trend={stats.engagementTrendPct} />
+          </div>
+        </div>
+      )}
+
+      {tab === 'interactions' && (
+        <div className="mt-5">
+          <p className="text-lg font-bold">
+            Interactions <span className="text-slate-400">›</span>
+          </p>
+          {stats.engagementBreakdown ? (
+            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-base font-semibold">{stats.engagementBreakdown.likes.toLocaleString()}</p>
+                <p className="text-xs text-slate-400">Likes</p>
+              </div>
+              <div>
+                <p className="text-base font-semibold">{stats.engagementBreakdown.comments.toLocaleString()}</p>
+                <p className="text-xs text-slate-400">Comments</p>
+              </div>
+              <div>
+                <p className="text-base font-semibold">{stats.engagementBreakdown.shares.toLocaleString()}</p>
+                <p className="text-xs text-slate-400">Shares</p>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-slate-400">No interactions yet.</p>
+          )}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <AnalyticsCard label="Engagement" value={stats.engagement.toLocaleString()} trend={stats.engagementTrendPct} />
+            <AnalyticsCard label="Views" value={stats.views.toLocaleString()} trend={stats.viewsTrendPct} />
+          </div>
+        </div>
+      )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
