@@ -409,15 +409,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {monetization && monetization.status !== 'eligible' && (
-        <Link
-          href="/settings-menu/monetization"
-          className="mb-3 flex w-full items-center justify-center rounded-full bg-blue-600 py-3 text-sm font-semibold text-white active:opacity-90"
-        >
-          Check monetization availability
-        </Link>
-      )}
-
       {monetization && monetization.status === 'eligible' && (
         <div className="mb-3 py-4">
           <div className="flex items-center justify-between">
