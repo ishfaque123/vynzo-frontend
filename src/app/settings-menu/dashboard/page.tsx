@@ -330,7 +330,21 @@ export default function DashboardPage() {
           <p className="text-sm font-medium text-slate-700">Content views</p>
           <p className="text-xs text-slate-400">Last {range} days</p>
         </div>
-        <p className="mb-3 text-2xl font-semibold text-slate-900">{totalViews30d.toLocaleString()}</p>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-2xl font-semibold text-slate-900">{totalViews30d.toLocaleString()}</span>
+          {typeof trend === 'number' && (
+            <>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  trend >= 0 ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-500'
+                }`}
+              >
+                {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}%
+              </span>
+              <span className="text-[11px] text-slate-400">vs previous {range} days</span>
+            </>
+          )}
+        </div>
         {dailyViews.length > 1 ? (
           <>
             <div className="relative">
@@ -339,7 +353,6 @@ export default function DashboardPage() {
                 @keyframes chartFade { from { opacity: 0; } to { opacity: 1; } }
                 .chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: chartDraw 0.9s ease-out 0.1s forwards; }
                 .chart-area { opacity: 0; animation: chartFade 0.7s ease-out 0.45s forwards; }
-                .chart-point { opacity: 0; animation: chartFade 0.4s ease-out 0.7s forwards; }
                 .chart-tip { animation: chartFade 0.15s ease-out; }
               `}</style>
               <svg
@@ -363,26 +376,37 @@ export default function DashboardPage() {
                 {linePath && (
                   <path d={linePath} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="chart-line" pathLength={1} />
                 )}
+                {selectedDay !== null && selectedView && (
+                  <line
+                    x1={chartX(selectedDay)}
+                    x2={chartX(selectedDay)}
+                    y1={chartY(selectedView.views)}
+                    y2={CH.top + CH.plotH}
+                    stroke="#94a3b8"
+                    strokeWidth="1"
+                    strokeDasharray="3 4"
+                  />
+                )}
                 {dailyViews.map((d, i) => {
                   const x = chartX(i);
                   const y = chartY(d.views);
                   const selected = selectedDay === i;
                   return (
-                    <circle
-                      key={d.date}
-                      cx={x}
-                      cy={y}
-                      r={selected ? 5 : 3}
-                      fill={selected ? '#2563eb' : '#fff'}
-                      stroke="#2563eb"
-                      strokeWidth="2"
-                      className="chart-point cursor-pointer"
-                      style={{ touchAction: 'manipulation' }}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedDay(selected ? null : i);
-                      }}
-                    />
+                    <g key={d.date}>
+                      {selected && <circle cx={x} cy={y} r={5} fill="#2563eb" stroke="#ffffff" strokeWidth="2" className="chart-tip" />}
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={11}
+                        fill="transparent"
+                        className="cursor-pointer"
+                        style={{ touchAction: 'manipulation' }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedDay(selected ? null : i);
+                        }}
+                      />
+                    </g>
                   );
                 })}
                 {labelIdx.map((i) => (
@@ -398,16 +422,20 @@ export default function DashboardPage() {
                   </text>
                 ))}
                 {selectedView && selectedDay !== null && (() => {
-                  const label = `${shortDate(selectedView.date)} · ${selectedView.views.toLocaleString()} views`;
-                  const w = label.length * 5.4 + 18;
+                  const dateLabel = shortDate(selectedView.date);
+                  const viewsLabel = `${selectedView.views.toLocaleString()} views`;
+                  const w = Math.max(64, viewsLabel.length * 6.2 + 20);
                   const cx = Math.min(Math.max(chartX(selectedDay), CH.left + w / 2), CH.w - CH.right - w / 2);
-                  const above = chartY(selectedView.views) > 52;
-                  const ty = above ? chartY(selectedView.views) - 34 : chartY(selectedView.views) + 14;
+                  const above = chartY(selectedView.views) > 56;
+                  const ty = above ? chartY(selectedView.views) - 46 : chartY(selectedView.views) + 14;
                   return (
                     <g pointerEvents="none" className="chart-tip">
-                      <rect x={cx - w / 2} y={ty} width={w} height={22} rx={7} fill="#0f172a" />
-                      <text x={cx} y={ty + 15} textAnchor="middle" fontSize="10" fontWeight="600" fill="#ffffff">
-                        {label}
+                      <rect x={cx - w / 2} y={ty} width={w} height={34} rx={9} fill="#ffffff" stroke="#cbd5e1" />
+                      <text x={cx} y={ty + 13} textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#64748b">
+                        {dateLabel}
+                      </text>
+                      <text x={cx} y={ty + 27} textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#0f172a">
+                        {viewsLabel}
                       </text>
                     </g>
                   );
