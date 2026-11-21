@@ -5,6 +5,17 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { fetchDashboard } from '@/lib/api/userApi';
+import { useAuth } from '@/lib/auth/useAuth';
+import { avatarThumbUrl } from '@/components/Avatar';
+import StrikesSection from '@/components/dashboard/StrikesSection';
+import { fetchMe, getSavedAccounts, switchAccountRequest } from '@/lib/api/authApi';
+
+type SwitchAccount = {
+  id: string;
+  username: string | null;
+  displayName: string | null;
+  profilePictureUrl: string | null;
+};
 import Toast from '@/components/Toast';
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
@@ -150,6 +161,79 @@ export default function DashboardPage() {
   const [range, setRange] = useState<number>(30);
   const router = useRouter();
   const [tab, setTab] = useState<DashTab>('analytics');
+  const { user } = useAuth();
+
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const [accounts, setAccounts] = useState<SwitchAccount[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const popupTimerRef = useRef<number | null>(null);
+
+  async function loadAccounts() {
+    setAccountsLoading(true);
+    setAccountsError(null);
+    try {
+      const [me, list] = await Promise.all([fetchMe(), getSavedAccounts()]);
+      setActiveId(me?.data?.user?.id ?? null);
+      setAccounts(list?.data?.accounts ?? []);
+    } catch {
+      setAccountsError('Could not load accounts. Please try again.');
+    } finally {
+      setAccountsLoading(false);
+    }
+  }
+
+  function openSwitchSheet() {
+    setSwitchOpen(true);
+    setSwitchError(null);
+    void loadAccounts();
+  }
+
+  async function handleSelectAccount(accountId: string) {
+    if (switchingId) return;
+    setSwitchingId(accountId);
+    setSwitchError(null);
+    const result = await switchAccountRequest(accountId);
+    if (result?.success) {
+      setSwitchOpen(false);
+      setSwitchingId(null);
+      router.push('/');
+      router.refresh();
+    } else {
+      setSwitchingId(null);
+      setSwitchError('Could not switch account. Please try again.');
+    }
+  }
+
+  function handleAddAccount() {
+    if (addingAccount) return;
+    setAddingAccount(true);
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/start?switch=1`;
+    let popup: Window | null = null;
+    try {
+      popup = window.open(url, 'frianzo-add-account', 'width=520,height=680,menubar=no,toolbar=no');
+    } catch {
+      popup = null;
+    }
+    if (!popup) {
+      window.setTimeout(() => setAddingAccount(false), 8000);
+      window.location.href = url;
+      return;
+    }
+    if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+    popupTimerRef.current = window.setInterval(() => {
+      if (popup && popup.closed) {
+        if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+        popupTimerRef.current = null;
+        setAddingAccount(false);
+        void loadAccounts();
+      }
+    }, 600);
+  }
 
   const hasDataRef = useRef(false);
 
@@ -283,13 +367,26 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <div className="flex items-center gap-1 px-1 py-1">
-        <button type="button" onClick={() => router.back()} aria-label="Back" className="rounded-full p-2 text-slate-700">
+      <div className="grid grid-cols-[40px_1fr_40px] items-center px-1 py-1">
+        <button type="button" onClick={() => router.back()} aria-label="Back" className="justify-self-start rounded-full p-2 text-slate-700">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="text-lg font-semibold">Dashboard</h1>
+        <h1 className="text-center text-lg font-semibold">Dashboard</h1>
+        {user?.username ? (
+          <button type="button" onClick={openSwitchSheet} aria-label="Switch account" className="justify-self-end">
+            {user.profilePictureUrl ? (
+              <img src={avatarThumbUrl(user.profilePictureUrl) || user.profilePictureUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                {(user.displayName || user.username).charAt(0).toUpperCase()}
+              </span>
+            )}
+          </button>
+        ) : (
+          <span className="w-9 justify-self-end" />
+        )}
       </div>
 
       <div className="mt-3 flex gap-2 overflow-x-auto">
@@ -305,6 +402,8 @@ export default function DashboardPage() {
           </button>
         ))}
       </div>
+
+      <StrikesSection variant="warningOnly" />
 
       {tab === 'analytics' && (
         <>
@@ -652,6 +751,50 @@ export default function DashboardPage() {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {switchOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setSwitchOpen(false)}>
+          <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-3 text-center text-sm font-semibold text-slate-800">Switch account</p>
+            {accountsLoading ? (
+              <div className="flex justify-center py-6" role="status" aria-label="Loading accounts"><div className="h-7 w-7 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
+            ) : accountsError ? (
+              <div className="mb-3 rounded-lg border px-4 py-6 text-center">
+                <p className="mb-3 text-sm text-red-600">{accountsError}</p>
+                <button onClick={() => void loadAccounts()} className="rounded-full border px-4 py-1.5 text-sm font-medium text-slate-700">Try again</button>
+              </div>
+            ) : (
+              <div className="mb-3 max-h-[45vh] divide-y overflow-y-auto rounded-lg border">
+                {accounts.map((acc) => {
+                  const isActive = acc.id === activeId;
+                  return (
+                    <button key={acc.id} onClick={() => !isActive && handleSelectAccount(acc.id)} disabled={isActive || switchingId !== null} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:opacity-60">
+                      <span className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
+                        {acc.profilePictureUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={acc.profilePictureUrl} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-medium text-slate-800">{acc.displayName || acc.username || 'Frianzo user'}</span>
+                        {acc.username && <span className="block text-xs text-slate-500">@{acc.username}</span>}
+                      </span>
+                      {isActive && <span className="text-xs font-medium text-slate-400">Active</span>}
+                      {switchingId === acc.id && <span className="text-xs text-slate-400">Switching...</span>}
+                    </button>
+                  );
+                })}
+                {accounts.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">No saved accounts yet.</p>}
+              </div>
+            )}
+            {switchError && <p className="mb-2 text-center text-sm text-red-600">{switchError}</p>}
+            <div className="flex gap-2">
+              <button onClick={() => setSwitchOpen(false)} className="flex-1 rounded-full border py-2.5 text-sm font-medium text-slate-700">Cancel</button>
+              <button onClick={handleAddAccount} disabled={addingAccount} className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-medium text-white disabled:opacity-60">{addingAccount ? 'Waiting for login...' : '+ Add account'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

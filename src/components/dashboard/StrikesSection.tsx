@@ -24,7 +24,22 @@ function timeAgo(iso: string) {
   return `${d}d ago`;
 }
 
-export default function StrikesSection() {
+function RiskBanner() {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
+      <svg width="34" height="34" viewBox="0 0 24 24" className="shrink-0">
+        <path d="M12 3L22 20H2z" fill="#f5c518" />
+        <rect x="11.1" y="9" width="1.8" height="6" rx="0.9" fill="#1c1e21" />
+        <circle cx="12" cy="17.4" r="1.1" fill="#1c1e21" />
+      </svg>
+      <p className="text-[15px] font-medium">
+        Your profile is at risk of being suspended because it repeatedly didn&apos;t follow the rules.
+      </p>
+    </div>
+  );
+}
+
+export default function StrikesSection({ variant = 'full' }: { variant?: 'full' | 'warningOnly' }) {
   const [strikes, setStrikes] = useState<Strike[]>([]);
   const [removals, setRemovals] = useState<Removal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,10 +78,21 @@ export default function StrikesSection() {
   }, []);
 
   if (loading) {
+    if (variant === 'warningOnly') return null;
     return <div className="mb-3 h-[86px] animate-pulse rounded-2xl bg-slate-100" />;
   }
 
   const total = strikes.length + removals.length;
+
+  // Dashboard warning strip: only the risk banner, only when there is a risk.
+  if (variant === 'warningOnly') {
+    if (total === 0) return null;
+    return (
+      <div className="mt-3">
+        <RiskBanner />
+      </div>
+    );
+  }
 
   // Good standing banner (Facebook Business Dashboard style)
   if (total === 0) {
@@ -88,16 +114,7 @@ export default function StrikesSection() {
   // Has violations: risk banner + the detail list underneath
   return (
     <div className="mb-3">
-      <div className="flex items-center gap-3 rounded-2xl bg-[#f0f2f5] p-4 dark:bg-[#333436]">
-        <svg width="34" height="34" viewBox="0 0 24 24" className="shrink-0">
-          <path d="M12 3L22 20H2z" fill="#f5c518" />
-          <rect x="11.1" y="9" width="1.8" height="6" rx="0.9" fill="#1c1e21" />
-          <circle cx="12" cy="17.4" r="1.1" fill="#1c1e21" />
-        </svg>
-        <p className="text-[15px] font-medium">
-          Your profile is at risk of being suspended because it repeatedly didn&apos;t follow the rules.
-        </p>
-      </div>
+      <RiskBanner />
       <div className="mt-2 space-y-1 px-1">
         {strikes.map((s) => (
           <div key={s.id} className="flex items-center justify-between py-2">
