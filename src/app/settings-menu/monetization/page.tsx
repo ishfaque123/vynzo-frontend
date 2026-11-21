@@ -258,7 +258,6 @@ export default function MonetizationPage() {
           </span>
         </div>
         <p className="mt-1 text-[32px] font-semibold leading-tight text-slate-900">${total.toFixed(2)}</p>
-        <p className="mt-0.5 text-xs text-slate-500">Total earned ${total.toFixed(2)} · Total paid ${totalPaid.toFixed(2)}</p>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
           <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: barPct + '%' }} />
         </div>
@@ -328,11 +327,6 @@ export default function MonetizationPage() {
       {/* Your referrals */}
       <div className="mb-6">
         <p className="text-base font-semibold text-slate-900">Your referrals</p>
-        {referralsData && (
-          <p className="mt-1 text-[13px] text-slate-500">
-            {referralsData.invited} invited · <span className="font-medium text-emerald-600">{referralsData.activeDaily} active daily</span>
-          </p>
-        )}
         {!referralsData || referralsData.referrals.length === 0 ? (
           <p className="mt-2 text-xs text-slate-500">No referrals yet.</p>
         ) : (
