@@ -38,3 +38,18 @@ export async function fetchEarnings(limit = 20) {
   const res = await fetch(`${API_URL}/api/payout/earnings?limit=${limit}`, { credentials: 'include' });
   return readJson(res);
 }
+
+export async function fetchReferralsList() {
+  const res = await fetch(`${API_URL}/api/payout/referrals`, { credentials: 'include' });
+  return readJson(res);
+}
+
+export async function fetchEarningsByContent() {
+  const res = await fetch(`${API_URL}/api/payout/earnings/by-content`, { credentials: 'include' });
+  return readJson(res);
+}
+
+export async function fetchPayoutHistory() {
+  const res = await fetch(`${API_URL}/api/payout/history`, { credentials: 'include' });
+  return readJson(res);
+}

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { fetchDashboard } from '@/lib/api/userApi';
-import { fetchPayoutMethods, addPayoutMethod, deletePayoutMethod, setDefaultPayoutMethod, fetchEarnings } from '@/lib/api/payoutApi';
+import {
+  fetchPayoutMethods, addPayoutMethod, deletePayoutMethod, setDefaultPayoutMethod,
+  fetchEarnings, fetchReferralsList, fetchEarningsByContent, fetchPayoutHistory,
+} from '@/lib/api/payoutApi';
 import Toast from '@/components/Toast';
 import Skeleton from '@/components/Skeleton';
 
@@ -37,26 +40,76 @@ type PayoutMethod = {
   isDefault: boolean;
 };
 
-type Earning = { id: string; amount: number; type: string; createdAt: string };
+type ReferralUser = {
+  username: string;
+  displayName: string | null;
+  avatar: string | null;
+  joinedAt: string;
+  active: boolean;
+};
+
+type ContentEarning = {
+  id: string;
+  kind: 'post' | 'reel';
+  title: string;
+  thumbnail: string | null;
+  views: number | null;
+  amount: number;
+};
+
+type PayoutRow = {
+  id: string;
+  amount: number;
+  status: string;
+  methodLabel: string | null;
+  createdAt: string;
+};
+
+const WITHDRAWAL_TARGET = 25;
+const SHARE_CAPTION = 'Join me on Frianzo — watch reels, post photos and earn from your views. Sign up with my link.';
+
+function formatCount(n: number): string {
+  if (n >= 1000) {
+    const v = n / 1000;
+    return (v >= 100 ? Math.round(v).toString() : v.toFixed(1).replace(/\.0$/, '')) + 'k';
+  }
+  return String(n);
+}
+
+function joinedLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function payoutDateLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 export default function MonetizationPage() {
   const [data, setData] = useState<ReferralData | null>(null);
-  const [earnings, setEarnings] = useState<{ earnings: Earning[]; total: number } | null>(null);
+  const [earnings, setEarnings] = useState<{ total: number; totalPaid: number } | null>(null);
   const [methods, setMethods] = useState<PayoutMethod[]>([]);
   const [allowed, setAllowed] = useState<Record<string, { code: string; label: string; fields: any }[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [replaceMode, setReplaceMode] = useState(false);
   const [form, setForm] = useState({ methodType: '', accountName: '', accountNumber: '', extra: '' });
   const [saving, setSaving] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [referralsData, setReferralsData] = useState<{ invited: number; activeDaily: number; referrals: ReferralUser[] } | null>(null);
+  const [contentEarnings, setContentEarnings] = useState<ContentEarning[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
 
   function load() {
     setLoading(true);
     setError(false);
-    Promise.all([fetchDashboard(), fetchPayoutMethods(), fetchEarnings()])
-      .then(([dResult, mResult, eResult]) => {
+    Promise.all([fetchDashboard(), fetchPayoutMethods(), fetchEarnings(), fetchReferralsList(), fetchEarningsByContent(), fetchPayoutHistory()])
+      .then(([dResult, mResult, eResult, rResult, cResult, hResult]) => {
         if (dResult.success) setData(dResult.data?.monetization ?? null);
         else { setError(true); return; }
         if (mResult.success) {
@@ -64,7 +117,10 @@ export default function MonetizationPage() {
           setAllowed(mResult.data.allowed || {});
           setUserCountry(mResult.data.country || null);
         }
-        if (eResult.success) setEarnings(eResult.data);
+        if (eResult.success) setEarnings({ total: eResult.data.total ?? 0, totalPaid: eResult.data.totalPaid ?? 0 });
+        if (rResult.success) setReferralsData(rResult.data);
+        if (cResult.success) setContentEarnings(cResult.data.items || []);
+        if (hResult.success) setPayouts(hResult.data.payouts || []);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -80,7 +136,31 @@ export default function MonetizationPage() {
     );
   }
 
-  async function handleAddMethod() {
+  function shareText() {
+    return `${SHARE_CAPTION} ${data?.referralLink ?? ''}`.trim();
+  }
+
+  function shareWhatsApp() {
+    if (!data?.referralLink) return;
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, '_blank');
+  }
+
+  function shareFacebook() {
+    if (!data?.referralLink) return;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(data.referralLink)}&quote=${encodeURIComponent(SHARE_CAPTION)}`;
+    window.open(url, '_blank');
+  }
+
+  function shareMore() {
+    if (!data?.referralLink) return;
+    if (navigator.share) {
+      navigator.share({ title: 'Frianzo', text: SHARE_CAPTION, url: data.referralLink }).catch(() => {});
+    } else {
+      handleCopy();
+    }
+  }
+
+  async function handleSaveMethod() {
     if (!form.methodType || !form.accountName.trim() || !form.accountNumber.trim() || saving) return;
     setSaving(true);
     try {
@@ -90,33 +170,31 @@ export default function MonetizationPage() {
         accountNumber: form.accountNumber.trim(),
         extra: form.extra.trim() || undefined,
       });
-      if (result.success) {
-        setMethods((prev) => [result.data.method, ...prev.map((m) => ({ ...m, isDefault: result.data.method.isDefault ? false : m.isDefault }))]);
-        setShowAdd(false);
-        setForm({ methodType: '', accountName: '', accountNumber: '', extra: '' });
-        setToast({ message: 'Payout method added.', type: 'success' });
-      } else {
-        setToast({ message: result.error?.message || 'Could not add payout method.', type: 'error' });
+      if (!result.success) {
+        setToast({ message: result.error?.message || 'Could not save payout method.', type: 'error' });
+        return;
       }
+      const newMethod: PayoutMethod = result.data.method;
+      if (replaceMode) {
+        // Replace: remove every old method, keep only the new one as default.
+        const oldOnes = methods.filter((m) => m.id !== newMethod.id);
+        for (const old of oldOnes) {
+          await deletePayoutMethod(old.id).catch(() => {});
+        }
+        if (!newMethod.isDefault) await setDefaultPayoutMethod(newMethod.id).catch(() => {});
+        setMethods([{ ...newMethod, isDefault: true }]);
+        setToast({ message: 'Payout method updated.', type: 'success' });
+      } else {
+        setMethods((prev) => [newMethod, ...prev.map((m) => ({ ...m, isDefault: newMethod.isDefault ? false : m.isDefault }))]);
+        setToast({ message: 'Payout method added.', type: 'success' });
+      }
+      setShowAdd(false);
+      setReplaceMode(false);
+      setForm({ methodType: '', accountName: '', accountNumber: '', extra: '' });
     } catch {
-      setToast({ message: 'Could not add payout method.', type: 'error' });
+      setToast({ message: 'Could not save payout method.', type: 'error' });
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    const result = await deletePayoutMethod(id);
-    if (result.success) {
-      setMethods((prev) => prev.filter((m) => m.id !== id));
-      setToast({ message: 'Payout method removed.', type: 'success' });
-    }
-  }
-
-  async function handleSetDefault(id: string) {
-    const result = await setDefaultPayoutMethod(id);
-    if (result.success) {
-      setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
     }
   }
 
@@ -145,11 +223,16 @@ export default function MonetizationPage() {
   }
 
   const requiredReferrals = data?.requiredReferrals ?? 25;
-  const referrals = data?.referrals ?? 0;
+  const referralsCount = data?.referrals ?? 0;
   const progress = data?.progress ?? 0;
   const eligible = data?.status === 'eligible';
   const countryMethods = userCountry ? (allowed[userCountry] || []) : [];
   const selectedMethod = countryMethods.find((m) => m.code === form.methodType);
+  const total = earnings?.total ?? 0;
+  const totalPaid = earnings?.totalPaid ?? 0;
+  const available = Math.max(0, total - totalPaid);
+  const barPct = Math.min(100, (available / WITHDRAWAL_TARGET) * 100);
+  const link = data?.referralLink ?? '';
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
@@ -158,98 +241,205 @@ export default function MonetizationPage() {
         <h1 className="text-xl font-semibold">Monetization</h1>
       </div>
 
-      <div className="mb-3 rounded-lg border bg-white p-4">
+      {/* Earnings */}
+      <div className="mb-6">
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Earnings</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">${(earnings?.total ?? 0).toFixed(2)}</p>
-          </div>
+          <p className="text-base font-semibold text-slate-900">Earnings</p>
           <span className={eligible
             ? 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700'
             : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600'}>
             {eligible ? 'Eligible' : 'Locked'}
           </span>
         </div>
-
-        <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between text-xs text-slate-500">
-            <span>{referrals} / {requiredReferrals} referrals</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: progress + '%' }} />
-          </div>
+        <p className="mt-1 text-[32px] font-semibold leading-tight text-slate-900">${total.toFixed(2)}</p>
+        <p className="mt-0.5 text-xs text-slate-500">Total earned ${total.toFixed(2)} · Total paid ${totalPaid.toFixed(2)}</p>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: barPct + '%' }} />
         </div>
-
-        {earnings && earnings.earnings.length > 0 && (
-          <div className="mt-4 border-t border-slate-100 pt-3">
-            <p className="mb-2 text-xs font-medium text-slate-500">Recent earnings</p>
-            <div className="space-y-1.5">
-              {earnings.earnings.slice(0, 5).map((e) => (
-                <div key={e.id} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500">{e.type === 'views' ? 'Views' : 'Referral'} · {new Date(e.createdAt).toLocaleDateString()}</span>
-                  <span className="font-semibold text-emerald-600">+${e.amount.toFixed(2)}</span>
-                </div>
-              ))}
+        <div className="mt-1.5 flex items-center justify-between text-xs text-slate-500">
+          <span>${available.toFixed(2)} of ${WITHDRAWAL_TARGET}</span>
+          <span>${WITHDRAWAL_TARGET}</span>
+        </div>
+        <p className="mt-2 text-[13px] text-slate-700">At $25, your earnings are sent to your bank automatically.</p>
+        {!eligible && (
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center justify-between text-xs text-slate-500">
+              <span>{referralsCount} / {requiredReferrals} referrals to unlock</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-slate-900 transition-all" style={{ width: progress + '%' }} />
             </div>
           </div>
         )}
       </div>
 
-      <div className="mb-3 rounded-lg border bg-white p-4">
-        <p className="text-sm font-semibold text-slate-900">Your referral link</p>
-        <p className="mt-1 text-xs text-slate-500">
-          Share this link with friends to invite them to Frianzo.
-        </p>
+      {/* Referral link + share */}
+      <div className="mb-6">
+        <p className="text-base font-semibold text-slate-900">Your referral link</p>
         <div className="mt-3 flex gap-2">
           <input
             readOnly
-            value={data?.referralLink ?? ''}
+            value={link}
             placeholder="Complete your profile to get a referral link"
             className="min-w-0 flex-1 rounded-md border bg-slate-50 px-3 py-2 text-xs text-slate-700"
           />
           <button
             type="button"
-            disabled={!data?.referralLink}
+            disabled={!link}
             onClick={handleCopy}
-            className="rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
+            className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
           >
             Copy
           </button>
         </div>
+        <div className="mt-2 flex gap-2">
+          <button type="button" disabled={!link} onClick={shareWhatsApp} className="flex-1 rounded-lg bg-[#25d366] py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
+            WhatsApp
+          </button>
+          <button type="button" disabled={!link} onClick={shareFacebook} className="flex-1 rounded-lg bg-[#1877f2] py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
+            Facebook
+          </button>
+          <button type="button" disabled={!link} onClick={shareMore} className="flex-1 rounded-lg bg-slate-100 py-2.5 text-[13px] font-medium text-slate-700 disabled:opacity-40">
+            More
+          </button>
+        </div>
+        <p className="mt-4 text-xs text-slate-500">Your share post</p>
+        <div className="mt-2 flex items-center gap-3 rounded-[10px] bg-[#1d4ed8] px-4 py-5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-xl font-bold text-[#1d4ed8]">F</span>
+          <span>
+            <span className="block text-lg font-semibold text-white">Frianzo</span>
+            <span className="block text-xs text-blue-200">Watch reels · Post · Earn from views</span>
+          </span>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">{SHARE_CAPTION}</p>
       </div>
 
-      <div className="rounded-lg border bg-white p-4">
+      {/* Earnings by video */}
+      <div className="mb-6">
+        <p className="text-base font-semibold text-slate-900">Earnings by video</p>
+        {contentEarnings.length === 0 ? (
+          <p className="mt-2 text-xs text-slate-500">No video earnings yet.</p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {contentEarnings.map((item) => (
+              <a key={item.id} href={item.kind === 'reel' ? `/reels?id=${item.id}` : `/post/${item.id}`} className="flex items-center gap-3">
+                {item.thumbnail ? (
+                  <img src={item.thumbnail} alt="" loading="lazy" className="h-[54px] w-[86px] shrink-0 rounded-lg bg-slate-200 object-cover" />
+                ) : (
+                  <span className="flex h-[54px] w-[86px] shrink-0 items-center justify-center rounded-lg bg-slate-200">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-slate-900">{item.title}</span>
+                  <span className="block text-xs text-slate-500">{item.views !== null ? `${formatCount(item.views)} views` : ''}</span>
+                </span>
+                <span className="shrink-0 text-sm font-semibold text-emerald-600">+${item.amount.toFixed(2)}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Your referrals */}
+      <div className="mb-6">
+        <p className="text-base font-semibold text-slate-900">Your referrals</p>
+        {referralsData && (
+          <p className="mt-1 text-[13px] text-slate-500">
+            {referralsData.invited} invited · <span className="font-medium text-emerald-600">{referralsData.activeDaily} active daily</span>
+          </p>
+        )}
+        {!referralsData || referralsData.referrals.length === 0 ? (
+          <p className="mt-2 text-xs text-slate-500">No referrals yet. Share your link to invite friends.</p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {referralsData.referrals.map((r) => (
+              <a key={r.username} href={`/u/${r.username}`} className="flex items-center gap-3">
+                {r.avatar ? (
+                  <img src={r.avatar} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-full bg-slate-200 object-cover" />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600">
+                    {(r.displayName || r.username).charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-slate-900">{r.displayName || r.username}</span>
+                  <span className="block text-xs text-slate-500">@{r.username} · Joined {joinedLabel(r.joinedAt)}</span>
+                </span>
+                {r.active ? (
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-emerald-600">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" /> Active
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-xs text-slate-400">Inactive</span>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Payout methods */}
+      <div className="mb-6">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-900">Payout methods</p>
-          <button onClick={() => setShowAdd(true)} className="text-xs font-medium text-blue-600">+ Add</button>
+          <p className="text-base font-semibold text-slate-900">Payout methods</p>
+          {methods.length > 0 ? (
+            <button onClick={() => { setReplaceMode(true); setForm({ methodType: '', accountName: '', accountNumber: '', extra: '' }); setShowAdd(true); }} className="text-[13px] font-medium text-blue-600">Change</button>
+          ) : (
+            <button onClick={() => { setReplaceMode(false); setShowAdd(true); }} className="text-[13px] font-medium text-blue-600">+ Add</button>
+          )}
         </div>
         {methods.length === 0 ? (
           <p className="mt-2 text-xs text-slate-500">No payout method added yet. Add one to withdraw your balance.</p>
         ) : (
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-3">
             {methods.map((m) => (
-              <div key={m.id} className="flex items-center gap-3 rounded-lg border border-slate-100 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900">
-                    {m.methodLabel} {m.isDefault && <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Default</span>}
-                  </p>
-                  <p className="truncate text-xs text-slate-500">{m.accountName} · {m.accountNumber}{m.extra ? ` · ${m.extra}` : ''}</p>
-                </div>
-                {!m.isDefault && (
-                  <button onClick={() => handleSetDefault(m.id)} className="text-xs text-blue-600">Set default</button>
-                )}
-                <button onClick={() => handleDelete(m.id)} className="text-xs text-red-600">Remove</button>
+              <div key={m.id}>
+                <p className="text-sm font-medium text-slate-900">{m.methodLabel}</p>
+                <p className="truncate text-xs text-slate-500">{m.accountName} · {m.accountNumber}{m.extra ? ` · ${m.extra}` : ''}</p>
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {/* Payout history */}
+      <div className="mb-6">
+        <p className="text-base font-semibold text-slate-900">Payout history</p>
+        {payouts.length === 0 ? (
+          <p className="mt-2 text-xs text-slate-500">No payouts yet.</p>
+        ) : (
+          <div className="mt-3 space-y-2.5">
+            {payouts.map((p) => (
+              <div key={p.id} className="flex items-center gap-3">
+                <span className="flex-1 text-[13px] text-slate-700">{payoutDateLabel(p.createdAt)}{p.methodLabel ? ` · ${p.methodLabel}` : ''}</span>
+                <span className="text-[13px] font-semibold text-slate-900">${p.amount.toFixed(2)}</span>
+                <span className={p.status === 'sent'
+                  ? 'rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700'
+                  : 'rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600'}>
+                  {p.status === 'sent' ? 'Sent' : p.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* How it works */}
+      <div>
+        <p className="text-base font-semibold text-slate-900">How it works</p>
+        <div className="mt-2 space-y-1.5 text-[13px] text-slate-700">
+          <p>1. Share your link — friends join Frianzo.</p>
+          <p>2. Earn money from your videos' views.</p>
+          <p>3. At $25, we send your earnings to your bank.</p>
+        </div>
+      </div>
+
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setShowAdd(false)}>
           <div className="w-full max-w-xl rounded-t-2xl bg-white p-4 pb-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-3 text-base font-semibold">Add payout method</h3>
+            <h3 className="mb-3 text-base font-semibold">{replaceMode ? 'Change payout method' : 'Add payout method'}</h3>
             {!userCountry && (
               <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
                 Please set your country in your profile first.
@@ -293,11 +483,11 @@ export default function MonetizationPage() {
               </>
             )}
             <button
-              onClick={handleAddMethod}
+              onClick={handleSaveMethod}
               disabled={saving || !userCountry || !form.methodType || !form.accountName.trim() || !form.accountNumber.trim()}
               className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {saving ? 'Adding...' : 'Add payout method'}
+              {saving ? 'Saving...' : replaceMode ? 'Save new method' : 'Add payout method'}
             </button>
           </div>
         </div>
