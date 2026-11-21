@@ -344,7 +344,7 @@ export default function MonetizationPage() {
           </p>
         )}
         {!referralsData || referralsData.referrals.length === 0 ? (
-          <p className="mt-2 text-xs text-slate-500">No referrals yet. Share your link to invite friends.</p>
+          <p className="mt-2 text-xs text-slate-500">No referrals yet.</p>
         ) : (
           <div className="mt-3 space-y-3">
             {referralsData.referrals.map((r) => (
@@ -384,7 +384,7 @@ export default function MonetizationPage() {
           )}
         </div>
         {methods.length === 0 ? (
-          <p className="mt-2 text-xs text-slate-500">No payout method added yet. Add one to withdraw your balance.</p>
+          <p className="mt-2 text-xs text-slate-500">No payout method added yet.</p>
         ) : (
           <div className="mt-3 space-y-3">
             {methods.map((m) => (
@@ -417,16 +417,6 @@ export default function MonetizationPage() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* How it works */}
-      <div>
-        <p className="text-base font-semibold text-slate-900">How it works</p>
-        <div className="mt-2 space-y-1.5 text-[13px] text-slate-700">
-          <p>1. Share your link — friends join Frianzo.</p>
-          <p>2. Earn money from your videos' views.</p>
-          <p>3. At $25, we send your earnings to your bank.</p>
-        </div>
       </div>
 
       {showAdd && (
