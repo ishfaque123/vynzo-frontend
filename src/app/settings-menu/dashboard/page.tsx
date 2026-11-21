@@ -34,6 +34,13 @@ function DashboardSkeleton() {
 }
 
 type DailyView = { date: string; views: number };
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function shortDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
 type TopPerforming = {
   type: 'post' | 'reel';
   id: string;
@@ -120,13 +127,21 @@ export default function DashboardPage() {
   const monetization = dashboard.monetization;
   const dailyViews = stats?.dailyViews || [];
   const maxViews = Math.max(1, ...dailyViews.map((d) => d.views));
-  const points = dailyViews
-    .map((d, i) => {
-      const x = dailyViews.length > 1 ? (i / (dailyViews.length - 1)) * 320 : 0;
-      const y = 85 - (d.views / maxViews) * 75;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  // Chart geometry (approved example, 2026-11-21): light gridlines with
+  // value labels on the side, small points, date labels under the axis,
+  // and a taller plot so the shape is easy to read.
+  const CH = { w: 340, left: 30, right: 6, top: 10, plotH: 118, labelY: 158, h: 168 };
+  const tickStep = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000].find((s) => s * 3 >= maxViews) || 10000;
+  const yMax = tickStep * 3;
+  const ticks = [0, tickStep, tickStep * 2, tickStep * 3];
+  const chartX = (i: number) =>
+    dailyViews.length > 1 ? CH.left + (i / (dailyViews.length - 1)) * (CH.w - CH.left - CH.right) : CH.left;
+  const chartY = (v: number) => CH.top + (1 - v / yMax) * CH.plotH;
+  const points = dailyViews.map((d, i) => `${chartX(i).toFixed(1)},${chartY(d.views).toFixed(1)}`).join(' ');
+  const labelIdx =
+    dailyViews.length > 1
+      ? [...new Set([0, Math.round((dailyViews.length - 1) / 4), Math.round((dailyViews.length - 1) / 2), Math.round(((dailyViews.length - 1) * 3) / 4), dailyViews.length - 1])]
+      : [];
   const totalViews30d = dailyViews.reduce((sum, d) => sum + d.views, 0);
   const selectedView = selectedDay === null ? null : dailyViews[selectedDay] || null;
   const trend = stats?.viewsTrendPct;
@@ -296,24 +311,32 @@ export default function DashboardPage() {
           <>
             <div className="relative">
               <svg
-                viewBox="0 0 320 90"
+                viewBox={`0 0 ${CH.w} ${CH.h}`}
                 className="w-full"
-                style={{ height: 90 }}
+                style={{ height: 168 }}
                 onClick={() => setSelectedDay(null)}
                 role="img"
                 aria-label={`Views over the last ${range} days. Tap a point to see that day's views.`}
               >
-                <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
+                {ticks.map((t) => (
+                  <g key={t}>
+                    <line x1={CH.left} x2={CH.w - CH.right} y1={chartY(t)} y2={chartY(t)} stroke="#e2e8f0" strokeWidth="1" />
+                    <text x={CH.left - 5} y={chartY(t) + 3} textAnchor="end" fontSize="9" fill="#94a3b8">
+                      {t.toLocaleString()}
+                    </text>
+                  </g>
+                ))}
+                <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 {dailyViews.map((d, i) => {
-                  const x = dailyViews.length > 1 ? (i / (dailyViews.length - 1)) * 320 : 0;
-                  const y = 85 - (d.views / maxViews) * 75;
+                  const x = chartX(i);
+                  const y = chartY(d.views);
                   const selected = selectedDay === i;
                   return (
                     <circle
                       key={d.date}
                       cx={x}
                       cy={y}
-                      r={selected ? 6 : 4}
+                      r={selected ? 5 : 3}
                       fill={selected ? '#2563eb' : '#fff'}
                       stroke="#2563eb"
                       strokeWidth="2"
@@ -326,26 +349,42 @@ export default function DashboardPage() {
                     />
                   );
                 })}
+                {labelIdx.map((i) => (
+                  <text
+                    key={dailyViews[i].date}
+                    x={chartX(i)}
+                    y={CH.labelY}
+                    textAnchor={i === 0 ? 'start' : i === dailyViews.length - 1 ? 'end' : 'middle'}
+                    fontSize="9"
+                    fill="#94a3b8"
+                  >
+                    {i === dailyViews.length - 1 ? 'Today' : shortDate(dailyViews[i].date)}
+                  </text>
+                ))}
+                {selectedView && selectedDay !== null && (() => {
+                  const label = `${shortDate(selectedView.date)} · ${selectedView.views.toLocaleString()} views`;
+                  const w = label.length * 5.4 + 18;
+                  const cx = Math.min(Math.max(chartX(selectedDay), CH.left + w / 2), CH.w - CH.right - w / 2);
+                  const above = chartY(selectedView.views) > 52;
+                  const ty = above ? chartY(selectedView.views) - 34 : chartY(selectedView.views) + 14;
+                  return (
+                    <g pointerEvents="none">
+                      <rect x={cx - w / 2} y={ty} width={w} height={22} rx={7} fill="#0f172a" />
+                      <text x={cx} y={ty + 15} textAnchor="middle" fontSize="10" fontWeight="600" fill="#ffffff">
+                        {label}
+                      </text>
+                    </g>
+                  );
+                })()}
               </svg>
             </div>
-            <div className="mt-2 flex h-8 items-center justify-center">
-              {selectedView ? (
-                <p className="text-xs text-slate-600">
-                  <span className="font-semibold text-slate-900">{selectedView.views.toLocaleString()}</span>
-                  {' '}views on <span className="font-medium">{selectedView.date}</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-slate-400">Tap a point for daily breakdown</p>
-              )}
+            <div className="mt-1 flex h-6 items-center justify-center">
+              <p className="text-[11px] text-slate-400">Tap a point for daily breakdown</p>
             </div>
           </>
         ) : (
-          <div className="flex h-[90px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
+          <div className="flex h-[168px] items-center justify-center text-xs text-slate-400">Not enough data yet</div>
         )}
-        <div className="mt-1 flex justify-between border-t border-slate-100 pt-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-          <span>{range}d ago</span>
-          <span>Today</span>
-        </div>
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
