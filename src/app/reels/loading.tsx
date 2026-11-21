@@ -17,9 +17,9 @@ export default function ReelsLoading() {
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex items-center gap-2" aria-hidden="true">
-            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white" />
-            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:150ms]" />
-            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:300ms]" />
+            <svg className="h-2.5 w-2.5 animate-bounce" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#ffffff" /></svg>
+            <svg className="h-2.5 w-2.5 animate-bounce [animation-delay:150ms]" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#ffffff" /></svg>
+            <svg className="h-2.5 w-2.5 animate-bounce [animation-delay:300ms]" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#ffffff" /></svg>
           </div>
         </div>
         <div className="absolute bottom-28 right-3 flex flex-col items-center gap-5">
