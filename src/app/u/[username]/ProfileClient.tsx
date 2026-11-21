@@ -236,6 +236,7 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
   // follow status), so it must never be written back into the cache.
   const postsAuthedRef = useRef(false);
   const reelsAuthedRef = useRef(false);
+  const liveDataRef = useRef(false);
   // Keep every Follow button for this profile's owner in step with the
   // header state. Post and reel cards read the shared follow status, so
   // syncing it here ends the "header says Friend, card says Follow" gap.
@@ -361,12 +362,31 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
     // they refill from the live fetch only for a viewer who is
     // allowed to see them.
     if (!firstProfile) {
-      getOfflineProfile<any>(username).then((cachedProfile) => {
-        if (cancelled || !cachedProfile) return;
+      getOfflineProfile<any>(username).then((stored) => {
+        if (cancelled || !stored) return;
+        // New copies store the whole cache entry (profile + counts +
+        // posts + reels); older copies stored the profile alone.
+        const entry = stored.profile ? stored : { profile: stored, counts: null, posts: [], reels: [] };
+        const cachedProfile = entry.profile;
+        if (!cachedProfile) return;
         const safeProfile = cachedProfile.intro
           ? { ...cachedProfile, email: undefined, intro: { ...cachedProfile.intro, phone: undefined, email: undefined } }
           : { ...cachedProfile, email: undefined };
         setProfile((prev: any) => prev ?? safeProfile);
+        // Paint the saved numbers too, so the stats never flash zeros.
+        // Live results that already landed always win.
+        if (!liveDataRef.current) {
+          if (entry.counts) setCounts(entry.counts);
+          if (entry.friendStatus) setFriendStatus(entry.friendStatus);
+        }
+        if (entry.posts?.length && !postsAuthedRef.current) {
+          setPosts((prev: any[]) => (prev.length ? prev : entry.posts));
+          setPostsLoading(false);
+        }
+        if (entry.reels?.length && !reelsAuthedRef.current) {
+          setReels((prev: any[]) => (prev.length ? prev : entry.reels));
+          setReelsLoading(false);
+        }
         setLoading(false);
       }).catch(() => {});
     }
@@ -379,9 +399,9 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         if (cancelled) return;
 
         if (result.success) {
+          liveDataRef.current = true;
           setProfile(result.data.user);
           setOfflineMode(false);
-          saveOfflineProfile(username, result.data.user).catch(() => {});
           setBlockedByMe(!!result.data.user.blockedByMe);
           setBlockedByOther(!!result.data.user.blockedByOther);
           fetchFollowCounts(result.data.user.id).then((c) => { if (c.success && !cancelled) setCounts(c.data); });
@@ -396,12 +416,15 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         if (cancelled) return;
         // Offline: show cached profile like Facebook does (contact
         // fields stripped, same as the cold-start paint above)
-        const cached = await getOfflineProfile<any>(username);
-        if (cached) {
+        const stored = await getOfflineProfile<any>(username);
+        const entry = stored?.profile ? stored : stored ? { profile: stored, counts: null } : null;
+        if (entry?.profile) {
+          const cached = entry.profile;
           const safeCached = cached.intro
             ? { ...cached, email: undefined, intro: { ...cached.intro, phone: undefined, email: undefined } }
             : { ...cached, email: undefined };
           setProfile(safeCached);
+          if (entry.counts) setCounts(entry.counts);
           setOfflineMode(true);
         } else {
           setProfileError(true);
@@ -440,12 +463,17 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
     // Only cache posts/reels once the viewer's own data has loaded;
     // the first-paint lists carry no viewer state and must not be
     // restored later as if they were current.
-    profileCache.set(username, {
+    const entry = {
       profile, counts, friendStatus,
       posts: postsAuthedRef.current ? posts : [],
       reels: reelsAuthedRef.current ? reels : [],
       savedAt: Date.now(),
-    });
+    };
+    profileCache.set(username, entry);
+    // Persist the same entry on the device, so a full reload or a cold
+    // app start paints the complete profile — numbers included —
+    // instantly instead of flashing zeros while the network catches up.
+    saveOfflineProfile(username, entry).catch(() => {});
     if (profileCache.size > 10) {
       const oldest = profileCache.keys().next().value;
       if (oldest && oldest !== username) profileCache.delete(oldest);
