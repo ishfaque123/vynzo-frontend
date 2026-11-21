@@ -304,18 +304,10 @@ export default function MonetizationPage() {
             More
           </button>
         </div>
-        <p className="mt-4 text-xs text-slate-500">Your share post</p>
-        <div className="mt-2 flex items-center gap-3 rounded-[10px] bg-[#1d4ed8] px-4 py-5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-xl font-bold text-[#1d4ed8]">F</span>
-          <span>
-            <span className="block text-lg font-semibold text-white">Frianzo</span>
-            <span className="block text-xs text-blue-200">Watch reels · Post · Earn from views</span>
-          </span>
-        </div>
-        <p className="mt-2 text-xs leading-relaxed text-slate-500">{SHARE_CAPTION}</p>
       </div>
 
-      {/* Earnings by video */}
+      {/* Earnings by video — only for users whose monetization is on */}
+      {eligible && (
       <div className="mb-6">
         <p className="text-base font-semibold text-slate-900">Earnings by video</p>
         {contentEarnings.length === 0 ? (
@@ -341,6 +333,7 @@ export default function MonetizationPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Your referrals */}
       <div className="mb-6">
