@@ -278,7 +278,7 @@ export default function VerificationPage() {
     );
     return (
       <div className="mx-auto w-full max-w-xl px-3 py-5 sm:px-4 sm:py-6">
-        <div className="font-manrope rounded-[28px] border border-[#e2e8f0] bg-[#ffffff] px-3.5 pb-6 pt-8 dark:border-transparent dark:bg-[#0c1115] sm:px-6">
+        <div className="font-manrope pb-6 pt-8">
           <div className="flex justify-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2f89ff] text-white">
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -289,7 +289,7 @@ export default function VerificationPage() {
           <h1 className="mt-4 text-center text-[25px] font-extrabold leading-tight text-[#0f172a] dark:text-[#ffffff]">You’re Verified</h1>
           <p className="mt-1.5 text-center text-[14px] text-[#64748b] dark:text-[#c4cfd6]">Your account is verified.</p>
 
-          <div className="mt-7 divide-y divide-[#e2e8f0] rounded-[26px] border border-[#e2e8f0] bg-[#f8fafc] px-5 py-2 dark:divide-[#344452] dark:border-transparent dark:bg-[#1b2833]">
+          <div className="mt-7">
             {detailRow('Account', (
               <>
                 {eligibility.displayName || eligibility.username || 'Your account'}
