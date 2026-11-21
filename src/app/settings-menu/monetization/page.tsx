@@ -45,6 +45,7 @@ type ReferralUser = {
   displayName: string | null;
   avatar: string | null;
   joinedAt: string;
+  lastActiveAt?: string | null;
   active: boolean;
 };
 
@@ -80,6 +81,20 @@ function joinedLabel(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function lastActiveLabel(iso: string | null | undefined, joinedIso: string): string {
+  if (!iso) return `Joined ${joinedLabel(joinedIso)}`;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return `Joined ${joinedLabel(joinedIso)}`;
+  const mins = Math.floor((Date.now() - then) / 60000);
+  if (mins < 5) return 'Active now';
+  if (mins < 60) return `Last active ${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Last active ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `Last active ${days}d ago`;
+  return `Last active ${joinedLabel(iso)}`;
 }
 
 function payoutDateLabel(iso: string): string {
@@ -149,15 +164,6 @@ export default function MonetizationPage() {
     if (!data?.referralLink) return;
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(data.referralLink)}&quote=${encodeURIComponent(SHARE_CAPTION)}`;
     window.open(url, '_blank');
-  }
-
-  function shareMore() {
-    if (!data?.referralLink) return;
-    if (navigator.share) {
-      navigator.share({ title: 'Frianzo', text: SHARE_CAPTION, url: data.referralLink }).catch(() => {});
-    } else {
-      handleCopy();
-    }
   }
 
   async function handleSaveMethod() {
@@ -278,30 +284,14 @@ export default function MonetizationPage() {
       <div className="mb-6">
         <p className="text-base font-semibold text-slate-900">Your referral link</p>
         <div className="mt-3 flex gap-2">
-          <input
-            readOnly
-            value={link}
-            placeholder="Complete your profile to get a referral link"
-            className="min-w-0 flex-1 rounded-md border bg-slate-50 px-3 py-2 text-xs text-slate-700"
-          />
-          <button
-            type="button"
-            disabled={!link}
-            onClick={handleCopy}
-            className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-40"
-          >
-            Copy
+          <button type="button" disabled={!link} onClick={handleCopy} className="flex-1 rounded-lg bg-blue-600 py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
+            Copy Link
           </button>
-        </div>
-        <div className="mt-2 flex gap-2">
           <button type="button" disabled={!link} onClick={shareWhatsApp} className="flex-1 rounded-lg bg-[#25d366] py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
             WhatsApp
           </button>
           <button type="button" disabled={!link} onClick={shareFacebook} className="flex-1 rounded-lg bg-[#1877f2] py-2.5 text-[13px] font-medium text-white disabled:opacity-40">
             Facebook
-          </button>
-          <button type="button" disabled={!link} onClick={shareMore} className="flex-1 rounded-lg bg-slate-100 py-2.5 text-[13px] font-medium text-slate-700 disabled:opacity-40">
-            More
           </button>
         </div>
       </div>
@@ -309,7 +299,7 @@ export default function MonetizationPage() {
       {/* Earnings by video — only for users whose monetization is on */}
       {eligible && (
       <div className="mb-6">
-        <p className="text-base font-semibold text-slate-900">Earnings by video</p>
+        <p className="text-base font-semibold text-slate-900">Earnings by video & photo</p>
         {contentEarnings.length === 0 ? (
           <p className="mt-2 text-xs text-slate-500">No video earnings yet.</p>
         ) : (
@@ -358,7 +348,7 @@ export default function MonetizationPage() {
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-slate-900">{r.displayName || r.username}</span>
-                  <span className="block text-xs text-slate-500">@{r.username} · Joined {joinedLabel(r.joinedAt)}</span>
+                  <span className="block text-xs text-slate-500">{lastActiveLabel(r.lastActiveAt, r.joinedAt)}</span>
                 </span>
                 {r.active ? (
                   <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-emerald-600">
