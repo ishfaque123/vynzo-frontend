@@ -401,6 +401,12 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
         if (result.success) {
           liveDataRef.current = true;
           setProfile(result.data.user);
+          // The profile payload now carries its own follow counts, so
+          // the numbers land together with the name and photo; the
+          // separate counts request below only refreshes them quietly.
+          if (typeof result.data.user.followersCount === 'number' && typeof result.data.user.followingCount === 'number') {
+            setCounts({ followers: result.data.user.followersCount, following: result.data.user.followingCount });
+          }
           setOfflineMode(false);
           setBlockedByMe(!!result.data.user.blockedByMe);
           setBlockedByOther(!!result.data.user.blockedByOther);
