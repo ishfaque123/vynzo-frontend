@@ -1,24 +1,46 @@
-// Instant loading shell for reels navigation (Next.js App Router).
-// The reels screen is dark/full-screen; this keeps the tap feeling alive
-// with a matching dark placeholder instead of a dead-looking pause.
+// Instant shell for reels navigation (Next.js App Router). Mirrors the
+// reels screen itself — tabs on top, loading dots in the video area, and
+// skeleton placeholders for the action rail and caption — so opening
+// Reels feels instant and the real screen takes over seamlessly.
 import Skeleton from '@/components/Skeleton';
 
 export default function ReelsLoading() {
   return (
-    <div className="flex h-[100dvh] flex-col justify-end bg-black pb-24">
-      <div className="flex items-end justify-between px-3">
-        <div className="flex max-w-[75%] flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-full bg-white/20" />
-            <Skeleton className="h-3 w-24 bg-white/20" />
-          </div>
-          <Skeleton className="h-3 w-48 bg-white/20" />
-          <Skeleton className="h-3 w-36 bg-white/20" />
+    <div className="relative h-[100dvh] bg-black">
+      <div className="relative mx-auto h-full w-full max-w-[480px]">
+        <div className="absolute left-0 right-0 top-0 flex items-center justify-center gap-6 pt-3">
+          <span className="pb-1 text-[15px] font-semibold text-white/50">Following</span>
+          <span className="pb-1 text-[15px] font-semibold text-white">
+            For You
+            <span className="mx-auto mt-0.5 block h-0.5 w-6 rounded-full bg-white" />
+          </span>
         </div>
-        <div className="flex flex-col items-center gap-4">
-          <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
-          <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
-          <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex items-center gap-2" aria-hidden="true">
+            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white" />
+            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:150ms]" />
+            <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-white [animation-delay:300ms]" />
+          </div>
+        </div>
+        <div className="absolute bottom-28 right-3 flex flex-col items-center gap-5">
+          <div className="relative">
+            <Skeleton className="h-11 w-11 rounded-full bg-white/15" />
+            <span className="absolute -bottom-2 left-1/2 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full bg-[#f02849] text-[10px] font-bold text-white">+</span>
+          </div>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <Skeleton className="h-11 w-11 rounded-full bg-white/15" />
+              <Skeleton className="h-2 w-7 bg-white/15" />
+            </div>
+          ))}
+        </div>
+        <div className="absolute bottom-24 left-3 flex max-w-[70%] flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full bg-white/15" />
+            <Skeleton className="h-3 w-24 bg-white/15" />
+          </div>
+          <Skeleton className="h-3 w-48 bg-white/15" />
+          <Skeleton className="h-3 w-36 bg-white/15" />
         </div>
       </div>
     </div>
