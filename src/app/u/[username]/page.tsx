@@ -32,28 +32,6 @@ async function getPublicProfile(username: string) {
   return result?.success ? result.data?.user ?? null : null;
 }
 
-// Public posts for a profile, fetched server-side with NO login — the same
-// public endpoint the browser client uses. Only posts marked public are
-// passed through, and only for public (non-private) profiles: a private
-// profile's posts are never rendered server-side, so nothing leaks that the
-// client would hide behind its private view.
-async function getPublicProfilePosts(username: string, isPrivate: boolean): Promise<any[]> {
-  if (isPrivate) return [];
-  const result = await fetchJson(`${API_URL}/api/posts/user/${encodeURIComponent(username)}`);
-  const list: any[] = result?.data?.posts ?? [];
-  return list
-    .filter((p) => p?.visibility === 'public' || p?.visibility == null);
-}
-
-async function getFollowCounts(userId: string) {
-  const result = await fetchJson(`${API_URL}/api/follows/${encodeURIComponent(userId)}/counts`);
-  if (!result?.success) return null;
-  return {
-    followers: result.data?.followers ?? 0,
-    following: result.data?.following ?? 0,
-  };
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
   const profile = await getPublicProfile(username);
@@ -99,32 +77,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// Facebook-like: the profile header and the first public posts are rendered
-// by the SERVER, so the HTML Google (and any logged-out visitor) receives
-// already contains the real name, bio, counts and post text — not an empty
-// shell that only fills in after JavaScript runs. ProfileClient still owns
-// all interactivity (follow, tabs, comments, editing); it is simply seeded
-// with the same data so its first paint is the server content, and it
-// refreshes everything in the browser exactly as before.
-// Reels are intentionally NOT seeded by the server: the reels endpoint is
-// login-gated and no-store, so seeding it forced this route to render
-// dynamically on every visit (and showed the route loading skeleton on
-// every revisit). ProfileClient fetches reels itself right after mount.
+// The page shell returns immediately — no data fetches wait here.
+// Seeding the body from the server made every profile tap wait for the
+// slowest API call before anything could paint (1-2s of skeleton or a
+// blank screen in the app). ProfileClient now owns the paint: it shows
+// the viewer's saved copy of the profile instantly (session cache, then
+// the on-device copy) and refreshes quietly in the background, exactly
+// like Facebook. Only the metadata above still fetches server-side, so
+// shared profile links keep their proper title, description and photo.
 export default async function ProfilePage({ params }: Props) {
-  const { username } = await params;
-  const profile = await getPublicProfile(username);
-  if (!profile) return <ProfileClient />;
-
-  const [posts, counts] = await Promise.all([
-    getPublicProfilePosts(username, !!profile.isPrivate),
-    profile.id ? getFollowCounts(profile.id) : Promise.resolve(null),
-  ]);
-
-  return (
-    <ProfileClient
-      initialProfile={profile}
-      initialPosts={posts}
-      initialCounts={counts ?? undefined}
-    />
-  );
+  await params;
+  return <ProfileClient />;
 }
