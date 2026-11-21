@@ -32,6 +32,11 @@ const PLAN_PRICE_BY_COUNTRY: Record<string, { prefix: string; amount: number }> 
   PK: { prefix: 'PKR ', amount: 400 },
   IN: { prefix: '₹', amount: 129 },
   BD: { prefix: '৳', amount: 170 },
+  US: { prefix: '$', amount: 1.49 },
+  GB: { prefix: '£', amount: 1.19 },
+  UK: { prefix: '£', amount: 1.19 },
+  SA: { prefix: 'SAR ', amount: 5.49 },
+  AE: { prefix: 'AED ', amount: 5.49 },
 };
 
 function RequirementRow({ label, item, suffix = '' }: { label: string; item: Requirement; suffix?: string }) {
