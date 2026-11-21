@@ -423,26 +423,39 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-6">
-      <div className="grid grid-cols-[40px_1fr_40px] items-center px-1 py-1">
-        <button type="button" onClick={() => router.back()} aria-label="Back" className="justify-self-start rounded-full p-2 text-slate-700">
+      <div className="flex items-center gap-1 px-1 py-1">
+        <button type="button" onClick={() => router.back()} aria-label="Back" className="rounded-full p-2 text-slate-700">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="text-center text-lg font-semibold">Dashboard</h1>
-        {user?.username ? (
-          <button type="button" onClick={openSwitchSheet} aria-label="Switch account" className="justify-self-end">
-            {user.profilePictureUrl ? (
-              <img src={avatarThumbUrl(user.profilePictureUrl) || user.profilePictureUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
-            ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                {(user.displayName || user.username).charAt(0).toUpperCase()}
+        <h1 className="text-xl font-bold">Business Dashboard</h1>
+        <div className="ml-auto flex items-center gap-1">
+          <Link href="/search" aria-label="Search" className="rounded-full p-2 text-slate-700">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" />
+            </svg>
+          </Link>
+          {user?.username ? (
+            <button type="button" onClick={openSwitchSheet} aria-label="Switch account" className="relative block">
+              {user.profilePictureUrl ? (
+                <img src={avatarThumbUrl(user.profilePictureUrl) || user.profilePictureUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                  {(user.displayName || user.username).charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
               </span>
-            )}
-          </button>
-        ) : (
-          <span className="w-9 justify-self-end" />
-        )}
+            </button>
+          ) : (
+            <span className="w-9" />
+          )}
+        </div>
       </div>
 
       <div className="mt-3 flex gap-2 overflow-x-auto">
