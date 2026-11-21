@@ -137,7 +137,31 @@ export default function DashboardPage() {
   const chartX = (i: number) =>
     dailyViews.length > 1 ? CH.left + (i / (dailyViews.length - 1)) * (CH.w - CH.left - CH.right) : CH.left;
   const chartY = (v: number) => CH.top + (1 - v / yMax) * CH.plotH;
-  const points = dailyViews.map((d, i) => `${chartX(i).toFixed(1)},${chartY(d.views).toFixed(1)}`).join(' ');
+  // Smooth curve through the points (Catmull-Rom as cubic Beziers) plus a
+  // matching filled area underneath — extras approved by the owner
+  // (2026-11-21: filled area, smooth line, gentle draw-in animation).
+  const linePath = (() => {
+    if (dailyViews.length === 0) return '';
+    const pts = dailyViews.map((d, i) => ({ x: chartX(i), y: chartY(d.views) }));
+    if (pts.length === 1) return `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    let path = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      path += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return path;
+  })();
+  const areaPath =
+    linePath && dailyViews.length > 1
+      ? `${linePath} L ${chartX(dailyViews.length - 1).toFixed(1)},${chartY(0)} L ${chartX(0).toFixed(1)},${chartY(0)} Z`
+      : '';
   const labelIdx =
     dailyViews.length > 1
       ? [...new Set([0, Math.round((dailyViews.length - 1) / 4), Math.round((dailyViews.length - 1) / 2), Math.round(((dailyViews.length - 1) * 3) / 4), dailyViews.length - 1])]
@@ -310,7 +334,16 @@ export default function DashboardPage() {
         {dailyViews.length > 1 ? (
           <>
             <div className="relative">
+              <style>{`
+                @keyframes chartDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+                @keyframes chartFade { from { opacity: 0; } to { opacity: 1; } }
+                .chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: chartDraw 0.9s ease-out 0.1s forwards; }
+                .chart-area { opacity: 0; animation: chartFade 0.7s ease-out 0.45s forwards; }
+                .chart-point { opacity: 0; animation: chartFade 0.4s ease-out 0.7s forwards; }
+                .chart-tip { animation: chartFade 0.15s ease-out; }
+              `}</style>
               <svg
+                key={range}
                 viewBox={`0 0 ${CH.w} ${CH.h}`}
                 className="w-full"
                 style={{ height: 168 }}
@@ -326,7 +359,10 @@ export default function DashboardPage() {
                     </text>
                   </g>
                 ))}
-                <polyline points={points} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {areaPath && <path d={areaPath} fill="#2563eb" fillOpacity="0.1" stroke="none" className="chart-area" />}
+                {linePath && (
+                  <path d={linePath} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="chart-line" pathLength={1} />
+                )}
                 {dailyViews.map((d, i) => {
                   const x = chartX(i);
                   const y = chartY(d.views);
@@ -340,7 +376,7 @@ export default function DashboardPage() {
                       fill={selected ? '#2563eb' : '#fff'}
                       stroke="#2563eb"
                       strokeWidth="2"
-                      className="cursor-pointer"
+                      className="chart-point cursor-pointer"
                       style={{ touchAction: 'manipulation' }}
                       onClick={(event) => {
                         event.stopPropagation();
@@ -368,7 +404,7 @@ export default function DashboardPage() {
                   const above = chartY(selectedView.views) > 52;
                   const ty = above ? chartY(selectedView.views) - 34 : chartY(selectedView.views) + 14;
                   return (
-                    <g pointerEvents="none">
+                    <g pointerEvents="none" className="chart-tip">
                       <rect x={cx - w / 2} y={ty} width={w} height={22} rx={7} fill="#0f172a" />
                       <text x={cx} y={ty + 15} textAnchor="middle" fontSize="10" fontWeight="600" fill="#ffffff">
                         {label}
