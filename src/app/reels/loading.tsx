@@ -25,7 +25,7 @@ export default function ReelsLoading() {
         <div className="absolute bottom-28 right-3 flex flex-col items-center gap-5">
           <div className="relative">
             <Skeleton className="h-11 w-11 rounded-full bg-white/15" />
-            <span className="absolute -bottom-2 left-1/2 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full bg-[#f02849] text-[10px] font-bold text-white">+</span>
+            
           </div>
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
