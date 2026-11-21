@@ -8,6 +8,7 @@ import { reportReelComment } from '@/lib/api/reelApi';
 import { playCommentSound } from '@/lib/sounds';
 import Avatar from '@/components/Avatar';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import ReactionIcon from './ReactionIcon';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 const CLOSE_THRESHOLD = 100;
@@ -200,13 +201,13 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
 
                 <div className="mt-1 flex items-center gap-4 px-1 text-[11px] text-slate-500">
                   <div className="relative">
-                    <button onClick={openPicker} className={reaction ? 'font-semibold text-blue-600' : ''}>
-                      {reaction ? REACTIONS[reaction] : 'Like'}
+                    <button onClick={openPicker} className={`flex items-center gap-1 ${reaction ? 'font-semibold text-blue-600' : ''}`}>
+                      {reaction ? <ReactionIcon type={reaction} size={18} /> : 'Like'}
                     </button>
                     {picker && (
                       <div className="absolute bottom-full left-0 z-30 mb-2 flex gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl">
-                        {Object.entries(REACTIONS).map(([key, emoji]) => (
-                          <button key={key} onClick={() => react(key)} className="text-lg transition-transform hover:scale-125">{emoji}</button>
+                        {Object.keys(REACTIONS).map((key) => (
+                          <button key={key} onClick={() => react(key)} aria-label={key} className="transition-transform hover:scale-125"><ReactionIcon type={key} size={32} /></button>
                         ))}
                       </div>
                     )}
