@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -532,7 +533,7 @@ function ReelItem({ reel, index, active, forcePause, preload, preloadMeta, feedB
         </div>
       )}{reel.caption && <p className="text-sm">{captionShown}{captionLong && <button onClick={(e) => { e.stopPropagation(); setCaptionExpanded((v) => !v); }} className="ml-1 font-semibold text-white/80">{captionExpanded ? 'less' : 'more'}</button>}</p>}<button type="button" onClick={(e) => { e.stopPropagation(); void openComments(); }} className="mt-3 flex w-full items-center rounded-full border border-white/30 bg-black/35 px-4 py-2.5 text-left text-sm text-white/75 backdrop-blur-sm transition hover:bg-black/45 active:scale-[0.99]" aria-label="Open comments"><span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/15"><CommentIcon /></span><span>Write a comment...</span></button></div>
     <div className="absolute bottom-6 right-3 z-20 flex flex-col items-center gap-4 pb-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.9)] [&_svg]:drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"><button onClick={(e) => { e.stopPropagation(); void handleLike(); }} className="flex flex-col items-center gap-1"><HeartIcon filled={reel.liked} /><span className="text-xs font-medium text-white">{reel.likeCount}</span></button><button onClick={(e) => { e.stopPropagation(); void openComments(); }} className="flex flex-col items-center gap-1"><CommentIcon /><span className="text-xs font-medium text-white">{reel.commentCount || 0}</span></button><button onClick={(e) => { e.stopPropagation(); setShareOpen(true); }} className="flex flex-col items-center gap-1"><ShareIcon /><span className="text-xs font-medium text-white">{reel.shareCount ? reel.shareCount : 'Share'}</span></button><div className="flex flex-col items-center gap-1 text-white"><span className="text-xs font-medium">{viewCount}</span><span className="text-[10px]">Views</span></div><button type="button" onClick={(e) => { e.stopPropagation(); openMoreOptions(); }} aria-label="More options" aria-expanded={moreOpen} className="flex flex-col items-center gap-1"><MoreIcon /><span className="text-xs font-medium text-white">More</span></button></div>
-    {moreOpen && <ReelMoreOptionsSheet
+    {moreOpen && createPortal(<ReelMoreOptionsSheet
       isMine={reel.isMine}
       loading={moreOptionsLoading}
       favorited={reel.favorited}
@@ -545,14 +546,14 @@ function ReelItem({ reel, index, active, forcePause, preload, preloadMeta, feedB
       onDelete={() => { setMoreOpen(false); void handleDelete(); }}
       onReport={() => { setMoreOpen(false); setReportOpen(true); }}
       onClose={() => setMoreOpen(false)}
-    />}
-    {shareOpen && <ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />}
+    />, document.body)}
+    {shareOpen && createPortal(<ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />, document.body)}
     {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} totalCount={reel.commentCount} />}
-    {reportOpen && <ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />}
+    {reportOpen && createPortal(<ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />, document.body)}
     {downloadState.active && downloadState.status === 'downloading' && <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[60] h-[3px] bg-white/20">
       <div className="h-full bg-blue-500 transition-[width] duration-200 ease-out" style={{ width: `${downloadState.progress}%` }} />
     </div>}
-    {notice && <ReelNotice message={notice.message} confirm={notice.confirm} onClose={() => setNotice(null)} onConfirm={confirmDelete} />}
+    {notice && createPortal(<ReelNotice message={notice.message} confirm={notice.confirm} onClose={() => setNotice(null)} onConfirm={confirmDelete} />, document.body)}
   </div>;
 }
 
