@@ -80,7 +80,7 @@ async function getCommunityPosts(): Promise<CommunityPost[]> {
     for (const p of list) {
       if (posts.length >= 12) break;
       const content = String(p?.content ?? '').replace(/\s+/g, ' ').trim();
-      if (!content || content.length < 30) continue;
+      if (!content || content.length < 100) continue;
       if (p?.visibility && p.visibility !== 'public') continue;
       const lower = content.toLowerCase();
       if (SPAM_MARKERS.some((m) => lower.includes(m))) continue;
@@ -101,9 +101,12 @@ async function getCommunityPosts(): Promise<CommunityPost[]> {
     }
   });
 
-  posts.sort((a, b) =>
-    String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')),
-  );
+  posts.sort((a, b) => {
+    const aImg = a.imageUrl ? 1 : 0;
+    const bImg = b.imageUrl ? 1 : 0;
+    if (aImg !== bImg) return bImg - aImg;
+    return String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''));
+  });
   return posts.slice(0, 6);
 }
 

@@ -103,7 +103,7 @@ const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: 'How does earning from views work?',
-        a: 'Reaching 25 referrals unlocks monetization eligibility — it does not earn cash by itself. If your monetization application is approved, you earn $0.06 per 1,000 views of your own posts and reels, and you can withdraw once your wallet reaches $100. Earning is for views of your content only — never for viewing or clicking ads. Earnings are not guaranteed and depend on genuine views. See the Monetization section of our Terms of Service for the full rules.',
+        a: 'Monetization is Frianzo’s creator earning program. The eligibility requirements and earning rules in force are shown inside the app on the Monetization page. If your application is approved by our team, you earn from views of your own posts and reels, and earnings are paid once your balance reaches $25. Earning is for views of your content only — never for viewing or clicking ads. Earnings are not guaranteed and depend on genuine views. See the Monetization section of our Terms of Service for the full rules.',
       },
       {
         q: 'What is the blue tick and how do I get one?',
