@@ -168,6 +168,13 @@ export default function MessagesPage() {
     touchStartX.current = event.touches[0]?.clientX ?? null;
     touchStartY.current = event.touches[0]?.clientY ?? null;
     touchMoved.current = false;
+    // A delete panel open on another row closes on the first touch of
+    // this row, and that touch does not also open this row's chat —
+    // otherwise the old panel would stay open forever.
+    if (openActions !== null && openActions !== id) {
+      setOpenActions(null);
+      suppressClick.current = true;
+    }
     startPress(id);
   }
 
@@ -191,7 +198,10 @@ export default function MessagesPage() {
     touchStartX.current = null;
     touchStartY.current = null;
 
-    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
+    // A list scroll with a slight left drift used to open the delete
+    // panel at only 55px. 70px plus clearly horizontal movement needs a
+    // deliberate swipe.
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       suppressClick.current = true;
       if (dx < 0) setOpenActions(id);
       else setOpenActions(null);
@@ -209,8 +219,10 @@ export default function MessagesPage() {
       toggleConversationSelection(id);
       return;
     }
+    // Tapping a row whose delete panel is open used to only close the
+    // panel and swallow the tap, so the chat never opened and the user
+    // had to tap twice. Now the tap closes the panel AND opens the chat.
     if (openActions === id) {
-      event.preventDefault();
       setOpenActions(null);
     }
   }
