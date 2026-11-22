@@ -2036,7 +2036,6 @@ export default function ChatPage() {
             <div className="mt-4 space-y-1">
               {[
                 { label: 'Off', value: null },
-                { label: '1 hour', value: 3600 },
                 { label: '24 hours', value: 86400 },
                 { label: '7 days', value: 604800 },
                 { label: '90 days', value: 7776000 },
