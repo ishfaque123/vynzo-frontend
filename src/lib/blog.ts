@@ -1150,6 +1150,203 @@ export const articles: BlogArticle[] = [
       },
     ],
   },
+  {
+    slug: 'how-frianzo-moderation-works',
+    title: 'How moderation works on Frianzo: keeping a social platform safe',
+    description:
+      'A social platform is only as good as its safety work. Here is exactly how Frianzo handles reports, reviews content, applies warnings and strikes, removes posts, suspends accounts, and lets people appeal — explained plainly.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Every social platform faces the same problem: millions of people can post anything, instantly, and a small minority will post things that harm others — spam, scams, harassment, stolen content, or material that should never be public at all. The difference between a platform people trust and one they abandon is not whether bad content ever appears; it is how quickly and fairly the platform responds. This article explains, in plain terms, how moderation works on Frianzo: what the rules are, how problems are reported, what happens after a report, and how people who disagree with a decision can ask for another look.',
+        ],
+      },
+      {
+        heading: 'The rules come first: community guidelines',
+        paragraphs: [
+          'Moderation starts with written rules, not personal opinions. Frianzo publishes community guidelines that cover the main categories: no harassment or hate directed at people, no spam or scams, no stolen or copyrighted material presented as your own, no graphic or adult content, no content that endangers children, and no impersonation of other people or organisations. The guidelines are public — anyone can read them before posting — because a rule people cannot see is a rule they cannot follow. When the team reviews a post, the question is always the same: which written rule does this break, if any? Content that breaks no rule stays up, even if some viewers dislike it.',
+        ],
+      },
+      {
+        heading: 'Reports: every user is part of the safety system',
+        paragraphs: [
+          'No review team, however large, sees everything on a growing platform. That is why reporting exists on every post, reel and comment: any user can flag content and choose a reason. Reports go into a review queue that the team works through, and reporting is anonymous — the person reported is never told who flagged them, which keeps people willing to report honestly. Reports matter beyond the single post, too: patterns of reports are how repeat offenders are found, including accounts that spread scams or coordinate spam across many small posts that each look harmless alone.',
+        ],
+      },
+      {
+        heading: 'What happens after a report',
+        paragraphs: [
+          'Reviewed content has three possible outcomes. If it breaks no rule, it stays and the matter ends. If it breaks a rule, it is removed, and the account that posted it is notified with the reason — people deserve to know which rule applied, because a removal without an explanation teaches nothing. For serious or repeated violations, the response escalates: formal warnings, restrictions on specific features such as messaging, and suspension of the account. Frianzo operates a strike system in which violations are recorded against the account; a warning clears after a sustained clean period, which gives people a genuine path back to good standing instead of a permanent stain for one early mistake.',
+          'The escalation is deliberate. A first-time, minor violation usually earns a removal and a warning, not a ban — most people adjust once they understand the line. Accounts that keep violating after warnings, or that exist purely to scam or spam, are suspended. In practice this is not theoretical: accounts with repeated removals for scams, spam and abuse have been suspended under exactly this process, and accounts suspended in error have been reactivated after review.',
+        ],
+      },
+      {
+        heading: 'Blocking and personal controls',
+        paragraphs: [
+          'Moderation by the platform is only half of safety; the other half is control in each person\u2019s own hands. Any user can block any other user, which cuts off contact and visibility between the two accounts. Privacy settings let people lock individual profile details — such as a phone number or email address — so those details are never shown to other viewers at all. These controls work instantly and do not depend on a review queue, which makes them the right first step whenever someone simply does not want to interact with a particular account.',
+        ],
+      },
+      {
+        heading: 'Appeals: decisions can be questioned',
+        paragraphs: [
+          'Any human process makes mistakes, so a moderation system without an appeal route is not finished. A user who believes a removal or suspension was wrong can contact Frianzo support with their username and the details of the decision. Appeals are reviewed against the same written guidelines, and decisions that do not hold up are reversed — removed content restored or accounts reactivated — with the record corrected. The appeal route is also a quality check on the moderators themselves: a decision that cannot be defended in an appeal should not have been taken in the first place.',
+        ],
+      },
+      {
+        heading: 'Why this matters more as Frianzo grows',
+        paragraphs: [
+          'Frianzo was built in Pakistan for audiences across Pakistan, India and Bangladesh, and its users post in many languages and styles. That diversity is the platform\u2019s strength, and it is exactly why the safety system has to be rules-based and consistent rather than dependent on any one reviewer\u2019s taste. As the community grows, the work grows with it: more reports, faster review, clearer rules. If you use Frianzo, the most helpful things you can do are simple — report what genuinely breaks the rules, use your block and privacy controls freely, and read the guidelines once so you know where the lines are. A platform stays welcoming because its community and its moderators pull in the same direction.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'spot-misinformation-before-you-share',
+    title: 'How to spot misinformation before you share it',
+    description:
+      'Forwarded messages and viral posts are wrong more often than most people realise. These simple checks — source, date, evidence, emotion — take under a minute and stop false stories travelling through your family and friends.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Every day, millions of messages are forwarded in good faith by people who would never deliberately spread a lie: a miracle cure, a shocking video, a warning about a danger that does not exist, a screenshot of news that was never published. Misinformation travels because sharing takes one tap and checking feels like work. It does not have to be. Almost every false story fails one of four quick checks that together take less than a minute — and the minute matters, because a forwarded message carries your credibility with it. When you share something false, your family and friends do not blame the original author; they remember that you sent it.',
+        ],
+      },
+      {
+        heading: 'Check 1: Who actually published this?',
+        paragraphs: [
+          'Look for the original source, not the person who forwarded it. Real news comes from an organisation with a name, a website and a reputation it can lose. Misinformation usually arrives as a screenshot, a cropped video or a block of text with no link — formats chosen precisely because they cannot be traced or checked. A screenshot of a headline is not a headline; anyone can fabricate one in a minute. If a post claims a major event happened, open a search engine or a known news outlet and look for the same story. If a dramatic event is real, more than one independent outlet will be covering it. If only one anonymous message is reporting it, treat it as unproven.',
+        ],
+      },
+      {
+        heading: 'Check 2: When is this from?',
+        paragraphs: [
+          'A large share of viral misinformation is not fake — it is old. A real video of a flood from three years ago is reposted as today\u2019s flood in another city; a genuine announcement from last year circulates as new policy. Old content in a new context misleads exactly as much as invented content. Before sharing, look for a date: on the post, in the video, or by searching a distinctive phrase from the text. Weather, clothing, number plates and shop signs in videos are all clues. If you cannot establish when something happened, that alone is a reason not to forward it as current news.',
+        ],
+      },
+      {
+        heading: 'Check 3: What is the actual evidence?',
+        paragraphs: [
+          'Strong claims need more than a confident tone. Ask what the post actually shows: a claim that a product cures a disease needs a study or a health authority, not a testimonial; a claim that a public figure said something needs the full recording or an official transcript, not a quote in a graphic. Cropped quotes and short clips are the oldest trick in the book — the sentence before or after often reverses the meaning. Also watch for numbers without sources: "90% of people" and "doctors confirm" are decorations, not evidence. If the evidence would not convince you in an argument, it should not convince you in a feed.',
+        ],
+      },
+      {
+        heading: 'Check 4: How does it make you feel?',
+        paragraphs: [
+          'This check surprises people, but it may be the most reliable one. Content engineered to spread is engineered to provoke: outrage, fear, disgust, or triumphant pride about your own group. If a post makes you feel a sudden, strong emotion and an urge to share immediately, that reaction was probably designed. Genuine information informs; manipulation activates. When you notice that spike of feeling, pause. The pause is not weakness — it is the exact moment checking works best, because ten minutes later the same post will look very different, and the urge to forward it will have faded on its own.',
+        ],
+      },
+      {
+        heading: 'What to do when you are not sure',
+        paragraphs: [
+          'Uncertainty has a simple rule: do not forward. You are never obliged to share breaking news; nothing bad happens if your family hears a true story an hour later from a verified source, while real harm can follow from a false one — panics, boycotts of innocent businesses, and medical decisions based on invented cures all start as forwards. If a message warns of immediate danger to specific people you know, verify it with one phone call to someone actually there. And if you shared something earlier that turned out to be false, correct it in the same place you shared it. People respect the correction far more than they judge the mistake — everyone has forwarded something false, and the honest few who say so become the people whose shares everyone trusts.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'parents-guide-teen-safety-social-media',
+    title: 'A parent\u2019s guide to keeping teenagers safe on social media',
+    description:
+      'Teenagers will use social media — the realistic goal is not banning it but making it safer. Practical steps for parents: privacy settings, conversations that work, warning signs, and what to do when something goes wrong.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Most parents did not grow up with social media, and most teenagers cannot imagine life without it. That gap produces two common reactions — fear that bans the apps entirely, or resignation that ignores them completely — and neither protects a teenager for long. Bans move usage to friends\u2019 phones and borrowed accounts, beyond any supervision at all, while ignoring the subject leaves teenagers to handle strangers, pressure and mistakes alone. The approach that works is the middle one: understand the handful of real risks, set up the accounts properly together, and keep a conversation open so that when something does go wrong, your teenager tells you early instead of hiding it.',
+        ],
+      },
+      {
+        heading: 'The real risks, in plain terms',
+        paragraphs: [
+          'The serious risks are specific, not mysterious. Strangers contacting teenagers directly, sometimes pretending to be teenagers themselves. Personal information leaking — a school name in a photo background, a phone number on a public profile — that makes a child findable offline. Pressure to share images that can never be fully taken back once sent. Bullying that follows a child home because the phone never switches off. And scams and challenges that dress risky behaviour as entertainment. Notice that every one of these risks is reduced by the same few habits: private settings, care with personal details, and an adult the teenager actually talks to.',
+        ],
+      },
+      {
+        heading: 'Set up the account together',
+        paragraphs: [
+          'When a teenager joins a platform, spend fifteen minutes on setup together — framed as help, not inspection. Lock down personal details: phone number and email should never be publicly visible on a profile, and on Frianzo each profile detail can individually be set to private so it is not shown to other viewers. Review who can message the account and who can see posts, and turn off precise location sharing. Agree on a simple rule for followers and friends: people they actually know. A teenager who has watched you take these settings seriously once will usually keep them — the settings lesson lasts longer than any lecture.',
+        ],
+      },
+      {
+        heading: 'Conversations that actually work',
+        paragraphs: [
+          'Teenagers shut down when every conversation about phones is an accusation, and open up when parents show genuine curiosity. Ask what they enjoy watching and who they follow, the way you would ask about a sport or a show. Share your own examples — a scam message you received, a false story you almost forwarded — because modelling caution teaches more than demanding it. Most importantly, make one promise and keep it: if they come to you with a problem from social media, your first response will be help, not punishment. Teenagers hide incidents — a threatening message, an image shared further than intended — mainly from fear of losing the phone or facing anger. The incidents where parents learn early are the ones that end well.',
+        ],
+      },
+      {
+        heading: 'Warning signs worth noticing',
+        paragraphs: [
+          'No single sign proves a problem, but patterns deserve a gentle conversation: a teenager who becomes secretive specifically about one contact or one app; sudden distress after checking the phone; messages arriving at all hours from someone whose name you never hear in normal conversation; requests for gift cards, top-ups or photos being mentioned; or a new, much older "friend" who gives compliments and gifts. Raise what you have noticed without reading the phone in secret if you can avoid it — secret surveillance, once discovered, destroys the trust that makes teenagers report problems voluntarily, which is the strongest protection they have.',
+        ],
+      },
+      {
+        heading: 'If something goes wrong',
+        paragraphs: [
+          'Act quickly and calmly. If someone is pressuring or threatening your child, do not delete anything — screenshots and the account name are evidence. Block the account on the platform and report it through the app\u2019s reporting tools, which exist on every post, profile and message; on Frianzo, reports go to a review team and accounts that target children are removed. If images have been shared, report them on every platform where they appear — platforms act fastest on material involving minors. If there is any suggestion of an adult arranging to meet a child, or of blackmail, contact the police as well; these are crimes, not app disputes. Then support the teenager: the fault lies with the person who exploited them, and a child who feels blamed will not come to you next time.',
+        ],
+      },
+      {
+        heading: 'The goal is judgement, not just rules',
+        paragraphs: [
+          'Rules and settings are scaffolding. The real protection is a teenager who pauses before sharing personal details, recognises flattery from a stranger as a warning sign rather than a compliment, and tells an adult early when something feels wrong. That judgement is built the slow way — through conversations, through watching how you handle your own accounts, and through small mistakes handled with help instead of fury. You do not need to understand every app. You need your teenager to understand that you are on their side of the screen.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'healthy-social-media-habits',
+    title: 'Healthy social media habits: use the apps without losing your day',
+    description:
+      'Social apps are designed to hold attention. These practical habits — notifications, sessions, feed choices and phone-free times — put you back in charge of how much of your day they get.',
+    date: '2026-11-22',
+    readingMinutes: 5,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Almost everyone has had the same experience: pick up the phone to check one message, surface forty minutes later from a feed they never intended to open, and feel vaguely worse than when they started. This is not a personal failure. Social apps are built by large teams whose job is to extend every session — endless feeds, autoplay, and notifications timed to pull you back. Willpower against that design is a losing strategy, but habits are not: a few small changes to how the apps are set up and when you use them can return hours a week, without giving up the genuine pleasures of staying in touch and being entertained.',
+        ],
+      },
+      {
+        heading: 'Turn off notifications that are not from people',
+        paragraphs: [
+          'The single highest-value change is notification discipline. A message from a friend is a reason to pick up the phone; a notification that a stranger posted, that a video is trending, or that you have not opened the app in a while is the app advertising itself inside your pocket. Go through each app\u2019s notification settings and keep only direct human contact: messages, mentions, and replies to you. Turn off suggestions, reminders and promotional alerts. Most people find their phone goes quiet in a way that feels strange for two days and peaceful ever after — and they open the apps when they choose to, rather than when summoned.',
+        ],
+      },
+      {
+        heading: 'Give sessions a beginning and an end',
+        paragraphs: [
+          'The endless feed has no natural stopping point, so create your own. Decide before opening an app what you are opening it for — reply to a message, post a photo, watch one creator\u2019s new video — and close it when that is done. If you want open-ended browsing, give it a container: a tea break, a bus ride, twenty minutes after dinner. Phones have built-in timers for apps, and setting one is not an admission of weakness; it is the same common sense as setting an alarm clock. What matters is that the session ends by your decision, not by exhaustion or a dead battery.',
+        ],
+      },
+      {
+        heading: 'Curate the feed the way you would curate a room',
+        paragraphs: [
+          'You would not invite people who make you angry or envious into your home every day, yet many people keep them in their feed for years. Unfollow or mute accounts that reliably leave you irritated, inadequate or anxious — including, especially, accounts you follow only to argue with. Follow more of what genuinely serves you: people you know, teachers of skills you are learning, creators who make you laugh without making you feel small. Platforms, Frianzo included, learn from what you watch and engage with, so your attention is literally training your own future feed. Spend it like it matters, because to the algorithm it is the only vote you have.',
+        ],
+      },
+      {
+        heading: 'Protect the edges of the day',
+        paragraphs: [
+          'Two periods deserve special protection: the first and last half-hours. Starting the day inside a feed means starting it with other people\u2019s priorities, emergencies and opinions before your own thoughts have formed. Ending the day there does the opposite damage — bright, stimulating content pushes sleep later and makes it lighter. Charge the phone outside arm\u2019s reach of the bed if you can, and let mornings begin with washing, breakfast and daylight first. People who change only this habit often report the largest effect on mood of anything in this article, which is why it is the one to try first if you try only one.',
+        ],
+      },
+      {
+        heading: 'Keep the good parts on purpose',
+        paragraphs: [
+          'The aim is not to quit social media — for many people in Pakistan, India and Bangladesh it is where family groups live, where small businesses find customers, where creators build an income, and where friends who have moved abroad stay present. The aim is to keep those real benefits while refusing the designed excess. Audit yourself once a month with one question: did these apps this month mostly connect me, teach me and entertain me — or mostly consume me? Adjust one setting or one habit in response, and repeat. Attention is the raw material of a life; the apps will take exactly as much of it as you let them, and not one minute more.',
+        ],
+      },
+    ],
+  },
 ];
 
 export function getArticle(slug: string): BlogArticle | undefined {
