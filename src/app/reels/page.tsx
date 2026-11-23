@@ -179,6 +179,7 @@ function ReelItem({ reel, index, active, forcePause, preload, preloadMeta, feedB
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [posterUrl, setPosterUrl] = useState<string | undefined>(undefined);
   const dataSaver = useDataSaver();
   const manualPlayRef = useRef(false);
   const [progress, setProgress] = useState(0);
@@ -221,6 +222,20 @@ function ReelItem({ reel, index, active, forcePause, preload, preloadMeta, feedB
   const captionLong = (reel.caption?.length || 0) > CAPTION_LIMIT;
   const captionShown = !captionLong || captionExpanded ? reel.caption : `${reel.caption!.slice(0, CAPTION_LIMIT)}...`;
 
+  // Poster gating: only apply the poster after the thumbnail image has
+  // fully downloaded, so it never paints progressively (a top-to-bottom
+  // reveal) on slow connections. Until then the slide stays plain black.
+  useEffect(() => {
+    setPosterUrl(undefined);
+    const url = reel.thumbnailUrl;
+    if (!url) return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => { if (!cancelled) setPosterUrl(url); };
+    img.src = url;
+    if (img.complete && img.naturalWidth > 0) setPosterUrl(url);
+    return () => { cancelled = true; img.onload = null; };
+  }, [reel.thumbnailUrl]);
   function revealControls() { setShowControls(true); if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current); controlsTimerRef.current = setTimeout(() => setShowControls(false), 2500); }
   // Error-code-2 fix: adaptive stall timeout + cache-busting retry.
   // A slow link (e.g. ~2 K/s) must not be declared dead after a fixed 12s:
@@ -490,7 +505,7 @@ function ReelItem({ reel, index, active, forcePause, preload, preloadMeta, feedB
   }
 
   return <div className="relative flex h-full w-full flex-shrink-0 items-center justify-center overflow-hidden bg-black">
-    <video ref={videoRef} poster={reel.thumbnailUrl || undefined} playsInline controls={false} muted={isMuted} preload={dataSaver && !manualPlayRef.current ? 'none' : (preload ? 'auto' : preloadMeta ? 'metadata' : 'none')} className="absolute inset-0 h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onLoadedData={() => setIsVideoLoading(false)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused && !(isDataSaver() && !manualPlayRef.current)) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); setVideoStalled(false); }} onError={(e) => { const code = e.currentTarget.error?.code || 4; if (code === 2 && active && !autoRetryRef.current) { autoRetryRef.current = true; setIsVideoLoading(true); window.setTimeout(() => { retryVideo(true); }, 1500); return; } setIsVideoLoading(false); setIsPlaying(false); setVideoError(code); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible' && !(isDataSaver() && !manualPlayRef.current)) { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={() => { setIsPlaying(false); if (active) onEnded?.(); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); if (active && !watchedEnough && (v.currentTime >= 3 || (v.duration && v.currentTime >= v.duration * 0.9))) setWatchedEnough(true); }} />
+    <video ref={videoRef} poster={posterUrl} playsInline controls={false} muted={isMuted} preload={dataSaver && !manualPlayRef.current ? 'none' : (preload ? 'auto' : preloadMeta ? 'metadata' : 'none')} className="absolute inset-0 h-full w-full select-none object-contain" style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }} onContextMenu={(e) => e.preventDefault()} onClick={handleVideoTap} onLoadStart={() => setIsVideoLoading(true)} onLoadedData={() => setIsVideoLoading(false)} onWaiting={() => setIsVideoLoading(true)} onCanPlay={(e) => { setIsVideoLoading(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && v.paused && !(isDataSaver() && !manualPlayRef.current)) void v.play().then(() => setIsPlaying(true)).catch(() => {}); }} onPlaying={() => { setIsPlaying(true); setIsVideoLoading(false); setVideoError(null); setVideoStalled(false); }} onError={(e) => { const code = e.currentTarget.error?.code || 4; if (code === 2 && active && !autoRetryRef.current) { autoRetryRef.current = true; setIsVideoLoading(true); window.setTimeout(() => { retryVideo(true); }, 1500); return; } setIsVideoLoading(false); setIsPlaying(false); setVideoError(code); }} onPause={(e) => { setIsPlaying(false); const v = e.currentTarget; if (active && !userPausedRef.current && !forcePause && !v.ended && !v.error && document.visibilityState === 'visible' && !(isDataSaver() && !manualPlayRef.current)) { v.muted = true; setIsMuted(true); void v.play().catch(() => {}); } }} onEnded={() => { setIsPlaying(false); if (active) onEnded?.(); }} onTimeUpdate={(e) => { const v = e.currentTarget; if (v.duration) setProgress((v.currentTime / v.duration) * 100); if (active && !watchedEnough && (v.currentTime >= 3 || (v.duration && v.currentTime >= v.duration * 0.9))) setWatchedEnough(true); }} />
     {active && dataSaver && !isPlaying && !manualPlayRef.current && (
       <button type="button" onClick={handleManualPlay} aria-label="Play video" className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/30">
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl">
