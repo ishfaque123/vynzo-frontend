@@ -1,4 +1,24 @@
-export const metadata = { title: 'Terms of Service | Frianzo', description: 'Read the Frianzo Terms of Service covering account use, content rules, safety, account termination and service changes.', alternates: { canonical: '/terms' } };
+const SITE_URL = 'https://www.frianzo.online';
+
+export const metadata = {
+  title: 'Terms of Service',
+  description: 'Read the Frianzo Terms of Service covering account use, content rules, safety, account termination and service changes.',
+  alternates: { canonical: '/terms' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/terms`,
+    title: 'Terms of Service | Frianzo',
+    description: 'Read the Frianzo Terms of Service covering account use, content rules, safety, account termination and service changes.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Terms of Service | Frianzo',
+    description: 'Read the Frianzo Terms of Service covering account use, content rules, safety, account termination and service changes.',
+    images: ['/logo.png'],
+  },
+};
 
 export default function TermsPage() {
   return (

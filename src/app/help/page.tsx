@@ -1,7 +1,23 @@
+const SITE_URL = 'https://www.frianzo.online';
+
 export const metadata = {
-  title: 'Help Center | Frianzo',
+  title: 'Help Center',
   description: 'Frianzo Help Center — answers about accounts, posts, reels, stories, messaging, privacy, and troubleshooting.',
   alternates: { canonical: '/help' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/help`,
+    title: 'Help Center | Frianzo',
+    description: 'Frianzo Help Center — answers about accounts, posts, reels, stories, messaging, privacy, and troubleshooting.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Help Center | Frianzo',
+    description: 'Frianzo Help Center — answers about accounts, posts, reels, stories, messaging, privacy, and troubleshooting.',
+    images: ['/logo.png'],
+  },
 };
 
 const SECTIONS: { title: string; items: { q: string; a: string }[] }[] = [

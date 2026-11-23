@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { articles, getArticle } from '@/lib/blog';
 
+const SITE_URL = 'https://www.frianzo.online';
+
 export function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
 }
@@ -14,10 +16,26 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = getArticle(slug);
   if (!article) return {};
+  const url = `${SITE_URL}/blog/${article.slug}`;
   return {
-    title: `${article.title} | Frianzo Blog`,
+    title: { absolute: `${article.title} | Frianzo Blog` },
     description: article.description,
     alternates: { canonical: `/blog/${article.slug}` },
+    openGraph: {
+      type: 'article',
+      url,
+      title: article.title,
+      description: article.description,
+      siteName: 'Frianzo',
+      publishedTime: article.date,
+      images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+    },
+    twitter: {
+      card: 'summary',
+      title: article.title,
+      description: article.description,
+      images: ['/logo.png'],
+    },
   };
 }
 
@@ -42,8 +60,29 @@ export default async function BlogArticlePage({
 
   const others = articles.filter((a) => a.slug !== article.slug).slice(0, 3);
 
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: article.title,
+    description: article.description,
+    datePublished: article.date,
+    mainEntityOfPage: `${SITE_URL}/blog/${article.slug}`,
+    image: `${SITE_URL}/logo.png`,
+    author: { '@type': 'Organization', name: 'Frianzo', url: SITE_URL },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Frianzo',
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
+    },
+  };
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 text-slate-700">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <p className="mb-4 text-sm">
         <Link href="/blog" className="text-sky-700 hover:underline">
           ← All articles

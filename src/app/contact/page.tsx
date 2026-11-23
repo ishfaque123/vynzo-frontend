@@ -1,7 +1,23 @@
+const SITE_URL = 'https://www.frianzo.online';
+
 export const metadata = {
-  title: 'Contact Us | Frianzo',
+  title: 'Contact Us',
   description: 'Contact the Frianzo team — support, feedback, business inquiries, and abuse reports. We aim to reply within 2 business days.',
   alternates: { canonical: '/contact' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/contact`,
+    title: 'Contact Us | Frianzo',
+    description: 'Contact the Frianzo team — support, feedback, business inquiries, and abuse reports. We aim to reply within 2 business days.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Contact Us | Frianzo',
+    description: 'Contact the Frianzo team — support, feedback, business inquiries, and abuse reports. We aim to reply within 2 business days.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function ContactPage() {

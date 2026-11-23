@@ -1,4 +1,24 @@
-export const metadata = { title: 'Refund Policy | Frianzo', description: 'Read the Frianzo Refund Policy covering Blue Tick verification and Boost Post payments, refund eligibility, and how to request a refund.', alternates: { canonical: '/refund-policy' } };
+const SITE_URL = 'https://www.frianzo.online';
+
+export const metadata = {
+  title: 'Refund Policy',
+  description: 'Read the Frianzo Refund Policy covering Blue Tick verification and Boost Post payments, refund eligibility, and how to request a refund.',
+  alternates: { canonical: '/refund-policy' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/refund-policy`,
+    title: 'Refund Policy | Frianzo',
+    description: 'Read the Frianzo Refund Policy covering Blue Tick verification and Boost Post payments, refund eligibility, and how to request a refund.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Refund Policy | Frianzo',
+    description: 'Read the Frianzo Refund Policy covering Blue Tick verification and Boost Post payments, refund eligibility, and how to request a refund.',
+    images: ['/logo.png'],
+  },
+};
 
 export default function RefundPolicyPage() {
   return (

@@ -1,7 +1,23 @@
+const SITE_URL = 'https://www.frianzo.online';
+
 export const metadata = {
   title: 'About Frianzo | Social Network',
   description: 'Learn about Frianzo — a social network for sharing posts, photos, stories and reels, discovering people, and connecting with friends. Our mission, features, and community values.',
   alternates: { canonical: '/about' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/about`,
+    title: 'About Frianzo | Social Network',
+    description: 'Learn about Frianzo — a social network for sharing posts, photos, stories and reels, discovering people, and connecting with friends. Our mission, features, and community values.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'About Frianzo | Social Network',
+    description: 'Learn about Frianzo — a social network for sharing posts, photos, stories and reels, discovering people, and connecting with friends. Our mission, features, and community values.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function AboutPage() {

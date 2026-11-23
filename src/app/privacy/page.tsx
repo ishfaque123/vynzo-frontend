@@ -1,4 +1,24 @@
-export const metadata = { title: 'Privacy Policy | Frianzo', description: 'Read the Frianzo Privacy Policy to learn how account information, user content, technical data, advertising and privacy requests are handled.', alternates: { canonical: '/privacy' } };
+const SITE_URL = 'https://www.frianzo.online';
+
+export const metadata = {
+  title: 'Privacy Policy',
+  description: 'Read the Frianzo Privacy Policy to learn how account information, user content, technical data, advertising and privacy requests are handled.',
+  alternates: { canonical: '/privacy' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/privacy`,
+    title: 'Privacy Policy | Frianzo',
+    description: 'Read the Frianzo Privacy Policy to learn how account information, user content, technical data, advertising and privacy requests are handled.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Privacy Policy | Frianzo',
+    description: 'Read the Frianzo Privacy Policy to learn how account information, user content, technical data, advertising and privacy requests are handled.',
+    images: ['/logo.png'],
+  },
+};
 
 export default function PrivacyPage() {
   return (

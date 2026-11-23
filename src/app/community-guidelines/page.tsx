@@ -1,7 +1,23 @@
+const SITE_URL = 'https://www.frianzo.online';
+
 export const metadata = {
-  title: 'Community Guidelines | Frianzo',
+  title: 'Community Guidelines',
   description: 'Frianzo community guidelines — what is allowed, what gets removed, and how moderation works on posts, comments and reels.',
   alternates: { canonical: '/community-guidelines' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/community-guidelines`,
+    title: 'Community Guidelines | Frianzo',
+    description: 'Frianzo community guidelines — what is allowed, what gets removed, and how moderation works on posts, comments and reels.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Community Guidelines | Frianzo',
+    description: 'Frianzo community guidelines — what is allowed, what gets removed, and how moderation works on posts, comments and reels.',
+    images: ['/logo.png'],
+  },
 };
 
 function Tier({ color, title, children }: { color: string; title: string; children: React.ReactNode }) {

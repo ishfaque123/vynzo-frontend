@@ -1,11 +1,27 @@
 import Link from 'next/link';
 import { articles } from '@/lib/blog';
 
+const SITE_URL = 'https://www.frianzo.online';
+
 export const metadata = {
-  title: 'Blog | Frianzo',
+  title: 'Blog',
   description:
     'Guides, tips and stories from the Frianzo team — grow your followers, make better reels, understand the feed, stay safe, and get more from Pakistan\'s own social app.',
   alternates: { canonical: '/blog' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/blog`,
+    title: 'Blog | Frianzo',
+    description: 'Guides, tips and stories from the Frianzo team — grow your followers, make better reels, understand the feed, stay safe, and get more from Pakistan\'s own social app.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Blog | Frianzo',
+    description: 'Guides, tips and stories from the Frianzo team — grow your followers, make better reels, understand the feed, stay safe, and get more from Pakistan\'s own social app.',
+    images: ['/logo.png'],
+  },
 };
 
 function formatDate(iso: string): string {

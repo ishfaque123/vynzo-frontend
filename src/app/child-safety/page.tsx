@@ -1,8 +1,25 @@
 import Link from 'next/link';
 
+const SITE_URL = 'https://www.frianzo.online';
+
 export const metadata = {
-  title: 'Child Safety Standards | Frianzo',
+  title: 'Child Safety Standards',
   description: 'Frianzo child safety and CSAE prevention standards.',
+  alternates: { canonical: '/child-safety' },
+  openGraph: {
+    type: 'website',
+    url: `${SITE_URL}/child-safety`,
+    title: 'Child Safety Standards | Frianzo',
+    description: 'Frianzo child safety and CSAE prevention standards.',
+    siteName: 'Frianzo',
+    images: [{ url: '/logo.png', alt: 'Frianzo logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Child Safety Standards | Frianzo',
+    description: 'Frianzo child safety and CSAE prevention standards.',
+    images: ['/logo.png'],
+  },
 };
 
 export default function ChildSafetyPage() {
