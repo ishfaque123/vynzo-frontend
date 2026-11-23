@@ -277,6 +277,8 @@ function messageFor(n: Notification): string {
       return n.detail ? `Your account has been restricted: ${n.detail}` : 'Your account has been restricted';
     case 'account_banned':
       return n.detail ? `Your account has been banned: ${n.detail}` : 'Your account has been banned';
+    case 'follower_milestone':
+      return n.detail ?? 'You reached a new follower milestone!';
     case 'viral_post':
       return n.detail && n.detail !== 'viral-scan-marker' ? n.detail : `🔥 ${name}'s post is going viral!`;
     default:
