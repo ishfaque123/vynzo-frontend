@@ -737,7 +737,14 @@ export default function HomePage() {
             ))}
           </div>
           <div ref={sentinelRef} className="flex min-h-12 items-center justify-center px-4 py-4 text-sm text-slate-400">
-            {loadingMore ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" role="status" aria-label="Loading more posts" /> : loadMoreError ? (
+            {loadingMore ? (
+              <div className="relative h-[22px] w-[48px]" role="status" aria-label="Loading more posts">
+                <style>{`@keyframes reelDotHop{0%{transform:translate(0,0)}30%{transform:translate(14px,-11px)}50%{transform:translate(28px,0)}80%{transform:translate(14px,-11px)}100%{transform:translate(0,0)}}`}</style>
+                <svg className="absolute bottom-0 left-[10px]" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4.5" fill="#25f4ee" /></svg>
+                <svg className="absolute bottom-0 left-[24px]" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4.5" fill="#ffffff" /></svg>
+                <svg className="absolute bottom-0 left-[-4px]" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" style={{ animation: 'reelDotHop 1.1s ease-in-out infinite' }}><circle cx="5" cy="5" r="4.5" fill="#fe2c55" /></svg>
+              </div>
+            ) : loadMoreError ? (
               <button onClick={() => loadMore(true)} className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white">Couldn't load more posts. Tap to retry.</button>
             ) : hasMore ? null : "You're all caught up"}
           </div>
