@@ -1347,6 +1347,250 @@ export const articles: BlogArticle[] = [
       },
     ],
   },
+  {
+    slug: 'getting-started-with-frianzo',
+    title: 'Getting started on Frianzo: set up your account and make your first post',
+    description:
+      'A calm, step-by-step start on Frianzo: create your account, complete your profile with the details you choose to share, follow people, understand the Home feed and Reels, and make your first post and reel.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Starting a new social app can feel like walking into a room where everyone already knows each other. It does not need to. Frianzo is built around the familiar basics — a profile, a feed of posts from people you follow, short reels, and chats — and you can be set up and posting within a few minutes. This guide walks through the first steps in order: creating your account, completing your profile properly, finding people to follow, and making your first post and your first reel.',
+          'You do not need to do everything at once. A profile photo, a short bio and a handful of follows are enough to make the app feel like yours. Everything else can be filled in as you go.',
+        ],
+      },
+      {
+        heading: 'Create your account',
+        paragraphs: [
+          'You can join Frianzo in two ways: with your Google account, or with an email address. Google sign-in is the fastest route — one tap, no new password to remember. If you prefer email, register with an address you actually check, because account messages and recovery information go there. Either way, pick a username that represents you: it is how people will find and mention you, so something close to your real name or your creator name works best.',
+          'Once you are in, your account exists but your profile is still mostly blank. That is normal — the next step is what turns an account into a presence.',
+        ],
+      },
+      {
+        heading: 'Complete your profile',
+        paragraphs: [
+          'Open your profile and choose Edit Profile. Add a clear profile photo — a real photo of your face, or a clean logo if the account represents a business. Write a short bio that says who you are and what you post about; one or two honest lines beat a list of slogans. Frianzo also has a Personal Details section where you can add things like your category (for example Video Creator or Business), your city, your date of birth, a website, and links to your other social accounts.',
+          'Every one of these details is under your control. Each field can be set to Public, so visitors see it, or locked, so it stays private — and some details, like your phone number and email, start out locked. Fill in only what you are comfortable sharing, and remember you can change or lock any of it later. Your profile also shows a "Joined" line with the month and year your account was created, so people can see how long you have been part of the community.',
+        ],
+      },
+      {
+        heading: 'Find people and follow them',
+        paragraphs: [
+          'A feed is only as good as the people in it. Start by following people you know — friends, family, creators you already watch elsewhere — and a few accounts posting about things you genuinely care about: your city, your trade, your sport, your studies. Following is free and reversible, so do not overthink it; you can unfollow anyone at any time.',
+          'As you follow people and interact with posts, your Home feed fills with their updates, and Frianzo learns what you engage with. Give it a week of honest use — like what you actually like, skip what you do not — and the feed becomes noticeably more relevant.',
+        ],
+      },
+      {
+        heading: 'Your Home feed and Reels',
+        paragraphs: [
+          'The Home feed is where posts from people you follow appear, along with posts Frianzo thinks you will find interesting. You can like, comment on and share what you see, and save things you want to return to. Reels are the short vertical videos — the quickest way to discover new creators, and the format most new accounts grow with.',
+          'Watching reels is also a quiet education. Before you ever post one, you will absorb what works: a strong first second, clear sound, one idea per video. That instinct is worth more than any equipment.',
+        ],
+      },
+      {
+        heading: 'Make your first post and reel',
+        paragraphs: [
+          'For your first post, keep it simple and human: introduce yourself, say what you will be posting about, and add a photo if you have one. First posts are not auditions — people follow people, not performances. Write the caption the way you would say it to a friend, and post it. Done is better than perfect, because an empty profile gives nobody a reason to follow you.',
+          'Your first reel can be just as modest: a short introduction, a look at your work, your shop, your city, or a skill you have. Film in good light, hold the phone steady, and speak clearly. Then keep going — on every platform, the accounts that grow are the ones that post consistently and reply to the people kind enough to comment. Welcome to Frianzo.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'how-boost-works-frianzo',
+    title: 'How Boost works on Frianzo: promote a post or reel',
+    description:
+      'Frianzo Boost explained plainly: who can boost, the goals, budgets and durations you choose, how manual payment and approval work, where boosted posts appear with their Sponsored label, and how you track results in My Boosts.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Posting good content is the foundation of growing on Frianzo, but sometimes a post deserves a push — a business announcement, a video you are proud of, a page you are trying to launch. Boost is Frianzo\u2019s built-in way to pay for extra reach for a post or reel you have already published. This article explains exactly how it works: what you choose, what it costs, how payment and approval happen, and how you see the results. No surprises is the point — you should know every step before you spend a rupee.',
+        ],
+      },
+      {
+        heading: 'Who can boost, and what you choose',
+        paragraphs: [
+          'Boost is available inside the Frianzo app on your own posts and reels, for users in Pakistan. You start from the post or reel itself by tapping Boost, and the first thing you pick is a goal: gain followers, gain views, or promote a business. The goal matters because it shapes how your boosted post is presented and to whom it is shown first.',
+          'Next you set a daily budget between Rs 100 and Rs 1,000, and a duration of 1, 3, 7 or 14 days. Your total cost is simply the daily budget multiplied by the days. If it is your first-ever boost, there is a starter price: one day costs Rs 79. You can run up to 3 boosts at the same time.',
+        ],
+      },
+      {
+        heading: 'Estimates before you pay',
+        paragraphs: [
+          'Before any payment, the Boost page shows estimated results for the budget and duration you picked — the kind of reach and response a boost like yours is expected to produce. Read that word carefully: estimated. These are honest projections based on how boosts perform, not promises. No platform can guarantee exact numbers, because real people decide what to watch and whom to follow. Use the estimates to compare budgets — what a Rs 300 day is expected to do versus a Rs 100 day — and then choose what your goal is actually worth to you.',
+        ],
+      },
+      {
+        heading: 'How payment and approval work',
+        paragraphs: [
+          'Payment on Frianzo is manual, through the mobile wallets most Pakistanis already use: EasyPaisa or JazzCash. The Boost page inside the app shows the current payment details and the exact steps — you send the payment, share the confirmation as instructed, and submit your boost request. Nothing runs yet at this point.',
+          'Every boost request is reviewed by a member of the Frianzo team before it starts. This human check exists to confirm the payment and to make sure the boosted content follows the platform rules. Once approved, your boost goes live for the duration you bought and then ends on its own — there is no auto-renewal and no surprise second charge.',
+        ],
+      },
+      {
+        heading: 'Where boosted posts appear, and how you track them',
+        paragraphs: [
+          'An approved boost appears inside the normal Frianzo feeds, mixed with regular posts and reels, and it carries a small "Sponsored" label so viewers can tell it is promoted. That honesty is deliberate: people trust a platform that labels its advertising. Depending on your goal, the post is shown first to the viewers most likely to respond to it, and it continues to rotate through the feeds while the boost is active.',
+          'You can follow everything under My Boosts, which lists your boosts and their status, and shows the results each one produced — the views it gathered and the new followers it brought in. When a boost ends, its numbers stay there, so over time you build a real record of what a rupee of promotion actually buys you on Frianzo — far more useful than any estimate.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'frianzo-monetization-how-it-works',
+    title: 'Frianzo monetization: how earning works, in plain words',
+    description:
+      'How Frianzo monetization works today, without hype: the 25-referral requirement, what the Monetization page shows, the $25 minimum payout, how the team pays you, and the payout methods available in Pakistan, India and the United States.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Every creator platform eventually has to answer one question: how does a creator actually get paid? This article explains Frianzo monetization exactly as it works today — the requirement to become eligible, what you see on your Monetization page, when money is paid out, and which payout methods are supported. It also says clearly what monetization is not: it is not a salary, not a lottery, and not a promise. It is a system that shares value with creators who build a real audience, starting with the people they bring to the platform.',
+        ],
+      },
+      {
+        heading: 'The 25-referral requirement',
+        paragraphs: [
+          'A creator becomes eligible for monetization by inviting 25 people who join Frianzo through their personal referral link. That is the whole gate, and it is deliberately simple. Your link is yours alone — when someone signs up through it, that join is credited to you, and your Monetization page counts it.',
+          'Why referrals? Because a new platform grows through its creators, and the fairest first reward goes to the people who helped build the audience everyone else benefits from. Twenty-five real people is an achievable target for anyone with a genuine circle — classmates, colleagues, customers, community — and it filters out accounts that exist only on paper.',
+        ],
+      },
+      {
+        heading: 'What the Monetization page shows',
+        paragraphs: [
+          'Your Monetization page lives in Settings, and it is designed to answer your questions at a glance. At the top you see your total earnings and a progress bar showing how close your unpaid balance is to the $25 minimum payout. Below that is your referral link, with a Copy Link button and share buttons so you can send it straight to WhatsApp, Facebook or anywhere else your people are.',
+          'The page also lists your referrals — the people who joined through your link — so you can watch the count toward 25 grow. Further down you will find your payout methods, where you set how you want to be paid, and your payout history, the record of payments already sent to you. Everything about your earning lives on this one page; if a number ever confuses you, it is the page to check first.',
+        ],
+      },
+      {
+        heading: 'Getting paid at $25',
+        paragraphs: [
+          'When your unpaid earnings reach $25, you become due for a payout. The Frianzo team sends the money to the payout method saved on your account — there is no maze of forms at that point, because you set the method up in advance on the same Monetization page. The payment then appears in your payout history, so both sides have the same record.',
+          'The $25 threshold exists for a practical reason: sending many tiny payments costs more in fees and effort than the payments are worth, for you and for the platform. A clear, reachable threshold keeps the system honest and sustainable.',
+        ],
+      },
+      {
+        heading: 'Payout methods by country',
+        paragraphs: [
+          'Supported payout methods depend on your country. In Pakistan, you can receive payment by EasyPaisa, JazzCash or bank transfer. In India, the options are UPI, Paytm or bank transfer. In the United States, payouts go by bank transfer or PayPal. Set your method carefully and keep it current — a payout can only go where your saved details point.',
+        ],
+      },
+      {
+        heading: 'The honest part',
+        paragraphs: [
+          'Three things deserve to be said plainly. First, earnings depend on real audience activity — real people watching, engaging and joining. Nothing is guaranteed, and anyone who promises you fixed income from any platform is selling you something. Second, fake or bought engagement is against the rules: purchased followers, bot activity and referral farming do not build earnings, they endanger your account. Third, monetization rewards grow with the platform itself — the creators who do best are the ones who treat it as a long game: post consistently, invite honestly, and build an audience that is actually theirs.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'frianzo-privacy-controls',
+    title: 'Your privacy controls on Frianzo: what you can lock, block and control',
+    description:
+      'A plain tour of Frianzo\u2019s privacy controls: locking individual profile details, why phone and email start locked, blocking and managing blocked users, reporting content and accounts, and disappearing messages in chats.',
+    date: '2026-11-22',
+    readingMinutes: 5,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'A social profile is a window into your life, and you should decide how wide it opens. Frianzo gives you controls at three levels: what your profile shows, who can reach you, and what happens inside your conversations. This article walks through each control in plain words, so you can set your account up the way you actually want it — whether that is wide open as a public creator, or quiet and mostly private.',
+        ],
+      },
+      {
+        heading: 'Lock individual profile details',
+        paragraphs: [
+          'Your profile has a Personal Details section: your category, gender, the city you live in, your date of birth, a website, links to your social accounts, your phone number and your email. The important part is that these are not all-or-nothing. Every single field can be set individually to Public, so everyone can see it, or locked, so it stays hidden — you might happily show your city and your YouTube link while keeping your date of birth to yourself.',
+          'Your phone number and email start out locked by default, and a locked detail is never shown to other people. That default is deliberate: contact details are the fields most often abused, so on Frianzo they are private unless you personally choose otherwise. You can review and change every field\u2019s setting whenever you like from Edit Profile.',
+        ],
+      },
+      {
+        heading: 'Block people you do not want contact with',
+        paragraphs: [
+          'If someone is bothering you, you do not have to argue with them — you can block them. Blocking is complete: a blocked user cannot see your profile or your posts, and cannot contact you. It is the right tool for harassment, spam, or simply for a person you are finished with.',
+          'You can review everyone you have blocked in Settings, under your blocked users list, and unblock someone there if circumstances change. Blocking is private — the other person is not sent an announcement that you blocked them.',
+        ],
+      },
+      {
+        heading: 'Report content and accounts',
+        paragraphs: [
+          'Blocking protects you; reporting protects everyone. You can report posts, reels, comments and whole accounts that break the rules — spam, scams, abuse, impersonation, or content that should not be on the platform. Reports go to the Frianzo team, who review them and act on what they find.',
+          'Use reports honestly. A report is a request for a human review, not a dislike button, and filing false reports to annoy someone wastes the review time that keeps the platform safe for everyone, including you.',
+        ],
+      },
+      {
+        heading: 'Disappearing messages in chats',
+        paragraphs: [
+          'Some conversations are meant to be permanent and some are not. In Frianzo chats, you can turn on disappearing messages for a conversation, so messages are automatically removed after a set time. The choices are 24 hours, 7 days or 90 days — or you can leave disappearing messages off entirely, so the conversation keeps its full history.',
+          'The setting is per conversation, which is the sensible way to offer it: your family chat can keep everything forever, while a quick conversation about a one-time purchase can clean up after itself. Set it per chat, according to what that conversation is for.',
+        ],
+      },
+      {
+        heading: 'You stay in control',
+        paragraphs: [
+          'None of these controls are buried treasure — profile details live in Edit Profile, blocked users in Settings, reporting on every post, reel, comment and profile, and disappearing messages inside each chat. Spend two minutes setting them the way you want, and then forget about them. Good privacy controls are like good locks: mostly invisible, and there the one time you need them.',
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'frianzo-dashboard-for-creators',
+    title: 'The Frianzo Dashboard: understand your views, engagement and growth',
+    description:
+      'The Frianzo Dashboard in plain words: the Analytics cards for Views, Earnings, Engagement and Follows, the daily views chart, your top performing content, and the Other tools section — plus how a creator actually uses these numbers.',
+    date: '2026-11-22',
+    readingMinutes: 6,
+    sections: [
+      {
+        heading: null,
+        paragraphs: [
+          'Posting on instinct works for a while, but creators who grow steadily share one habit: they look at their numbers. The Frianzo Dashboard, which you will find in Settings, gathers your account\u2019s performance into one place — how many people watched, how they responded, whether your audience is growing, and which of your posts did the heavy lifting. This article explains each part of the Dashboard in plain words, and finishes with how to actually use it without becoming obsessed with it.',
+        ],
+      },
+      {
+        heading: 'The four cards and the ranges',
+        paragraphs: [
+          'At the top of the Analytics view sit four cards: Views, Earnings, Engagement and Follows. Views counts how much your content was watched; Engagement covers how people responded to it; Follows shows the new followers the period brought you; Earnings shows what your activity earned. Each card carries a change indicator — an upward or downward arrow against the previous period — so you can see direction, not just totals.',
+          'Above the cards you choose the range: the last 7 days, 30 days or 90 days. Short ranges show you the effect of recent changes; longer ranges show the real trend underneath the daily noise. Under the cards, a smaller row gives your totals for Likes, Comments, Shares and Content posted, which together explain the Engagement card — a rise driven by shares means something different from a rise driven by likes.',
+        ],
+      },
+      {
+        heading: 'The daily views chart',
+        paragraphs: [
+          'Below the cards is a chart of your views day by day across the selected range. Its real value appears when you tap a day: you see that day\u2019s exact number, and you can connect it to what you actually did — the reel you posted that morning, the day you posted nothing, the weekend your audience is most active.',
+          'Creators who use this well stop guessing about timing. Post for a few weeks, then read the chart: the pattern of your own audience\u2019s busy days is sitting there, and it is more reliable than any generic advice about the best time to post.',
+        ],
+      },
+      {
+        heading: 'Top performing content',
+        paragraphs: [
+          'The Content section of the Dashboard shows your top performing posts and reels — the pieces your audience responded to most. This is the most actionable list on the page. Look for the pattern across your top items: a topic, a format, a length, a style of opening. Whatever repeats there is what your audience is telling you they want more of.',
+          'The reverse lesson matters too. If a type of post you enjoy making never appears in your top content, that is information, not failure — make it less often, or remake it in the style of the things that do perform. Your Dashboard cannot tell you what to create, but it is very good at telling you what your audience already loves.',
+        ],
+      },
+      {
+        heading: 'Other tools in one place',
+        paragraphs: [
+          'The Dashboard also gathers the rest of your creator tools in an Other tools section, so you are not hunting through menus: Ads Manager, where your boosts live; Monetization, for your earnings and referrals; Referrals themselves; the Leaderboard; Account Status, where you can check your account\u2019s standing; Achievements; and Weekly Goals. Think of the Dashboard as the front desk of your account — the numbers up top, and every office you might need down the hall.',
+        ],
+      },
+      {
+        heading: 'How to actually use these numbers',
+        paragraphs: [
+          'A workable rhythm: check the Dashboard once or twice a week, not once an hour. Compare ranges — this 30 days against the previous 30 — rather than mourning single slow days, which happen to everyone. Post consistently for a few weeks before judging any change, because one viral reel or one quiet week will lie to you in opposite directions.',
+          'Above all, let the numbers inform the work, not replace it. The Dashboard tells you what happened; your job is still to make things worth watching. Creators who grow do both — they create with heart and review with clear eyes — and the Dashboard exists to make the reviewing part take five minutes instead of a spreadsheet.',
+        ],
+      },
+    ],
+  },
 ];
 
 export function getArticle(slug: string): BlogArticle | undefined {
