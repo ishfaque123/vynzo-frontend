@@ -5,6 +5,10 @@ import { useState } from 'react';
 const RECENT_KEY = 'frianzo:recent-emojis';
 const RECENT_MAX = 24;
 
+// Pinned quick row: the eight most-used emojis, always visible at the
+// top of the panel above the scrollable category grid.
+const TOP_EMOJIS = ['😂', '❤️', '😍', '👍', '🙏', '🔥', '👏', '😊'];
+
 const CATEGORIES: { id: string; icon: string; emojis: string[] }[] = [
   {
     id: 'smileys',
@@ -98,6 +102,18 @@ export function CommentEmojiPanel({ onInsert, onKeyboard }: { onInsert: (emoji: 
 
   return (
     <div className="mt-2 overflow-hidden rounded-2xl border bg-slate-50">
+      <div className="grid grid-cols-8 gap-0.5 border-b bg-white p-2">
+        {TOP_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            onClick={() => pick(emoji)}
+            className="flex h-10 items-center justify-center rounded-lg text-2xl hover:bg-slate-100"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
       <div className="h-56 overflow-y-auto p-2">
         {tab === 'recent' && (
           <p className="px-1 pb-1 text-xs font-medium text-slate-400">Recent</p>
