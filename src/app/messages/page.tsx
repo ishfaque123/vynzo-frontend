@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import Link from 'next/link';
-import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
+import { fetchConversations, deleteConversation, fetchMessageRequestCount } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
 import { useAuth } from '@/lib/auth/useAuth';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -89,6 +89,7 @@ interface ConversationItem {
 export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [requestCount, setRequestCount] = useState(0);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -121,6 +122,9 @@ export default function MessagesPage() {
   function loadConversations() {
     setLoading(true);
     setLoadError(false);
+    fetchMessageRequestCount()
+      .then((result) => { if (result.success) setRequestCount(result.data?.count || 0); })
+      .catch(() => {});
     fetchConversations().then((result) => {
       if (result.success) {
         setConversations(result.data);
@@ -394,7 +398,7 @@ export default function MessagesPage() {
           <>
             <h1 className="text-[28px] font-bold leading-tight text-slate-900">Messages</h1>
             <Link
-              href="/settings-menu"
+              href="/messages/settings"
               aria-label="Settings"
               className="flex h-11 w-11 items-center justify-center rounded-full text-slate-600"
             >
@@ -419,6 +423,15 @@ export default function MessagesPage() {
           />
         </div>
       </div>
+
+      {requestCount > 0 && (
+        <Link href="/messages/requests" className="flex items-center justify-between border-b px-4 py-3 hover:bg-slate-50">
+          <span className="text-sm font-medium text-slate-700">Message Requests</span>
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[11px] font-bold text-white">
+            {requestCount > 99 ? '99+' : requestCount}
+          </span>
+        </Link>
+      )}
 
       {loading && (
         <div className="flex flex-col gap-3 px-4" role="status" aria-label="Loading messages">

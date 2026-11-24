@@ -17,6 +17,24 @@ export async function createConversation(userId: string) {
   return res.json();
 }
 
+export async function fetchMessageRequests() {
+  const res = await fetch(`${API_URL}/api/messages/requests`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function fetchMessageRequestCount() {
+  const res = await fetch(`${API_URL}/api/messages/requests/count`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function acceptMessageRequest(conversationId: string) {
+  const res = await fetch(`${API_URL}/api/messages/conversations/${conversationId}/accept-request`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
 export async function deleteConversation(conversationId: string) {
   const res = await fetch(`${API_URL}/api/messages/conversations/${conversationId}`, {
     method: 'DELETE',

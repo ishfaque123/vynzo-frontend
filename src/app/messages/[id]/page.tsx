@@ -4,7 +4,8 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/useAuth';
-import { fetchMessages, fetchConversations, uploadChatMedia, setDisappearing as apiSetDisappearing } from '@/lib/api/messageApi';
+import { fetchMessages, fetchConversations, uploadChatMedia, acceptMessageRequest, deleteConversation as apiDeleteConversation } from '@/lib/api/messageApi';
+import { CHAT_WALLPAPERS as WALLPAPERS, chatWallpaperStyle, chatWallpaperSwatchStyle } from '@/lib/chatWallpapers';
 import { blockUser, unblockUser, fetchBlockStatus, reportUser } from '@/lib/api/userApi';
 import { getSocket } from '@/lib/socket';
 import { takePendingMessageText } from '@/lib/pendingMessageText';
@@ -401,15 +402,6 @@ function renderMessageText(text: string, isMine: boolean) {
   );
 }
 
-const WALLPAPERS = [
-  { id: 'default', name: 'Default', bg: '#f8fafc' },
-  { id: 'beige', name: 'Beige', bg: '#e9dfd0' },
-  { id: 'green', name: 'Mint', bg: '#d8e8d2' },
-  { id: 'blue', name: 'Sky', bg: '#d5e2f2' },
-  { id: 'pink', name: 'Rose', bg: '#f2dde4' },
-  { id: 'dark', name: 'Dark', bg: '#232a33' },
-];
-
 function formatMessageTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -469,8 +461,20 @@ export default function ChatPage() {
   const [otherTyping, setOtherTyping] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [disappearing, setDisappearing] = useState<number | null>(null);
-  const [timerSheetOpen, setTimerSheetOpen] = useState(false);
-  const [timerSaving, setTimerSaving] = useState(false);
+  // Message requests: true while MY side of this conversation is an
+  // unaccepted request — the composer is replaced by the Accept/Delete
+  // bar and nothing in the chat is ever marked read from here.
+  const [requestPending, setRequestPending] = useState(false);
+  const requestPendingRef = useRef(false);
+  const [requestActionLoading, setRequestActionLoading] = useState(false);
+  const [confirmDeleteRequest, setConfirmDeleteRequest] = useState(false);
+  function setRequestPendingBoth(value: boolean) {
+    requestPendingRef.current = value;
+    setRequestPending(value);
+  }
+  function emitRead(socket: any) {
+    if (!requestPendingRef.current) socket.emit('conversation:read', { conversationId });
+  }
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockActionLoading, setBlockActionLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
@@ -509,11 +513,18 @@ export default function ChatPage() {
     return () => obs.disconnect();
   }, []);
   useEffect(() => {
+    // A wallpaper picked for this specific chat (per-chat picker) wins.
+    // Otherwise the account-level Chat wallpaper from Messages Settings
+    // applies; with neither, the chat keeps the default background.
     try {
       const saved = localStorage.getItem(`frianzo_wallpaper_${conversationId}`);
-      if (saved) setWallpaper(saved);
+      if (saved) {
+        setWallpaper(saved);
+        return;
+      }
     } catch { /* ignore */ }
-  }, [conversationId]);
+    if (user?.chatWallpaper) setWallpaper(user.chatWallpaper);
+  }, [conversationId, user?.chatWallpaper]);
   useEffect(() => {
     // Click-to-message prefill (e.g. the Blue Tick feed ad): the ad stores
     // the first message before opening this chat; place it in the composer
@@ -617,11 +628,28 @@ export default function ChatPage() {
     if (pending) setText(pending);
   }, []);
 
+  // The messages payload also carries the conversation meta (other user,
+  // disappearing timer, my request state). Applying it here matters for
+  // message requests: they are not part of the inbox list, so the
+  // list-based fetch in the effect below can never supply their header.
+  function applyConversationMeta(data: any) {
+    if (!data) return;
+    if (data.otherUser) {
+      setOtherUser(data.otherUser);
+      fetchBlockStatus(data.otherUser.id).then((res) => {
+        if (res.success) setIsBlocked(!!res.data.blockedByMe);
+      });
+    }
+    if (data.disappearingDuration !== undefined) setDisappearing(data.disappearingDuration ?? null);
+    if (typeof data.viewerRequestPending === 'boolean') setRequestPendingBoth(data.viewerRequestPending);
+  }
+
   function loadMessages() {
     setLoading(true);
     setLoadError(false);
     fetchMessages(conversationId).then((result) => {
       if (result.success) {
+        applyConversationMeta(result.data);
         setMessages(result.data.messages);
         setHasMore(result.data.messages.length >= 30);
         setOtherLastReadAt(result.data.otherLastReadAt ? new Date(result.data.otherLastReadAt) : null);
@@ -668,6 +696,7 @@ export default function ChatPage() {
     return fetchMessages(conversationId)
       .then((result) => {
         if (!result.success) return false;
+        applyConversationMeta(result.data);
         setOtherLastReadAt(result.data.otherLastReadAt ? new Date(result.data.otherLastReadAt) : null);
         setOtherLastDeliveredAt(result.data.otherLastDeliveredAt ? new Date(result.data.otherLastDeliveredAt) : null);
         const fetched: Message[] = result.data.messages;
@@ -743,7 +772,7 @@ export default function ChatPage() {
       }
       setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       if (message.senderId !== user?.id) {
-        socket.emit('conversation:read', { conversationId });
+        emitRead(socket);
       }
     }
     function handleTypingStart({ conversationId: cid, userId }: { conversationId: string; userId: string }) {
@@ -805,7 +834,7 @@ export default function ChatPage() {
       socket.emit('conversation:join', { conversationId });
       if (!hasConnected) {
         hasConnected = true;
-        socket.emit('conversation:read', { conversationId });
+        emitRead(socket);
         return;
       }
       // A reconnect means messages sent while this chat was offline were
@@ -813,7 +842,7 @@ export default function ChatPage() {
       // mark the conversation read — emitting read first would blue-tick
       // messages this screen has not displayed.
       backfillMessages().then((ok) => {
-        if (ok) socket.emit('conversation:read', { conversationId });
+        if (ok) emitRead(socket);
       });
     };
     const handleDisconnect = () => setIsOffline(true);
@@ -821,7 +850,7 @@ export default function ChatPage() {
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.emit('conversation:join', { conversationId });
-    socket.emit('conversation:read', { conversationId });
+    emitRead(socket);
 
     return () => {
       // Tell the server this socket stopped viewing the conversation, so
@@ -1405,19 +1434,31 @@ export default function ChatPage() {
     else showToast(result.error?.message || 'Could not report this user.', 'error');
   }
 
-  async function handleSetDisappearing(duration: number | null) {
-    setTimerSaving(true);
-    const result = await apiSetDisappearing(conversationId, duration);
-    setTimerSaving(false);
+  async function handleAcceptRequest() {
+    if (requestActionLoading) return;
+    setRequestActionLoading(true);
+    const result = await acceptMessageRequest(conversationId);
+    setRequestActionLoading(false);
     if (result?.success) {
-      setDisappearing(result.data.disappearingDuration ?? null);
-      setTimerSheetOpen(false);
-      setToast({
-        message: duration ? 'Disappearing messages turned on.' : 'Disappearing messages turned off.',
-        type: 'success',
-      });
+      setRequestPendingBoth(false);
+      // Accepted: from here the conversation behaves normally, including
+      // read marks — mark what is on screen as read right away.
+      getSocket().emit('conversation:read', { conversationId });
+      showToast('Request accepted.', 'success');
     } else {
-      setToast({ message: 'Could not update. Please try again.', type: 'error' });
+      showToast('Could not accept this request.', 'error');
+    }
+  }
+
+  async function handleDeleteRequest() {
+    if (requestActionLoading) return;
+    setRequestActionLoading(true);
+    const result = await apiDeleteConversation(conversationId);
+    setRequestActionLoading(false);
+    if (result?.success) {
+      router.push('/messages/requests');
+    } else {
+      showToast('Could not delete this request.', 'error');
     }
   }
 
@@ -1528,18 +1569,6 @@ export default function ChatPage() {
               <button onClick={() => { setMoreOpen(false); setWallpaperOpen(true); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50">
                 Wallpaper
               </button>
-              <button
-                onClick={() => { setMoreOpen(false); setTimerSheetOpen(true); }}
-                className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-              >
-                <span>Disappearing messages</span>
-                {disappearing && (
-                  <span className="flex items-center gap-1 text-xs text-amber-600">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-                    On
-                  </span>
-                )}
-              </button>
             </div>
             </>
           )}
@@ -1579,7 +1608,7 @@ export default function ChatPage() {
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-3 py-3"
-        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y', background: wallpaper === 'default' ? (isDarkTheme ? '#1c232e' : '#f8fafc') : (WALLPAPERS.find((w) => w.id === wallpaper) || WALLPAPERS[0]).bg }}
+        style={{ overscrollBehaviorX: 'none', touchAction: 'pan-y', ...chatWallpaperStyle(wallpaper, isDarkTheme) }}
       >
         {activePinnedMessage && (
           <button
@@ -1812,7 +1841,46 @@ export default function ChatPage() {
       {editingMessage && (
         <div className="border-t bg-amber-50 px-3 py-2 text-xs"><div className="flex items-center justify-between"><span className="font-semibold">Editing message</span><button onClick={() => { setEditingMessage(null); setText(''); resetComposerHeight(); }}>Cancel</button></div></div>
       )}
-      {isBlocked ? (
+      {requestPending ? (
+        <div className="border-t bg-white p-3">
+          <p className="mb-2 text-center text-xs text-slate-500">
+            {displayName} sent you a message request. Accept to reply — they won't know you've seen it until you accept.
+          </p>
+          {confirmDeleteRequest ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDeleteRequest(false)}
+                className="flex-1 rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRequest}
+                disabled={requestActionLoading}
+                className="flex-1 rounded-full bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Delete request
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDeleteRequest(true)}
+                className="flex-1 rounded-full bg-slate-100 py-2.5 text-sm font-semibold text-red-600"
+              >
+                Delete
+              </button>
+              <button
+                onClick={handleAcceptRequest}
+                disabled={requestActionLoading}
+                className="flex-1 rounded-full bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Accept
+              </button>
+            </div>
+          )}
+        </div>
+      ) : isBlocked ? (
         <div className="border-t bg-white p-3">
           <button
             onClick={handleUnblock}
@@ -2093,37 +2161,6 @@ export default function ChatPage() {
         </div>
       )}
 
-      {timerSheetOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40" onClick={() => setTimerSheetOpen(false)}>
-          <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
-            <p className="text-center text-base font-semibold text-slate-900">Disappearing messages</p>
-            <p className="mt-1 text-center text-xs text-slate-500">New messages disappear after the selected time.</p>
-            <div className="mt-4 space-y-1">
-              {[
-                { label: 'Off', value: null },
-                { label: '24 hours', value: 86400 },
-                { label: '7 days', value: 604800 },
-                { label: '90 days', value: 7776000 },
-              ].map((o) => (
-                <button
-                  key={o.label}
-                  disabled={timerSaving}
-                  onClick={() => handleSetDisappearing(o.value)}
-                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium ${
-                    disappearing === o.value ? 'bg-amber-50 text-amber-700' : 'text-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  {o.label}
-                  {disappearing === o.value && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {wallpaperOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40" onClick={() => setWallpaperOpen(false)}>
           <div className="w-full max-w-xl rounded-t-2xl bg-white p-5 pb-6" onClick={(e) => e.stopPropagation()}>
@@ -2135,7 +2172,7 @@ export default function ChatPage() {
                   onClick={() => pickWallpaper(w.id)}
                   className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 ${wallpaper === w.id ? 'border-green-500' : 'border-transparent'}`}
                 >
-                  <span className="h-16 w-full rounded-lg border border-slate-200" style={{ background: w.bg }} />
+                  <span className="h-16 w-full rounded-lg border border-slate-200" style={chatWallpaperSwatchStyle(w)} />
                   <span className="text-xs font-medium text-slate-700">{w.name}</span>
                 </button>
               ))}
