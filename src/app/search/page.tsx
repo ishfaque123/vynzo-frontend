@@ -49,7 +49,6 @@ export default function SearchPage() {
             </div>
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 font-medium">{u.displayName}{u.isVerified && <VerifiedBadge />}</p>
-              <p className="text-sm text-slate-500">@{u.username}</p>
             </div>
           </Link>
         ))}
