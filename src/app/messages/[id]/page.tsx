@@ -659,6 +659,54 @@ export default function ChatPage() {
     });
   }
 
+  // After a socket reconnect, pull the latest page and merge in anything
+  // that arrived while this chat was offline (room events are not replayed
+  // to a reconnected socket). Resolves true only when the fetch succeeded,
+  // so the caller can mark the conversation read afterwards without
+  // blue-ticking messages that are not on screen yet.
+  function backfillMessages(): Promise<boolean> {
+    return fetchMessages(conversationId)
+      .then((result) => {
+        if (!result.success) return false;
+        setOtherLastReadAt(result.data.otherLastReadAt ? new Date(result.data.otherLastReadAt) : null);
+        setOtherLastDeliveredAt(result.data.otherLastDeliveredAt ? new Date(result.data.otherLastDeliveredAt) : null);
+        const fetched: Message[] = result.data.messages;
+        const known = new Set(messagesRef.current.map((m) => m.id));
+        const upgrades = new Map<string, Message>();
+        const fresh: Message[] = [];
+        for (const incoming of fetched) {
+          if (known.has(incoming.id)) continue;
+          known.add(incoming.id);
+          if (incoming.senderId === user?.id) {
+            // Same reconciliation as the live echo: a server copy of a
+            // still-pending local send replaces that entry in place
+            // instead of adding a second bubble.
+            const local = findLocalMatch(incoming);
+            if (local && !upgrades.has(local.id)) {
+              settlePendingSend(local.id);
+              pendingSendsRef.current.delete(local.id);
+              upgrades.set(local.id, incoming);
+              continue;
+            }
+          }
+          fresh.push(incoming);
+        }
+        if (fresh.length || upgrades.size) {
+          setMessages((prev) => {
+            const merged = prev.map((m) => upgrades.get(m.id) ?? m);
+            const ids = new Set(merged.map((m) => m.id));
+            const additions = fresh.filter((m) => !ids.has(m.id));
+            if (!additions.length && !upgrades.size) return prev;
+            return [...merged, ...additions].sort((a, b) =>
+              a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0
+            );
+          });
+        }
+        return true;
+      })
+      .catch(() => false);
+  }
+
   useEffect(() => {
     loadMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -748,13 +796,25 @@ export default function ChatPage() {
     socket.on('presence:offline', handlePresenceOffline);
     socket.on('conversation:read', handleConversationRead);
     socket.on('conversation:delivered', handleConversationDelivered);
+    let hasConnected = false;
     const handleConnect = () => {
       setIsOffline(false);
       // Rejoin this conversation's room after a reconnect — rooms are
       // joined at connection time, so a chat created after the first
       // connect would otherwise never deliver live events.
       socket.emit('conversation:join', { conversationId });
-      socket.emit('conversation:read', { conversationId });
+      if (!hasConnected) {
+        hasConnected = true;
+        socket.emit('conversation:read', { conversationId });
+        return;
+      }
+      // A reconnect means messages sent while this chat was offline were
+      // never delivered here. Fetch and show them first, and only then
+      // mark the conversation read — emitting read first would blue-tick
+      // messages this screen has not displayed.
+      backfillMessages().then((ok) => {
+        if (ok) socket.emit('conversation:read', { conversationId });
+      });
     };
     const handleDisconnect = () => setIsOffline(true);
     setIsOffline(!socket.connected);
