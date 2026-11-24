@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { fetchConversations, deleteConversation } from '@/lib/api/messageApi';
 import { getSocket } from '@/lib/socket';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -56,8 +57,35 @@ interface ConversationItem {
   updatedAt: string;
 }
 
+// Width of the delete panel a swipe reveals, in pixels. The row content
+// slides between 0 (closed) and -PANEL_WIDTH (fully open).
+const PANEL_WIDTH = 80;
+
+// One in-flight row gesture, owned by a single pointer. A gesture is
+// created on pointerdown and destroyed on pointerup/pointercancel, so
+// no part of it — including click suppression — can leak into the next
+// gesture the way the old touch latch did.
+interface RowGesture {
+  pointerId: number;
+  rowId: string;
+  startX: number;
+  startY: number;
+  // Row position when the gesture began: 0 (closed) or -PANEL_WIDTH (open).
+  baseOffset: number;
+  // True once the drag is confirmed horizontal (|dx| > 10 and clearly
+  // dominant over |dy|); from then on the row follows the finger.
+  horizontal: boolean;
+  // True once the finger has moved more than a few pixels in any
+  // direction; a moved gesture is never a long-press.
+  moved: boolean;
+  // True when this gesture began on another row while a delete panel
+  // was open: the tap only dismisses that panel and must not navigate.
+  dismissOnly: boolean;
+}
+
 export default function MessagesPage() {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,11 +100,13 @@ export default function MessagesPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const touchMoved = useRef(false);
+  const gestureRef = useRef<RowGesture | null>(null);
   const suppressClick = useRef(false);
-  const touchActive = useRef(false);
+  const suppressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The sliding row-content element of each row, keyed by conversation
+  // id, so a drag can move the row under the finger with a direct style
+  // write instead of re-rendering the list on every pointermove.
+  const rowContentRefs = useRef(new Map<string, HTMLAnchorElement>());
 
   function showToast(message: string, type: 'success' | 'error') {
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
@@ -134,6 +164,11 @@ export default function MessagesPage() {
 
   // An open delete panel closes as soon as the list scrolls, so it can
   // never stay stuck open while the user browses the conversations.
+  // This page has no inner scroll container — the Shell renders the
+  // list in normal document flow, so the document itself is the
+  // scroller. A capture-phase listener on window receives those scroll
+  // events, and also the scroll events of any nested scroller, whose
+  // scroll events do not bubble but do pass through window in capture.
   useEffect(() => {
     if (!openActions) return;
     function closeOpenPanelOnScroll() {
@@ -144,6 +179,45 @@ export default function MessagesPage() {
       window.removeEventListener('scroll', closeOpenPanelOnScroll, { capture: true });
     };
   }, [openActions]);
+
+  // Leaving the page or hiding it (app switch, tab switch, WebView
+  // pause) drops every piece of transient row state, so nothing — an
+  // open panel, a half-finished gesture, an armed latch — can survive
+  // into the next visit and leave a row looking stuck.
+  useEffect(() => {
+    function resetTransientRowState() {
+      clearPressTimer();
+      clearSuppressClick();
+      gestureRef.current = null;
+      setOpenActions(null);
+    }
+    function handleVisibilityChange() {
+      if (document.hidden) resetTransientRowState();
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Same reset when the route changes away from this list.
+  useEffect(() => {
+    clearPressTimer();
+    clearSuppressClick();
+    gestureRef.current = null;
+    setOpenActions(null);
+  }, [pathname]);
+
+  // No timer may outlive the page.
+  useEffect(() => {
+    return () => {
+      clearPressTimer();
+      if (suppressTimer.current) {
+        clearTimeout(suppressTimer.current);
+        suppressTimer.current = null;
+      }
+    };
+  }, []);
 
   const filteredConversations = conversations.filter((c) => {
     const q = search.trim().toLowerCase();
@@ -160,6 +234,36 @@ export default function MessagesPage() {
     }
   }
 
+  // Click suppression lives and dies with one gesture: it is cleared
+  // when a new gesture starts, consumed by the click it belongs to, and
+  // otherwise expires on a short safety timer that only starts once
+  // the gesture has ended (see scheduleSuppressExpiry). It can never
+  // sit armed across gestures and eat an unrelated tap.
+  function armSuppressClick() {
+    suppressClick.current = true;
+    if (suppressTimer.current) {
+      clearTimeout(suppressTimer.current);
+      suppressTimer.current = null;
+    }
+  }
+
+  function clearSuppressClick() {
+    suppressClick.current = false;
+    if (suppressTimer.current) {
+      clearTimeout(suppressTimer.current);
+      suppressTimer.current = null;
+    }
+  }
+
+  function scheduleSuppressExpiry() {
+    if (!suppressClick.current) return;
+    if (suppressTimer.current) clearTimeout(suppressTimer.current);
+    suppressTimer.current = setTimeout(() => {
+      suppressClick.current = false;
+      suppressTimer.current = null;
+    }, 350);
+  }
+
   function toggleConversationSelection(id: string) {
     setSelectedConversationIds((prev) =>
       prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id]
@@ -169,86 +273,165 @@ export default function MessagesPage() {
 
   function startPress(id: string) {
     clearPressTimer();
-    touchMoved.current = false;
     pressTimer.current = setTimeout(() => {
-      // Only a finger that is still down counts as a long-press. If the
-      // browser already ended or cancelled this gesture, the timer must
-      // not arm the latch or toggle selection after the fact.
-      if (touchActive.current && !touchMoved.current) {
-        suppressClick.current = true;
+      // Only a finger that is still down, on this row, and has neither
+      // moved nor turned into a swipe counts as a long-press. The
+      // gesture object is destroyed when the gesture ends, so this
+      // callback can never fire after the fact for a gesture the
+      // browser already took over or cancelled.
+      const gesture = gestureRef.current;
+      if (gesture && gesture.rowId === id && !gesture.moved && !gesture.horizontal) {
+        armSuppressClick();
         toggleConversationSelection(id);
       }
     }, 550);
   }
 
-  function handleTouchStart(id: string, event: TouchEvent<HTMLDivElement>) {
+  function handlePointerDown(id: string, event: ReactPointerEvent<HTMLDivElement>) {
+    // One gesture at a time: a second finger (or a non-primary mouse
+    // button) never starts or disturbs a gesture.
+    if (!event.isPrimary || event.button !== 0) return;
+    if (gestureRef.current) return;
     // Every new gesture starts with a clean latch: suppression armed by
-    // an earlier gesture (for example one the browser cancelled without
-    // ever dispatching a click) must not eat this gesture's tap. This
-    // clear has to stay before the deliberate latch set further down,
-    // which belongs to this same gesture and must keep working.
-    suppressClick.current = false;
-    touchActive.current = true;
-    touchStartX.current = event.touches[0]?.clientX ?? null;
-    touchStartY.current = event.touches[0]?.clientY ?? null;
-    touchMoved.current = false;
+    // an earlier gesture must not eat this gesture's tap.
+    clearSuppressClick();
     // A delete panel open on another row closes on the first touch of
     // this row, and that touch does not also open this row's chat —
-    // otherwise the old panel would stay open forever.
+    // otherwise the old panel would stay open forever. The suppression
+    // for that dismiss tap is armed when the gesture ends, in
+    // handlePointerEnd, not here.
+    let dismissOnly = false;
     if (openActions !== null && openActions !== id) {
       setOpenActions(null);
-      suppressClick.current = true;
+      dismissOnly = true;
     }
+    gestureRef.current = {
+      pointerId: event.pointerId,
+      rowId: id,
+      startX: event.clientX,
+      startY: event.clientY,
+      baseOffset: openActions === id ? -PANEL_WIDTH : 0,
+      horizontal: false,
+      moved: false,
+      dismissOnly,
+    };
     startPress(id);
   }
 
-  function handleTouchMove(event: TouchEvent<HTMLDivElement>) {
-    const startX = touchStartX.current;
-    const startY = touchStartY.current;
-    if (startX == null || startY == null) return;
-    const dx = event.touches[0].clientX - startX;
-    const dy = event.touches[0].clientY - startY;
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) touchMoved.current = true;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) clearPressTimer();
-  }
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = gestureRef.current;
+    if (!gesture || event.pointerId !== gesture.pointerId) return;
+    const dx = event.clientX - gesture.startX;
+    const dy = event.clientY - gesture.startY;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) gesture.moved = true;
 
-  function handleTouchEnd(id: string, event: TouchEvent<HTMLDivElement>) {
-    clearPressTimer();
-    touchActive.current = false;
-    const startX = touchStartX.current;
-    const startY = touchStartY.current;
-    if (startX == null || startY == null) return;
-    const dx = event.changedTouches[0].clientX - startX;
-    const dy = event.changedTouches[0].clientY - startY;
-    touchStartX.current = null;
-    touchStartY.current = null;
+    if (!gesture.horizontal) {
+      // Horizontal intent: clearly sideways and clearly dominant over
+      // vertical movement. From here the gesture is a swipe, never a
+      // scroll or a long-press. touch-action: pan-y on the row keeps
+      // vertical scrolling with the browser, so a gesture that reaches
+      // this point is not stolen for scrolling.
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        gesture.horizontal = true;
+        clearPressTimer();
+        // Capture the pointer so this row keeps receiving the move and
+        // end events even if the finger drifts off the row.
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+          // The pointer is already gone; the end handlers will clean up.
+        }
+        const el = rowContentRefs.current.get(gesture.rowId);
+        if (el) el.style.transition = 'none';
+      } else {
+        return;
+      }
+    }
 
-    // A list scroll with a slight left drift used to open the delete
-    // panel at only 55px. 70px plus clearly horizontal movement needs a
-    // deliberate swipe.
-    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      suppressClick.current = true;
-      if (dx < 0) setOpenActions(id);
-      else setOpenActions(null);
+    // Drag-follow: the row tracks the finger, clamped between fully
+    // open and fully closed.
+    const el = rowContentRefs.current.get(gesture.rowId);
+    if (el) {
+      const offset = Math.max(-PANEL_WIDTH, Math.min(0, gesture.baseOffset + dx));
+      el.style.transform = `translateX(${offset}px)`;
     }
   }
 
-  function handleTouchCancel() {
-    // The browser took the gesture over (list scroll, pull-to-refresh,
-    // system gesture), so no click will follow it. Clean up everything
-    // the gesture armed — the press timer, the start coordinates and
-    // the latch — so none of it leaks into the user's next tap.
+  // Shared cleanup for the row element a drag was moving: dropping the
+  // inline styles hands the row back to its class-based position, and
+  // the class transition animates the snap from the drag position.
+  function releaseDraggedRow(rowId: string) {
+    const el = rowContentRefs.current.get(rowId);
+    if (el) {
+      el.style.transition = '';
+      el.style.transform = '';
+    }
+  }
+
+  function releasePointerCapture(event: ReactPointerEvent<HTMLDivElement>) {
+    try {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      // Capture was already released; nothing to do.
+    }
+  }
+
+  function handlePointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = gestureRef.current;
+    if (!gesture || event.pointerId !== gesture.pointerId) return;
+    gestureRef.current = null;
     clearPressTimer();
-    touchActive.current = false;
-    touchStartX.current = null;
-    touchStartY.current = null;
-    suppressClick.current = false;
+    // Release capture before the click is generated so the click is
+    // hit-tested normally; the suppression armed below is what stops a
+    // swipe's click from acting, not the capture target.
+    releasePointerCapture(event);
+    releaseDraggedRow(gesture.rowId);
+
+    if (gesture.horizontal) {
+      const dx = event.clientX - gesture.startX;
+      const dy = event.clientY - gesture.startY;
+      // The release decision keeps the long-standing swipe rule: a
+      // deliberate swipe is more than 70px and clearly horizontal, and
+      // it opens (left) or closes (right). A shorter drag changes
+      // nothing — openActions still holds the state the gesture began
+      // with, so releasing the inline transform snaps the row back to
+      // exactly where it started.
+      if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        setOpenActions(dx < 0 ? gesture.rowId : null);
+      }
+      // A swipe is not a tap: the click that follows it must not act.
+      armSuppressClick();
+    } else if (gesture.dismissOnly) {
+      // The tap only dismissed another row's panel; it must not also
+      // open this row's chat.
+      armSuppressClick();
+    }
+    // If the long-press timer fired during this gesture, suppression is
+    // already armed; either way the expiry countdown starts now that
+    // the gesture is over.
+    scheduleSuppressExpiry();
+  }
+
+  function handlePointerCancel(event: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = gestureRef.current;
+    if (!gesture || event.pointerId !== gesture.pointerId) return;
+    gestureRef.current = null;
+    clearPressTimer();
+    // The browser took the gesture over (scroll, pull-to-refresh,
+    // system gesture), so no click will follow it. The panel state is
+    // left exactly as the gesture found it — clearing the inline
+    // transform snaps the row back to that state — and any suppression
+    // the gesture armed starts expiring instead of leaking forward.
+    releaseDraggedRow(gesture.rowId);
+    scheduleSuppressExpiry();
   }
 
   function handleRowClick(event: MouseEvent<HTMLAnchorElement>, id: string) {
     if (suppressClick.current) {
       event.preventDefault();
-      suppressClick.current = false;
+      clearSuppressClick();
       return;
     }
     if (selectedConversationIds.length > 0) {
@@ -436,12 +619,12 @@ export default function MessagesPage() {
         {filteredConversations.map((c) => (
           <div
             key={c.id}
-            className="relative overflow-hidden"
+            className="relative overflow-hidden touch-pan-y"
             onClick={(event) => event.stopPropagation()}
-            onTouchStart={(event) => handleTouchStart(c.id, event)}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={(event) => handleTouchEnd(c.id, event)}
-            onTouchCancel={handleTouchCancel}
+            onPointerDown={(event) => handlePointerDown(c.id, event)}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerEnd}
+            onPointerCancel={handlePointerCancel}
             onContextMenu={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -450,6 +633,10 @@ export default function MessagesPage() {
           >
             <Link
               href={`/messages/${c.id}`}
+              ref={(el) => {
+                if (el) rowContentRefs.current.set(c.id, el);
+                else rowContentRefs.current.delete(c.id);
+              }}
               onClick={(event) => handleRowClick(event, c.id)}
               onContextMenu={(event) => {
                 event.preventDefault();
