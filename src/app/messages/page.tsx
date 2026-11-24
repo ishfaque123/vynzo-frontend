@@ -46,6 +46,36 @@ function TrashIcon() {  return (
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" />
+    </svg>
+  );
+}
+
+// Same gear as the app drawer's SettingsIcon (Shell.tsx), drawn locally
+// in this file's icon style and sized up for the header.
+function SettingsIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  );
+}
+
+function NewChatIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
+      <path d="M12 7v6" />
+      <path d="M9 10h6" />
+    </svg>
+  );
+}
+
 interface ConversationItem {
   id: string;
   otherUser: { id: string; username: string; displayName: string; profilePictureUrl?: string; isOnline: boolean; isVerified?: boolean } | null;
@@ -361,26 +391,40 @@ export default function MessagesPage() {
             )}
           </>
         ) : (
-          <h1 className="text-lg font-semibold">Messages</h1>
+          <>
+            <h1 className="text-[28px] font-bold leading-tight text-slate-900">Messages</h1>
+            <Link
+              href="/settings-menu"
+              aria-label="Settings"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-slate-600"
+            >
+              <SettingsIcon />
+            </Link>
+          </>
         )}
       </div>
 
       <div className="px-4 pb-3">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search conversations..."
-          aria-label="Search conversations"
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-300 focus:bg-white"
-        />
+        <div className="relative">
+          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
+            <SearchIcon />
+          </span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search conversations..."
+            aria-label="Search conversations"
+            className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-11 pr-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-300 focus:bg-white"
+          />
+        </div>
       </div>
 
       {loading && (
         <div className="flex flex-col gap-3 px-4" role="status" aria-label="Loading messages">
           {[1, 2, 3, 4].map((item) => (
             <div key={item} className="flex items-center gap-3 py-3">
-              <div className="skeleton-shimmer h-12 w-12 shrink-0 rounded-full" />
+              <div className="skeleton-shimmer h-14 w-14 shrink-0 rounded-full" />
               <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <div className="skeleton-shimmer h-3 w-32 rounded" />
                 <div className="skeleton-shimmer h-3 w-48 max-w-full rounded" />
@@ -404,8 +448,8 @@ export default function MessagesPage() {
         </p>
       )}
 
-      <div className="divide-y">
-        {filteredConversations.map((c) => (
+      <div>
+        {filteredConversations.map((c, index) => (
           <div
             key={c.id}
             onPointerDown={(event) => handlePointerDown(c.id, event)}
@@ -425,7 +469,7 @@ export default function MessagesPage() {
                 event.preventDefault();
                 event.stopPropagation();
               }}
-              className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 ${selectedConversationIds.includes(c.id) ? 'bg-blue-50' : 'bg-white'}`}
+              className={`flex items-center gap-3 px-4 hover:bg-slate-50 ${selectedConversationIds.includes(c.id) ? 'bg-blue-50' : 'bg-white'}`}
             >
               {selectedConversationIds.includes(c.id) && (
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
@@ -433,13 +477,14 @@ export default function MessagesPage() {
                 </span>
               )}
               <div className="relative flex-shrink-0">
-                <Avatar url={c.otherUser?.profilePictureUrl} name={c.otherUser?.displayName || c.otherUser?.username} px={48} />
+                <Avatar url={c.otherUser?.profilePictureUrl} name={c.otherUser?.displayName || c.otherUser?.username} px={56} />
                 {c.otherUser?.isOnline && (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />
                 )}
               </div>
+              <div className={`flex min-w-0 flex-1 items-center gap-3 self-stretch py-3.5 ${index < filteredConversations.length - 1 ? 'border-b border-slate-100' : ''}`}>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className={`flex items-center gap-1 truncate ${c.unread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
+                <p className="flex items-center gap-1 truncate font-bold text-slate-900">
                   <span className="truncate">{c.otherUser?.displayName || c.otherUser?.username}</span>
                   {c.otherUser?.isVerified && <VerifiedBadge size="sm" />}
                 </p>
@@ -465,17 +510,32 @@ export default function MessagesPage() {
               </div>
               <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
                 <span className={`text-xs ${c.unread ? 'font-semibold text-blue-600' : 'text-slate-400'}`}>{formatConversationTime(c.updatedAt)}</span>
-                {c.unread && (c.unreadCount || 0) > 1 && (
+                {c.unread && (c.unreadCount || 0) >= 1 && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[11px] font-bold text-white">
                     {(c.unreadCount || 0) > 99 ? '99+' : c.unreadCount}
                   </span>
                 )}
-                {c.unread && (c.unreadCount || 0) <= 1 && <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
+                {c.unread && !c.unreadCount && <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
+              </div>
               </div>
             </Link>
           </div>
         ))}
       </div>
+
+      {selectedConversationIds.length === 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40">
+          <div className="mx-auto flex w-full max-w-xl justify-end px-4">
+            <Link
+              href="/messages/new"
+              aria-label="New message"
+              className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg"
+            >
+              <NewChatIcon />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {confirmBulkDelete && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setConfirmBulkDelete(false)}>
