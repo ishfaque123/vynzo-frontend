@@ -1,4 +1,4 @@
-const CACHE_NAME = 'frianzo-shell-v3';
+const CACHE_NAME = 'frianzo-shell-v4';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -27,7 +27,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();
