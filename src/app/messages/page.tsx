@@ -108,26 +108,51 @@ export default function MessagesPage() {
     loadConversations();
 
     const socket = getSocket();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    // A burst of socket events (a message landing together with the
+    // presence events around it) must not fire one list fetch per
+    // event: everything inside a short window collapses into one fetch.
     function refresh() {
-      fetchConversations().then((result) => {
-        if (result.success) setConversations(result.data);
-      });
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        fetchConversations().then((result) => {
+          if (result.success) {
+            setConversations(result.data);
+            // A background refresh must not silently clear an active
+            // selection: keep the selected ids that still exist and
+            // drop only the ones whose conversation is gone.
+            setSelectedConversationIds((prev) =>
+              prev.filter((id) => result.data.some((c: ConversationItem) => c.id === id))
+            );
+          }
+        });
+      }, 300);
     }
     socket.on('message:new', refresh);
     socket.on('presence:online', refresh);
     socket.on('presence:offline', refresh);
+    // Messages that arrived while the socket was down produce no live
+    // event here, so a reconnect refetches the list on its own.
+    socket.on('connect', refresh);
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
       socket.off('message:new', refresh);
       socket.off('presence:online', refresh);
       socket.off('presence:offline', refresh);
+      socket.off('connect', refresh);
     };
   }, []);
 
   useEffect(() => {
     const updates: Record<string, string> = {};
     for (const c of conversations) {
-      if (c.lastMessage?.content && !(c.id in previews)) {
+      // Keep the cached preview in step with the conversation's current
+      // last message. The old write-once rule froze the first text a
+      // conversation ever showed, so a new message never updated the
+      // row's preview until the page was reloaded.
+      if (c.lastMessage?.content && previews[c.id] !== c.lastMessage.content) {
         updates[c.id] = c.lastMessage.content;
       }
     }

@@ -764,6 +764,9 @@ export default function ChatPage() {
     socket.emit('conversation:read', { conversationId });
 
     return () => {
+      // Tell the server this socket stopped viewing the conversation, so
+      // it resumes sending phone pushes for new messages here.
+      socket.emit('conversation:leave', { conversationId });
       socket.off('message:new', handleNewMessage);
       socket.off('message:edited', handleMessageEdited);
       socket.off('message:reaction', handleMessageReaction);
@@ -1135,7 +1138,9 @@ export default function ChatPage() {
         setRecordSeconds(secs);
         if (secs >= 120) {
           showToast('Voice message limit is 2 minutes.', 'error');
-          stopRecording(false);
+          // Over the cap: discard the recording. Passing false here used
+          // to upload and send it anyway, right under the error toast.
+          stopRecording(true);
         }
       }, 500);
       (recorder as any)._startedAt = startedAt;
