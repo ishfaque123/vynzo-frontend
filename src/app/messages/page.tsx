@@ -76,6 +76,7 @@ export default function MessagesPage() {
   const touchStartY = useRef<number | null>(null);
   const touchMoved = useRef(false);
   const suppressClick = useRef(false);
+  const touchActive = useRef(false);
 
   function showToast(message: string, type: 'success' | 'error') {
     if (toastTimeout.current) clearTimeout(toastTimeout.current);
@@ -131,6 +132,19 @@ export default function MessagesPage() {
     }
   }, [conversations, previews]);
 
+  // An open delete panel closes as soon as the list scrolls, so it can
+  // never stay stuck open while the user browses the conversations.
+  useEffect(() => {
+    if (!openActions) return;
+    function closeOpenPanelOnScroll() {
+      setOpenActions(null);
+    }
+    window.addEventListener('scroll', closeOpenPanelOnScroll, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('scroll', closeOpenPanelOnScroll, { capture: true });
+    };
+  }, [openActions]);
+
   const filteredConversations = conversations.filter((c) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
@@ -157,7 +171,10 @@ export default function MessagesPage() {
     clearPressTimer();
     touchMoved.current = false;
     pressTimer.current = setTimeout(() => {
-      if (!touchMoved.current) {
+      // Only a finger that is still down counts as a long-press. If the
+      // browser already ended or cancelled this gesture, the timer must
+      // not arm the latch or toggle selection after the fact.
+      if (touchActive.current && !touchMoved.current) {
         suppressClick.current = true;
         toggleConversationSelection(id);
       }
@@ -165,6 +182,13 @@ export default function MessagesPage() {
   }
 
   function handleTouchStart(id: string, event: TouchEvent<HTMLDivElement>) {
+    // Every new gesture starts with a clean latch: suppression armed by
+    // an earlier gesture (for example one the browser cancelled without
+    // ever dispatching a click) must not eat this gesture's tap. This
+    // clear has to stay before the deliberate latch set further down,
+    // which belongs to this same gesture and must keep working.
+    suppressClick.current = false;
+    touchActive.current = true;
     touchStartX.current = event.touches[0]?.clientX ?? null;
     touchStartY.current = event.touches[0]?.clientY ?? null;
     touchMoved.current = false;
@@ -190,6 +214,7 @@ export default function MessagesPage() {
 
   function handleTouchEnd(id: string, event: TouchEvent<HTMLDivElement>) {
     clearPressTimer();
+    touchActive.current = false;
     const startX = touchStartX.current;
     const startY = touchStartY.current;
     if (startX == null || startY == null) return;
@@ -206,6 +231,18 @@ export default function MessagesPage() {
       if (dx < 0) setOpenActions(id);
       else setOpenActions(null);
     }
+  }
+
+  function handleTouchCancel() {
+    // The browser took the gesture over (list scroll, pull-to-refresh,
+    // system gesture), so no click will follow it. Clean up everything
+    // the gesture armed — the press timer, the start coordinates and
+    // the latch — so none of it leaks into the user's next tap.
+    clearPressTimer();
+    touchActive.current = false;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    suppressClick.current = false;
   }
 
   function handleRowClick(event: MouseEvent<HTMLAnchorElement>, id: string) {
@@ -404,6 +441,7 @@ export default function MessagesPage() {
             onTouchStart={(event) => handleTouchStart(c.id, event)}
             onTouchMove={handleTouchMove}
             onTouchEnd={(event) => handleTouchEnd(c.id, event)}
+            onTouchCancel={handleTouchCancel}
             onContextMenu={(event) => {
               event.preventDefault();
               event.stopPropagation();
