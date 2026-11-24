@@ -162,6 +162,11 @@ function LoginForm() {
   }
 
   useEffect(() => {
+    // `verified` is only ever set after /api/auth/me has answered in
+    // this session (see useAuth), so this redirect fires solely for a
+    // server-confirmed login — never for a merely cached user, which
+    // is what used to bounce users back to / into the feed <-> login
+    // loop behind the blank-blue-screen bug.
     if (!loading && verified && isAuthenticated && !isSwitching) router.push('/');
   }, [loading, verified, isAuthenticated, isSwitching, router]);
 
@@ -216,7 +221,12 @@ function LoginForm() {
   if (loading) {
     return <LoginStatic />;
   }
-  if (isAuthenticated && !isSwitching) {
+  // Render nothing only when the server has confirmed the login and
+  // the redirect above is taking the user home. A merely cached user
+  // (isAuthenticated before `verified`) falls through to the form
+  // instead: returning null for it left this page blank for as long as
+  // the server check was slow, and forever when the check failed.
+  if (verified && isAuthenticated && !isSwitching) {
     return null;
   }
 

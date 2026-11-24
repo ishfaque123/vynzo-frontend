@@ -53,6 +53,30 @@ function PlusIcon() {
   );
 }
 
+// Visible state for the in-app auth transition: the session check is
+// still running, or the session has ended and the redirect to /login
+// is in flight. This stage used to render nothing at all — the native
+// loading overlay has already latched away by then, so the user was
+// left staring at the WebView's blank dark background (the blank
+// blue screen bug). It mirrors the login page's static shell — logo
+// centred on the same background — so the handoff to /login looks
+// continuous.
+function SessionTransitionScreen({ expired }: { expired: boolean }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="Frianzo" className="h-20 w-20 object-contain" />
+      {expired ? (
+        <>
+          <p className="mt-6 text-base font-semibold text-slate-900">Your session has expired</p>
+          <p className="mt-1 text-sm text-slate-500">Please sign in again.</p>
+        </>
+      ) : null}
+      <div className="mt-8 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-700" />
+    </div>
+  );
+}
+
 // REEL AUTHOR DIVERSITY (2026-11-11): author id of a home-feed reel object.
 // The backend returns userId at the top level and author.id inside author;
 // fall back to the reel id itself (unique, so it never blocks the greedy).
@@ -582,8 +606,16 @@ export default function HomePage() {
   // to the login form instead of the public marketing landing page.
   const isNativeApp = typeof window !== 'undefined' && !!(window as any).FrianzoNative;
 
+  const loginRedirectedRef = useRef(false);
   useEffect(() => {
-    if (!loading && !user && isNativeApp) router.replace('/login');
+    if (loading || user || !isNativeApp) return;
+    // Fire the logged-out redirect exactly once. This effect re-runs on
+    // every auth state change while the transition screen is up, and
+    // repeated replace() calls fought the /login page's own navigation
+    // in the feed <-> login bounce behind the blank-screen bug.
+    if (loginRedirectedRef.current) return;
+    loginRedirectedRef.current = true;
+    router.replace('/login');
   }, [loading, user, isNativeApp, router]);
 
   // INSTANT-OPEN SNAPSHOT PAINT (2026-11-19): the first render that
@@ -633,15 +665,18 @@ export default function HomePage() {
     }
   }
 
-  // No web loading screen here, on purpose: during the auth check the web
-  // page renders nothing of its own. In the app the native 6-dots overlay
-  // covers this stage until useAuth signals auth is done, so the user sees
-  // only the original 6-dots loading and never a second Loading... screen.
-  // The redirect effect above still fires for a logged-out app user, and
-  // that redirect stage also renders nothing in the app. Auth/feed logic
-  // is unchanged.
+  // In the app, the no-user stage never renders nothing anymore: the
+  // native 6-dots overlay covers only the first page load and latches
+  // away at the first onPageFinished, so a later auth transition (the
+  // session check, or the redirect to /login after the session ended)
+  // left the WebView's blank dark background on screen — the blank
+  // blue screen bug. The transition screen above covers that stage in
+  // the app instead. On the web nothing changes: the auth check still
+  // renders nothing while loading, and a logged-out visitor still gets
+  // the public landing page. Auth/feed logic is unchanged.
+  if (!user && isNativeApp) return <SessionTransitionScreen expired={!loading} />;
   if (loading) return null;
-  if (!user) return isNativeApp ? null : <PublicLanding />;
+  if (!user) return <PublicLanding />;
 
   const openPost = posts.find((p) => p.id === openComments);
 

@@ -98,7 +98,12 @@ async function readJson(res: Response) {
 
 export async function fetchMe() {
   const res = await trackableFetch(`${API_URL}/api/auth/me`, { credentials: 'include', cache: 'no-store' }, 30000);
-  return readJson(res);
+  const result = await readJson(res);
+  // Keep the HTTP status on the result: callers must be able to tell a
+  // definitive 401 (the server has ended this session) apart from a
+  // transient 5xx, whose error body looks identical in shape but says
+  // nothing about whether the session is still valid.
+  return { ...result, status: res.status };
 }
 
 export async function getSavedAccounts() {

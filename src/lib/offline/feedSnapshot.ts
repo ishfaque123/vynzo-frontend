@@ -95,3 +95,21 @@ export function clearFeedSnapshot(userId: string): void {
     // Best-effort cleanup only.
   }
 }
+
+// Removes every stored feed snapshot, whichever account it belongs to.
+// Used when the server definitively ends the session (401 from
+// /api/auth/me): the dead session's snapshots must not survive to be
+// painted under a later login on this device.
+export function clearAllFeedSnapshots(): void {
+  try {
+    if (typeof window === 'undefined') return;
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(KEY_PREFIX)) keys.push(key);
+    }
+    for (const key of keys) window.localStorage.removeItem(key);
+  } catch {
+    // Best-effort cleanup only.
+  }
+}
