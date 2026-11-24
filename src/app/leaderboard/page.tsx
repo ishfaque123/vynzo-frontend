@@ -15,9 +15,10 @@ type LeaderboardEntry = {
   count: number;
 };
 
-type LeaderboardTab = 'followers' | 'likers' | 'commenters';
+type LeaderboardTab = 'referrers' | 'followers' | 'likers' | 'commenters';
 
 const LEADERBOARD_TABS: { key: LeaderboardTab; label: string; unit: string }[] = [
+  { key: 'referrers', label: 'Referrals', unit: 'referrals' },
   { key: 'followers', label: 'Followers', unit: 'followers' },
   { key: 'likers', label: 'Likers', unit: 'likes' },
   { key: 'commenters', label: 'Commenters', unit: 'comments' },
@@ -42,7 +43,7 @@ function TrophyIcon() {
 
 export default function LeaderboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<LeaderboardTab>('followers');
+  const [activeTab, setActiveTab] = useState<LeaderboardTab>('referrers');
   const [boards, setBoards] = useState<Partial<Record<LeaderboardTab, LeaderboardEntry[]>>>({});
   const [boardLoading, setBoardLoading] = useState(false);
 
