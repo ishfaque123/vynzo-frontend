@@ -31,6 +31,14 @@ function ChartIcon() {
     </svg>
   );
 }
+function LeaderboardIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M8 21h8M12 17.5V21M7 4h10v4.5a5 5 0 01-10 0z" />
+      <path d="M7 5.5H4.2A2.7 2.7 0 007 10M17 5.5h2.8A2.7 2.7 0 0117 10" />
+    </svg>
+  );
+}
 function LockIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -194,6 +202,7 @@ const menuItems = [
   { label: 'Admin', href: '/admin/dashboard', Icon: ShieldIcon },
 
   { label: 'Professional Dashboard', href: '/settings-menu/dashboard', Icon: ChartIcon },
+  { label: 'Leaderboard', href: '/leaderboard', Icon: LeaderboardIcon },
   { label: 'Monetization', href: '/settings-menu/monetization', Icon: MonetizationIcon },
   { label: 'Verification', href: '/settings-menu/verification', Icon: VerificationIcon },
   { label: 'Your Activity', href: '/settings-menu/activity', Icon: ClockIcon },
