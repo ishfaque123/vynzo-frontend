@@ -153,7 +153,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
 
   return (
     <div
-      className={isReply ? 'relative ml-8 mt-2 pl-4' : 'mb-3'}
+      className={isReply ? 'relative mt-2' : 'mb-4'}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -175,38 +175,39 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
           z-index: 10;
         }
       `}</style>
-      {isReply && <span aria-hidden="true" className="absolute left-0 top-3 h-px w-4 bg-slate-200" />}
-      <div className="flex items-start gap-2">
-        <Link href={`/u/${comment.author.username}`} className={isReply ? "scale-90 origin-top" : ""}><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} px={24} /></Link>
-        <div className="flex-1">
-          <div className={`rounded-2xl px-3 py-2 ${isReply ? "bg-slate-50 border border-slate-100" : "bg-slate-100"}`}>
-            <div className="flex items-center gap-2">
-              <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold">{comment.author.displayName}</Link>
-              {comment.author.isVerified && <VerifiedBadge />}
-              {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} compact />}
-            </div>
-            {comment.mediaUrl && (
-              <div className="mt-2">
-                <img src={comment.mediaUrl} alt="Comment image" className="max-h-48 rounded-xl border bg-slate-200 cursor-pointer hover:opacity-95" onClick={() => window.open(comment.mediaUrl, '_blank')} />
-              </div>
+      <div className="flex items-start gap-2.5">
+        <Link href={`/u/${comment.author.username}`} className="shrink-0"><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} px={isReply ? 28 : 36} /></Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <Link href={`/u/${comment.author.username}`} className="text-sm font-semibold">{comment.author.displayName}</Link>
+            {comment.author.isVerified && <VerifiedBadge />}
+            <span className="text-xs text-slate-400">{timeAgo(comment.createdAt)}</span>
+            {comment.updatedAt && new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 60000 && (
+              <span className="text-xs italic text-slate-400">· edited</span>
             )}
-            {editing ? (
-              <div className="mt-1 flex gap-1">
-                <input value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 rounded border px-2 py-1 text-sm" />
-                <button onClick={saveEdit} className="text-xs font-semibold text-blue-600">Save</button>
-                <button onClick={() => { setEditText(comment.content); setEditing(false); }} className="text-xs font-semibold text-slate-500">Cancel</button>
-              </div>
-            ) : (
-              <p className="text-sm">
-                {isReply && parentAuthor && !comment.content.trim().toLowerCase().startsWith(`@${parentAuthor.username.toLowerCase()}`) && (
-                  <Link href={`/u/${parentAuthor.username}`} className="mr-1 font-semibold text-blue-600">@{parentAuthor.username}</Link>
-                )}
-                {comment.content}
-              </p>
-            )}
+            {!isOwner && <FollowButton userId={comment.author.id} status={comment.friendStatus} compact />}
           </div>
+          {editing ? (
+            <div className="mt-1 flex gap-1">
+              <input value={editText} onChange={(e) => setEditText(e.target.value)} className="flex-1 rounded border px-2 py-1 text-sm" />
+              <button onClick={saveEdit} className="text-xs font-semibold text-blue-600">Save</button>
+              <button onClick={() => { setEditText(comment.content); setEditing(false); }} className="text-xs font-semibold text-slate-500">Cancel</button>
+            </div>
+          ) : (
+            <p className="text-sm leading-snug">
+              {isReply && parentAuthor && !comment.content.trim().toLowerCase().startsWith(`@${parentAuthor.username.toLowerCase()}`) && (
+                <Link href={`/u/${parentAuthor.username}`} className="mr-1 font-semibold text-blue-600">@{parentAuthor.username}</Link>
+              )}
+              {comment.content}
+            </p>
+          )}
+          {comment.mediaUrl && (
+            <div className="mt-2">
+              <img src={comment.mediaUrl} alt="Comment image" className="max-h-48 max-w-[220px] rounded-lg border bg-slate-200 object-cover cursor-pointer hover:opacity-95" onClick={() => window.open(comment.mediaUrl, '_blank')} />
+            </div>
+          )}
 
-          <div className="mt-1 flex items-center gap-3 px-2 text-xs text-slate-500">
+          <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
             <div className="relative">
               <button onClick={() => (showPicker ? setShowPicker(false) : openPicker())} className={`flex items-center gap-1 ${localReaction ? 'font-semibold text-blue-600' : ''}`}>
                 {localReaction ? <ReactionIcon type={localReaction} size={18} /> : 'Like'}
@@ -223,10 +224,11 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
               )}
             </div>
             <button onClick={() => onReplyClick(comment.id, comment.author.username)}>Reply</button>
-            {localCount > 0 && <span>{formatCount(localCount)}</span>}
-            <span>{timeAgo(comment.createdAt)}</span>
-            {comment.updatedAt && new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 60000 && (
-              <span className="italic">· edited</span>
+            {localCount > 0 && (
+              <span className="flex items-center gap-1">
+                <ReactionIcon type={localReaction ?? 'like'} size={14} />
+                {formatCount(localCount)}
+              </span>
             )}
 
             <div className="relative ml-auto">

@@ -563,7 +563,7 @@ function ReelItem({ reel, index, active, forcePause, preload, preloadMeta, feedB
       onClose={() => setMoreOpen(false)}
     />, document.body)}
     {shareOpen && createPortal(<ShareModal onClose={() => setShareOpen(false)} reelId={reel.id} initialShareCode={reel.shareCode ?? null} />, document.body)}
-    {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} totalCount={reel.commentCount} />}
+    {commentsOpen && <ReelCommentsModal onClose={() => setCommentsOpen(false)} reelId={reel.id} comments={comments} currentUserId={currentUser?.id || ''} currentUserAvatar={currentUser?.profilePictureUrl} currentUserName={currentUser?.displayName} reelOwner={reel.isMine} loading={commentsLoading} hasMore={commentsHasMore} loadingMore={commentsLoadingMore} onLoadMore={loadMoreComments} onCountChange={(delta) => onCommentCountChange(reel.id, delta)} totalCount={reel.commentCount} />}
     {reportOpen && createPortal(<ReelReportModal reelId={reel.id} onClose={() => setReportOpen(false)} />, document.body)}
     {downloadState.active && downloadState.status === 'downloading' && <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[60] h-[3px] bg-white/20">
       <div className="h-full bg-blue-500 transition-[width] duration-200 ease-out" style={{ width: `${downloadState.progress}%` }} />

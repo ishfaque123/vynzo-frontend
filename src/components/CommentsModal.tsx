@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import CommentItem from './CommentItem';
-import { addComment } from '@/lib/api/commentApi';
+import Avatar from './Avatar';
+import CommentEmojiPicker from './CommentEmojiPicker';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
   const flat: any[] = [];
@@ -34,7 +37,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     if (!q.trim()) { setMentionResults([]); setMentionQuery(null); return; }
     mentionTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}&limit=5`);
+        const res = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(q)}&limit=5`, { credentials: 'include' });
         const data = await res.json();
         setMentionResults(data.data?.users || data.users || []);
         setMentionIndex(0);
@@ -76,51 +79,35 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     }
   }
 
-  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { setSubmitError('Please select an image file.'); return; }
-    if (file.size > 5 * 1024 * 1024) { setSubmitError('Image must be under 5MB.'); return; }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-    setSubmitError(null);
-  }
-
-  function clearImage() {
-    setImageFile(null);
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  function insertEmoji(emoji: string) {
+    const el = inputRef.current as any;
+    const start = el?.selectionStart ?? commentText.length;
+    const end = el?.selectionEnd ?? commentText.length;
+    const next = commentText.slice(0, start) + emoji + commentText.slice(end);
+    handleMentionInput(next);
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus();
+        const pos = start + emoji.length;
+        el.setSelectionRange?.(pos, pos);
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+      }
+    });
   }
 
   async function handleSend() {
-    if (postingRef.current || (!commentText.trim() && !imageFile)) return;
+    if (postingRef.current || !commentText.trim()) return;
     postingRef.current = true;
     setPosting(true);
     setSubmitError(null);
     try {
-      let r;
-      if (imageFile) {
-        // Direct API call with image
-        r = await addComment(post.id, commentText, replyTo?.commentId, [], imageFile);
-        if (r && r.success) {
-          setCommentText('');
-          clearImage();
-          setReplyTo(null);
-          onCommentsChanged(post.id);
-          window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
-          if (inputRef.current) (inputRef.current as any).style.height = 'auto';
-        } else {
-          setSubmitError(r?.error?.message || 'Could not post your comment.');
-        }
-      } else {
-        r = await onAddComment(post.id);
-        if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.');
-        else {
-          setReplyTo(null);
-          window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
-          if (inputRef.current) (inputRef.current as any).style.height = 'auto';
-        }
+      const r = await onAddComment(post.id);
+      if (r && !r.success) setSubmitError(r.error?.message || 'Could not post your comment.');
+      else {
+        setReplyTo(null);
+        window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
+        if (inputRef.current) (inputRef.current as any).style.height = 'auto';
       }
     } finally {
       postingRef.current = false;
@@ -218,9 +205,6 @@ export default function CommentsModal({ post, currentUser, comments, commentText
   const [mentionResults, setMentionResults] = useState<any[]>([]);
   const [mentionIndex, setMentionIndex] = useState(0);
   const mentionTimer = useRef<any>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const authorId = post?.author?.id || post?.userId;
   const canComment = post?.commentAudience !== 'only_me' || !currentUser || currentUser.id === authorId;
 
@@ -298,7 +282,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                     }} depth={0} />
 
                   {flatReplies.length > 0 && (
-                    <div className="ml-5 mt-1 border-l-2 border-slate-200/60 pl-3">
+                    <div className="ml-9 mt-1 border-l-2 border-slate-200/60 pl-3">
                       {!isExpanded ? (
                         <button onClick={() => toggleExpand(c.id)} className="text-xs font-semibold text-slate-500 hover:underline">
                           View {flatReplies.length} {flatReplies.length === 1 ? 'reply' : 'replies'}
@@ -360,42 +344,42 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   ))}
                 </div>
               )}
-              {imagePreview && (
-                <div className="relative mb-2 inline-block">
-                  <img src={imagePreview} alt="Comment attachment" className="max-h-32 rounded-lg border" />
-                  <button onClick={clearImage} aria-label="Remove image" className="absolute -right-2 -top-2 rounded-full bg-slate-900 p-1 text-white shadow">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                  </button>
-                </div>
-              )}
               <div className="flex items-end gap-2">
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} aria-label="Add photo" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" /></svg>
-                </button>
-                <textarea
-                  ref={inputRef as any}
-                  value={commentText}
-                  rows={1}
-                  onChange={(e) => {
-                    handleMentionInput(e.target.value);
-                    // Auto-grow
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                  onKeyDown={(e) => {
-                    if (mentionQuery !== null && mentionResults.length > 0) {
-                      if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex((i) => (i + 1) % mentionResults.length); return; }
-                      if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIndex((i) => (i - 1 + mentionResults.length) % mentionResults.length); return; }
-                      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); applyMention(mentionResults[mentionIndex]); return; }
-                      if (e.key === 'Escape') { setMentionQuery(null); setMentionResults([]); return; }
-                    }
-                  }}
+                <Avatar url={currentUser?.profilePictureUrl} name={currentUser?.displayName} px={32} />
+                <div className="relative flex-1">
+                  <textarea
+                    ref={inputRef as any}
+                    value={commentText}
+                    rows={1}
+                    onChange={(e) => {
+                      handleMentionInput(e.target.value);
+                      // Auto-grow
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                    onKeyDown={(e) => {
+                      if (mentionQuery !== null && mentionResults.length > 0) {
+                        if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex((i) => (i + 1) % mentionResults.length); return; }
+                        if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIndex((i) => (i - 1 + mentionResults.length) % mentionResults.length); return; }
+                        if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); applyMention(mentionResults[mentionIndex]); return; }
+                        if (e.key === 'Escape') { setMentionQuery(null); setMentionResults([]); return; }
+                      }
+                    }}
 
-                  placeholder="Write a comment..."
-                  className="max-h-[120px] flex-1 resize-none overflow-y-auto rounded-lg border px-3 py-2 text-sm"
-                />
-                <button onClick={handleSend} disabled={posting || (!commentText.trim() && !imageFile)} className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-60">{posting ? 'Sending\u2026' : 'Send'}</button>
+                    placeholder="Write a comment..."
+                    className="max-h-[120px] w-full resize-none overflow-y-auto rounded-3xl border py-2 pl-3 pr-11 text-sm"
+                  />
+                  <div className="absolute bottom-1 right-1.5">
+                    <CommentEmojiPicker onInsert={insertEmoji} />
+                  </div>
+                </div>
+                <button onClick={handleSend} disabled={posting || !commentText.trim()} aria-label="Send comment" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white transition disabled:opacity-50">
+                  {posting ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.8-7.5c.8-.35.8-1.45 0-1.8L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .72.73 1.2 1.39.91z" /></svg>
+                  )}
+                </button>
               </div>
 
             </>

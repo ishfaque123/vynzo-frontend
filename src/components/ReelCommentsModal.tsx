@@ -9,6 +9,7 @@ import { playCommentSound } from '@/lib/sounds';
 import Avatar from '@/components/Avatar';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import ReactionIcon from './ReactionIcon';
+import CommentEmojiPicker from './CommentEmojiPicker';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 const CLOSE_THRESHOLD = 100;
@@ -150,93 +151,70 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
   return (
     <>
       <div className={depth > 0 ? 'ml-9 mt-2' : 'mb-3'} onTouchStart={(e) => startLongPress(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => moveLongPress(e.touches[0].clientX, e.touches[0].clientY)} onTouchEnd={endLongPress} onTouchCancel={endLongPress} onPointerDown={(e) => startLongPress(e.clientX, e.clientY)} onPointerMove={(e) => moveLongPress(e.clientX, e.clientY)} onPointerUp={endLongPress} onPointerCancel={endLongPress}>
-        <div className="flex items-start gap-2">
-          <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="shrink-0"><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} px={32} /></Link>
+        <div className="flex items-start gap-2.5">
+          <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="shrink-0"><Avatar url={comment.author.profilePictureUrl} name={comment.author.displayName} px={depth > 0 ? 28 : 36} /></Link>
           <div className="min-w-0 flex-1">
-            {depth > 0 ? (
-              <>
-                <div className="flex items-baseline gap-2">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="shrink-0 text-sm font-semibold text-slate-900 hover:underline">
-                      @{comment.author.username || comment.author.displayName || 'user'}
-                    </Link>
-                    {comment.author.isVerified && <VerifiedBadge size="sm" />}
-                  </div>
-                  <p className="min-w-0 break-words text-sm leading-5 text-slate-800">
-                    {renderWithMentions(comment.content.replace(/^@[a-zA-Z0-9_.]+\s*/, ''))}
-                  </p>
+            <div className="group">
+              <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1">
+                  <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="text-sm font-semibold text-slate-900 hover:underline">
+                    {comment.author.displayName || comment.author.username || 'User'}
+                  </Link>
+                  {comment.author.isVerified && <VerifiedBadge size="sm" />}
                 </div>
-                {menuOpen && depth > 0 && <div className="relative mt-1 flex justify-end">
-                  <div className="w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">
+                <span className="text-[11px] text-slate-400">{timeAgo(comment.createdAt)}</span>
+              </div>
+              {editing ? (
+                <div className="mt-1 flex gap-2">
+                  <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)} className="min-w-0 flex-1 rounded-lg border bg-white px-2 py-1 text-sm" />
+                  <button onClick={saveEdit} disabled={saving} className="text-xs font-semibold text-blue-600 disabled:opacity-50">{saving ? '...' : 'Save'}</button>
+                  <button onClick={() => { setEditing(false); setEditText(comment.content); }} className="text-xs text-slate-500">Cancel</button>
+                </div>
+              ) : (
+                <p className="break-words text-sm leading-5 text-slate-800">{renderWithMentions(depth > 0 ? comment.content.replace(/^@[a-zA-Z0-9_.]+\s*/, '') : comment.content)}</p>
+              )}
+            </div>
+
+            <div className="mt-1 flex items-center gap-4 text-xs text-slate-500">
+              <div className="relative">
+                <button onClick={openPicker} className={`flex items-center gap-1 ${reaction ? 'font-semibold text-blue-600' : ''}`}>
+                  {reaction ? <ReactionIcon type={reaction} size={18} /> : 'Like'}
+                </button>
+                {picker && (
+                  <div className="absolute bottom-full left-0 z-30 mb-2 flex gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl">
+                    {Object.keys(REACTIONS).map((key) => (
+                      <button key={key} onClick={() => react(key)} aria-label={key} className="transition-transform hover:scale-125"><ReactionIcon type={key} size={32} /></button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {count > 0 && (
+                <span className="flex items-center gap-1">
+                  <ReactionIcon type={reaction ?? 'like'} size={14} />
+                  {count}
+                </span>
+              )}
+              <button onClick={() => onReply(comment)}>Reply</button>
+              <div className="relative ml-auto">
+                <button aria-label="Comment options" onClick={openMenu} className="rounded-full p-1 hover:bg-slate-200">
+                  <DotsIcon />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">
                     <button onClick={() => onReply(comment)} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Reply</button>
                     <button onClick={copy} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Copy</button>
-                    {isOwner && <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}
+                    {isOwner && <button onClick={() => { setMenuOpen(false); setEditing(true); setEditText(comment.content); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}
                     {canDelete && <button onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-slate-50">Delete</button>}
                     {!isOwner && !reelOwner && <button onClick={report} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Report</button>}
                   </div>
-                </div>}
-              </>
-            ) : (
-              <>
-                <div className="group">
-                  <div className="flex items-center gap-2">
-                    <div className="flex min-w-0 items-center gap-1">
-                      <Link href={comment.author.username ? `/u/${comment.author.username}` : '#'} className="text-sm font-semibold text-slate-900 hover:underline">
-                        {comment.author.displayName || comment.author.username || 'User'}
-                      </Link>
-                      {comment.author.isVerified && <VerifiedBadge size="sm" />}
-                    </div>
-                    <span className="text-[11px] text-slate-400">{timeAgo(comment.createdAt)}</span>
-                  </div>
-                  {editing ? (
-                    <div className="mt-1 flex gap-2">
-                      <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)} className="min-w-0 flex-1 rounded-lg border bg-white px-2 py-1 text-sm" />
-                      <button onClick={saveEdit} disabled={saving} className="text-xs font-semibold text-blue-600 disabled:opacity-50">{saving ? '...' : 'Save'}</button>
-                      <button onClick={() => { setEditing(false); setEditText(comment.content); }} className="text-xs text-slate-500">Cancel</button>
-                    </div>
-                  ) : (
-                    <p className="break-words text-sm leading-5 text-slate-800">{renderWithMentions(comment.content)}</p>
-                  )}
-                </div>
-
-                <div className="mt-1 flex items-center gap-4 px-1 text-[11px] text-slate-500">
-                  <div className="relative">
-                    <button onClick={openPicker} className={`flex items-center gap-1 ${reaction ? 'font-semibold text-blue-600' : ''}`}>
-                      {reaction ? <ReactionIcon type={reaction} size={18} /> : 'Like'}
-                    </button>
-                    {picker && (
-                      <div className="absolute bottom-full left-0 z-30 mb-2 flex gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-xl">
-                        {Object.keys(REACTIONS).map((key) => (
-                          <button key={key} onClick={() => react(key)} aria-label={key} className="transition-transform hover:scale-125"><ReactionIcon type={key} size={32} /></button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {count > 0 && <span>{count}</span>}
-                  <button onClick={() => onReply(comment)}>Reply</button>
-                  <span>{timeAgo(comment.createdAt)}</span>
-                  <div className="relative ml-auto">
-                    <button aria-label="Comment options" onClick={openMenu} className="rounded-full p-1 hover:bg-slate-200">
-                      <DotsIcon />
-                    </button>
-                    {menuOpen && (
-                      <div className="absolute right-0 top-full z-40 mt-1 w-40 overflow-hidden rounded-xl border bg-white py-1 text-sm shadow-xl">
-                        <button onClick={() => onReply(comment)} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Reply</button>
-                        <button onClick={copy} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Copy</button>
-                        {isOwner && <button onClick={() => { setMenuOpen(false); setEditing(true); setEditText(comment.content); }} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Edit</button>}
-                        {canDelete && <button onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} className="block w-full px-3 py-2 text-left text-red-600 hover:bg-slate-50">Delete</button>}
-                        {!isOwner && !reelOwner && <button onClick={report} className="block w-full px-3 py-2 text-left hover:bg-slate-50">Report</button>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {depth === 0 && replies.length > 0 && (
-                  <button onClick={() => setShowReplies((v) => !v)} className="mt-2 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
-                    {showReplies ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
-                  </button>
                 )}
-              </>
+              </div>
+            </div>
+
+            {depth === 0 && replies.length > 0 && (
+              <button onClick={() => setShowReplies((v) => !v)} className="mt-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
+                {showReplies ? 'Hide replies' : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
+              </button>
             )}
           </div>
         </div>
@@ -310,7 +288,7 @@ function CommentSkeleton({ count = 4 }: { count?: number }) {
   </div>;
 }
 
-export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, comments, loading, hasMore, loadingMore, onLoadMore, onClose, onCountChange, totalCount }: { reelId: string; reelOwner: boolean; currentUserId?: string; comments: CommentNode[]; loading: boolean; hasMore: boolean; loadingMore: boolean; onLoadMore: () => void; onClose: () => void; onCountChange: (delta: number) => void; totalCount?: number }) {
+export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, currentUserAvatar, currentUserName, comments, loading, hasMore, loadingMore, onLoadMore, onClose, onCountChange, totalCount }: { reelId: string; reelOwner: boolean; currentUserId?: string; currentUserAvatar?: string | null; currentUserName?: string | null; comments: CommentNode[]; loading: boolean; hasMore: boolean; loadingMore: boolean; onLoadMore: () => void; onClose: () => void; onCountChange: (delta: number) => void; totalCount?: number }) {
   const [items, setItems] = useState<CommentNode[]>(comments || []); const [text, setText] = useState(''); const [replyTo, setReplyTo] = useState<CommentNode | null>(null); const [dragY, setDragY] = useState(0); const [dragging, setDragging] = useState(false); const [pullClosing, setPullClosing] = useState(false); const startY = useRef(0); const commentsRef = useRef<HTMLDivElement>(null); const pullStartY = useRef(0); const pullStartX = useRef(0); const inputRef = useRef<HTMLInputElement>(null); const [viewport, setViewport] = useState<{ top: number; height: number } | null>(null);
   useEffect(() => setItems(comments || []), [comments]);
   useEffect(() => { const old = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = old; }; }, []);
@@ -369,6 +347,7 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
     });
   }
   function startReply(comment: CommentNode) { setReplyTo(comment); setText(''); window.setTimeout(() => { inputRef.current?.focus(); inputRef.current?.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 0); }
+  function insertEmoji(emoji: string) { const el = inputRef.current; const start = el?.selectionStart ?? text.length; const end = el?.selectionEnd ?? text.length; const next = (text.slice(0, start) + emoji + text.slice(end)).slice(0, COMMENT_MAX_LENGTH); setText(next); requestAnimationFrame(() => { el?.focus(); const pos = Math.min(start + emoji.length, next.length); el?.setSelectionRange?.(pos, pos); }); }
   async function send() { const content = text.trim(); if (!content || sending) return; setSending(true); const result = await addReelComment(reelId, content, replyTo?.id); setSending(false); if (!result.success) return; playCommentSound(); setText(''); setReplyTo(null); onCountChange(1); const added = { ...result.data.comment, author: result.data.comment.user, reactionCount: 0, myReaction: null, replies: [] } as CommentNode; justSentRef.current = true; setItems((prev) => { if (!replyTo) return [...prev, added]; const insert = (list: CommentNode[]): CommentNode[] => list.map((c) => c.id === replyTo.id ? { ...c, replies: [...(c.replies || []), added] } : { ...c, replies: insert(c.replies || []) }); return insert(prev); }); }
   function changed(delta: number) { if (delta !== 0) onCountChange(delta); window.dispatchEvent(new CustomEvent('reel-comments-refresh', { detail: reelId })); }
   if (!mounted) return null;
@@ -390,7 +369,7 @@ export default function ReelCommentsModal({ reelId, reelOwner, currentUserId, co
         <div ref={commentsRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3" onScroll={(e) => { if (loading || loadingMore || !hasMore) return; const el = e.currentTarget; if (el.scrollHeight - el.scrollTop - el.clientHeight < 180) void onLoadMore(); }} style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehaviorY: 'contain' }} onTouchStart={(e) => { e.stopPropagation(); beginPullClose(e); }} onTouchMove={(e) => { e.stopPropagation(); movePullClose(e); }} onTouchEnd={(e) => { e.stopPropagation(); endPullClose(); }} onTouchCancel={(e) => { e.stopPropagation(); pullStartY.current = 0; pullStartX.current = 0; setPullClosing(false); setDragY(0); }} onPointerDown={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
           {loading ? <CommentSkeleton /> : items.length === 0 ? <div className="flex min-h-full flex-col items-center justify-center px-6 text-center"><div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H8l-4 2 1.5-4.5A7.5 7.5 0 1 1 20 11.5Z" /><path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" /></svg></div><p className="text-sm font-semibold text-slate-800">No comments yet</p><p className="mt-1 text-xs text-slate-400">Be the first to start the conversation.</p></div> : <>{items.map((comment) => <CommentRow key={comment.id} comment={comment} currentUserId={currentUserId} reelOwner={reelOwner} onReply={startReply} onChanged={changed} />)}{loadingMore && <div className="pt-3"><CommentSkeleton count={2} /></div>}</>}
         </div>
-        <div className="border-t border-slate-200 bg-white px-3 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>{replyTo && <div className="mb-2 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500"><span>Replying to <span className="font-semibold text-slate-700">@{replyTo.author.username || replyTo.author.displayName || 'user'}</span></span><button type="button" onClick={() => { setReplyTo(null); setText(''); }} className="font-semibold text-slate-500 hover:text-slate-900">Cancel</button></div>}<div className="flex items-end gap-2"><div className="flex-1"><input ref={inputRef} value={text} maxLength={COMMENT_MAX_LENGTH} onChange={(e) => setText(e.target.value)} onFocus={(e) => window.setTimeout(() => e.currentTarget.scrollIntoView({ block: 'center', inline: 'nearest' }), 0)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-100" />{text.length > COMMENT_MAX_LENGTH - 60 && <p className="mt-1 px-2 text-right text-[11px] text-slate-400">{text.length}/{COMMENT_MAX_LENGTH}</p>}</div><button onClick={send} disabled={sending || !text.trim()} className="h-10 rounded-full bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">{sending ? '...' : 'Send'}</button></div></div>
+        <div className="border-t border-slate-200 bg-white px-3 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>{replyTo && <div className="mb-2 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500"><span>Replying to <span className="font-semibold text-slate-700">@{replyTo.author.username || replyTo.author.displayName || 'user'}</span></span><button type="button" onClick={() => { setReplyTo(null); setText(''); }} className="font-semibold text-slate-500 hover:text-slate-900">Cancel</button></div>}<div className="flex items-end gap-2"><Avatar url={currentUserAvatar} name={currentUserName} px={32} /><div className="relative flex-1"><input ref={inputRef} value={text} maxLength={COMMENT_MAX_LENGTH} onChange={(e) => setText(e.target.value)} onFocus={(e) => window.setTimeout(() => e.currentTarget.scrollIntoView({ block: 'center', inline: 'nearest' }), 0)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder={replyTo ? 'Write a reply...' : 'Write a comment...'} className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-11 text-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-100" /><div className="absolute bottom-1 right-1.5"><CommentEmojiPicker onInsert={insertEmoji} /></div>{text.length > COMMENT_MAX_LENGTH - 60 && <p className="mt-1 px-2 text-right text-[11px] text-slate-400">{text.length}/{COMMENT_MAX_LENGTH}</p>}</div><button onClick={send} disabled={sending || !text.trim()} aria-label="Send comment" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white transition disabled:cursor-not-allowed disabled:opacity-40">{sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.8-7.5c.8-.35.8-1.45 0-1.8L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .72.73 1.2 1.39.91z" /></svg>}</button></div></div>
       </div>
     </div>,
     document.body
