@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import CommentItem from './CommentItem';
 import Avatar from './Avatar';
-import CommentEmojiPicker from './CommentEmojiPicker';
+import { EmojiToggleButton, CommentEmojiPanel } from './CommentEmojiPicker';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -87,12 +87,18 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     handleMentionInput(next);
     requestAnimationFrame(() => {
       if (el) {
-        el.focus();
         const pos = start + emoji.length;
         el.setSelectionRange?.(pos, pos);
         el.style.height = 'auto';
         el.style.height = Math.min(el.scrollHeight, 120) + 'px';
       }
+    });
+  }
+
+  function toggleEmojiPanel() {
+    setEmojiOpen((v) => {
+      if (!v) (inputRef.current as any)?.blur?.();
+      return !v;
     });
   }
 
@@ -199,6 +205,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
     });
   }
 
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'top' | 'newest'>('top');
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -357,6 +364,7 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                       e.target.style.height = 'auto';
                       e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                     }}
+                    onFocus={() => setEmojiOpen(false)}
                     onKeyDown={(e) => {
                       if (mentionQuery !== null && mentionResults.length > 0) {
                         if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex((i) => (i + 1) % mentionResults.length); return; }
@@ -367,10 +375,10 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                     }}
 
                     placeholder="Write a comment..."
-                    className="max-h-[120px] w-full resize-none overflow-y-auto rounded-3xl border py-2 pl-3 pr-11 text-sm"
+                    className="max-h-[120px] w-full resize-none overflow-y-auto rounded-3xl border py-2 pl-3 pr-12 text-sm"
                   />
-                  <div className="absolute bottom-1 right-1.5">
-                    <CommentEmojiPicker onInsert={insertEmoji} />
+                  <div className="absolute bottom-0.5 right-1">
+                    <EmojiToggleButton open={emojiOpen} onToggle={toggleEmojiPanel} />
                   </div>
                 </div>
                 <button onClick={handleSend} disabled={posting || !commentText.trim()} aria-label="Send comment" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white transition disabled:opacity-50">
@@ -381,6 +389,12 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   )}
                 </button>
               </div>
+              {emojiOpen && (
+                <CommentEmojiPanel
+                  onInsert={insertEmoji}
+                  onKeyboard={() => { setEmojiOpen(false); inputRef.current?.focus(); }}
+                />
+              )}
 
             </>
           )}
