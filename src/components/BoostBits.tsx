@@ -15,14 +15,25 @@ export function boostHref(contentType: 'post' | 'reel', contentId: string): stri
   return `/boost?type=${contentType}&id=${encodeURIComponent(contentId)}`;
 }
 
-/** "Sponsored" pill (owner, 2026-11-18: the label on boosted content reads Sponsored, like Facebook — never "Boosted"), FrianzoBlue (#2563EB = Tailwind blue-600, the
- *  same blue the native badge and the site's primary buttons use). */
+/** Small globe (world) icon — the "Ad" label's icon (owner, 2026-11-25). */
+export function GlobeIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
+/** "Ad" label with a globe icon (owner, 2026-11-25: boosted content reads "Ad" with a world icon next to the timestamp, like the approved example "5d · 🌐 Ad" — replaces the blue "Sponsored" pill). Grey on a light background; white with a soft shadow when overlaid on a video. */
 export function BoostedBadge({ overlay = false }: { overlay?: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white ${overlay ? 'shadow' : ''}`}
+      className={`inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[11px] font-medium ${overlay ? 'text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]' : 'text-slate-500'}`}
     >
-      Sponsored
+      <GlobeIcon size={12} />
+      Ad
     </span>
   );
 }

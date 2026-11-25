@@ -19,6 +19,7 @@ import { fetchUserReels } from '@/lib/api/reelApi';
 import { uploadChatMedia } from '@/lib/api/messageApi';
 import Avatar from '@/components/Avatar';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { GlobeIcon } from '@/components/BoostBits';
 
 // Boost page (web) — Boost v2, the owner-approved Facebook-style design
 // (2026-11-18): ONE scrolling page. Real preview of the content at the
@@ -179,7 +180,10 @@ function FullPreview({
               </span>
             )}
           </div>
-          <div className="text-xs text-slate-500">Sponsored · Public</div>
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <GlobeIcon size={12} />
+            <span>Ad · Public</span>
+          </div>
         </div>
       </div>
 
