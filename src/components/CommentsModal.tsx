@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import CommentItem from './CommentItem';
 import Avatar from './Avatar';
 import { EmojiToggleButton, CommentEmojiPanel } from './CommentEmojiPicker';
+import { addComment } from '@/lib/api/commentApi';
+import { playCommentSound } from '@/lib/sounds';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,6 +22,11 @@ function flattenReplies(replies: any[] | undefined, parentAuthor: any): any[] {
 }
 
 const CLOSE_THRESHOLD_PX = 100;
+
+// One-tap emoji comments: tapping one posts it as the comment text (this is
+// not a reaction — reactions live on each comment). Same set and order as the
+// quick row in ReelCommentsModal.
+const QUICK_EMOJIS = ['❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '😂'];
 
 export default function CommentsModal({ post, currentUser, comments, commentText, setCommentText, replyTo, setReplyTo, onAddComment, onCommentsChanged, onClose }: any) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -115,6 +122,34 @@ export default function CommentsModal({ post, currentUser, comments, commentText
         window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
         if (inputRef.current) (inputRef.current as any).style.height = 'auto';
       }
+    } finally {
+      postingRef.current = false;
+      setPosting(false);
+    }
+  }
+
+  // Post one emoji as a comment with a single tap. Calls the API directly
+  // with the emoji as the content — never via setCommentText + handleSend,
+  // because that state update is async and would post stale/empty text.
+  // The typed draft is left untouched: only the reply context is consumed.
+  async function sendQuickEmoji(emoji: string) {
+    if (postingRef.current) return;
+    postingRef.current = true;
+    setPosting(true);
+    setSubmitError(null);
+    try {
+      // Same parent-comment rule as the parent's handleAddComment: a reply
+      // only counts when replyTo belongs to this post.
+      const parentCommentId = replyTo?.postId === post.id ? replyTo.commentId : undefined;
+      const result = await addComment(post.id, emoji, parentCommentId);
+      if (!result.success) {
+        setSubmitError(result.error?.message || 'Could not post your comment.');
+        return;
+      }
+      playCommentSound();
+      await onCommentsChanged(post.id);
+      setReplyTo(null);
+      window.dispatchEvent(new CustomEvent('frianzo-comment-count', { detail: { postId: post.id, delta: 1 } }));
     } finally {
       postingRef.current = false;
       setPosting(false);
@@ -351,6 +386,20 @@ export default function CommentsModal({ post, currentUser, comments, commentText
                   ))}
                 </div>
               )}
+              <div className="mb-2 flex w-full items-center justify-between" role="group" aria-label="Quick emoji comments">
+                {QUICK_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => sendQuickEmoji(emoji)}
+                    disabled={posting}
+                    aria-label={`Comment ${emoji}`}
+                    className="text-2xl leading-none transition-transform hover:scale-125 disabled:opacity-40"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
               <div className="flex items-end gap-2">
                 <Avatar url={currentUser?.profilePictureUrl} name={currentUser?.displayName} px={32} />
                 <div className="relative flex-1">
