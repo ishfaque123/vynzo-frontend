@@ -19,7 +19,7 @@ export default async function ShareRedirectPage({ params }: SharePageProps) {
     redirect(`/u/${result.data.username}`);
   }
   if (result.data.type === 'reel') {
-    redirect(`/reels?id=${result.data.reelId}`);
+    redirect(`/reel/${result.data.reelId}`);
   }
   redirect(`/post/${result.data.postId}`);
 }
