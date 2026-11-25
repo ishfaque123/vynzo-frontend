@@ -261,6 +261,7 @@ function BoostPage() {
   const [days, setDays] = useState<number>(presetDays && FALLBACK_DURATIONS.includes(presetDays) ? presetDays : 3);
   const [linkUrl, setLinkUrl] = useState('');
   const [buttonText, setButtonText] = useState('Learn More');
+  const [clickCap, setClickCap] = useState('');
   const [methodId, setMethodId] = useState<string | null>(null);
   const [txnId, setTxnId] = useState('');
   const [shotUrl, setShotUrl] = useState<string | null>(null);
@@ -473,6 +474,16 @@ function BoostPage() {
       setFormError('Enter a valid link starting with http:// or https://.');
       return;
     }
+    // Optional click cap (Business Promotion with a link only): 1–
+    // 100,000; empty means no cap and the boost runs for its days.
+    let parsedCap: number | null = null;
+    if (isBusiness && trimmedLink && clickCap.trim()) {
+      parsedCap = Number(clickCap.trim());
+      if (!Number.isInteger(parsedCap) || parsedCap < 1 || parsedCap > 100000) {
+        setFormError('Enter a click limit between 1 and 100,000, or leave it empty for no limit.');
+        return;
+      }
+    }
     setSubmitting(true);
     setFormError(null);
     try {
@@ -485,6 +496,7 @@ function BoostPage() {
         days,
         linkUrl: isBusiness && trimmedLink ? trimmedLink : null,
         buttonText: isBusiness && trimmedLink ? buttonText : null,
+        clickCap: parsedCap,
         paymentMethod: selectedMethod.id,
         transactionId: txnId.trim() ? txnId.trim() : null,
         screenshotUrl: shotUrl,
@@ -624,6 +636,21 @@ function BoostPage() {
                     <p className="pt-2 text-xs text-slate-500">
                       The button will appear on your boosted {chosen.contentType === 'reel' ? 'reel' : 'post'} with your link. Without a link, no button will show.
                     </p>
+                    {trimmedLink && (
+                      <>
+                        <p className="pb-1 pt-3 text-[13px] font-semibold text-slate-900">End after X clicks (optional)</p>
+                        <input
+                          value={clickCap}
+                          onChange={(e) => setClickCap(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                          placeholder="e.g. 30 — leave empty for no limit"
+                          inputMode="numeric"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600"
+                        />
+                        <p className="pt-1.5 text-xs text-slate-500">
+                          The boost ends automatically once it reaches this many link clicks, even if days are left.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
 

@@ -76,6 +76,7 @@ export interface BoostConfig {
 export interface BoostResults {
   views: number | null;
   followers: number;
+  clicks: number;
 }
 
 export interface Boost {
@@ -90,6 +91,8 @@ export interface Boost {
   dailyBudget?: number | null;
   linkUrl?: string | null;
   buttonText?: string | null;
+  linkClicks: number;
+  clickCap?: number | null;
   paymentMethod: string;
   transactionId?: string | null;
   screenshotUrl: string;
@@ -123,6 +126,9 @@ export async function createBoostRequest(body: {
   days?: number;
   linkUrl?: string | null;
   buttonText?: string | null;
+  // Optional click cap (Business Promotion with a link only): the
+  // boost ends automatically once it reaches this many link clicks.
+  clickCap?: number | null;
   paymentMethod: string;
   transactionId?: string | null;
   screenshotUrl: string;
@@ -140,6 +146,24 @@ export async function createBoostRequest(body: {
 export async function fetchMyBoosts(): Promise<any> {
   const res = await fetch(`${API_URL}/api/boosts/mine`, { credentials: 'include', cache: 'no-store' });
   return readJson(res);
+}
+
+// Record one click on a live boost's link button. The Learn More /
+// Shop Now / Order Now button fires this (fire-and-forget) before
+// opening the link; the server counts at most one click per viewer
+// per boost per hour and ends the boost automatically when its click
+// cap is reached. A failure here must never block the link.
+export async function recordBoostClick(boostId: string): Promise<any> {
+  try {
+    const res = await fetch(`${API_URL}/api/boosts/${encodeURIComponent(boostId)}/click`, {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    return readJson(res);
+  } catch {
+    return { success: false, error: { message: 'Click could not be recorded.' } };
+  }
 }
 
 // Content previews for the Boost page (DESIGN.md §9.2): the same reads
@@ -193,6 +217,8 @@ export function boostErrorMessage(result: any): string {
       return 'Enter a valid link starting with http:// or https://.';
     case 'INVALID_BOOST_BUTTON':
       return 'Choose a button text for your link.';
+    case 'INVALID_BOOST_CLICK_CAP':
+      return 'Enter a click limit between 1 and 100,000, or leave it empty for no limit.';
     case 'BOOST_COUNTRY_NOT_ELIGIBLE':
       return 'Boost is available for users in Pakistan only.';
     case 'FORBIDDEN':

@@ -80,13 +80,16 @@ function BoostRow({ b }: { b: Boost }) {
               Button: {b.buttonText || 'Learn More'} · {b.linkUrl}
             </p>
           )}
+          {b.clickCap ? (
+            <p className="mt-0.5 truncate text-xs text-slate-500">Ends after {fmt(b.clickCap)} clicks</p>
+          ) : null}
         </div>
         <StatusChip b={b} />
       </div>
       {b.status === 'rejected' && b.adminNote && <p className="pt-1.5 text-xs text-red-800">Note: {b.adminNote}</p>}
       {b.results && (
         <p className="pt-1.5 text-[13px] font-semibold text-blue-600">
-          {b.results.views !== null && b.results.views !== undefined ? `Views: ${fmt(b.results.views)} · ` : ''}New followers: {fmt(b.results.followers)}
+          {b.results.views !== null && b.results.views !== undefined ? `Views: ${fmt(b.results.views)} · ` : ''}Clicks: {fmt(b.results.clicks ?? 0)} · New followers: {fmt(b.results.followers)}
         </p>
       )}
       {(b.status === 'expired' || b.status === 'rejected') && contentId && (

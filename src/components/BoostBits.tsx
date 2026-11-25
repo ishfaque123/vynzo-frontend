@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { recordBoostClick } from '@/lib/api/boostApi';
 
 /**
  * Shared Boost UI pieces (web). Boost is visible ONLY inside the old
@@ -36,7 +37,7 @@ export function BoostedBadge({ overlay = false }: { overlay?: boolean }) {
  *  visual: in-app only, and never on the viewer's own content. */
 export type BoostButtonData =
   | { type: 'follow' }
-  | { type: 'link'; url: string; text: string }
+  | { type: 'link'; url: string; text: string; boostId: string }
   | null;
 
 export function BoostCtaButton({ button }: { button: BoostButtonData }) {
@@ -47,7 +48,15 @@ export function BoostCtaButton({ button }: { button: BoostButtonData }) {
         href={button.url}
         target="_blank"
         rel="noreferrer noopener"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          // Record the click first (fire-and-forget — the link opens in
+          // a new tab, so this page stays alive and the request
+          // completes; a failure here never blocks the link). The
+          // server counts at most one click per viewer per boost per
+          // hour and ends the boost when its click cap is reached.
+          void recordBoostClick(button.boostId);
+        }}
         className="flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white active:bg-blue-700"
       >
         {button.text}
