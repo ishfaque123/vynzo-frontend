@@ -13,6 +13,8 @@ type BoostRequestItem = {
   dailyBudget?: number | null;
   linkUrl?: string | null;
   buttonText?: string | null;
+  linkClicks?: number;
+  clickCap?: number | null;
   paymentMethod: string;
   transactionId?: string | null;
   screenshotUrl: string;
@@ -48,6 +50,9 @@ type BoostRequestItem = {
 const PURPOSE_LABELS: Record<string, string> = {
   followers_gain: 'Followers Gain',
   views_gain: 'Views Gain',
+  clicks: 'Clicks',
+  // Legacy rows only — Business Promotion can no longer be created
+  // (owner decision 2026-11-25), but old boosts keep their label.
   business_promotion: 'Business Promotion',
 };
 
@@ -170,6 +175,9 @@ export default function BoostsPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Boost Link Button</p>
                   <p className="mt-1 font-semibold text-slate-800">{item.buttonText || 'Learn More'}</p>
                   <a href={item.linkUrl} target="_blank" rel="noreferrer" className="mt-0.5 block break-all text-blue-600 hover:underline">{item.linkUrl}</a>
+                  {item.clickCap ? (
+                    <p className="mt-1.5 font-semibold text-slate-800">Link clicks: {item.linkClicks ?? 0} / {item.clickCap}</p>
+                  ) : null}
                 </div>
               )}
 

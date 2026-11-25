@@ -126,8 +126,8 @@ export async function createBoostRequest(body: {
   days?: number;
   linkUrl?: string | null;
   buttonText?: string | null;
-  // Optional click cap (Business Promotion with a link only): the
-  // boost ends automatically once it reaches this many link clicks.
+  // Required click cap (Clicks only): the boost ends automatically
+  // once it reaches this many link clicks. Other purposes send null.
   clickCap?: number | null;
   paymentMethod: string;
   transactionId?: string | null;
@@ -148,11 +148,12 @@ export async function fetchMyBoosts(): Promise<any> {
   return readJson(res);
 }
 
-// Record one click on a live boost's link button. The Learn More /
-// Shop Now / Order Now button fires this (fire-and-forget) before
-// opening the link; the server counts at most one click per viewer
-// per boost per hour and ends the boost automatically when its click
-// cap is reached. A failure here must never block the link.
+// Record one click on a live boost's link button. The Clicks button
+// (Shop / Learn More / Order, or the user's own words) fires
+// this (fire-and-forget) before opening the link; the server counts
+// at most one click per viewer per boost per hour and ends the boost
+// automatically when its click cap is reached. A failure here must
+// never block the link.
 export async function recordBoostClick(boostId: string): Promise<any> {
   try {
     const res = await fetch(`${API_URL}/api/boosts/${encodeURIComponent(boostId)}/click`, {
@@ -193,7 +194,11 @@ export function boostPurposeLabel(id: string | null | undefined): string {
       return 'Followers Gain';
     case 'views_gain':
       return 'Views Gain';
+    case 'clicks':
+      return 'Clicks';
     case 'business_promotion':
+      // Legacy rows only — Business Promotion can no longer be created
+      // (owner decision 2026-11-25), but old boosts keep their label.
       return 'Business Promotion';
     default:
       return 'Boost';
@@ -216,9 +221,9 @@ export function boostErrorMessage(result: any): string {
     case 'INVALID_BOOST_LINK':
       return 'Enter a valid link starting with http:// or https://.';
     case 'INVALID_BOOST_BUTTON':
-      return 'Choose a button text for your link.';
+      return 'Choose a button text for your link (up to 30 letters).';
     case 'INVALID_BOOST_CLICK_CAP':
-      return 'Enter a click limit between 1 and 100,000, or leave it empty for no limit.';
+      return 'Choose how many clicks the boost should stop after (1 to 100,000).';
     case 'BOOST_COUNTRY_NOT_ELIGIBLE':
       return 'Boost is available for users in Pakistan only.';
     case 'FORBIDDEN':

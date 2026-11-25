@@ -39,13 +39,15 @@ export function BoostedBadge({ overlay = false }: { overlay?: boolean }) {
 }
 
 /** The call-to-action a live boost puts on its content (Boost v2).
- *  Owner rule (2026-11-18): ONLY a Business Promotion boost shows a
- *  button on the content — the user's own link as a button. Views Gain
- *  and Followers Gain boosts show NO button at all; the boosted post
- *  or reel looks completely normal apart from the Boosted badge. (The
- *  API still describes a 'follow' button for Followers Gain — it is
- *  deliberately not rendered.) Call sites gate this like every Boost
- *  visual: in-app only, and never on the viewer's own content. */
+ *  Owner rule (2026-11-18, goals updated 2026-11-25): ONLY a Clicks
+ *  boost shows a button on the content — the user's own link as a
+ *  button. Legacy Business Promotion boosts keep the button they were
+ *  created with. Views Gain and Followers Gain boosts show NO button
+ *  at all; the boosted post or reel looks completely normal apart from
+ *  the Boosted badge. (The API still describes a 'follow' button for
+ *  Followers Gain — it is deliberately not rendered.) Call sites gate
+ *  this like every Boost visual: in-app only, and never on the
+ *  viewer's own content. */
 export type BoostButtonData =
   | { type: 'follow' }
   | { type: 'link'; url: string; text: string; boostId: string }

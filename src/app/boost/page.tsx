@@ -39,7 +39,7 @@ import { GlobeIcon } from '@/components/BoostBits';
 const FALLBACK_PURPOSES = [
   { id: 'followers_gain', label: 'Followers Gain', description: 'Grow your profile followers.' },
   { id: 'views_gain', label: 'Views Gain', description: 'Get more views on this post or reel.' },
-  { id: 'business_promotion', label: 'Business Promotion', description: 'Promote a product, service or business.' },
+  { id: 'clicks', label: 'Clicks', description: 'Get more clicks on your link.' },
 ];
 const FALLBACK_METHODS = [
   { id: 'easypaisa', label: 'EasyPaisa', accountTitle: 'SHAHI COMMUNICATION', accountNumber: '990001988', instructions: 'Send the amount to this EasyPaisa Till ID, then upload the payment screenshot below.' },
@@ -47,7 +47,13 @@ const FALLBACK_METHODS = [
 ];
 const FALLBACK_BUDGET = { min: 100, max: 1000, step: 50 };
 const FALLBACK_DURATIONS = [1, 3, 7, 14];
-const FALLBACK_BUTTON_TEXTS = ['Learn More', 'Shop Now', 'Order Now'];
+const FALLBACK_BUTTON_TEXTS = ['Shop', 'Learn More', 'Order'];
+// Select value for "write your own button words" (owner order 2026-11-26).
+const CUSTOM_BUTTON_VALUE = '__custom__';
+// The only goals that can be created (owner decision 2026-11-25):
+// Followers, Views, Clicks. A preset or server list that still names
+// Business Promotion is filtered out below — creating one must fail.
+const VALID_PURPOSE_IDS = ['followers_gain', 'views_gain', 'clicks'];
 const FALLBACK_FACTORS = {
   reachPerRupeeMin: 3.5,
   reachPerRupeeMax: 7,
@@ -153,7 +159,7 @@ function SmallPreviewCard({ item }: { item: ChosenItem }) {
 }
 
 /** The full preview: the content as people will see it in the feed.
- *  Only a Business Promotion boost puts a button on the content (the
+ *  Only a Clicks boost puts a button on the content (the
  *  link button, when a link is added) — Views Gain and Followers Gain
  *  boosts look completely normal (owner rule, 2026-11-18). */
 function FullPreview({
@@ -216,7 +222,7 @@ function FullPreview({
         <span>{fmt(item.shareCount)} Shares</span>
       </div>
 
-      {purpose === 'business_promotion' && hasLink && (
+      {purpose === 'clicks' && hasLink && buttonText && (
         <div className="mt-1 flex items-center justify-between border-t border-slate-100 pt-2">
           <span className="text-xs text-slate-500">Your link</span>
           <span className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-[13px] font-semibold text-white">{buttonText}</span>
@@ -260,11 +266,13 @@ function BoostPage() {
   const [configError, setConfigError] = useState<string | null>(null);
   const [chosen, setChosen] = useState<ChosenItem | null>(null);
   const [choices, setChoices] = useState<ChosenItem[] | null>(null);
-  const [purpose, setPurpose] = useState<string>(presetPurpose || 'views_gain');
+  const [purpose, setPurpose] = useState<string>(presetPurpose && VALID_PURPOSE_IDS.includes(presetPurpose) ? presetPurpose : 'views_gain');
   const [budget, setBudget] = useState<number>(presetBudget && presetBudget >= 100 && presetBudget <= 1000 ? presetBudget : 200);
   const [days, setDays] = useState<number>(presetDays && FALLBACK_DURATIONS.includes(presetDays) ? presetDays : 3);
   const [linkUrl, setLinkUrl] = useState('');
   const [buttonText, setButtonText] = useState('Learn More');
+  const [buttonCustom, setButtonCustom] = useState(false);
+  const [customButtonText, setCustomButtonText] = useState('');
   const [clickCap, setClickCap] = useState('');
   const [methodId, setMethodId] = useState<string | null>(null);
   const [txnId, setTxnId] = useState('');
@@ -407,6 +415,17 @@ function BoostPage() {
     setTimeout(() => setCopiedId((c) => (c === methodIdValue ? null : c)), 2000);
   }
 
+  // Paste the link from the clipboard into the Clicks link field.
+  // Needs clipboard permission — if it fails, the user pastes by hand.
+  async function handlePasteLink() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setLinkUrl(text.trim());
+    } catch {
+      // Clipboard read unavailable — the user can paste by hand.
+    }
+  }
+
   const title = !chosen && !paramId ? 'Boost' : chosen?.contentType === 'reel' || (paramId && paramType === 'reel') ? 'Boost Reel' : 'Boost Post';
 
   function handleBack() {
@@ -456,7 +475,21 @@ function BoostPage() {
   const durations = cfg?.durations?.length ? cfg.durations : FALLBACK_DURATIONS;
   const factors = cfg?.estimateFactors ?? FALLBACK_FACTORS;
   const buttonTexts = cfg?.buttonTexts?.length ? cfg.buttonTexts : FALLBACK_BUTTON_TEXTS;
-  const purposes = cfg?.purposes?.length ? cfg.purposes : FALLBACK_PURPOSES;
+  // The button text actually used: the chosen preset if the server
+  // still offers it (otherwise the default Learn More), or the user's
+  // own words when "Write your own…" is picked (owner order 2026-11-26).
+  const effectiveButtonText = buttonCustom
+    ? customButtonText.trim()
+    : buttonTexts.includes(buttonText) ? buttonText : 'Learn More';
+  // A button text is valid when it is 1–30 letters (the server
+  // enforces the same; the DB column is VarChar(30)).
+  const buttonValid = effectiveButtonText.length >= 1 && effectiveButtonText.length <= 30;
+  // Only the three creatable goals are ever offered — even if an old
+  // server payload still lists Business Promotion, it is dropped here
+  // so the user can never pick it (the server rejects it too).
+  const configPurposes = (cfg?.purposes?.length ? cfg.purposes : FALLBACK_PURPOSES).filter((p) => VALID_PURPOSE_IDS.includes(p.id));
+  const purposes = configPurposes.length ? configPurposes : FALLBACK_PURPOSES;
+  const selectedPurpose = purposes.find((p) => p.id === purpose);
   const methods = cfg?.paymentMethods?.length ? cfg.paymentMethods : FALLBACK_METHODS;
   const selectedMethod = methods.find((m) => m.id === methodId) || methods[0];
   const trial = cfg?.firstBoostTrial;
@@ -470,21 +503,40 @@ function BoostPage() {
   const clickMax = reachMax * factors.clicksPerReach;
   const trimmedLink = linkUrl.trim();
   const linkValid = !trimmedLink || /^https?:\/\/.+/i.test(trimmedLink);
-  const isBusiness = purpose === 'business_promotion';
+  const isClicks = purpose === 'clicks';
+  // Clicks form state: link present + valid, click target a whole
+  // number from 1 to 100,000. The submit button stays disabled until
+  // all of it is true; the server enforces the same.
+  const capNum = Number(clickCap.trim());
+  const capValid = clickCap.trim() !== '' && Number.isInteger(capNum) && capNum >= 1 && capNum <= 100000;
+  const clicksValid = !isClicks || (trimmedLink !== '' && linkValid && capValid && buttonValid);
 
   async function handleSubmit() {
     if (!chosen || !shotUrl) return;
-    if (isBusiness && !linkValid) {
-      setFormError('Enter a valid link starting with http:// or https://.');
-      return;
-    }
-    // Optional click cap (Business Promotion with a link only): 1–
-    // 100,000; empty means no cap and the boost runs for its days.
+    // Clicks (owner decision 2026-11-25): link, button text and click
+    // target are all required — the server enforces the same, so the
+    // client checks them first for a clear message.
     let parsedCap: number | null = null;
-    if (isBusiness && trimmedLink && clickCap.trim()) {
+    if (isClicks) {
+      if (!trimmedLink || !linkValid) {
+        setFormError('Enter a valid link starting with http:// or https://.');
+        return;
+      }
+      if (!effectiveButtonText) {
+        setFormError('Choose a button text for your link.');
+        return;
+      }
+      if (effectiveButtonText.length > 30) {
+        setFormError('Button words must be 30 letters or fewer.');
+        return;
+      }
+      if (!clickCap.trim()) {
+        setFormError('Choose how many clicks the boost should stop after (1 to 100,000).');
+        return;
+      }
       parsedCap = Number(clickCap.trim());
       if (!Number.isInteger(parsedCap) || parsedCap < 1 || parsedCap > 100000) {
-        setFormError('Enter a click limit between 1 and 100,000, or leave it empty for no limit.');
+        setFormError('Choose how many clicks the boost should stop after (1 to 100,000).');
         return;
       }
     }
@@ -498,8 +550,8 @@ function BoostPage() {
         purpose,
         dailyBudget: budget,
         days,
-        linkUrl: isBusiness && trimmedLink ? trimmedLink : null,
-        buttonText: isBusiness && trimmedLink ? buttonText : null,
+        linkUrl: isClicks ? trimmedLink : null,
+        buttonText: isClicks ? effectiveButtonText : null,
         clickCap: parsedCap,
         paymentMethod: selectedMethod.id,
         transactionId: txnId.trim() ? txnId.trim() : null,
@@ -582,79 +634,123 @@ function BoostPage() {
             <>
               <div className="px-4 pt-3">
                 <p className="pb-2 text-xs font-semibold tracking-wide text-slate-500">PREVIEW — HOW PEOPLE WILL SEE IT</p>
-                <FullPreview item={chosen} purpose={purpose} buttonText={buttonText} hasLink={!!trimmedLink} />
+                <FullPreview item={chosen} purpose={purpose} buttonText={effectiveButtonText} hasLink={!!trimmedLink} />
 
-                {/* Goal */}
+                {/* Goal — ONE dropdown box (owner decision 2026-11-25):
+                    tap it to see the three goals: Followers Gain,
+                    Views Gain, Clicks. */}
                 <h2 className="pt-5 text-[15px] font-bold text-slate-900">Choose your goal</h2>
-                <div className="flex flex-col gap-2.5 pt-2.5">
-                  {purposes.map((p) => {
-                    const sel = purpose === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setPurpose(p.id)}
-                        className={`flex w-full items-center gap-2.5 rounded-xl border p-3.5 text-left ${
-                          sel ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white'
-                        }`}
-                      >
-                        <span
-                          className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 ${sel ? 'border-blue-600' : 'border-slate-400'}`}
-                        >
-                          {sel && <span className="h-2 w-2 rounded-full bg-blue-600" />}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-slate-900">{p.label || boostPurposeLabel(p.id)}</span>
-                          {p.description && <span className="mt-0.5 block text-xs text-slate-500">{p.description}</span>}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {isBusiness && (
-                  <div className="pt-3">
-                    <input
-                      value={linkUrl}
-                      onChange={(e) => setLinkUrl(e.target.value)}
-                      placeholder="Your website or WhatsApp link (optional)"
-                      inputMode="url"
-                      className={`w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600 ${linkValid ? 'border-slate-300' : 'border-red-400'}`}
-                    />
-                    {!linkValid && <p className="pt-1 text-xs text-red-600">Enter a valid link starting with http:// or https://.</p>}
-                    <p className="pb-2 pt-3 text-[13px] font-semibold text-slate-900">Button text</p>
-                    <div className="flex gap-2">
-                      {buttonTexts.map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setButtonText(t)}
-                          className={`flex-1 rounded-lg border py-2 text-[13px] font-semibold ${
-                            buttonText === t ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700'
-                          }`}
-                        >
-                          {t}
-                        </button>
+                <div className="pt-2.5">
+                  <div className="relative">
+                    <select
+                      value={purpose}
+                      onChange={(e) => setPurpose(e.target.value)}
+                      aria-label="Choose your goal"
+                      className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-600"
+                    >
+                      {purposes.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.label || boostPurposeLabel(p.id)}
+                        </option>
                       ))}
+                    </select>
+                    <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+                {selectedPurpose?.description && (
+                  <p className="pt-1.5 text-xs text-slate-500">{selectedPurpose.description}</p>
+                )}
+
+                {isClicks && (
+                  <div className="pt-3">
+                    <p className="pb-1.5 text-[13px] font-semibold text-slate-900">Link</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        placeholder="Your website, shop or WhatsApp link"
+                        inputMode="url"
+                        className={`min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600 ${!trimmedLink || linkValid ? 'border-slate-300' : 'border-red-400'}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handlePasteLink()}
+                        className="shrink-0 rounded-lg border border-slate-300 px-3.5 py-2.5 text-[13px] font-semibold text-slate-700 active:bg-slate-100"
+                      >
+                        Paste
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (trimmedLink && linkValid) window.open(trimmedLink, '_blank', 'noreferrer');
+                        }}
+                        disabled={!trimmedLink || !linkValid}
+                        className="shrink-0 rounded-lg border border-slate-300 px-3.5 py-2.5 text-[13px] font-semibold text-slate-700 active:bg-slate-100 disabled:opacity-40"
+                      >
+                        Test Link
+                      </button>
                     </div>
-                    <p className="pt-2 text-xs text-slate-500">
-                      The button will appear on your boosted {chosen.contentType === 'reel' ? 'reel' : 'post'} with your link. Without a link, no button will show.
-                    </p>
-                    {trimmedLink && (
-                      <>
-                        <p className="pb-1 pt-3 text-[13px] font-semibold text-slate-900">End after X clicks (optional)</p>
-                        <input
-                          value={clickCap}
-                          onChange={(e) => setClickCap(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                          placeholder="e.g. 30 — leave empty for no limit"
-                          inputMode="numeric"
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600"
-                        />
-                        <p className="pt-1.5 text-xs text-slate-500">
-                          The boost ends automatically once it reaches this many link clicks, even if days are left.
-                        </p>
-                      </>
+                    {!linkValid && <p className="pt-1 text-xs text-red-600">Enter a valid link starting with http:// or https://.</p>}
+                    {!trimmedLink && <p className="pt-1 text-xs text-slate-500">A link is required for Clicks — this is where people go when they tap your button.</p>}
+                    <p className="pb-1.5 pt-3 text-[13px] font-semibold text-slate-900">Button text</p>
+                    <div className="relative">
+                      <select
+                        value={buttonCustom ? CUSTOM_BUTTON_VALUE : effectiveButtonText}
+                        onChange={(e) => {
+                          if (e.target.value === CUSTOM_BUTTON_VALUE) {
+                            setButtonCustom(true);
+                          } else {
+                            setButtonCustom(false);
+                            setButtonText(e.target.value);
+                          }
+                        }}
+                        aria-label="Button text"
+                        className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-blue-600"
+                      >
+                        {buttonTexts.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                        <option value={CUSTOM_BUTTON_VALUE}>Write your own…</option>
+                      </select>
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </span>
+                    </div>
+                    {buttonCustom && (
+                      <input
+                        value={customButtonText}
+                        onChange={(e) => {
+                          const v = e.target.value.slice(0, 30);
+                          setCustomButtonText(v);
+                          setButtonText(v);
+                        }}
+                        placeholder="Write your own button words"
+                        maxLength={30}
+                        className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600"
+                      />
                     )}
+                    <p className="pt-2 text-xs text-slate-500">
+                      The button will appear on your boosted {chosen.contentType === 'reel' ? 'reel' : 'post'} with your link.
+                    </p>
+                    <p className="pb-1 pt-3 text-[13px] font-semibold text-slate-900">Stop after X clicks</p>
+                    <input
+                      value={clickCap}
+                      onChange={(e) => setClickCap(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                      placeholder="Type how many clicks"
+                      inputMode="numeric"
+                      className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600"
+                    />
+                    <p className="pt-1.5 text-xs text-slate-500">
+                      The boost ends automatically once it reaches this many link clicks, even if days are left.
+                    </p>
                   </div>
                 )}
 
@@ -693,6 +789,9 @@ function BoostPage() {
                       </button>
                     ))}
                   </div>
+                  {isClicks && (
+                    <p className="pt-2 text-[11px] text-slate-500">The boost ends when your click target is reached, or when these days are over — whichever comes first.</p>
+                  )}
                 </div>
 
                 {/* Analysis + estimated daily results */}
@@ -825,7 +924,7 @@ function BoostPage() {
               <div className="sticky bottom-0 mt-4 border-t border-slate-100 bg-white p-4">
                 <button
                   type="button"
-                  disabled={!shotUrl || uploading || submitting || (isBusiness && !linkValid)}
+                  disabled={!shotUrl || uploading || submitting || !clicksValid}
                   onClick={() => void handleSubmit()}
                   className="flex h-[52px] w-full items-center justify-center rounded-full bg-blue-600 text-base font-semibold text-white disabled:bg-slate-300"
                 >
