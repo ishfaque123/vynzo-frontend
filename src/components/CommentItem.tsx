@@ -20,9 +20,10 @@ function DotsIcon() {
   );
 }
 function formatCount(n: number) {
-  if (n < 1000) return `${n}`;
-  if (n < 1000000) { const k = n / 1000; return `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
-  const m = n / 1000000; return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
+  if (n < 10000) return n.toLocaleString('en-US');
+  if (n < 1000000) { const k = Math.round(n / 100) / 10; return k >= 1000 ? '1M' : `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
+  if (n < 1000000000) { const m = Math.round(n / 100000) / 10; return m >= 1000 ? '1B' : `${m % 1 === 0 ? m : m.toFixed(1)}M`; }
+  const b = Math.round(n / 100000000) / 10; return `${b % 1 === 0 ? b : b.toFixed(1)}B`;
 }
 function timeAgo(dateStr: string) {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);

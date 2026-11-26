@@ -133,9 +133,10 @@ type ProfileCacheEntry = {
 const profileCache = new Map<string, ProfileCacheEntry>();
 
 function formatCount(n: number) {
-  if (n < 1000) return `${n}`;
-  if (n < 1000000) { const k = n / 1000; return `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
-  const m = n / 1000000; return `${m % 1 === 0 ? m : m.toFixed(1)}M`;
+  if (n < 10000) return n.toLocaleString('en-US');
+  if (n < 1000000) { const k = Math.round(n / 100) / 10; return k >= 1000 ? '1M' : `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
+  if (n < 1000000000) { const m = Math.round(n / 100000) / 10; return m >= 1000 ? '1B' : `${m % 1 === 0 ? m : m.toFixed(1)}M`; }
+  const b = Math.round(n / 100000000) / 10; return `${b % 1 === 0 ? b : b.toFixed(1)}B`;
 }
 
 
@@ -871,10 +872,10 @@ export default function ProfileClient({ initialProfile, initialPosts, initialRee
           <span className="flex flex-1 flex-col items-center"><b>{posts.length}</b> <span className="text-xs text-slate-500">Posts</span></span>
           <span className="flex flex-1 flex-col items-center"><b>{reels.length}</b> <span className="text-xs text-slate-500">Reels</span></span>
           <Link href={`/u/${encodeURIComponent(profile.username)}/followers`} className="flex flex-1 flex-col items-center no-underline transition-transform duration-150 active:scale-95 focus:outline-none">
-            <b>{counts.followers}</b> <span className="text-xs text-slate-500">Followers</span>
+            <b>{formatCount(counts.followers)}</b> <span className="text-xs text-slate-500">Followers</span>
           </Link>
           <Link href={`/u/${encodeURIComponent(profile.username)}/following`} className="flex flex-1 flex-col items-center no-underline transition-transform duration-150 active:scale-95 focus:outline-none">
-            <b>{counts.following}</b> <span className="text-xs text-slate-500">Following</span>
+            <b>{formatCount(counts.following)}</b> <span className="text-xs text-slate-500">Following</span>
           </Link>
         </div>
 

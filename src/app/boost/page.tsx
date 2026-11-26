@@ -80,7 +80,10 @@ function fmt(n: number): string {
 }
 
 function kfmt(n: number): string {
-  return n >= 1000 ? `${Math.round(n / 100) / 10}K` : `${Math.round(n)}`;
+  if (n < 10000) return n.toLocaleString('en-US');
+  if (n < 1000000) { const k = Math.round(n / 100) / 10; return k >= 1000 ? '1M' : `${k % 1 === 0 ? k : k.toFixed(1)}K`; }
+  if (n < 1000000000) { const m = Math.round(n / 100000) / 10; return m >= 1000 ? '1B' : `${m % 1 === 0 ? m : m.toFixed(1)}M`; }
+  const b = Math.round(n / 100000000) / 10; return `${b % 1 === 0 ? b : b.toFixed(1)}B`;
 }
 
 interface ChosenItem {
