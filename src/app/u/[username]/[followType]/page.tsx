@@ -22,14 +22,6 @@ type FollowUser = {
   friendStatus?: FriendStatus;
 };
 
-// Same rule as ProfileClient: full number below 10,000, K/M/B from 10,000 up.
-function formatCount(n: number) {
-  if (n < 10000) return n.toLocaleString('en-US');
-  if (n < 1000000) { const k = Math.round(n / 100) / 10; return k >= 1000 ? '1M' : `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
-  if (n < 1000000000) { const m = Math.round(n / 100000) / 10; return m >= 1000 ? '1B' : `${m % 1 === 0 ? m : m.toFixed(1)}M`; }
-  const b = Math.round(n / 100000000) / 10; return `${b % 1 === 0 ? b : b.toFixed(1)}B`;
-}
-
 // The server's friendStatus, or the old boolean when the field is missing.
 function effectiveStatus(user: FollowUser): FriendStatus {
   return user.friendStatus ?? (user.isFollowing ? 'following' : 'none');
@@ -237,7 +229,7 @@ export default function FollowListPage() {
           )}
           <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
             <span className="text-lg font-semibold text-slate-900">{title}</span>
-            <span className="text-lg font-semibold text-slate-900">{formatCount(pagination.total)}</span>
+            <span className="text-lg font-semibold text-slate-900">{pagination.total.toLocaleString('en-US')}</span>
           </div>
           <div className="divide-y">
           {users
