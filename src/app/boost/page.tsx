@@ -507,18 +507,21 @@ function BoostPage() {
   const trimmedLink = linkUrl.trim();
   const linkValid = !trimmedLink || /^https?:\/\/.+/i.test(trimmedLink);
   const isClicks = purpose === 'clicks';
-  // Clicks form state: link present + valid, click target a whole
-  // number from 1 to 100,000. The submit button stays disabled until
-  // all of it is true; the server enforces the same.
+  // Clicks form state: link present + valid, button text valid, and
+  // the click target — OPTIONAL (owner order 2026-11-26 09:41) —
+  // blank, or a whole number from 1 to 100,000. The submit button
+  // stays disabled until all of it is true; the server enforces
+  // the same.
   const capNum = Number(clickCap.trim());
-  const capValid = clickCap.trim() !== '' && Number.isInteger(capNum) && capNum >= 1 && capNum <= 100000;
+  const capValid = clickCap.trim() === '' || (Number.isInteger(capNum) && capNum >= 1 && capNum <= 100000);
   const clicksValid = !isClicks || (trimmedLink !== '' && linkValid && capValid && buttonValid);
 
   async function handleSubmit() {
     if (!chosen || !shotUrl) return;
-    // Clicks (owner decision 2026-11-25): link, button text and click
-    // target are all required — the server enforces the same, so the
-    // client checks them first for a clear message.
+    // Clicks (owner decisions 2026-11-25 + 2026-11-26 09:41): link
+    // and button text are required; the click target is OPTIONAL —
+    // blank means the boost runs its full days. The server enforces
+    // the same, so the client checks them first for a clear message.
     let parsedCap: number | null = null;
     if (isClicks) {
       if (!trimmedLink || !linkValid) {
@@ -533,14 +536,12 @@ function BoostPage() {
         setFormError('Button words must be 30 letters or fewer.');
         return;
       }
-      if (!clickCap.trim()) {
-        setFormError('Choose how many clicks the boost should stop after (1 to 100,000).');
-        return;
-      }
-      parsedCap = Number(clickCap.trim());
-      if (!Number.isInteger(parsedCap) || parsedCap < 1 || parsedCap > 100000) {
-        setFormError('Choose how many clicks the boost should stop after (1 to 100,000).');
-        return;
+      if (clickCap.trim()) {
+        parsedCap = Number(clickCap.trim());
+        if (!Number.isInteger(parsedCap) || parsedCap < 1 || parsedCap > 100000) {
+          setFormError('Choose how many clicks the boost should stop after (1 to 100,000).');
+          return;
+        }
       }
     }
     setSubmitting(true);
@@ -743,7 +744,7 @@ function BoostPage() {
                     <p className="pt-2 text-xs text-slate-500">
                       The button will appear on your boosted {chosen.contentType === 'reel' ? 'reel' : 'post'} with your link.
                     </p>
-                    <p className="pb-1 pt-3 text-[13px] font-semibold text-slate-900">Stop after X clicks</p>
+                    <p className="pb-1 pt-3 text-[13px] font-semibold text-slate-900">Click target (optional)</p>
                     <input
                       value={clickCap}
                       onChange={(e) => setClickCap(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
@@ -752,7 +753,7 @@ function BoostPage() {
                       className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-600"
                     />
                     <p className="pt-1.5 text-xs text-slate-500">
-                      The boost ends automatically once it reaches this many link clicks, even if days are left.
+                      Leave empty to run the full days. With a target, the boost ends automatically once it reaches this many link clicks, even if days are left.
                     </p>
                   </div>
                 )}
@@ -793,7 +794,11 @@ function BoostPage() {
                     ))}
                   </div>
                   {isClicks && (
-                    <p className="pt-2 text-[11px] text-slate-500">The boost ends when your click target is reached, or when these days are over — whichever comes first.</p>
+                    <p className="pt-2 text-[11px] text-slate-500">
+                      {clickCap.trim()
+                        ? 'The boost ends when your click target is reached, or when these days are over — whichever comes first.'
+                        : 'The boost runs for the full days you choose.'}
+                    </p>
                   )}
                 </div>
 

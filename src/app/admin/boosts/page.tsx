@@ -175,9 +175,9 @@ export default function BoostsPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Boost Link Button</p>
                   <p className="mt-1 font-semibold text-slate-800">{item.buttonText || 'Learn More'}</p>
                   <a href={item.linkUrl} target="_blank" rel="noreferrer" className="mt-0.5 block break-all text-blue-600 hover:underline">{item.linkUrl}</a>
-                  {item.clickCap ? (
-                    <p className="mt-1.5 font-semibold text-slate-800">Link clicks: {item.linkClicks ?? 0} / {item.clickCap}</p>
-                  ) : null}
+                  <p className="mt-1.5 font-semibold text-slate-800">
+                    Link clicks: {item.linkClicks ?? 0}{item.clickCap ? ` / ${item.clickCap}` : ''}
+                  </p>
                 </div>
               )}
 

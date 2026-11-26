@@ -126,8 +126,9 @@ export async function createBoostRequest(body: {
   days?: number;
   linkUrl?: string | null;
   buttonText?: string | null;
-  // Required click cap (Clicks only): the boost ends automatically
-  // once it reaches this many link clicks. Other purposes send null.
+  // Optional click cap (Clicks only): the boost ends automatically
+  // once it reaches this many link clicks. Blank (null) means no
+  // cap — the boost runs its full days. Other purposes send null.
   clickCap?: number | null;
   paymentMethod: string;
   transactionId?: string | null;
