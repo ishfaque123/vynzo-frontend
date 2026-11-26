@@ -286,7 +286,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }
 
   const isChatThread = /^\/messages\/[^/]+$/.test(pathname) && pathname !== '/messages/new';
-  const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath === '/reels/camera' || currentPath === '/settings-menu/dashboard' || currentPath.startsWith('/s/') || isChatThread;
+  // Final5 (owner 2026-11-26): the Followers/Following list pages are
+  // chrome-free — no Frianzo logo bar, no nav icons row. The list page
+  // has its own top row (back arrow + full name + search icon). Scoped
+  // to these two routes only; every other page keeps its header/nav.
+  const isFollowList = /^\/u\/[^/]+\/(followers|following)$/.test(currentPath);
+  const hideChrome = currentPath.startsWith('/admin') || currentPath === '/login' || currentPath === '/profile-setup' || currentPath === '/compose' || currentPath === '/reels/new' || currentPath === '/reels/camera' || currentPath === '/settings-menu/dashboard' || currentPath.startsWith('/s/') || isChatThread || isFollowList;
   const isReels = currentPath === '/reels';
   const isMessagesList = currentPath === '/messages' || currentPath === '/messages/new';
   const hideHeader = hideChrome || isReels || isMessagesList;

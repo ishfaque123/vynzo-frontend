@@ -17,6 +17,14 @@ type FollowUser = {
   isFollowing: boolean;
 };
 
+// Same rule as ProfileClient: full number below 10,000, K/M/B from 10,000 up.
+function formatCount(n: number) {
+  if (n < 10000) return n.toLocaleString('en-US');
+  if (n < 1000000) { const k = Math.round(n / 100) / 10; return k >= 1000 ? '1M' : `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
+  if (n < 1000000000) { const m = Math.round(n / 100000) / 10; return m >= 1000 ? '1B' : `${m % 1 === 0 ? m : m.toFixed(1)}M`; }
+  const b = Math.round(n / 100000000) / 10; return `${b % 1 === 0 ? b : b.toFixed(1)}B`;
+}
+
 export default function FollowListPage() {
   const params = useParams();
   const router = useRouter();
@@ -32,6 +40,9 @@ export default function FollowListPage() {
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  // Final5 (owner 2026-11-26): the search box is gone from the page —
+  // search lives behind the search icon in the top row only.
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,10 +98,8 @@ export default function FollowListPage() {
       <div className="mx-auto max-w-xl pb-6" role="status" aria-label={type === 'followers' ? 'Loading followers' : 'Loading following'}>
         <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
           <Skeleton className="h-9 w-9 rounded-full" />
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-3.5 w-20" />
-          </div>
+          <Skeleton className="mx-auto h-5 w-40 max-w-[50%]" />
+          <Skeleton className="h-9 w-9 rounded-full" />
         </div>
         <div className="divide-y divide-slate-100 bg-white">
           {Array.from({ length: 7 }).map((_, index) => (
@@ -121,29 +130,59 @@ export default function FollowListPage() {
 
   return (
     <div className="mx-auto max-w-xl pb-6">
+      {/* Final5 (owner 2026-11-26, approved example final5.png): top row is
+          back arrow '<' left, the user's FULL NAME (displayName from the
+          profile data — never hardcoded, never the @username) in the
+          middle, search icon right. The back button itself is unchanged. */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm">
         <button onClick={() => router.back()} aria-label="Go back" className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 transition-all duration-150 hover:bg-slate-100 active:scale-95">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <div className="min-w-0">
-          <h1 className="font-semibold text-slate-900">{title}</h1>
-          <p className="truncate text-xs font-medium text-slate-500">@{profile.username}</p>
-        </div>
+        <span className="min-w-0 flex-1 truncate text-center text-lg font-semibold text-slate-900">{profile?.displayName || ''}</span>
+        <button
+          onClick={() => { if (searchOpen) setSearch(''); setSearchOpen((o) => !o); }}
+          aria-label="Search"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-slate-700 transition-all duration-150 hover:bg-slate-100 active:scale-95"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+        </button>
       </div>
 
       {users.length === 0 ? (
         <p className="px-4 py-12 text-center text-slate-500">No {title.toLowerCase()} yet.</p>
       ) : (
         <>
-          <div className="border-b border-slate-200 bg-white px-4 py-2">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Search ${title.toLowerCase()}...`}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400"
-            />
+          {/* Search lives behind the search icon only (final5): the box
+              appears when the icon is tapped, and closes + clears here. */}
+          {searchOpen && (
+            <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
+              <input
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={`Search ${title.toLowerCase()}...`}
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400"
+              />
+              <button
+                onClick={() => { setSearch(''); setSearchOpen(false); }}
+                aria-label="Close search"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-700 transition-all duration-150 hover:bg-slate-100 active:scale-95"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="6" y1="18" x2="18" y2="6" />
+                </svg>
+              </button>
+            </div>
+          )}
+          <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+            <span className="text-lg font-semibold text-slate-900">{title}</span>
+            <span className="text-lg font-semibold text-slate-900">{formatCount(pagination.total)}</span>
           </div>
           <div className="divide-y">
           {users
