@@ -8,6 +8,8 @@ import { fetchUserProfile, fetchFollowUsers, toggleFollow } from '@/lib/api/user
 import VerifiedBadge from '@/components/VerifiedBadge';
 import Skeleton from '@/components/Skeleton';
 
+type FriendStatus = 'none' | 'following' | 'follow_back' | 'friends' | 'self';
+
 type FollowUser = {
   id: string;
   username: string | null;
@@ -15,6 +17,9 @@ type FollowUser = {
   profilePictureUrl: string | null;
   isVerified: boolean;
   isFollowing: boolean;
+  // Added by the Follow Back fix. Optional so the page still works while an
+  // older backend is serving it (then it falls back to the boolean).
+  friendStatus?: FriendStatus;
 };
 
 // Same rule as ProfileClient: full number below 10,000, K/M/B from 10,000 up.
@@ -23,6 +28,29 @@ function formatCount(n: number) {
   if (n < 1000000) { const k = Math.round(n / 100) / 10; return k >= 1000 ? '1M' : `${k % 1 === 0 ? k : k.toFixed(1)}k`; }
   if (n < 1000000000) { const m = Math.round(n / 100000) / 10; return m >= 1000 ? '1B' : `${m % 1 === 0 ? m : m.toFixed(1)}M`; }
   const b = Math.round(n / 100000000) / 10; return `${b % 1 === 0 ? b : b.toFixed(1)}B`;
+}
+
+// The server's friendStatus, or the old boolean when the field is missing.
+function effectiveStatus(user: FollowUser): FriendStatus {
+  return user.friendStatus ?? (user.isFollowing ? 'following' : 'none');
+}
+
+function followLabel(status: FriendStatus): string {
+  if (status === 'friends') return 'Friend';
+  if (status === 'following') return 'Following';
+  if (status === 'follow_back') return 'Follow Back';
+  return 'Follow';
+}
+
+// The toggle flips exactly one edge (viewer -> row person), so the next
+// state follows from the previous one — same table as ProfileClient and
+// FollowButton: follow_back -> friends, friends -> follow_back (they still
+// follow the viewer), following -> none, none -> following.
+function nextStatus(prev: FriendStatus): FriendStatus {
+  if (prev === 'following') return 'none';
+  if (prev === 'friends') return 'follow_back';
+  if (prev === 'follow_back') return 'friends';
+  return 'following';
 }
 
 export default function FollowListPage() {
@@ -83,11 +111,38 @@ export default function FollowListPage() {
 
   async function handleFollow(userId: string) {
     if (busyId) return;
+    // Logged-out viewer: the toggle endpoint is auth-guarded, so send them
+    // to sign in instead of showing an error.
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+    const prev = users.find((u) => u.id === userId);
+    if (!prev) return;
+    const prevStatus = effectiveStatus(prev);
+    const optimistic = nextStatus(prevStatus);
+    // Optimistic flip first; the list order never changes.
+    setUsers((list) =>
+      list.map((u) =>
+        u.id === userId
+          ? { ...u, friendStatus: optimistic, isFollowing: optimistic === 'following' || optimistic === 'friends' }
+          : u,
+      ),
+    );
     setBusyId(userId);
     const result = await toggleFollow(userId);
     if (result.success) {
-      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, isFollowing: result.data.following } : u));
+      // The toggle flips exactly one edge, so the optimistic state is the
+      // true state; only the boolean is reconciled from the server.
+      setUsers((list) =>
+        list.map((u) =>
+          u.id === userId ? { ...u, isFollowing: result.data.following, friendStatus: optimistic } : u,
+        ),
+      );
     } else {
+      // Roll back to the exact previous row (blocked / limit / network —
+      // the button never stays on a state the server rejected).
+      setUsers((list) => list.map((u) => (u.id === userId ? prev : u)));
       alert(result.error?.message || 'Could not update follow.');
     }
     setBusyId(null);
@@ -194,7 +249,9 @@ export default function FollowListPage() {
                 user.username?.toLowerCase().includes(q)
               );
             })
-            .map((user) => (
+            .map((user) => {
+            const status = effectiveStatus(user);
+            return (
             <div key={user.id} className="flex items-center gap-3 bg-white px-4 py-3 text-slate-900 transition-colors hover:bg-slate-50">
               <Link href={user.username ? `/u/${encodeURIComponent(user.username)}` : '#'} className="shrink-0">
                 <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
@@ -218,13 +275,14 @@ export default function FollowListPage() {
                 <button
                   onClick={() => handleFollow(user.id)}
                   disabled={busyId === user.id}
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${user.isFollowing ? 'border border-slate-300 bg-white text-slate-700' : 'bg-slate-900 text-white'}`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${status === 'following' || status === 'friends' ? 'border border-slate-300 bg-white text-slate-700' : 'bg-slate-900 text-white'}`}
                 >
-                  {user.isFollowing ? 'Following' : 'Follow'}
+                  {followLabel(status)}
                 </button>
               )}
             </div>
-          ))}
+            );
+          })}
           </div>
         </>
       )}
