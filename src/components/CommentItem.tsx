@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { setCommentReaction, deleteComment, editComment, reportComment } from '@/lib/api/commentApi';
 import FollowButton from './FollowButton';
 import Toast from './Toast';
+import ReportModal from './ReportModal';
 import VerifiedBadge from './VerifiedBadge';
 import ReactionIcon from './ReactionIcon';
 import Avatar from './Avatar';
@@ -61,6 +62,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
   const [localReaction, setLocalReaction] = useState<string | null>(comment.myReaction ?? null);
   const [localCount, setLocalCount] = useState<number>(comment.reactionCount || 0);
   const [reporting, setReporting] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -119,14 +121,14 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
     navigator.clipboard.writeText(comment.content);
     setMenuOpen(false);
   }
-  async function handleReport() {
+  async function submitReport(reason: string, details?: string) {
     if (reporting) return;
-    setMenuOpen(false);
     setReporting(true);
     try {
-      const result = await reportComment(comment.id);
+      const result = await reportComment(comment.id, reason, details);
       if (result.success) {
         setToast({ message: 'Comment reported. Thanks for letting us know.', type: 'success' });
+        setShowReport(false);
       } else {
         setToast({ message: result.error?.message || 'Could not report this comment.', type: 'error' });
       }
@@ -239,7 +241,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
                   {isOwner && <button onClick={() => { setEditing(true); setMenuOpen(false); }} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Edit</button>}
                   {canDelete && <button onClick={() => { setConfirmDelete(true); setMenuOpen(false); }} className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-slate-50">Delete</button>}
                   <button onClick={copyComment} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50">Copy</button>
-                  <button disabled={reporting} onClick={handleReport} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50 disabled:opacity-50">Report</button>
+                  <button disabled={reporting} onClick={() => { setMenuOpen(false); setShowReport(true); }} className="block w-full px-3 py-1.5 text-left hover:bg-slate-50 disabled:opacity-50">Report</button>
                 </div>
               )}
             </div>
@@ -247,6 +249,7 @@ export default function CommentItem({ comment, currentUser, postOwnerId, onReply
         </div>
       </div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {showReport && <ReportModal title="Report comment" onClose={() => setShowReport(false)} onSubmit={submitReport} />}
       {confirmDelete && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setConfirmDelete(false)}>
           <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>

@@ -1425,6 +1425,9 @@ export default function ChatPage() {
 
   async function submitReport() {
     if (!otherUser || !reportReason || reportSubmitting) return;
+    // Details are mandatory when the reason is 'Other' (user-ordered
+    // 2026-11-26) — the Submit button is disabled until they are written.
+    if (reportReason === 'other' && !reportDetails.trim()) return;
     setReportSubmitting(true);
     const details = reportReason === 'other' ? reportDetails.trim() || undefined : undefined;
     const result = await reportUser(otherUser.id, reportReason, details);
@@ -1985,13 +1988,18 @@ export default function ChatPage() {
               ))}
             </div>
             {reportReason === 'other' && (
-              <textarea
-                value={reportDetails}
-                onChange={(e) => setReportDetails(e.target.value)}
-                placeholder="Tell us more (optional)"
-                rows={3}
-                className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
-              />
+              <>
+                <textarea
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Please describe the issue (required)"
+                  rows={3}
+                  className="mt-2 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+                {!reportDetails.trim() && (
+                  <p className="mt-1 text-xs font-medium text-red-600">Please describe the issue when you choose 'Other'.</p>
+                )}
+              </>
             )}
             <div className="mt-4 flex gap-2">
               <button
@@ -2002,7 +2010,7 @@ export default function ChatPage() {
               </button>
               <button
                 onClick={submitReport}
-                disabled={!reportReason || reportSubmitting}
+                disabled={!reportReason || reportSubmitting || (reportReason === 'other' && !reportDetails.trim())}
                 className="flex-1 rounded-full bg-red-600 py-2.5 text-sm font-medium text-white disabled:opacity-40"
               >
                 Submit

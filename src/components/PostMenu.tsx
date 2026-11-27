@@ -5,6 +5,7 @@ import { updatePost, deletePost, reportPost, hidePost, togglePinPost } from '@/l
 import { toggleFollow } from '@/lib/api/userApi';
 import { createShareLink } from '@/lib/api/shareApi';
 import Toast from './Toast';
+import ReportModal from './ReportModal';
 
 function DotsIcon() {
   return (
@@ -103,6 +104,7 @@ export default function PostMenu({
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const draggingRef = useRef(false);
   const startYRef = useRef(0);
 
@@ -185,13 +187,14 @@ export default function PostMenu({
     }
   }
 
-  async function handleReport() {
+  async function submitReport(reason: string, details?: string) {
     if (busy) return;
     setBusy(true);
     try {
-      const result = await reportPost(postId);
+      const result = await reportPost(postId, reason, details);
       if (result.success) {
         setToast({ message: 'Post reported. Thanks for letting us know.', type: 'success' });
+        setShowReport(false);
       } else {
         setToast({ message: result.error?.message || 'Could not report this post.', type: 'error' });
       }
@@ -199,7 +202,6 @@ export default function PostMenu({
       setToast({ message: 'Could not report this post. Please try again.', type: 'error' });
     } finally {
       setBusy(false);
-      closeMenu();
     }
   }
 
@@ -308,7 +310,7 @@ export default function PostMenu({
                 <button onClick={copyLink} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                   <LinkIcon /> Copy link
                 </button>
-                <button disabled={busy} onClick={handleReport} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
+                <button disabled={busy} onClick={() => { closeMenu(); setShowReport(true); }} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50 disabled:opacity-50">
                   <FlagIcon /> Report post
                 </button>
                 {isFollowingAuthor && (
@@ -349,6 +351,8 @@ export default function PostMenu({
           </div>
         </div>
       )}
+
+      {showReport && <ReportModal title="Report post" onClose={() => setShowReport(false)} onSubmit={submitReport} />}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>

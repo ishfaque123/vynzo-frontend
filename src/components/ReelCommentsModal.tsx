@@ -10,6 +10,7 @@ import Avatar from '@/components/Avatar';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import ReactionIcon from './ReactionIcon';
 import { EmojiToggleButton, CommentEmojiPanel } from './CommentEmojiPicker';
+import ReportModal from './ReportModal';
 
 const REACTIONS: Record<string, string> = { like: '👍', love: '❤️', haha: '😆', wow: '😮', sad: '😢', angry: '😠' };
 const CLOSE_THRESHOLD = 100;
@@ -36,8 +37,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
   const [busy, setBusy] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmReport, setConfirmReport] = useState(false);
-  const [reportBusy, setReportBusy] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [reportNote, setReportNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
@@ -134,17 +134,17 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
 
   function report() {
     setMenuOpen(false);
-    setConfirmReport(true);
+    setShowReport(true);
   }
 
-  async function doReport() {
-    if (reportBusy) return;
-    setReportBusy(true);
-    const result = await reportReelComment(comment.id);
-    setReportBusy(false);
-    setConfirmReport(false);
-    if (result.success) setReportNote({ ok: true, text: 'Comment reported.' });
-    else if (result.error?.message) setReportNote({ ok: false, text: result.error.message });
+  async function submitReport(reason: string, details?: string) {
+    const result = await reportReelComment(comment.id, reason, details);
+    if (result.success) {
+      setShowReport(false);
+      setReportNote({ ok: true, text: 'Comment reported.' });
+    } else if (result.error?.message) {
+      setReportNote({ ok: false, text: result.error.message });
+    }
     window.setTimeout(() => setReportNote(null), 3000);
   }
 
@@ -254,18 +254,7 @@ function CommentRow({ comment, currentUserId, reelOwner, onReply, onChanged, dep
         </div>
       )}
 
-      {confirmReport && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 px-5" onClick={() => setConfirmReport(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()} onTouchCancel={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerCancel={(e) => e.stopPropagation()}>
-            <div className="text-base font-semibold text-slate-900">Report comment?</div>
-            <p className="mt-1.5 text-sm leading-5 text-slate-500">Our team will review this comment.</p>
-            <div className="mt-5 flex gap-2">
-              <button type="button" onClick={() => setConfirmReport(false)} className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={doReport} disabled={reportBusy} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">{reportBusy ? 'Reporting...' : 'Report'}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showReport && <ReportModal title="Report comment" onClose={() => setShowReport(false)} onSubmit={submitReport} />}
 
       {reportNote && (
         <div className="fixed inset-x-0 top-5 z-[110] flex justify-center px-4 pointer-events-none">
